@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="theme-color" content="#faf6ec" />
+    <title>Regulatory Copilot · 法规智能对比平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* rc-prose: 法规对话子系统的 prose 紧凑样式。
+         - 默认 Tailwind Typography prose 把段间距撑得很开；这里压紧到接近日常聊天。 */
+      .rc-prose {
+        color: #1c2733;
+        font-family: "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+        font-size: 13.5px;
+        line-height: 1.55;
+      }
+      .rc-prose p {
+        margin: 0;
+        padding: 0;
+      }
+      .rc-prose p + p {
+        margin-top: 0.25rem;
+      }
+      .rc-prose p:has(+ h1),
+      .rc-prose p:has(+ h2),
+      .rc-prose p:has(+ h3) {
+        margin-bottom: 0.35rem;
+      }
+      .rc-prose h1,
+      .rc-prose h2,
+      .rc-prose h3,
+      .rc-prose h4 {
+        font-family: "Noto Serif SC", serif;
+        color: #0c1a2b;
+        letter-spacing: -0.005em;
+        line-height: 1.3;
+      }
+      .rc-prose h1 { font-size: 16px; font-weight: 600; margin: 0.65rem 0 0.35rem; }
+      .rc-prose h2 { font-size: 14px; font-weight: 600; margin: 0.55rem 0 0.25rem; }
+      .rc-prose h3 { font-size: 13px; font-weight: 600; margin: 0.4rem 0 0.15rem; }
+      .rc-prose h4 { font-size: 13px; font-weight: 600; margin: 0.3rem 0 0.1rem; }
+      .rc-prose ul,
+      .rc-prose ol {
+        margin: 0.15rem 0 0.25rem;
+        padding-left: 1.1rem;
+      }
+      .rc-prose li {
+        margin: 0.05rem 0;
+        line-height: 1.55;
+      }
+      .rc-prose li > p { margin: 0; }
+      .rc-prose strong {
+        color: #0c1a2b;
+        font-weight: 600;
+      }
+      .rc-prose table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11.5px;
+        margin: 0.35rem 0;
+      }
+      .rc-prose th,
+      .rc-prose td {
+        border: 1px solid #d8cfb8;
+        padding: 4px 8px;
+        text-align: left;
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      .rc-prose th {
+        background: #faf6ec;
+        color: #3a3027;
+        font-weight: 600;
+      }
+      .rc-prose code {
+        background: #faf6ec;
+        border: 1px solid #ece4d1;
+        border-radius: 3px;
+        padding: 0 4px;
+        font-size: 11.5px;
+      }
+      .rc-prose hr {
+        margin: 0.5rem 0;
+        border: none;
+        border-top: 1px solid #ece4d1;
+      }
+      .rc-prose blockquote {
+        border-left: 3px solid #d8cfb8;
+        padding: 0.15rem 0.7rem;
+        color: #5e5240;
+        margin: 0.25rem 0;
+      }
+      .rc-prose pre {
+        background: #faf6ec;
+        border: 1px solid #ece4d1;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 11.5px;
+        overflow-x: auto;
+      }
+      .rc-prose pre code {
+        background: transparent;
+        border: none;
+        padding: 0;
+      }
+      /* 处理 Streamdown 把段落放在独立 div 的情况 */
+      .rc-prose > div > p,
+      .rc-prose > div > pre {
+        margin: 0;
+      }
+      /* 关键：Streamdown 倾向把每段（heading / 段落 / 表格 / 列表）包在 div 里，
+         这些 div 之间可能继承 Tailwind reset 的 margin，导致"看起来空"。
+         把所有直接子元素以及它们的子元素都收敛到 0。 */
+      .rc-prose > div,
+      .rc-prose > div > div,
+      .rc-prose > div > div > div {
+        margin: 0;
+        padding: 0;
+      }
+      /* 但 heading/table/list 这些语义元素自身的 margin 必须保留 — 用 :where() 让特异性归零，
+         这样我们可以重新声明而不被 Tailwind reset 覆盖 */
+      .rc-prose :where(h1, h2, h3, h4, h5, h6) {
+        font-family: "Noto Serif SC", serif;
+        color: #0c1a2b;
+        letter-spacing: -0.005em;
+        line-height: 1.3;
+      }
+      .rc-prose :where(p) {
+        margin: 0;
+        padding: 0;
+      }
+      .rc-prose :where(ul, ol) {
+        margin: 0.15rem 0 0.25rem;
+        padding-left: 1.1rem;
+      }
+      .rc-prose :where(li) {
+        margin: 0.05rem 0;
+        line-height: 1.55;
+      }
+      .rc-prose :where(table) {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin: 0.2rem 0 0.3rem;
+      }
+      .rc-prose :where(th, td) {
+        border: 1px solid #d8cfb8;
+        padding: 3px 7px;
+        text-align: left;
+        vertical-align: top;
+        line-height: 1.45;
+      }
+      .rc-prose :where(th) {
+        background: #faf6ec;
+        color: #3a3027;
+        font-weight: 600;
+      }
+      .rc-prose :where(strong) {
+        color: #0c1a2b;
+        font-weight: 600;
+      }
+      /* streamdown 包外的 div 自身不该有 margin */
+      .rc-prose > div,
+      .rc-prose > div > div,
+      .rc-prose > div > div > div {
+        margin: 0 !important;
+      }
+      .rc-prose {
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+
+</html>
