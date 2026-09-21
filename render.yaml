@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: regulatory-copilot
+    runtime: node
+    plan: starter
+    region: singapore
+    branch: main
+    rootDir: .
+    buildCommand: pnpm install --frozen-lockfile && pnpm build
+    startCommand: NODE_ENV=production node dist/index.js
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: MINIMAX_BASE_URL
+        value: https://api.minimax.cn
+      - key: MINIMAX_MODEL
+        value: MiniMax-M3
+      - key: REPORT_FONT_PATH
+        value: /usr/share/fonts/opentype/noto/NotoSansCJKsc-Light.otf
+    autoDeployFilters:
+      - branch: main
