@@ -351,13 +351,25 @@ function chapterPrompt(
   const trimmedRegex = trimRegexForChapter(chapter, regexJson);
   const sections = chapter.sections.map((s) => `### ${s}`).join("\n");
   const isChangeChapter = /变化|修订|趋势|立法|动向/.test(chapter.title + chapter.sections.join(" "));
+  const isExec = chapter.id === 0;
   const example = isChangeChapter ? changeStyleExample() : "";
   console.log(
     `[report] ch${chapter.id}「${chapter.title}」 prompt: docs=${docText.length} regex=${trimmedRegex.length} chars (全量文档=${docs.reduce((s, d) => s + d.text.length, 0)})`,
   );
 
+  const execHardRules = isExec
+    ? `
+【执行摘要硬约束 — 这是最重要的章节】
+- 只允许引用 [已双源核验] 的实质技术变更，标记为 [已核验]；⚠ 待复核、🟡 同文勘误、🔢 仅编号重排、✍ 格式同义改写一律不得出现在执行摘要。
+- 每条结论必须同时给出 A、B 两版文档的原文锚点（条款号 + 页码），缺一方证据 → 降级到第 11.3 节候选待复核清单，不入执行摘要。
+- 禁止用"本版未规定"等占位语句；没有 ✅ 双源数据就跳过，不要为了凑数而填充。
+- 长度 400~700 字，宁缺勿滥；用项目符号列表，每项一行：• [变更类型] 主题：A→B 简要数值/条款差，源页码 (A p?; B p?)。
+`
+    : "";
+
   return `你是资深法规对比研究员。请为《多版本横向对比研究报告》撰写"第 ${chapter.id} 章 ${chapter.title}"。
 ${VERSION_RULES}
+${execHardRules}
 【本章小节结构】
 ${sections}
 ${example ? `\n【格式范例——客户已认可的"变化点总结"标准写法（参考报告第 11 章），照此结构与颗粒度撰写】\n${example}\n` : ""}

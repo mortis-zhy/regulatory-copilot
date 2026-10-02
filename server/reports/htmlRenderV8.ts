@@ -300,8 +300,8 @@ function collectTableRows(lines: string[], start: number): { rowLines: string[];
     const t = raw.trim();
     if (t === "") break;
     if (t.startsWith("|")) {
-      //  Always flush previous row, then start a new one. A row that ends
-      // with `|` still needs to be pushed ( old code only pushed  when the
+      // Always flush previous row, then start a new one. A row that ends
+      // with `|` still needs to be pushed (old code only pushed when the
       // row was "open" / multi-line, which silently dropped closed rows).
       if (cur.length) rowLines.push(cur.join("\n"));
       cur = [raw];
@@ -688,6 +688,162 @@ const DOC_META: Record<string, { label: string; short: string; name: string; col
   C: { label: "C", short: "UN", name: "UN R48-09", color: "#3a6b4f", bg: "#e3f2e8" },
 };
 
+/**
+ * Front-matter symbol legend page. Explains every tag the report uses so
+ * readers don't lose context between chapters. Pre-pended by buildHtml.
+ */
+function renderSymbolLegend(): string {
+  const items: Array<[string, string]> = [
+    ["✅ / 已核验", "实质技术变更。A、B 两份原文及双方页码已核验到位。"],
+    ["⚠ / 待复核", "单源核验 / 未定位 / 待人工确认 — 不能直接作为变更依据。"],
+    ["🟡 / 同文勘误", "文本差异但实质内容相同 — 通常是之前误判为变更的勘误条目。"],
+    ["🔢 / 仅编号重排", "章节重构导致条款号变化，但技术内容未变。"],
+    ["✍ / 格式同义改写", "措辞 / 标点 / 数字格式差异，技术含义一致（如「两只」→「2只」）。"],
+    ["🔧 / 🧪 / 📋", "设计影响 / 测试影响 / 认证影响 — 4 维影响卡。"],
+    ["⚠ 风险等级", "高 / 中 / 低 — 由变化判定后的风险评估自动归类。"],
+    ["本版未规定", "该版本无对应子条款 / 数据未抽取 — 渲染占位卡，不视作差异。"],
+    ["•", "执行摘要 / 速查表的项目符号，每行一项。"],
+  ];
+  const rows = items
+    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
+    .join("\n");
+  return `
+<section class="symbol-legend">
+  <h1 class="legend-title">符号说明 · Report Legend</h1>
+  <p class="legend-intro">本报告所有章节共用以下符号。请在阅读任意章节前先浏览一遍，避免忘记标记含义。</p>
+  <dl class="legend-list">
+${rows}
+  </dl>
+</section>`;
+}
+
+/**
+ * Aggregate candidate-difference closure counts from Ch10 (关键变化点)
+ * and Ch11 (变化点汇总) markdown. Scans for tag patterns and counts how
+ * many entries fall into each category.
+ */
+function extractClosureCounts(chapters: { title: string; markdown?: string }[]) {
+  const counts = { confirmed: 0, candidate: 0, errata: 0, renum: 0, format: 0 };
+  // Avoid a single huge alternation regex (esbuild drops stars inside emoji
+  // alternations). Use plain .includes() — markdown text is short enough.
+  const markers = {
+    confirmed: ["已双源核验", "[已核验]", "✅"],
+    candidate: ["待复核", "待人工确认", "审核中", "manual-audit", "⚠"],
+    errata:    ["同文勘误", "🟡"],
+    renum:     ["仅编号重排", "🔢"],
+    format:    ["格式同义改写", "✍"],
+  } as const;
+  for (const ch of chapters) {
+    const t = ch.title || "";
+    if (!/变化|候选|思路|对比|建议/.test(t)) continue;
+    const md = ch.markdown || "";
+    for (const cat of Object.keys(markers) as Array<keyof typeof markers>) {
+      for (const tag of markers[cat]) {
+        let idx = 0;
+        while ((idx = md.indexOf(tag, idx)) > -1) {
+          counts[cat]++;
+          idx += tag.length;
+        }
+      }
+    }
+  }
+  return counts;
+}
+
+/**
+ * Extract transitional/effective-date mentions across all chapters. Heuristic
+ * scan for ISO 8601 (yyyy-MM-dd), Chinese 年/月/日, and "N months after entry
+ * into force" patterns. Returns one row per clause/source excerpt.
+ */
+function extractTransitionDates(chapters: { title: string; markdown?: string }[]) {
+  type Row = { tag: string; trigger: string; delay: string; excerpt: string };
+  const rows: Row[] = [];
+  const tagSet = new Set<string>();
+  // Match dates inside clauses like 12.7.2 / 12.8.4 / 12.8.5 and following text
+  const clauseRx = /(12\.[78]\.\d+(?:\.\d+)?|表\s*\d+|图\s*\d+|本文件(?:实施|施行)|自本文件实施之日起[^,。;\n]{0,20})/;
+  const dateRx = /(20\d{2}[-/](?:0?[1-9]|1[0-2])(?:[-/](?:0?[1-9]|[12]\d|3[01]))?|第?\s*\d+\s*个?月|2025-09-26|2026-?09-30|2027|实施之日起[^,。;\n]{0,30}|生效[^,。;\n]{0,15})/;
+  for (const ch of chapters) {
+    const md = ch.markdown || "";
+    // find lines containing clause + date
+    for (const line of md.split(/\n+/)) {
+      const clause = line.match(clauseRx)?.[0];
+      const date = line.match(dateRx)?.[0];
+      if (!clause && !date) continue;
+      // Heuristic: only count lines with date-like content
+      if (!/\d{4}\s*年|\d{4}-\d{2}|个?月|施行|生效|起/.test(line)) continue;
+      const tag = clause || line.slice(0, 40);
+      if (tagSet.has(tag)) continue;
+      tagSet.add(tag);
+      rows.push({
+        tag,
+        trigger: (date || "").trim(),
+        delay: /\d+\s*个?月/.test(line) ? (line.match(/\d+\s*个?月[^,。;\n]{0,15}/)?.[0] ?? "") : "",
+        excerpt: line.slice(0, 200).replace(/\|/g, " "),
+      });
+      if (rows.length >= 12) return rows;
+    }
+  }
+  return rows;
+}
+
+function renderTransitionTable(rows: ReturnType<typeof extractTransitionDates>): string {
+  if (!rows.length) return "";
+  const body = rows.map((r) => `<tr>
+    <td class="td-tag">${esc(r.tag)}</td>
+    <td class="td-trigger">${esc(r.trigger)}</td>
+    <td class="td-delay">${esc(r.delay)}</td>
+    <td class="td-excerpt">${esc(r.excerpt)}</td>
+  </tr>`).join("\n");
+  return `
+<section class="transition-table">
+  <h1 class="transition-title">过渡期生效汇总表 · Transition Periods</h1>
+  <p class="transition-intro">A 草案 / UN R48-09 12.7.x 与 12.8.x 系列中明文规定的过渡条款与生效时点，按出现顺序抓取（最多 12 条）。</p>
+  <table class="transition-grid">
+    <thead>
+      <tr><th>条款 / 表号</th><th>生效触发</th><th>延迟</th><th>原文摘录</th></tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>
+  <p class="transition-warn">以上为机器抓取 — 完整日期表请回阅第 10 章「附录与实施」与附录 A 原始表格。</p>
+</section>`;
+}
+
+function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>): string {
+  const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
+  const row = (cls: string, icon: string, label: string, n: number, note: string) => `
+    <tr class="${cls}">
+      <td class="td-icon">${esc(icon)}</td>
+      <td class="td-label">${esc(label)}</td>
+      <td class="td-count">${n}</td>
+      <td class="td-pct">${total > 0 ? Math.round((n / total) * 100) : 0}%</td>
+      <td class="td-note">${esc(note)}</td>
+    </tr>`;
+  return `
+<section class="closure-dashboard">
+  <h1 class="dashboard-title">候选差异闭环统计 · Closure Dashboard</h1>
+  <p class="dashboard-intro">对第 11 章「关键变化点汇总」与第 10 章「新增/删除/重大修订」逐项扫描后，按 5 类差异标记的总数与占比。仅显示全报告已生成的闭环数据，⚠ 待复核项不可作为变更依据。</p>
+  <table class="closure-table">
+    <thead>
+      <tr><th>标记</th><th>类别</th><th>数量</th><th>占比</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      ${row("row-confirmed", "✅", "已双源核验", counts.confirmed, "A、B 原文与页码均已定位，可作为变更依据")}
+      ${row("row-candidate", "⚠", "待复核", counts.candidate, "单源 / 缺页码 — 仅供工程师 / 输入合规判定前必须人工确认")}
+      ${row("row-errata", "🟡", "同文勘误", counts.errata, "之前误判为变化的文本差异，实质内容相同")}
+      ${row("row-renum", "🔢", "仅编号重排", counts.renum, "章节号变更但技术内容不变 — 不计入技术变化")}
+      ${row("row-format", "✍", "格式同义改写", counts.format, "标点 / 措辞差异（如「两只」→「2只」）— 不计入技术变化")}
+      <tr class="row-total">
+        <td colspan="2"><strong>合计</strong></td>
+        <td><strong>${total}</strong></td>
+        <td>100%</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09）。⚠ 待复核条目不可作为变更依据。</p>
+</section>`;
+}
+
 function renderTriptych(t: ParsedTable): string {
   const cols: Array<"A" | "B" | "C"> = ["A", "B", "C"]; // always three columns
   const body = t.rows.slice(1);
@@ -1070,6 +1226,7 @@ function buildCss(fonts: FontAsset[]): string {
   const serif = fonts.find((f) => f.family === "NotoSerifSC")
     ? '"NotoSerifSC", "Source Han Serif SC", "Noto Serif SC", "SimSun", serif'
     : '"SimSun", "Noto Serif SC", "Source Han Serif SC", serif';
+  const mono = '"Consolas", "JetBrains Mono", "Source Code Pro", "Courier New", monospace';
   return `
 ${fontFaceBlock(fonts)}
 
@@ -1240,6 +1397,47 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .trip-meta { display: grid; grid-template-columns: 11mm 1fr; gap: 1mm 2mm; margin: 2.5mm 3.5mm; font-size: 8.8pt; }
 .trip-meta dt { color: #9c8b6c; font-weight: 600; }
 .trip-meta dd { margin: 0; color: #1c2733; font-weight: 500; }
+
+/* Symbol legend page */
+.symbol-legend { padding: 4mm 0 8mm; page-break-after: always; }
+.legend-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 4mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
+.legend-intro { font-size: 9pt; color: #5e5240; margin: 0 0 4mm; }
+.legend-list { display: grid; grid-template-columns: 36mm 1fr; column-gap: 4mm; row-gap: 2mm; margin: 0; padding: 3mm 4mm; border: 0.6pt solid #d8cfb8; border-radius: 2mm; background: #fbf9f3; }
+.legend-list dt { font-family: ${mono}; font-size: 9pt; font-weight: 600; color: #a17334; margin: 0; }
+.legend-list dd { font-size: 9pt; color: #1c2733; margin: 0; line-height: 1.45; }
+
+/* Closure dashboard */
+.closure-dashboard { padding: 4mm 0 6mm; page-break-after: always; }
+.dashboard-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
+.dashboard-intro { font-size: 9pt; color: #5e5240; margin: 0 0 4mm; line-height: 1.5; }
+.closure-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.closure-table th { background: #fdf3df; color: #a17334; padding: 2mm 3mm; text-align: left; font-weight: 600; border-bottom: 0.8pt solid #a17334; }
+.closure-table td { padding: 1.8mm 3mm; border-bottom: 0.4pt solid #ece4d1; vertical-align: middle; }
+.closure-table .td-icon { font-family: ${mono}; font-size: 11pt; width: 8mm; text-align: center; }
+.closure-table .td-label { font-weight: 600; color: #1c2733; width: 28mm; }
+.closure-table .td-count { font-family: ${mono}; font-size: 11pt; font-weight: 700; color: #0c1a2b; width: 14mm; text-align: right; }
+.closure-table .td-pct { font-family: ${mono}; font-size: 9pt; color: #5e5240; width: 14mm; text-align: right; }
+.closure-table .td-note { font-size: 8.5pt; color: #5e5240; line-height: 1.4; }
+.closure-table .row-confirmed .td-count { color: #3a6b4f; }
+.closure-table .row-candidate .td-count { color: #b94e2c; }
+.closure-table .row-errata .td-count,
+.closure-table .row-renum .td-count,
+.closure-table .row-format .td-count { color: #9c8b6c; }
+.closure-table .row-total td { background: #f7f1e3; border-top: 0.6pt solid #a17334; }
+.dashboard-disclaimer { font-size: 8pt; color: #9c8b6c; margin: 3mm 0 0; padding: 2mm 3mm; border-left: 2pt solid #b94e2c; background: #fbf6f0; }
+
+/* Transition period table */
+.transition-table { padding: 4mm 0 6mm; page-break-after: always; }
+.transition-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
+.transition-intro { font-size: 9pt; color: #5e5240; margin: 0 0 4mm; }
+.transition-grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+.transition-grid th { background: #eef1f5; color: #0c1a2b; padding: 1.8mm 2.5mm; text-align: left; border-bottom: 0.6pt solid #0c1a2b; }
+.transition-grid td { padding: 1.6mm 2.5mm; border-bottom: 0.3pt solid #ece4d1; vertical-align: top; }
+.transition-grid .td-tag { font-family: ${mono}; font-weight: 600; color: #a17334; width: 22mm; }
+.transition-grid .td-trigger { font-family: ${mono}; color: #0c1a2b; width: 28mm; }
+.transition-grid .td-delay { font-family: ${mono}; color: #b94e2c; width: 22mm; }
+.transition-grid .td-excerpt { font-size: 8pt; color: #5e5240; line-height: 1.4; }
+.transition-warn { font-size: 8pt; color: #9c8b6c; margin: 3mm 0 0; padding: 1.5mm 2.5mm; border-left: 2pt solid #b9a17334; background: #fbf6f0; }
 .trip-text { padding: 0 3.5mm 4mm; font-size: 8.8pt; line-height: 1.5; color: #1c2733; flex: 1; }
 
 .trip-card-missing { background: #faf6ec; border-style: dashed; border-color: #d8cfb8; }
@@ -1456,7 +1654,10 @@ export async function buildHtml(
     })
     .join("\n");
 
-  const frontBlocks = [mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
+  const symbolLegendHtml = renderSymbolLegend();
+  const closureDashboardHtml = renderClosureDashboard(extractClosureCounts(chapters));
+  const transitionHtml = renderTransitionTable(extractTransitionDates(chapters));
+  const frontBlocks = [symbolLegendHtml, closureDashboardHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">

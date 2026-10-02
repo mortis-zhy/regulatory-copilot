@@ -1,0 +1,10 @@
+feat(htmlRenderV8): closure dashboard + symbol legend + transition table + mono font
+
+- renderSymbolLegend: one-page dl explaining every marker (✅ ⚠ 🟡 🔢 ✍ etc.).
+- renderClosureDashboard: scans Ch10/Ch11 markdown for 5-category tags via plain .indexOf (esbuild drops stars inside emoji alternations). 27 entries (3 confirmed / 21 candidate / 3 errata / 0 renum / 0 format).
+- renderTransitionTable: scans chapters for 12.7.x / 12.8.x / 表 7 / 图 1 / 实施之日起 patterns. 10 transitional rows incl. B 2020-07-01, C 2025-09-26, A 实施之日起 25 / 37 个月.
+- Fixed missing mono font-family constant.
+
+Verified: 141-page render, 9/9 + 6/6 tests, 41/0/0 verifier.
+
+Co-Authored-By: Claude <noreply@anthropic.com>

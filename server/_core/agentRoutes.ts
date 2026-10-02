@@ -327,6 +327,29 @@ export function registerAgentRoutes(router: Router) {
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(path.join(dir, "last-report.json"), JSON.stringify(report), "utf-8");
             console.log(`[report] saved last-report.json (${chapters.length} chapters, ${appendices.length} appendices)`);
+            // Auto-regenerate typed-table bundle so /report/render uses the
+            // current report's tables rather than a stale one. Fire-and-forget
+            // so the SSE response stream isn't blocked; a 1-2s lag is fine.
+            try {
+                const { spawn: childSpawn } = await import("node:child_process");
+                const py = process.env.PYTHON ?? "python";
+                const scriptPath = path.resolve(import.meta.dirname, "../../extract_aligned_tables.py");
+                const child = childSpawn(py, [scriptPath], {
+                    cwd: path.resolve(import.meta.dirname, "../.."),
+                    stdio: "ignore",
+                    windowsHide: true,
+                });
+                child.on("exit", (code) => {
+                    if (code === 0) {
+                        console.log("[report] typed-table bundle refreshed");
+                    } else {
+                        console.warn(`[report] typed-table refresh failed (exit=${code})`);
+                    }
+                });
+                child.on("error", (e) => console.warn("[report] typed-table refresh error:", e?.message));
+            } catch (e) {
+                console.warn("[report] failed to spawn typed-table refresh:", e);
+            }
           } catch (e) {
             console.error("[report] failed to persist report:", e);
           }
