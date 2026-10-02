@@ -1,0 +1,48 @@
+# ── 依赖与构建产物(可随时重新生成)──
+comparison_agent-main/node_modules/
+comparison_agent-main/dist/
+comparison_agent-main/.vite/
+comparison_agent-main/*.tsbuildinfo
+
+# ── 中间缓存(MinerU / 抽取缓存,可重新生成)──
+comparison_agent-main/.mineru-work/
+comparison_agent-main/.mineru-models/
+comparison_agent-main/.text-cache/
+comparison_agent-main/extract-cache/
+
+# ── 上传副本(根目录已跟踪原始法规 PDF,这里是去重后的哈希副本)──
+comparison_agent-main/uploaded-docs/
+
+# ── 生成的交付物 PDF(靠 git tag + 重新渲染复现)──
+GB4785_多版本横向对比研究报告.pdf
+GB4785_V6*.pdf
+GB4785_V7.pdf
+GB4785_V8.pdf
+GB4785_V8_final.pdf
+*旧版*备份.pdf
+
+# ── 调试产物 ──
+pages_check/
+*.tmp
+ch13_5.5.html
+fix_appendix_b_report.json
+verify_report.json
+verify_report.md
+
+# ── 环境 ──
+.env
+.env.local
+*.log
+node_modules/
+
+.chrome-debug/
+.playwright*
+sidecar-venv/
+comparison_agent-main/sidecar-venv/
+__pycache__/
+.mineru-models/
+comparison_agent-mineru/
+.claude/
+
+# 内层代码仓库自带 git(上游历史),外层不嵌套跟踪
+comparison_agent-main/

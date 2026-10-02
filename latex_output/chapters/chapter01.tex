@@ -1,0 +1,134 @@
+% Chapter 1: Introduction
+\chapter{引言}
+
+\section{研究背景}
+
+\subsection{汽车照明技术的快速发展}
+
+汽车外部照明与光信号装置是车辆安全的重要组成部分，其技术水平直接影响道路交通安全。从 1886 年汽车诞生至今，汽车照明技术经历了多次重大变革：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{第一阶段（1886--1960 年代）}：煤油灯、乙炔灯、白炽灯；
+    \item \textbf{第二阶段（1960--1990 年代）}：卤钨灯、HID（高压气体放电灯）；
+    \item \textbf{第三阶段（1990--2010 年代）}：HID 普及、LED 起步；
+    \item \textbf{第四阶段（2010 年代至今）}：LED 全面应用、激光灯、矩阵式 LED、ADB 等智能照明技术兴起。
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
+    \draw[thick, ->] (0,0) -- (14,0) node[right] {\small 时间};
+    \foreach \x/\year in {1/1960, 3.5/1980, 6/2000, 8.5/2010, 11/2020, 14/2026}
+        \draw (\x,0.1) -- (\x,-0.1) node[below] {\scriptsize \year};
+    \draw[themeblue, line width=1.5pt] (0,0) -- (1,1) -- (3.5,1) -- (3.5,2) -- (6,2) -- (6,3) -- (8.5,3) -- (8.5,4) -- (11,4) -- (11,5) -- (14,5);
+    \node[align=center] at (1,1.5) {\scriptsize 白炽灯};
+    \node[align=center] at (3.5,2.5) {\scriptsize 卤素灯};
+    \node[align=center] at (6,3.5) {\scriptsize HID};
+    \node[align=center] at (8.5,4.5) {\scriptsize LED};
+    \node[align=center] at (11,5.5) {\scriptsize 矩阵式};
+    \node[align=center] at (14,5.5) {\scriptsize ADB/激光};
+\end{tikzpicture}
+\caption{汽车照明技术演进路线}
+\label{fig:tech-evolution}
+\end{figure}
+
+\subsection{法规体系的发展滞后}
+
+法规体系的发展往往滞后于技术进步。在新技术（如 ADB、矩阵式 LED）出现后，制造商往往面临“技术先进但法规不明”的困境。GB 4785-2019 发布于 LED 普及初期，对 ADB 等智能照明技术尚无明确规定，已不能完全适应当前的技术发展。
+
+\subsection{国际化协调的需要}
+
+随着汽车出口规模的扩大和国际合作的深入，中国汽车标准与国际法规（特别是 UN R48）的协调变得越来越重要。中国标准既要保持自身的特点，又要充分借鉴国际经验，提升中国汽车产业的国际竞争力。
+
+\section{法规体系概览}
+
+\subsection{国际法规体系}
+
+联合国欧洲经济委员会（UNECE）下属的陆路运输工作组（WP.29）负责制定车辆法规。UN R48 是关于“汽车及挂车外部照明和光信号装置的安装规定”的统一规定，是 WP.29 框架下最重要的车辆法规之一。
+
+UN R48 历经多次重大修订，目前最新的 09 系列修订（09 Series of Amendments）已于 2025 年 9 月 26 日正式生效。
+
+\subsection{中国法规体系}
+
+中国汽车照明法规体系由以下几个层级构成：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{国家标准（GB）}：如 GB 4785（安装规定）、GB 4599（光源）、GB 23255（昼间行驶灯）等；
+    \item \textbf{行业标准（QC/T）}：如 QC/T 1124（ADB）等；
+    \item \textbf{团体标准（T/CSAE 等）}：由行业协会发布的推荐性标准；
+    \item \textbf{企业标准（Q）}：由企业自行制定的企业内控标准。
+\end{itemize}
+
+GB 4785 在整个体系中处于“上位法规”地位，规定了汽车及挂车外部照明和光信号装置的安装要求，其他相关标准应与 GB 4785 协调一致。
+
+\subsection{欧盟法规体系}
+
+欧盟的车辆照明法规以 UN R48 为基础，欧盟成员国通过 1958 年协议将其作为 type-approval 的基础。UN R48 在欧盟具有法律效力。
+
+\subsection{美国法规体系}
+
+美国采用 FMVSS（联邦机动车安全标准）第 108 号（FMVSS 108）作为汽车照明法规。FMVSS 108 与 UN R48 在技术要求上有较大差异，体现了不同的监管思路。本报告由于篇幅原因，主要聚焦于中国和欧洲法规的对比。
+
+\section{对比的总体思路与方法}
+
+\subsection{对比维度}
+
+本报告从以下几个维度展开对比：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{结构维度}：章节体系、编排逻辑的差异；
+    \item \textbf{范围维度}：适用车辆类别、装置类型的覆盖范围；
+    \item \textbf{术语维度}：关键术语的定义与表述差异；
+    \item \textbf{技术维度}：具体技术指标（数量、位置、光度、色度）的差异；
+    \item \textbf{测试维度}：测试方法、判定标准的差异；
+    \item \textbf{管理维度}：认证流程、标志标识、合格判定程序的差异。
+\end{enumerate}
+
+\subsection{对比方法}
+
+本报告采用以下方法学：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{逐章对比}：对三版本的章节目录进行逐章对照；
+    \item \textbf{逐条对比}：在章节内部，对具体条款进行逐条对照；
+    \item \textbf{变化标注}：使用统一的标注符号标识条款状态；
+    \item \textbf{数据差异表}：对技术指标差异以表格形式集中展示；
+    \item \textbf{影响分析}：从合规、技术、成本等角度评估变化的影响。
+\end{itemize}
+
+\subsection{数据来源}
+
+本报告所采用的数据来源于：
+
+\begin{itemize}[itemsep=0.3em]
+    \item GB 4785-2019 标准原文；
+    \item GB 4785 草案 V4.3.5 征求意见稿；
+    \item UN R48-09 系列修订原文（联合国官方版本）；
+    \item UN R48 历次修订资料；
+    \item WP.29 工作组会议记录和决议；
+    \item 行业研究报告和技术文献。
+\end{itemize}
+
+\section{报告的创新点与局限性}
+
+\subsection{创新点}
+
+本报告的创新点包括：
+
+\begin{itemize}[itemsep=0.3em]
+    \item 首次对 GB 4785 现行版、草案版和 UN R48-09 进行系统性的三维度横向对比；
+    \item 对关键技术变化进行定量化分析；
+    \item 提出了中国标准与国际标准对齐度的评估方法；
+    \item 为企业合规提供了具体的行动建议。
+\end{itemize}
+
+\subsection{局限性}
+
+本报告存在以下局限性：
+
+\begin{itemize}[itemsep=0.3em]
+    \item GB 4785 草案 V4.3.5 仍处于征求意见阶段，最终发布版本可能仍有调整；
+    \item 部分技术细节以法规原文为准，本报告可能存在简化；
+    \item 对认证流程的描述基于一般性程序，具体执行以认证机构发布的实施细则为准；
+    \item 本报告不替代专业的法律咨询和技术服务。
+\end{itemize}

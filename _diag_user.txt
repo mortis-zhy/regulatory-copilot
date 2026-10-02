@@ -1,0 +1,20 @@
+=== OLD (你打开的) ===
+  pages=214  size=3182 KB
+  raw $-LaTeX blocks (\$\mathrm etc.): 28
+  bare "mathrm" tokens: 138
+  snippet "${\mathrm}W_{12}$": True
+  Kangxi/CJK radical chars: 0 unique=[]
+
+=== V8_final (我交付的) ===
+  pages=120  size=3745 KB
+  raw $-LaTeX blocks (\$\mathrm etc.): 0
+  bare "mathrm" tokens: 12
+  snippet "${\mathrm}W_{12}$": False
+  Kangxi/CJK radical chars: 0 unique=[]
+
+=== SOURCE last-report.json ===
+  Kangxi radical chars in source: 0 unique=[]
+NFKC('⻚' U+2EDA) -> '⻚'  name=CJK RADICAL C-SIMPLIFIED LEAF
+NFKC('⾊' U+2F8A) -> '色'  name=KANGXI RADICAL COLOR
+NFKC('⻋' U+2ECB) -> '⻋'  name=CJK RADICAL C-SIMPLIFIED CART
+NFKC('⺠' U+2EA0) -> '⺠'  name=CJK RADICAL CIVILIAN

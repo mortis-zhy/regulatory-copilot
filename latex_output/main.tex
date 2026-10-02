@@ -1,0 +1,191 @@
+% !TEX program = xelatex
+% !TEX encoding = UTF-8
+
+% ==============================================================================
+% GB 4785 多版本横向对比研究报告
+% Horizontal Comparative Study of GB 4785 Series Standards
+% ==============================================================================
+
+\documentclass[12pt,a4paper,oneside]{book}
+
+% ---------- 宏包 ----------
+\usepackage[utf8]{inputenc}
+\usepackage{ctex}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,calc}
+\usepackage{lscape}
+\usepackage{rotating}
+\usepackage{changepage}
+
+% ---------- 页面设置 ----------
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm,
+    headheight=14pt
+}
+
+% ---------- 行距与段落 ----------
+\linespread{1.5}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.5em}
+
+% ---------- 章节标题样式 ----------
+\titleformat{\chapter}[block]
+    {\normalfont\huge\bfseries\centering}
+    {第\thechapter 章\quad}{1em}{}
+\titleformat{\section}
+    {\normalfont\Large\bfseries}
+    {\thesection}{1em}{}
+\titleformat{\subsection}
+    {\normalfont\large\bfseries}
+    {\thesubsection}{1em}{}
+\titleformat{\paragraph}[runin]
+    {\normalfont\normalsize\bfseries}
+    {}{0em}{}
+
+% ---------- 自定义颜色 ----------
+\definecolor{themeblue}{RGB}{0, 82, 155}
+\definecolor{themelightblue}{RGB}{220, 235, 250}
+\definecolor{themeorange}{RGB}{200, 90, 30}
+\definecolor{themegreen}{RGB}{40, 120, 60}
+\definecolor{themered}{RGB}{180, 30, 30}
+\definecolor{themeyellow}{RGB}{255, 245, 200}
+\definecolor{themelightgreen}{RGB}{220, 240, 220}
+\definecolor{themelightred}{RGB}{250, 225, 220}
+
+% ---------- 超链接设置 ----------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=themeblue,
+    urlcolor=themeblue,
+    citecolor=themeblue,
+    filecolor=themeblue,
+    pdftitle={GB 4785 多版本横向对比研究报告},
+    pdfauthor={汽车法规对比研究团队},
+    pdfsubject={GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09 对比分析},
+    pdfkeywords={GB 4785, UN R48, 汽车照明, 光信号装置, 安装规定, 法规对比}
+}
+
+% ---------- 页眉页脚 ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{themeblue}GB 4785 多版本横向对比研究报告}
+\fancyhead[R]{\small\color{themeblue}\thepage}
+\fancyfoot[C]{\small\color{gray}\textit{汽车外部照明与光信号装置安装规定对比分析}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% ---------- 表格样式 ----------
+\captionsetup[table]{labelsep=quad, font=small}
+\captionsetup[figure]{labelsep=quad, font=small}
+
+% ---------- 自定义命令 ----------
+\newcommand{\versionA}{GB 4785-2019}
+\newcommand{\versionB}{GB 4785 草案 V4.3.5}
+\newcommand{\versionC}{UN R48-09}
+
+\newcommand{\versionAShort}{现行版}
+\newcommand{\versionBShort}{草案版}
+\newcommand{\versionCShort}{欧版}
+
+% 三版本单元格颜色
+\newcommand{\cellA}[1]{\cellcolor{themelightblue}#1}
+\newcommand{\cellB}[1]{\cellcolor{themelightgreen}#1}
+\newcommand{\cellC}[1]{\cellcolor{themelightred}#1}
+
+% 变更指示器
+\newcommand{\newitem}{\textcolor{themegreen}{\textbf{[新增]}}}
+\newcommand{\deleteitem}{\textcolor{themered}{\textbf{[删除]}}}
+\newcommand{\modifyitem}{\textcolor{themeorange}{\textbf{[修改]}}}
+\newcommand{\keepitem}{\textcolor{themeblue}{\textbf{[保留]}}}
+
+% 标题信息
+\title{
+    \vspace*{1cm}
+    {\Huge\bfseries\color{themeblue} GB 4785 多版本横向对比研究报告}\\[0.5cm]
+    {\Large\color{gray} 现行版・草案版・欧版三维度对照分析}\\[1cm]
+    {\large 汽车及挂车外部照明和光信号装置的安装规定}\\[0.5cm]
+    {\large GB 4785-2019\quad vs.\quad GB 4785 草案 V4.3.5\quad vs.\quad UN R48-09}\\[2cm]
+}
+\author{
+    \Large 汽车法规对比研究团队\\[0.5cm]
+    \large 编制日期：2026 年 9 月
+}
+\date{}
+
+% ==============================================================================
+\begin{document}
+
+% ---------- 封面 ----------
+\input{cover}
+
+% ---------- 前言 ----------
+\input{frontmatter}
+
+% ---------- 目录 ----------
+\tableofcontents
+\clearpage
+
+% ---------- 正文 ----------
+\mainmatter
+
+% 第1章
+\input{chapters/chapter01}
+% 第2章
+\input{chapters/chapter02}
+% 第3章
+\input{chapters/chapter03}
+% 第4章
+\input{chapters/chapter04}
+% 第5章
+\input{chapters/chapter05}
+% 第6章
+\input{chapters/chapter06}
+% 第7章
+\input{chapters/chapter07}
+% 第8章
+\input{chapters/chapter08}
+% 第9章
+\input{chapters/chapter09}
+% 第10章
+\input{chapters/chapter10}
+% 第11章
+\input{chapters/chapter11}
+% 第12章
+\input{chapters/chapter12}
+% 第13章
+\input{chapters/chapter13}
+
+% 附录
+\appendix
+\input{chapters/appendixA}
+\input{chapters/appendixB}
+\input{chapters/appendixC}
+\input{chapters/appendixD}
+
+% 参考文献
+\input{chapters/references}
+
+\end{document}

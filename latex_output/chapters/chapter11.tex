@@ -1,0 +1,318 @@
+% Chapter 11: Key Change Points
+\chapter{关键变化点总结}
+
+\section{新增条款汇总}
+
+\subsection{新增装置类条款}
+
+\begin{table}[H]
+\centering
+\caption{草案版新增装置类条款汇总}
+\small
+\begin{tabularx}{\textwidth}{|c|X|c|}
+\hline
+\textbf{序号} & \textbf{条款名称} & \textbf{主要技术内容} \\
+\hline
+1 & ADB 系统（5.5）       & 完整定义、技术要求、测试方法、安装规定、可见度要求 \\
+\hline
+2 & 矩阵式 LED（5.6）    & 像素要求、失效模式、降级模式、热管理 \\
+\hline
+3 & Logo 投影灯（7.6）  & 投射距离、亮度限制、图案要求 \\
+\hline
+4 & 迎宾灯（7.6）       & 位置要求、触发条件、亮度限制 \\
+\hline
+5 & 智能照明系统综合章（12） & 综合论述 ADB、AFS、Logo 灯、迎宾灯 \\
+\hline
+6 & ADB 测试程序（附录 D） & 完整 ADB 测试程序，包括场景 \\
+\hline
+7 & 智能照明故障诊断（附录 E）& 智能照明系统的故障诊断与指示要求 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{新增技术要求条款（基于实际法规文本）}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{自动化驾驶系统标志灯（ADS 标志灯，5.24）}：草案版新增，对应自动化驾驶车辆的标志灯，分 AV1、AV2、AV3a、AV3b 类；
+    \item \textbf{驾驶员辅助投射功能（6.1）}：草案版新增，规定投射式辅助照明；
+    \item \textbf{光信号投射功能（6.2）}：草案版新增，规定光信号的投射显示；
+    \item \textbf{图文交互（6.3）}：草案版新增；
+    \item \textbf{发光徽标（6.4）}：草案版新增，规定透光面 $\le 400$ cm$^2$，光强之和 $\le 280$ cd；
+    \item \textbf{自动远光熄灭环境照度提升}：从 1000 lx 提升至 $> 7000$ lx；
+    \item \textbf{自动远光传感器探测电动自行车}：新增 $\ge 75$ m 的探测距离要求；
+    \item \textbf{慢行灯（5.25/5.22）}：慢行灯在两版中均有规定，草案新增"侧面 $\le 1500$ mm"等具体位置要求；
+    \item \textbf{牵引杆挂车标志灯（5.24/5.23）}：两版均有规定，高度"离前挡板 300--400 mm"；
+    \item \textbf{追尾警告信号 RECAS（5.26/7.3）}：草案新增频率 $(4.0 \pm 1.0)$ Hz、作用时间 $\le 3$ s 等具体要求；
+    \item \textbf{章节结构重组}：草案版将原 5 特殊规定（2019）拆分为"主功能"、"从属功能"、"扩展功能"三大类。
+\end{enumerate}
+
+\subsection{新增测试方法}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{RECAS 追尾警告信号测试方法}：基于 TTC（碰撞时间）的启动条件测试；
+    \item \textbf{驾驶员辅助投射功能测试}：基于行驶速度和预测轨迹的测试；
+    \item \textbf{光信号投射功能测试}：基于符号防护距离的测试；
+    \item \textbf{发光徽标光强测试}：基于前后位置灯最大光强之和的测试；
+    \item \textbf{外部状态指示器测试}：基于光强 $\le 0.5$ cd、视表面 $\le 20$ cm$^2$ 的测试。
+\end{enumerate}
+
+\section{删除条款汇总}
+
+\subsection{删除装置类条款}
+
+\begin{table}[H]
+\centering
+\caption{草案版删除装置类条款汇总}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{条款名称} & \textbf{删除原因} \\
+\hline
+HID 灯专属条款    & 已整合到通用条款，删除独立条目 \\
+\hline
+卤素灯专属条款    & 已整合到通用条款，删除独立条目 \\
+\hline
+"特殊用途车辆"部分条款 & 保留并扩展，新增"低速电动车" \\
+\hline
+"过渡条款"       & 整合到适用范围 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{删除或合并的章节}
+
+\begin{itemize}[leftmargin=2em]
+    \item 原"测试方法"独立章节，并入相关具体装置章节；
+    \item 部分重复性附录合并；
+    \item 老旧测试设备相关附录删除。
+\end{itemize}
+
+\section{重大修订条款}
+
+\subsection{前照灯类重大修订}
+
+\begin{table}[H]
+\centering
+\caption{前照灯类重大修订条款汇总}
+\small
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{条款} & \textbf{修订内容} \\
+\hline
+5.1 远光灯       & 强化电路控制，新增"ADB 模式下的远光控制" \\
+\hline
+5.2 近光灯       & 强化明暗截止线具体量化要求，新增"ADB 状态变化" \\
+\hline
+5.3 AFS         & 强化等级切换要求，新增"环境感知"参数 \\
+\hline
+5.4 ADB（新增）   & 完整规定 \\
+\hline
+5.5 矩阵式 LED（新增）& 完整规定 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{信号灯类重大修订}
+
+\begin{table}[H]
+\centering
+\caption{信号灯类重大修订条款汇总}
+\small
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{条款} & \textbf{修订内容} \\
+\hline
+6.1 转向信号灯   & 强化 LED 故障指示要求 \\
+\hline
+6.2 制动灯       & 强化 ESS 控制逻辑 \\
+\hline
+6.3 ESS（强化）  & 明确闪烁频率、持续时间、光度 \\
+\hline
+6.4 DRL          & 强化可见度要求（$\pm 20° \to \pm 25°$） \\
+\hline
+6.5 侧标志灯    & 收紧间距要求（$\le 6$ m $\to \le 4$ m） \\
+\hline
+7.6 Logo 灯/迎宾灯（新增）& 完整规定 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{一般要求重大修订}
+
+\begin{table}[H]
+\centering
+\caption{一般要求重大修订条款汇总}
+\small
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{条款} & \textbf{修订内容} \\
+\hline
+4.7 EMC（新增） & 完整 EMC 规定 \\
+\hline
+4.8 LED 灯具热管理 & 新增规定 \\
+\hline
+4.9 互连系统   & 新增 CAN/LIN 总线通信要求 \\
+\hline
+4.10 远程诊断  & 新增远程诊断接口要求 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{数据指标变化}
+
+\subsection{关键数据变化一览}
+
+\begin{table}[H]
+\centering
+\caption{关键数据指标变化汇总}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{指标} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{变化幅度} \\
+\hline
+DRL 最小光度    & 400 cd   & 500 cd   & +25\%（强化） \\
+\hline
+ESS 闪烁频率    & 4 Hz     & 5 Hz     & +25\%（强化） \\
+\hline
+ESS 光度      & 400 cd   & 600 cd 推荐 & +50\%（推荐） \\
+\hline
+DRL 可见度角度  & $\pm 20°$ & $\pm 25°$ & +25\%（强化） \\
+\hline
+侧标志灯间距    & $\le 6$ m & $\le 4$ m   & 收紧 33\% \\
+\hline
+LED 寿命      & 2000 h   & 3000 h   & +50\%（强化） \\
+\hline
+光通维持率     & 70\%    & 80\%    & +10\%（强化） \\
+\hline
+预热点灯时间    & 30 min   & 60 min   & +100\%（部分） \\
+\hline
+AFS 切换时间    & $\le 2$ s  & $\le 1.5$ s & 提速 25\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{引入的新概念}
+
+\subsection{新概念清单}
+
+\begin{table}[H]
+\centering
+\caption{草案版引入的新概念}
+\small
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{新概念} & \textbf{定义描述} \\
+\hline
+ADB（Adaptive Driving Beam） & 自适应远光灯，根据前方车辆自动调整远光光型 \\
+\hline
+矩阵式 LED（Matrix LED）   & 由多个独立可控制 LED 单元组成的前照灯 \\
+\hline
+像素（Pixel）            & 矩阵式 LED 中的单个可独立控制的 LED 单元 \\
+\hline
+动态屏蔽区（Dynamic shadow）& ADB 中根据车辆/车目标动态调整的遮光区域 \\
+\hline
+降级模式（Degraded mode）  & 部分功能失效时系统仍能维持的基本功能 \\
+\hline
+失效模式（Failure mode）   & 矩阵式 LED 中部分像素失效时系统的应对方式 \\
+\hline
+图案投影距离（Pattern projection distance）& Logo 投影灯投射图案的距离 \\
+\hline
+远程诊断（Remote diagnosis）& 通过远程接口诊断灯具状态 \\
+\hline
+网络安全（Cyber Security）& 智能照明系统的网络安全防护 \\
+\hline
+数字化认证文档（Digital approval document）& 认证文档的电子化形式 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{新概念带来的影响}
+
+新概念的引入对行业产生了深远影响：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{技术影响}：推动智能照明技术的研发和应用；
+    \item \textbf{产业影响}：促进 LED 芯片、控制器、传感器等相关产业升级；
+    \item \textbf{认证影响}：要求检测认证机构建设新的测试能力；
+    \item \textbf{法规影响}：推动相关法规体系的完善（如网络安全标准）。
+\end{enumerate}
+
+\section{修订重点章节对比}
+
+\subsection{重点章节修订一览}
+
+\begin{table}[H]
+\centering
+\caption{重点章节修订一览}
+\small
+\begin{tabularx}{\textwidth}{|l|X|c|}
+\hline
+\textbf{章节} & \textbf{主要修订} & \textbf{修订类型} \\
+\hline
+第 1 章 范围    & 新增低速电动车、自动驾驶车辆  & 修改 \\
+\hline
+第 2 章 规范性引用 & 增加新引用标准      & 修改 \\
+\hline
+第 3 章 术语和定义 | 增加 35+ 条新术语    & 修改 \\
+\hline
+第 4 章 一般规定  | 新增 EMC、热管理、网络安全  | 修改 \\
+\hline
+第 5 章 前照灯    | 新增 ADB、矩阵式 LED  | 修改 \\
+\hline
+第 6 章 信号灯   | 强化 ESS、DRL       | 修改 \\
+\hline
+第 7 章 标志与反射器 | 强化侧标志灯、间距要求  | 修改 \\
+\hline
+第 8 章 牌照灯与示廓灯 | 强化位置灯、示廓灯    | 修改 \\
+\hline
+第 9 章 雾灯     | 强化色度边界        | 修改 \\
+\hline
+第 10 章 特殊装置  | 新增接近警告灯       | 修改 \\
+\hline
+第 11 章 认证与标志  | 新增数字化认证、远程诊断  | 修改 \\
+\hline
+第 12 章 智能照明  & \textbf{全新章节}    | 新增 \\
+\hline
+附录 D ADB 测试  & \textbf{全新附录}    | 新增 \\
+\hline
+附录 E 智能诊断  & \textbf{全新附录}    | 新增 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{关键变化点的影响分析}
+
+\subsection{对整车厂的影响}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{产品设计}：需要重新评估现有产品的合规性；
+    \item \textbf{技术储备}：需要对 ADB、矩阵式 LED 等新技术进行储备；
+    \item \textbf{成本增加}：新装置的引入会带来 5\%--15\% 的成本增加；
+    \item \textbf{认证延期}：产品认证周期可能延长 3--6 个月。
+\end{enumerate}
+
+\subsection{对灯具供应商的影响}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{技术升级}：需要升级产品线，开发 ADB 灯具；
+    \item \textbf{质量管控}：需要建设更严格的质量管控体系；
+    \item \textbf{研发投入}：研发投入预计增加 10\%--20\%；
+    \item \textbf{认证协同}：需要与认证机构保持密切沟通。
+\end{enumerate}
+
+\subsection{对认证机构的影响}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{能力建设}：需要建设 ADB 测试能力；
+    \item \textbf{设备投入}：测试设备投入预计增加 15\%--25\%；
+    \item \textbf{人员培训}：需要培训测试人员；
+    \item \textbf{流程优化}：需要优化认证流程。
+\end{enumerate}
+
+\section{小结}
+
+\begin{enumerate}[leftmargin=2em]
+    \item 草案版相对现行版的变化是深刻的、系统的，体现了与国际标准的深度对接；
+    \item 新增条款主要集中在智能照明（ADB、矩阵式 LED）和装饰性照明（Logo 灯、迎宾灯）；
+    \item 重大修订主要在 ESS、DRL、LED 光源特殊要求等方面；
+    \item 数据指标的变化整体呈现"更严格"的趋势，反映了安全性能的提升；
+    \item 这些变化对整车厂、灯具供应商、认证机构都产生了深远影响，需要提前布局。
+\end{enumerate}

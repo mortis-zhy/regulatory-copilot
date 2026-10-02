@@ -1,0 +1,302 @@
+% Chapter 10: Test Methods
+\chapter{测试方法对比}
+
+\section{测试方法总览}
+
+\subsection{测试类型分类}
+
+\begin{table}[H]
+\centering
+\caption{测试类型分类对比}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{测试类型} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+实验室测试    & 是 & 是 & 是 \\
+\hline
+整车测试    & 是 & 是 & 是 \\
+\hline
+路面测试    & 是 & 是 & 是 \\
+\hline
+老化测试    & 是 & 是 & 是 \\
+\hline
+环境测试    & 是 & 是 & 是 \\
+\hline
+EMC 测试    & 一般要求  & 强化        & 是 \\
+\hline
+功能安全测试  & 一般要求  & 强化        & 是 \\
+\hline
+ADB 测试     & ---      & 新增        & 是 \\
+\hline
+矩阵式 LED 测试 & ---    & 新增        & 是 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{实验室测试}
+
+\subsection{暗室测试}
+
+\begin{table}[H]
+\centering
+\caption{暗室测试要求对比}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+测试距离       & 25 m 或 10 m    & 同左                  & 25 m 或 10 m \\
+\hline
+测试环境       & 暗室             & 同左                  & 暗室 \\
+\hline
+环境温度       & 23°C ± 5°C    & 同左                  & 23°C ± 5°C \\
+\hline
+相对湿度       & 50\% $\pm 25\%$ & 同左                  & 50\% $\pm 25\%$ \\
+\hline
+基准轴定位      & 准确              & 同左                  & 准确 \\
+\hline
+供电电压       & 额定电压 ± 0.5\% & 同左                  & 额定电压 ± 0.5\% \\
+\hline
+预热点灯时间   & $\ge 30$ min      & 强化：部分 $\ge 60$ min & $\ge 30$ min \\
+\hline
+光度测量      & 一般方法          & 同左                  & 一般方法 \\
+\hline
+色度测量      & 分光光度计        & 同左                  & 分光光度计 \\
+\hline
+ADB 暗室测试   & ---            & 新增                  & $\checkmark$ \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{光度分布测试}
+
+\begin{table}[H]
+\centering
+\caption{光度分布测试对比}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+测试点网格     & 1° 间隔          & 同左，新增"ADB 专用网格" & 1° 间隔 \\
+\hline
+测试角度范围   & $\pm 90°$ 横向, $\pm 30°$ 纵向 & 同左 & $\pm 90°$, $\pm 30°$ \\
+\hline
+测量精度     & $\pm 5\%$          & 同左                  & $\pm 5\%$ \\
+\hline
+近光主要区域   & 12.5 m 距离      & 同左                  & 12.5 m \\
+\hline
+远光主要区域   & 25 m 距离       & 同左                  & 25 m \\
+\hline
+ADB 主要区域  & ---            & 新增：详细规定        & 详细规定 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{整车测试}
+
+\subsection{整车装配状态测试}
+
+\begin{table}[H]
+\centering
+\caption{整车装配状态测试对比}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+测试状态      & 整备质量（辆质）& 同左                  & Unladen \\
+\hline
+轮胎压力      & 制造商规定        & 同左                  & 制造商规定 \\
+\hline
+燃油/电池   & 50\% 容量        & 同左                  & 50\% 容量 \\
+\hline
+测量点      & 相对车辆坐标系    & 同左                  & 相对车辆坐标系 \\
+\hline
+测量仪器    & 照度计/亮度计      & 同左                  & 照度计/亮度计 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{可见度测试}
+
+\begin{table}[H]
+\centering
+\caption{可见度测试对比}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+测试方法      & 角锥法       & 同左                  & 角锥法 \\
+\hline
+角锥半径      & 25 m          & 同左                  & 25 m \\
+\hline
+角锥角度      & 各装置具体规定  & 同左                  & 各装置具体规定 \\
+\hline
+ADB 可见度测试  & ---        & 新增                  & ADB 详细测试 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{路面测试}
+
+\subsection{路面照度测试}
+
+\begin{table}[H]
+\centering
+\caption{路面照度测试对比}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+测试路面      & 平整干燥沥青路面  & 同左                  & 平整干燥沥青 \\
+\hline
+照度测试点     & 多点网格          & 同左                  & 多点网格 \\
+\hline
+主要测量点     & 10 m, 25 m, 50 m, 100 m  & 同左 & 10 m, 25 m, 50 m, 100 m \\
+\hline
+ADB 路面测试  & ---           & 新增                  & ADB 详细测试 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{动态测试}
+
+\begin{table}[H]
+\centering
+\caption{动态测试对比}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+转向信号频率   & 实车测速          & 同左                  & 实车测速 \\
+\hline
+ADB 动态测试   & ---           & 新增                  & ADB 详细测试 \\
+\hline
+AFS 切换测试   & 一般规定       & 强化                  & 详细规定 \\
+\hline
+ESS 触发测试   & 一般规定       & 强化                  & 详细规定 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{老化与可靠性测试}
+
+\subsection{加速老化测试}
+
+\begin{table}[H]
+\centering
+\caption{加速老化测试对比}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+LED 老化方法   & 1000 h 试验     & 强化：可选 500 h 加速老化 & 1000 h 试验 \\
+\hline
+老化温度     & 50°C ± 5°C     & 同左                  & 50°C ± 5°C \\
+\hline
+老化湿度     & 一般规定        & 强化                  & 一般规定 \\
+\hline
+老化电流     & 额定电流         & 同左                  & 额定电流 \\
+\hline
+光通维持率判定 & $\ge 70\%$        & 强化：$\ge 80\%$       & $\ge 80\%$ \\
+\hline
+ADB 老化测试  & ---           & 新增                  & 详细规定 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{振动与冲击测试}
+
+\begin{table}[H]
+\centering
+\caption{振动与冲击测试对比}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+振动频率范围   & 10 Hz--500 Hz & 同左 & 10 Hz--500 Hz \\
+\hline
+振动加速度   & 10 g          & 同左                  & 10 g \\
+\hline
+振动时间     & 各轴 2 h      & 同左                  & 各轴 2 h \\
+\hline
+冲击测试     & 50 g, 11 ms   & 同左                  & 50 g, 11 ms \\
+\hline
+ADB 振动测试  & ---        & 新增                  & ADB 详细测试 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{EMC 测试（草案版强化）}
+
+\subsection{EMC 测试要求对比}
+
+\begin{table}[H]
+\centering
+\caption{EMC 测试要求对比}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+\textbf{项目} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+辐射发射      & 引用 GB/T 17619 等 & 强化，具体限值明确 & CISPR 12/25 \\
+\hline 传导发射      | 引用 GB/T 17619 等 | 强化，具体限值明确 | CISPR 12/25 \\
+\hline 辐射抗扰度    | 引用 GB/T 17619 等 | 强化                  | ISO 11452 系列 \\
+\hline 静电放电      | 引用 GB/T 17619 等 | 强化                  | ISO 10605 \\
+\hline 瞬态传导      | 引用 GB/T 17619 等 | 强化                  | ISO 7637 系列 \\
+\hline ADB EMC 测试 | ---          | 新增                  | ADB 详细 EMC \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{ADB 测试方法（草案版新增）}
+
+\subsection{ADB 测试类型}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{静态识别测试}：测试 ADB 对静止目标的识别能力；
+    \item \textbf{动态识别测试}：测试 ADB 对运动目标的识别能力；
+    \item \textbf{眩目控制测试}：测试 ADB 在各种场景下避免对对向车辆眩目的能力；
+    \item \textbf{响应时间测试}：测试 ADB 从识别到完成光型调整的时间；
+    \item \textbf{降级模式测试}：测试 ADB 在部分功能失效时的降级能力；
+    \item \textbf{环境适应性测试}：测试 ADB 在恶劣环境下的表现；
+    \item \textbf{实车道路测试}：在实际道路上测试 ADB 的整体表现。
+\end{enumerate}
+
+\subsection{ADB 测试场景}
+
+\begin{table}[H]
+\centering
+\caption{ADB 测试场景对比}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{场景} & \textbf{\versionAShort} & \textbf{\versionBShort} & \textbf{\versionCShort} \\
+\hline
+前方单辆车      & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+前方多辆车      & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+对向单辆车      & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+对向多辆车      & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+弯道场景       & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+上下坡场景     & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+恶劣天气       & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{小结}
+
+\begin{enumerate}[leftmargin=2em]
+    \item 草案版相对现行版在测试方法上有较大扩充，特别是 EMC 测试和 ADB 测试；
+    \item 草案版对 ADB 制定了专门的测试方法，填补了现行版的空白；
+    \item 草案版对 LED 光源的加速老化方法进行了调整，新增 500 h 加速老化选项；
+    \item 草案版对 EMC 测试限值进行了具体化，不再仅引用其他标准；
+    \item 这些测试方法的变化对检测认证机构提出了新的能力建设要求。
+\end{enumerate}

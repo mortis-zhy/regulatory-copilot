@@ -1,0 +1,80 @@
+% ==============================================================================
+% 封面页
+% ==============================================================================
+
+\begin{titlepage}
+\begin{center}
+
+\vspace*{2cm}
+
+% 主标题
+{\Huge\bfseries\color{themeblue} GB 4785}\\[0.3cm]
+{\Huge\bfseries\color{themeblue} 多版本横向对比研究报告}\\[1cm]
+
+% 副标题
+{\Large\itshape\color{gray} 现行版 $\cdot$ 草案版 $\cdot$ 欧版 三维度对照分析}\\[1.5cm]
+
+% 中文副标题
+{\large 汽车及挂车外部照明和光信号装置的安装规定}\\[0.3cm]
+{\large 横向对比分析报告}\\[2.5cm]
+
+% 三版本对照
+\begin{tikzpicture}[scale=1.0]
+    % 卡片 1: 现行版
+    \draw[themeblue, line width=1pt, rounded corners=4pt, fill=themelightblue]
+        (0,0) rectangle (4.5, 3.5);
+    \node at (2.25, 3.0) {\textbf{\large 现行版}};
+    \node at (2.25, 2.4) {\textbf{\large GB 4785-2019}};
+    \node[align=center] at (2.25, 1.4) {
+        \small 国家市场监督管理总局\\
+        \small 国家标准化管理委员会\\
+        \small 发布日期：2019 年
+    };
+
+    % 卡片 2: 草案版
+    \draw[themegreen, line width=1pt, rounded corners=4pt, fill=themelightgreen]
+        (5.5,0) rectangle (10, 3.5);
+    \node at (7.75, 3.0) {\textbf{\large 草案版}};
+    \node at (7.75, 2.4) {\textbf{\large GB 4785 V4.3.5}};
+    \node[align=center] at (7.75, 1.4) {
+        \small 征求意见稿\\
+        \small 编制日期：2026 年 8 月\\
+        \small 1315 版草案
+    };
+
+    % 卡片 3: 欧版
+    \draw[themered, line width=1pt, rounded corners=4pt, fill=themelightred]
+        (11,0) rectangle (15.5, 3.5);
+    \node at (13.25, 3.0) {\textbf{\large 欧版}};
+    \node at (13.25, 2.4) {\textbf{\large UN R48-09}};
+    \node[align=center] at (13.25, 1.4) {
+        \small UNECE 第 48 号法规\\
+        \small 第 09 系列修订\\
+        \small 生效日：2025-09-26
+    };
+\end{tikzpicture}
+
+\vspace{2cm}
+
+% 报告信息
+\begin{tabular}{rl}
+    \textbf{报告编号：}    &  GB4785-CMP-2026-09-001 \\
+    \textbf{编制单位：}    &  汽车法规对比研究团队 \\
+    \textbf{编制日期：}    &  2026 年 9 月 \\
+    \textbf{文档版本：}    &  V1.0 \\
+\end{tabular}
+
+\vspace{2cm}
+
+% 底部声明
+\begin{flushleft}
+\footnotesize
+\textbf{声明：} 本报告基于公开法规资料及专业知识编制，仅供技术研究和学术讨论使用。\\
+引用本报告时应注明出处。涉及具体产品的合规判定，请以官方发布的法规原文为准。
+\end{flushleft}
+
+\end{center}
+\end{titlepage}
+
+\thispagestyle{empty}
+\clearpage
