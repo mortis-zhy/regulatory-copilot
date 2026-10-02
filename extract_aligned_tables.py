@@ -91,8 +91,9 @@ def _parse_one_table(tbl_lines: list[str], line_start: int) -> dict | None:
         return None
 
     # Multi-line row collector, mirror of htmlRenderV8.ts `collectTableRows`.
-    # Each `|`-leading line starts a NEW row. Within a row, non-`|` lines
-    # accumulate until the next `|` line. After the loop, flush any open row.
+    # Each `|`-leading line starts a NEW row; previous row is always flushed
+    # (a row that ends with `|` is also pushed). After the loop, flush trailing
+    # rowrow if any.
     rows: list[str] = []
     cur: list[str] = []
     open_row = False
@@ -101,8 +102,7 @@ def _parse_one_table(tbl_lines: list[str], line_start: int) -> dict | None:
         if t == "":
             break
         if t.startswith("|"):
-            # Always start a new row on `|`.
-            if open_row:
+            if cur:
                 rows.append("\n".join(cur))
             cur = [raw]
             open_row = not t.endswith("|")
@@ -110,10 +110,8 @@ def _parse_one_table(tbl_lines: list[str], line_start: int) -> dict | None:
             if open_row:
                 cur.append(raw)
             else:
-                # orphan non-pipe line: end table
                 break
-    # Flush trailing open row (last row may not end with `|`)
-    if open_row and cur:
+    if cur:
         rows.append("\n".join(cur))
 
     # split cells for each accumulated row
@@ -307,6 +305,10 @@ def main():
 
     out = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        # Freshness key: the renderer only trusts this bundle when
+        # source_generated_at matches the report JSON's generatedAt, so a
+        # stale bundle can never override a freshly generated report.
+        "source_generated_at": rpt.get("generatedAt"),
         "source_report": str(SRC.relative_to(ROOT)),
         "stats": stats,
         "tables": out_tables,
