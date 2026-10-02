@@ -1,0 +1,4714 @@
+data: {"content":"\n\n#"}
+
+data: {"content":" 三份"}
+
+data: {"content":"法规详细"}
+
+data: {"content":"对比分析\n\n## 一"}
+
+data: {"content":"、文件识别"}
+
+data: {"content":"与基"}
+
+data: {"content":"线对照\n\n| 代"}
+
+data: {"content":"号 | 文件名"}
+
+data: {"content":" | 性质"}
+
+data: {"content":" | 状态"}
+
+data: {"content":" |\n|---|---|---|---|\n"}
+
+data: {"content":"| **"}
+
+data: {"content":"A** | GB "}
+
+data: {"content":"4785—XXXX（"}
+
+data: {"content":"草案 V4.3"}
+
+data: {"content":".5，"}
+
+data: {"content":"2026-08-"}
+
+data: {"content":"26） | 中国"}
+
+data: {"content":"国家标准"}
+
+data: {"content":"（草案"}
+
+data: {"content":"） | 替代 GB"}
+
+data: {"content":" 4785-201"}
+
+data: {"content":"9，发布"}
+
+data: {"content":"日期待"}
+
+data: {"content":"定 |\n| **B"}
+
+data: {"content":"** | GB 478"}
+
+data: {"content":"5-2019 |"}
+
+data: {"content":" 中国国家标准（现行版"}
+
+data: {"content":"） | 201"}
+
+data: {"content":"9-12-17"}
+
+data: {"content":" 发布，2020-"}
+
+data: {"content":"07-01 实施"}
+
+data: {"content":" |\n| **C**"}
+
+data: {"content":" | UN R48 Rev"}
+
+data: {"content":".13（含"}
+
+data: {"content":" 09 系列 +"}
+
+data: {"content":" S1"}
+
+data: {"content":"，2025-09"}
+
+data: {"content":"-26 "}
+
+data: {"content":"生效） | "}
+
+data: {"content":"联合国ECE法规"}
+
+data: {"content":" | 09"}
+
+data: {"content":" 系列 + S"}
+
+data: {"content":"1 已"}
+
+data: {"content":"于"}
+
+data: {"content":" 2025-09"}
+
+data: {"content":"-26 生效 |\n\n"}
+
+data: {"content":"---\n\n## 二、结构对齐"}
+
+data: {"content":"（章"}
+
+data: {"content":"节目录对比"}
+
+data: {"content":"）\n\n### 2"}
+
+data: {"content":".1 章节目录"}
+
+data: {"content":"差异"}
+
+data: {"content":"\n\n| A"}
+
+data: {"content":" 草案"}
+
+data: {"content":"（"}
+
+data: {"content":"V"}
+
+data: {"content":"4.3.5"}
+
+data: {"content":"） | B"}
+
+data: {"content":" 现行"}
+
+data: {"content":"（"}
+
+data: {"content":"2019） | C"}
+
+data: {"content":" UN R"}
+
+data: {"content":"48（09+S"}
+
+data: {"content":"1） |\n|---|---|"}
+
+data: {"content":"---|\n| "}
+
+data: {"content":"1 范围 | "}
+
+data: {"content":"1 范围 | "}
+
+data: {"content":"1 Scope"}
+
+data: {"content":" |\n| 2 "}
+
+data: {"content":"规范性引用文件 | "}
+
+data: {"content":"2 规范性引用文件"}
+
+data: {"content":" | 2 Definitions"}
+
+data: {"content":"（无"}
+
+data: {"content":"独立引用"}
+
+data: {"content":"文件章节） |\n|"}
+
+data: {"content":" 3 术语和"}
+
+data: {"content":"定义（3"}
+
+data: {"content":".1/"}
+
+data: {"content":"3.2/3"}
+
+data: {"content":".3） | "}
+
+data: {"content":"3 术语和定义"}
+
+data: {"content":"（3.1-"}
+
+data: {"content":"3.31 "}
+
+data: {"content":"线性"}
+
+data: {"content":"编号） | 3"}
+
+data: {"content":" Application for approval |\n"}
+
+data: {"content":"| 4 一般要求"}
+
+data: {"content":" |"}
+
+data: {"content":" 4 一般"}
+
+data: {"content":"要求 | 4 Approval"}
+
+data: {"content":" |\n| **"}
+
+data: {"content":"5 主功能的特殊规定"}
+
+data: {"content":"**（5"}
+
+data: {"content":".1-"}
+
+data: {"content":"5.24） |"}
+
+data: {"content":" 5 特殊规定"}
+
+data: {"content":"（5.1-"}
+
+data: {"content":"5.26，混合"}
+
+data: {"content":"编排"}
+
+data: {"content":"） | 5"}
+
+data: {"content":" General specifications |\n| **"}
+
+data: {"content":"6 从属功能的"}
+
+data: {"content":"特殊规定**（6"}
+
+data: {"content":".1-6."}
+
+data: {"content":"4）"}
+
+data: {"content":" | （"}
+
+data: {"content":"无对应章节"}
+
+data: {"content":"） | "}
+
+data: {"content":"6 Individual specifications（"}
+
+data: {"content":"6.1-6"}
+
+data: {"content":".27） |\n|"}
+
+data: {"content":" **7 扩展功能的"}
+
+data: {"content":"特殊规定**（7"}
+
+data: {"content":".1-7."}
+
+data: {"content":"3） | （部分"}
+
+data: {"content":"含在"}
+
+data: {"content":" 5."}
+
+data: {"content":"6/"}
+
+data: {"content":"5.23/5"}
+
+data: {"content":".26 中） |"}
+
+data: {"content":" 7 Modifications and"}
+
+data: {"content":" extensions |\n| 8"}
+
+data: {"content":" 检验规则 | "}
+
+data: {"content":"6 检验规则 |"}
+
+data: {"content":" 8 Conform"}
+
+data: {"content":"ity of production |\n|"}
+
+data: {"content":" 9 同一型式"}
+
+data: {"content":"判定 | （含"}
+
+data: {"content":"在 6.1"}
+
+data: {"content":" 中） | 9"}
+
+data: {"content":" Penalties |\n| "}
+
+data: {"content":"10 实施日期 |"}
+
+data: {"content":" 7 实施日期"}
+
+data: {"content":" | 10"}
+
+data: {"content":" Production discontinued"}
+
+data: {"content":" |\n| 附录"}
+
+data: {"content":" A-J（"}
+
+data: {"content":"10 项） |"}
+
+data: {"content":" 附录 A-I（"}
+
+data: {"content":"9 项） | "}
+
+data: {"content":"11 Names /"}
+
+data: {"content":" "}
+
+data: {"content":"12 Transitional /"}
+
+data: {"content":" Annexes 1-"}
+
+data: {"content":"16 |\n\n**"}
+
+data: {"content":"【模型推断"}
+
+data: {"content":"】** A"}
+
+data: {"content":" "}
+
+data: {"content":"草案将 B 的"}
+
+data: {"content":"\"5 特殊规定"}
+
+data: {"content":"\"按**"}
+
+data: {"content":"功能层级**（主"}
+
+data: {"content":"/从属/扩展"}
+
+data: {"content":"）重组，这是结构性"}
+
+data: {"content":"重大"}
+
+data: {"content":"变更，目的是"}
+
+data: {"content":"与"}
+
+data: {"content":" UN R48"}
+
+data: {"content":" 第 6"}
+
+data: {"content":" 章 \"Individual specifications\""}
+
+data: {"content":" 按功能细"}
+
+data: {"content":"分的逻辑"}
+
+data: {"content":"对齐。\n\n### 2"}
+
+data: {"content":".2 新增功能"}
+
+data: {"content":"模块"}
+
+data: {"content":"对比"}
+
+data: {"content":"（A 草案独有 vs"}
+
+data: {"content":" C"}
+
+data: {"content":" 已"}
+
+data: {"content":"采纳）\n\n| 新"}
+
+data: {"content":"增"}
+
+data: {"content":"功能 | A 草案"}
+
+data: {"content":"章节 | B 201"}
+
+data: {"content":"9 | C"}
+
+data: {"content":" UN R48 |\n|"}
+
+data: {"content":"---|---|---|---|\n| ADS"}
+
+data: {"content":" 标志灯（自动化"}
+
+data: {"content":"驾驶）"}
+
+data: {"content":" | 5"}
+
+data: {"content":".24"}
+
+data: {"content":" |"}
+
+data: {"content":" ❌ 无"}
+
+data: {"content":" |"}
+
+data: {"content":" ❌ 无（无对应"}
+
+data: {"content":"章节） |\n| "}
+
+data: {"content":"驾驶员辅助投射功能 |"}
+
+data: {"content":" 6.1 |"}
+
+data: {"content":" ❌ 无 | "}
+
+data: {"content":"5.35 +"}
+
+data: {"content":" Annex"}
+
+data: {"content":" 16 |\n| 光"}
+
+data: {"content":"信号投射功能 | "}
+
+data: {"content":"6.2 |"}
+
+data: {"content":" ❌ 无 |"}
+
+data: {"content":" ❌ 无（提及 Annex"}
+
+data: {"content":" 14"}
+
+data: {"content":"） |\n| 图"}
+
+data: {"content":"文交互 | 6"}
+
+data: {"content":".3 | ❌"}
+
+data: {"content":" 无 | ❌ 无"}
+
+data: {"content":" |\n| 发"}
+
+data: {"content":"光徽标 | "}
+
+data: {"content":"6.4 |"}
+
+data: {"content":" ❌ 无 | "}
+
+data: {"content":"5.5.5"}
+
+data: {"content":"（限制"}
+
+data: {"content":"性提及"}
+
+data: {"content":"） |\n| "}
+
+data: {"content":"外部氛围"}
+
+data: {"content":"功能 | 4"}
+
+data: {"content":".30"}
+
+data: {"content":"-4.32"}
+
+data: {"content":" | 4.31"}
+
+data: {"content":"（仅"}
+
+data: {"content":"一句话"}
+
+data: {"content":"） | 5"}
+
+data: {"content":".32（外部"}
+
+data: {"content":"状态指示器） |\n"}
+
+data: {"content":"| Answer-back signal"}
+
+data: {"content":" |"}
+
+data: {"content":" ❌ 无 | ❌"}
+
+data: {"content":" 无 | 6"}
+
+data: {"content":".27 |\n| Exterior"}
+
+data: {"content":" courtesy lamp"}
+
+data: {"content":" |"}
+
+data: {"content":" ❌ 无 | ❌"}
+
+data: {"content":" 无 | "}
+
+data: {"content":"6.24 |\n|"}
+
+data: {"content":" A2 类位置灯"}
+
+data: {"content":"（自动）"}
+
+data: {"content":" | 5.9"}
+
+data: {"content":".7.2"}
+
+data: {"content":" | ❌ 无"}
+
+data: {"content":" |"}
+
+data: {"content":" ❌ 无"}
+
+data: {"content":"（仅"}
+
+data: {"content":" 6"}
+
+data: {"content":".19 D"}
+
+data: {"content":"RL） |\n\n**"}
+
+data: {"content":"【原文事实】**"}
+
+data: {"content":" A 草案 5"}
+
+data: {"content":".24.1："}
+
+data: {"content":"*\""}
+
+data: {"content":"L3级及以上自动化"}
+
+data: {"content":"驾驶车辆，应配备前"}
+
+data: {"content":"ADS标志灯、后ADS"}
+
+data: {"content":"标志灯和侧ADS"}
+
+data: {"content":"标志灯\"*"}
+
+data: {"content":"——这是中国"}
+
+data: {"content":"标准"}
+
+data: {"content":"首次纳入"}
+
+data: {"content":" ADS 标志灯"}
+
+data: {"content":"定义。\n\n---\n\n##"}
+
+data: {"content":" 三、内容对比\n\n###"}
+
+data: {"content":" 3.1 "}
+
+data: {"content":"术语与定义（A "}
+
+data: {"content":"草案新增）\n\n"}
+
+data: {"content":"A"}
+
+data: {"content":" 草案引入"}
+
+data: {"content":" 3 类"}
+
+data: {"content":"功能层级"}
+
+data: {"content":"定义，**"}
+
+data: {"content":"B 无"}
+
+data: {"content":"对应术语"}
+
+data: {"content":"**：\n\n- **3"}
+
+data: {"content":".1.30"}
+
+data: {"content":" 主功能**（"}
+
+data: {"content":"primary function）：*\""}
+
+data: {"content":"灯具的基础功能\"*"}
+
+data: {"content":"（A"}
+
+data: {"content":" 草案第 9"}
+
+data: {"content":" 页）\n- **3"}
+
+data: {"content":".1.31 从"}
+
+data: {"content":"属功能**（sub"}
+
+data: {"content":"ordinate function）：*\"在不"}
+
+data: {"content":"改变主功能及类别"}
+
+data: {"content":"的前提下…"}
+
+data: {"content":"辅助"}
+
+data: {"content":"、补充、加强或"}
+
+data: {"content":"装饰主功能\"*\n"}
+
+data: {"content":"- **3.1"}
+
+data: {"content":".32 扩展"}
+
+data: {"content":"功能**（extension"}
+
+data: {"content":" function）：*\"使用"}
+
+data: {"content":"不同于主功能的工作方式"}
+
+data: {"content":"…\"*\n\nC"}
+
+data: {"content":" UN R48"}
+
+data: {"content":" 在 "}
+
+data: {"content":"2.7."}
+
+data: {"content":"4 中"}
+
+data: {"content":"定义"}
+
+data: {"content":" AFS 类/"}
+
+data: {"content":"模式（Class"}
+
+data: {"content":" C/V/E/W），"}
+
+data: {"content":"与 A"}
+
+data: {"content":" "}
+
+data: {"content":"草案功能"}
+
+data: {"content":"层级"}
+
+data: {"content":"思路不同——"}
+
+data: {"content":"C"}
+
+data: {"content":" 是"}
+
+data: {"content":"按\"系统模式"}
+
+data: {"content":"\"分类"}
+
+data: {"content":"，A 是"}
+
+data: {"content":"按\"功能性质"}
+
+data: {"content":"\"分类。\n\n### "}
+
+data: {"content":"3.2 近"}
+
+data: {"content":"光倾斜度（核心"}
+
+data: {"content":"参数重大"}
+
+data: {"content":"变更）\n\n| 安装"}
+
+data: {"content":"高度 h (m)"}
+
+data: {"content":" | B 201"}
+
+data: {"content":"9（5"}
+
+data: {"content":".2.6."}
+
+data: {"content":"1.2） |"}
+
+data: {"content":" A 草案（5"}
+
+data: {"content":".2.6"}
+
+data: {"content":".1."}
+
+data: {"content":"2 + 表 "}
+
+data: {"content":"7） | C UN"}
+
+data: {"content":" R48（6."}
+
+data: {"content":"2.6.1"}
+
+data: {"content":".2） |\n|"}
+
+data: {"content":"---|---|---|---|\n| "}
+
+data: {"content":"0.5 ≤ h"}
+
+data: {"content":" ≤ 0.9"}
+
+data: {"content":" | 限"}
+
+data: {"content":"值 -"}
+
+data: {"content":"0.5%"}
+
+data: {"content":" ~"}
+
+data: {"content":" -2.5%；"}
+
+data: {"content":"初始 -1.0"}
+
+data: {"content":"% ~"}
+
+data: {"content":" -1.5%"}
+
+data: {"content":" | 上"}
+
+data: {"content":"限 -0.50"}
+
+data: {"content":"%；下限 -("}
+
+data: {"content":"h+1.2"}
+
+data: {"content":") | 上限 -"}
+
+data: {"content":"0.50%；下限"}
+
+data: {"content":" -(h+1."}
+
+data: {"content":"2) |\n| "}
+
+data: {"content":"0.9 "}
+
+data: {"content":"< h ≤ 1.0"}
+
+data: {"content":" | 限值 -"}
+
+data: {"content":"0.5% ~"}
+
+data: {"content":" -2.5%"}
+
+data: {"content":" 或 -1.0"}
+
+data: {"content":"% ~ -3."}
+
+data: {"content":"0% | 上限"}
+
+data: {"content":" -(h×2."}
+
+data: {"content":"17-1.45"}
+
+data: {"content":")；下限 -(h×"}
+
+data: {"content":"2.17+0"}
+
+data: {"content":".15) | 上"}
+
+data: {"content":"限 -(h×2"}
+
+data: {"content":".17-1."}
+
+data: {"content":"45)；下限 -(h"}
+
+data: {"content":"×2.17+"}
+
+data: {"content":"0.15) |\n"}
+
+data: {"content":"| h"}
+
+data: {"content":" > 1.0"}
+
+data: {"content":" | 限值 -"}
+
+data: {"content":"1.0% ~"}
+
+data: {"content":" -3.0%"}
+
+data: {"content":" | （"}
+
+data: {"content":"同"}
+
+data: {"content":" 0"}
+
+data: {"content":".9-1."}
+
+data: {"content":"2 区间公式"}
+
+data: {"content":"延伸）"}
+
+data: {"content":" | 同 0."}
+
+data: {"content":"9-1.2"}
+
+data: {"content":" 区间公式延伸 |\n\n"}
+
+data: {"content":"**【模型推断】"}
+
+data: {"content":"** A 草案采用"}
+
+data: {"content":"**函数"}
+
+data: {"content":"表达式"}
+
+data: {"content":"**描述"}
+
+data: {"content":"限"}
+
+data: {"content":"值，与"}
+
+data: {"content":" C"}
+
+data: {"content":" UN R48 完全"}
+
+data: {"content":"一致；B 201"}
+
+data: {"content":"9 采用"}
+
+data: {"content":"**离散"}
+
+data: {"content":"区间表格**，"}
+
+data: {"content":"表达"}
+
+data: {"content":"精度"}
+
+data: {"content":"低。A"}
+
+data: {"content":" 草案实质"}
+
+data: {"content":"上将"}
+
+data: {"content":" B 表格"}
+
+data: {"content":"离散值"}
+
+data: {"content":"替换"}
+
+data: {"content":"为数学"}
+
+data: {"content":"公式。\n\n### 3"}
+
+data: {"content":".3 灯具"}
+
+data: {"content":"功能数量"}
+
+data: {"content":"与定义"}
+
+data: {"content":"差异\n\n| 功能"}
+
+data: {"content":" | A "}
+
+data: {"content":"草案 | B 201"}
+
+data: {"content":"9 | C UN R"}
+
+data: {"content":"48 |\n|---|---|---|"}
+
+data: {"content":"---|\n| 远光灯"}
+
+data: {"content":" | 5.1"}
+
+data: {"content":" +"}
+
+data: {"content":" 5.3"}
+
+data: {"content":"（自适应模式"}
+
+data: {"content":"） | 5"}
+
+data: {"content":".1 |"}
+
+data: {"content":" 6.1 +"}
+
+data: {"content":" 6.22 |\n"}
+
+data: {"content":"| 近"}
+
+data: {"content":"光灯 | 5."}
+
+data: {"content":"2 + 5."}
+
+data: {"content":"3 | 5."}
+
+data: {"content":"2 | 6."}
+
+data: {"content":"2 + 6."}
+
+data: {"content":"22 |\n| 前雾"}
+
+data: {"content":"灯 | 5."}
+
+data: {"content":"4 | 5."}
+
+data: {"content":"3 | 6."}
+
+data: {"content":"3 |\n| "}
+
+data: {"content":"角灯 | 5"}
+
+data: {"content":".5 | 5"}
+
+data: {"content":".20 | 6"}
+
+data: {"content":".20"}
+
+data: {"content":" |\n| "}
+
+data: {"content":"转向信号灯 | "}
+
+data: {"content":"5.6 | "}
+
+data: {"content":"5.5 | "}
+
+data: {"content":"6.5 |\n|"}
+
+data: {"content":" 危险警告信号 |"}
+
+data: {"content":" 7.1"}
+
+data: {"content":" | 5.6"}
+
+data: {"content":" | 6.6"}
+
+data: {"content":" |\n| 制动"}
+
+data: {"content":"灯 | 5."}
+
+data: {"content":"7 | 5."}
+
+data: {"content":"7 | 6."}
+
+data: {"content":"7 |\n| 牌照"}
+
+data: {"content":"灯 | 5."}
+
+data: {"content":"8 | 5."}
+
+data: {"content":"8 | 6."}
+
+data: {"content":"8 |\n| 前"}
+
+data: {"content":"位灯（含"}
+
+data: {"content":" A1/A"}
+
+data: {"content":"2） | 5"}
+
+data: {"content":".9 | "}
+
+data: {"content":"5.9（"}
+
+data: {"content":"未"}
+
+data: {"content":"分 A1"}
+
+data: {"content":"/A2） | "}
+
+data: {"content":"6.9 |\n|"}
+
+data: {"content":" 后位灯 |"}
+
+data: {"content":" 5.10"}
+
+data: {"content":" | 5.10"}
+
+data: {"content":" | 6.10"}
+
+data: {"content":" |\n| 后"}
+
+data: {"content":"雾灯"}
+
+data: {"content":" | 5.11"}
+
+data: {"content":" | 5.11"}
+
+data: {"content":" | 6.11"}
+
+data: {"content":" |\n| 驻"}
+
+data: {"content":"车灯 | 5"}
+
+data: {"content":".12 | 5"}
+
+data: {"content":".12 | 6"}
+
+data: {"content":".12 |\n| "}
+
+data: {"content":"示廓灯"}
+
+data: {"content":" | 5.13"}
+
+data: {"content":" | 5.13"}
+
+data: {"content":" | 6.13"}
+
+data: {"content":" |\n| 回复"}
+
+data: {"content":"反射器 ×"}
+
+data: {"content":" "}
+
+data: {"content":"4 | 5"}
+
+data: {"content":".14-5."}
+
+data: {"content":"17 | 5."}
+
+data: {"content":"14-5.17"}
+
+data: {"content":" | 6"}
+
+data: {"content":".14-6"}
+
+data: {"content":".17 |\n| "}
+
+data: {"content":"侧标志灯 | "}
+
+data: {"content":"5.18 | "}
+
+data: {"content":"5.18 | "}
+
+data: {"content":"6.18 |\n|"}
+
+data: {"content":" 昼间行驶灯"}
+
+data: {"content":" | 5.19"}
+
+data: {"content":" | 5.19"}
+
+data: {"content":" | 6"}
+
+data: {"content":".19"}
+
+data: {"content":" |\n| 醒"}
+
+data: {"content":"目标志 | 5"}
+
+data: {"content":".20 | 5"}
+
+data: {"content":".21 | 6"}
+
+data: {"content":".21 |\n| "}
+
+data: {"content":"倒车灯 | 5"}
+
+data: {"content":".21 | 5"}
+
+data: {"content":".4 | 6"}
+
+data: {"content":".4 |\n| "}
+
+data: {"content":"慢行灯 | "}
+
+data: {"content":"5.22 | "}
+
+data: {"content":"5.25 | "}
+
+data: {"content":"6.26 |\n|"}
+
+data: {"content":" 牵引杆挂车"}
+
+data: {"content":"标志灯 | 5"}
+
+data: {"content":".23 | 5"}
+
+data: {"content":".24 |"}
+
+data: {"content":" ❌ 未单"}
+
+data: {"content":"列 |\n| **"}
+
+data: {"content":"ADS 标志灯**"}
+
+data: {"content":" | **"}
+
+data: {"content":"5.24** |"}
+
+data: {"content":" ❌ |"}
+
+data: {"content":" ❌ |\n| A"}
+
+data: {"content":"FS 自适应前"}
+
+data: {"content":"照明 | 5."}
+
+data: {"content":"3（合并入"}
+
+data: {"content":"远近"}
+
+data: {"content":"光"}
+
+data: {"content":"章节） | 5"}
+
+data: {"content":".22（独立章节"}
+
+data: {"content":"） | 6."}
+
+data: {"content":"22（独立章节）"}
+
+data: {"content":" |\n| 紧急制动"}
+
+data: {"content":"信号 | 7."}
+
+data: {"content":"2 | 5"}
+
+data: {"content":".23 | 6"}
+
+data: {"content":".23 |\n| "}
+
+data: {"content":"追尾警告信号 |"}
+
+data: {"content":" 7.3 |"}
+
+data: {"content":" 5.26 |"}
+
+data: {"content":" 6.25"}
+
+data: {"content":" |\n| **驾驶员"}
+
+data: {"content":"辅助投射**"}
+
+data: {"content":" | **6"}
+
+data: {"content":".1** |"}
+
+data: {"content":" ❌ | "}
+
+data: {"content":"5.35"}
+
+data: {"content":" |\n| **光信号"}
+
+data: {"content":"投射** | **6"}
+
+data: {"content":".2** |"}
+
+data: {"content":" ❌ |"}
+
+data: {"content":" ❌ |\n"}
+
+data: {"content":"| **图文"}
+
+data: {"content":"交互** | **"}
+
+data: {"content":"6.3** |"}
+
+data: {"content":" ❌ | ❌"}
+
+data: {"content":" |\n| **发光徽"}
+
+data: {"content":"标** | **6"}
+
+data: {"content":".4** |"}
+
+data: {"content":" ❌ | "}
+
+data: {"content":"5.5."}
+
+data: {"content":"5 提及 |\n|"}
+
+data: {"content":" Exterior courtesy lamp"}
+
+data: {"content":" | ❌ |"}
+
+data: {"content":" ❌ | 6."}
+
+data: {"content":"24 |\n| Answer-back"}
+
+data: {"content":" signal | ❌ |"}
+
+data: {"content":" ❌ | "}
+
+data: {"content":"6.27 |\n\n**"}
+
+data: {"content":"【原文事实】**"}
+
+data: {"content":" A 草案将"}
+
+data: {"content":" A"}
+
+data: {"content":"FS"}
+
+data: {"content":" 章节从 B"}
+
+data: {"content":" 的 5.22"}
+
+data: {"content":" 移"}
+
+data: {"content":"至 5.3"}
+
+data: {"content":"，并改名为\"带有"}
+
+data: {"content":"自适应模式的前照灯"}
+
+data: {"content":"（近光灯和/"}
+
+data: {"content":"或远光灯）\"，"}
+
+data: {"content":"与远"}
+
+data: {"content":"光灯("}
+
+data: {"content":"5.1)/"}
+
+data: {"content":"近光灯(5."}
+
+data: {"content":"2)同级"}
+
+data: {"content":"。\n\n### 3."}
+
+data: {"content":"4 关键电路"}
+
+data: {"content":"连接条款变化\n\n**"}
+
+data: {"content":"A2"}
+
+data: {"content":" 类位置灯（"}
+
+data: {"content":"自动"}
+
+data: {"content":"前位"}
+
+data: {"content":"灯）**——"}
+
+data: {"content":"A 草案 "}
+
+data: {"content":"5.9"}
+
+data: {"content":".7."}
+
+data: {"content":"2 新增：\n"}
+
+data: {"content":"> *\"当"}
+
+data: {"content":"发动机（"}
+
+data: {"content":"推进系统）点"}
+
+data: {"content":"、熄火控制装置"}
+
+data: {"content":"处于允许启动发动机（"}
+
+data: {"content":"推进系统）的"}
+
+data: {"content":"状态时，A2 类"}
+
+data: {"content":"位置灯应自动激活"}
+
+data: {"content":"并点亮。\""}
+
+data: {"content":"*\n\nB 2019"}
+
+data: {"content":" 无 A"}
+
+data: {"content":"2 类定义"}
+
+data: {"content":"，仅 "}
+
+data: {"content":"5.9.7"}
+
+data: {"content":" "}
+
+data: {"content":"简单电路"}
+
+data: {"content":"连接。\n\nC UN R"}
+
+data: {"content":"48 主要"}
+
+data: {"content":"由 "}
+
+data: {"content":"6.19 DRL"}
+
+data: {"content":" 替代类似"}
+
+data: {"content":"功能，无"}
+
+data: {"content":" A2 类独立定义"}
+
+data: {"content":"。\n\n---\n\n## 四、专业"}
+
+data: {"content":"参数对比\n\n### "}
+
+data: {"content":"4.1 主要"}
+
+data: {"content":"技术"}
+
+data: {"content":"参数表\n\n| 参数"}
+
+data: {"content":"名称 | A"}
+
+data: {"content":" 草案 | B "}
+
+data: {"content":"2019 | C UN"}
+
+data: {"content":" R48 | 单位"}
+
+data: {"content":"/"}
+
+data: {"content":"状态"}
+
+data: {"content":" |\n|---|---|---|---|---|\n"}
+
+data: {"content":"| 远"}
+
+data: {"content":"光灯最大光强总和"}
+
+data: {"content":" | 430"}
+
+data: {"content":","}
+
+data: {"content":"000 cd | 430"}
+
+data: {"content":",000 cd | "}
+
+data: {"content":"基准"}
+
+data: {"content":"值"}
+
+data: {"content":" 100（REF "}
+
+data: {"content":"标记） |"}
+
+data: {"content":" 不同度量"}
+
+data: {"content":"体系 |\n| 转向"}
+
+data: {"content":"灯闪烁"}
+
+data: {"content":"频率 | 90 ±"}
+
+data: {"content":" 30 次"}
+
+data: {"content":"/min | 90 ±"}
+
+data: {"content":" 30 次/min |"}
+
+data: {"content":" 90 ± 30"}
+
+data: {"content":" times"}
+
+data: {"content":"/min | 一"}
+
+data: {"content":"致 |\n| 紧急"}
+
+data: {"content":"制动信号频率 | "}
+
+data: {"content":"4.0 ± "}
+
+data: {"content":"1.0 Hz |"}
+
+data: {"content":" 4.0 ±"}
+
+data: {"content":" 1.0 Hz"}
+
+data: {"content":" | 4.0"}
+
+data: {"content":" ± 1.0"}
+
+data: {"content":" Hz | 一致 |\n"}
+
+data: {"content":"| 追"}
+
+data: {"content":"尾警告"}
+
+data: {"content":"信号作用"}
+
+data: {"content":"时间 | ≤ 3"}
+
+data: {"content":" s | ≤ 3"}
+
+data: {"content":" s | ≤"}
+
+data: {"content":" 3 s | 一"}
+
+data: {"content":"致 |\n| 电压"}
+
+data: {"content":"允"}
+
+data: {"content":"差（"}
+
+data: {"content":"12V 系统）"}
+
+data: {"content":" | 13"}
+
+data: {"content":".5V"}
+
+data: {"content":" ±"}
+
+data: {"content":"5% | 13"}
+
+data: {"content":".5V ±5"}
+
+data: {"content":"% | 13."}
+
+data: {"content":"5V +"}
+
+data: {"content":"3%（"}
+
+data: {"content":"≤"}
+
+data: {"content":"3"}
+
+data: {"content":"% 超"}
+
+data: {"content":"额"}
+
+data: {"content":"） | **"}
+
+data: {"content":"差异"}
+
+data: {"content":"：A"}
+
+data: {"content":"/B"}
+
+data: {"content":" vs"}
+
+data: {"content":" C** |\n| "}
+
+data: {"content":"电压允差（24"}
+
+data: {"content":"V 系统） | "}
+
+data: {"content":"28.0V ±"}
+
+data: {"content":"5% | 28"}
+
+data: {"content":".0V ±5"}
+
+data: {"content":"% | 28V"}
+
+data: {"content":" +3% |"}
+
+data: {"content":" 同"}
+
+data: {"content":"上"}
+
+data: {"content":" |\n| 前位"}
+
+data: {"content":"灯离"}
+
+data: {"content":"地高度"}
+
+data: {"content":" | "}
+
+data: {"content":"250-150"}
+
+data: {"content":"0 mm | 250"}
+
+data: {"content":"-1500 mm |"}
+
+data: {"content":" 250-150"}
+
+data: {"content":"0 mm | 一"}
+
+data: {"content":"致 |\n| 近"}
+
+data: {"content":"光灯最小"}
+
+data: {"content":"离地高度 | "}
+
+data: {"content":"500 mm | 500"}
+
+data: {"content":" mm | 500"}
+
+data: {"content":" mm | 一致 |\n"}
+
+data: {"content":"| 近光灯最大离"}
+
+data: {"content":"地高度 | 120"}
+
+data: {"content":"0 mm（N3G"}
+
+data: {"content":" 1500） |"}
+
+data: {"content":" 1200 mm（N"}
+
+data: {"content":"3G 1500"}
+
+data: {"content":"） | "}
+
+data: {"content":"1200 mm（N3"}
+
+data: {"content":"G 1500）"}
+
+data: {"content":" | 一致 |\n|"}
+
+data: {"content":" 倒车位"}
+
+data: {"content":"灯"}
+
+data: {"content":"间距"}
+
+data: {"content":"（"}
+
+data: {"content":"与"}
+
+data: {"content":"制动灯） | >"}
+
+data: {"content":" 100 mm | >"}
+
+data: {"content":" 100 mm | >"}
+
+data: {"content":" 100 mm | 一"}
+
+data: {"content":"致 |\n| 自动"}
+
+data: {"content":"远"}
+
+data: {"content":"光"}
+
+data: {"content":"关闭"}
+
+data: {"content":"照"}
+
+data: {"content":"度阈值"}
+
+data: {"content":" | "}
+
+data: {"content":"7000 lx |"}
+
+data: {"content":" 7000 lx"}
+
+data: {"content":" | 7000 l"}
+
+data: {"content":"x | 一致 |\n"}
+
+data: {"content":"| 角"}
+
+data: {"content":"灯关闭"}
+
+data: {"content":"速度阈值 | "}
+
+data: {"content":"40 km/h | "}
+
+data: {"content":"40 km/h | "}
+
+data: {"content":"40 km/h | 一"}
+
+data: {"content":"致 |\n| 角"}
+
+data: {"content":"灯开启速度"}
+
+data: {"content":"阈值（倒车） |"}
+
+data: {"content":" 15 km/h |"}
+
+data: {"content":" 10"}
+
+data: {"content":" km/h | 15"}
+
+data: {"content":" km/h | **B"}
+
+data: {"content":" vs A"}
+
+data: {"content":"/C "}
+
+data: {"content":"差异** |\n| "}
+
+data: {"content":"慢行灯开启最大"}
+
+data: {"content":"速度 |"}
+
+data: {"content":" 15 km/h |"}
+
+data: {"content":" 10 km/h |"}
+
+data: {"content":" 15 km/h |"}
+
+data: {"content":" **B vs A/C"}
+
+data: {"content":" 差异** |\n|"}
+
+data: {"content":" 转向"}
+
+data: {"content":"信号"}
+
+data: {"content":"灯"}
+
+data: {"content":" vs DRL 间距"}
+
+data: {"content":"阈值"}
+
+data: {"content":" | ≤ 40 mm"}
+
+data: {"content":" | ≤ 40 mm"}
+
+data: {"content":" | ≤ 40 mm"}
+
+data: {"content":" | 一"}
+
+data: {"content":"致 |\n| 转向"}
+
+data: {"content":"灯-前位"}
+
+data: {"content":"灯最小距地"}
+
+data: {"content":" | 350"}
+
+data: {"content":" mm | 350 mm"}
+
+data: {"content":" | 350 mm |"}
+
+data: {"content":" 一致 |\n| "}
+
+data: {"content":"转向灯"}
+
+data: {"content":"最大高度（"}
+
+data: {"content":"普通"}
+
+data: {"content":"） | 1500"}
+
+data: {"content":" mm | 150"}
+
+data: {"content":"0 mm | 150"}
+
+data: {"content":"0 mm | 一致"}
+
+data: {"content":" |\n| 转向灯"}
+
+data: {"content":"最大高度（放宽）"}
+
+data: {"content":" | 2300 mm"}
+
+data: {"content":" | 230"}
+
+data: {"content":"0 mm | 230"}
+
+data: {"content":"0 mm | 一"}
+
+data: {"content":"致 |\n| 转向"}
+
+data: {"content":"信号最小"}
+
+data: {"content":"发光"}
+
+data: {"content":"间隔"}
+
+data: {"content":" | ≤ 1"}
+
+data: {"content":" s 发"}
+
+data: {"content":"光；"}
+
+data: {"content":"1.5 s 内"}
+
+data: {"content":"首次"}
+
+data: {"content":"熄灭 | ≤ 1"}
+
+data: {"content":" s；"}
+
+data: {"content":"1"}
+
+data: {"content":"-1.5 s"}
+
+data: {"content":" 内首熄"}
+
+data: {"content":" | ≤ 1 s"}
+
+data: {"content":"；≤"}
+
+data: {"content":" 1.5 s"}
+
+data: {"content":" | 一致 |\n|"}
+
+data: {"content":" 大件"}
+
+data: {"content":"货车后"}
+
+data: {"content":"位灯面积"}
+
+data: {"content":" | ≥ 80 mm"}
+
+data: {"content":" 直径圆 | ≥"}
+
+data: {"content":" 80 mm 直径"}
+
+data: {"content":"圆 | （"}
+
+data: {"content":"同"}
+
+data: {"content":"款） | 一"}
+
+data: {"content":"致 |\n| 追"}
+
+data: {"content":"尾警告 TTC"}
+
+data: {"content":" 触发 | Vr"}
+
+data: {"content":">"}
+
+data: {"content":"30:"}
+
+data: {"content":" ≤"}
+
+data: {"content":"1.4 s；"}
+
+data: {"content":"Vr≤30: ≤"}
+
+data: {"content":"1.4/"}
+
+data: {"content":"30×Vr | 同"}
+
+data: {"content":" | 同 | 一致"}
+
+data: {"content":" |\n\n### 4."}
+
+data: {"content":"2 几何"}
+
+data: {"content":"可见度关键"}
+
+data: {"content":"参数\n\n| "}
+
+data: {"content":"灯具 | 水平"}
+
+data: {"content":"角"}
+
+data: {"content":" β | 垂直角"}
+
+data: {"content":" α | A/B"}
+
+data: {"content":"/C 一"}
+
+data: {"content":"致性 |\n|---|---|"}
+
+data: {"content":"---|---|\n| 近光灯"}
+
+data: {"content":" | 外"}
+
+data: {"content":" 45° /"}
+
+data: {"content":" 内 10° |"}
+
+data: {"content":" 上 15° /"}
+
+data: {"content":" 下 10° |"}
+
+data: {"content":" ✅ 一致 |\n|"}
+
+data: {"content":" 前雾灯 | 外"}
+
+data: {"content":" 45° / 内"}
+
+data: {"content":" 10° | 上"}
+
+data: {"content":" 5° / 下"}
+
+data: {"content":" 5° | ✅"}
+
+data: {"content":" 一致 |\n| "}
+
+data: {"content":"角灯 | 外 "}
+
+data: {"content":"30°-60°"}
+
+data: {"content":" | 上 10°"}
+
+data: {"content":" / 下 10°"}
+
+data: {"content":" | ✅ 一致 |\n"}
+
+data: {"content":"| 后雾"}
+
+data: {"content":"灯 | 左右"}
+
+data: {"content":"各 25° |"}
+
+data: {"content":" 上 5° /"}
+
+data: {"content":" 下 5° |"}
+
+data: {"content":" ✅ 一致 |\n|"}
+
+data: {"content":" 前位灯 | 内"}
+
+data: {"content":" 45° / 外"}
+
+data: {"content":" 80° | 上"}
+
+data: {"content":" 15° / 下"}
+
+data: {"content":" 15° | ✅"}
+
+data: {"content":" 一致 |\n| 后"}
+
+data: {"content":"位灯 | 内 "}
+
+data: {"content":"45° / 外 "}
+
+data: {"content":"80° | 上 "}
+
+data: {"content":"15° / 下 "}
+
+data: {"content":"15° | ✅ 一"}
+
+data: {"content":"致 |\n| 昼"}
+
+data: {"content":"间行驶灯 |"}
+
+data: {"content":" 外"}
+
+data: {"content":" 20° / 内"}
+
+data: {"content":" 20° | 上"}
+
+data: {"content":" 10° / 下"}
+
+data: {"content":" 10° | ✅"}
+
+data: {"content":" 一致 |\n\n###"}
+
+data: {"content":" 4"}
+
+data: {"content":".3 AFS 发"}
+
+data: {"content":"光单元几何关系"}
+
+data: {"content":"\n\n| 参数 | A"}
+
+data: {"content":" 草案 "}
+
+data: {"content":"5.3.4"}
+
+data: {"content":".1 | B "}
+
+data: {"content":"2019"}
+
+data: {"content":" 5.22"}
+
+data: {"content":".4."}
+
+data: {"content":"1 | C UN R"}
+
+data: {"content":"48 6.22"}
+
+data: {"content":".4.1 |\n"}
+
+data: {"content":"|---|---|---|---|\n|"}
+
+data: {"content":" A ≤ 400"}
+
+data: {"content":" mm | ✅"}
+
+data: {"content":" | ✅ | ✅ |\n"}
+
+data: {"content":"| B"}
+
+data: {"content":" ≥ 600 mm |"}
+
+data: {"content":" ✅（"}
+
+data: {"content":"车宽"}
+
+data: {"content":"<1300 时 ≥"}
+
+data: {"content":"400） | ✅ |"}
+
+data: {"content":" ✅ |\n| C"}
+
+data: {"content":" ≤ 200 mm（"}
+
+data: {"content":"对称"}
+
+data: {"content":"附加单元"}
+
+data: {"content":"） | ✅ | ✅"}
+
+data: {"content":" | ✅ |\n| D"}
+
+data: {"content":" ≤ 400 mm |"}
+
+data: {"content":" ✅ | ✅ |"}
+
+data: {"content":" ✅ |\n| E ≤"}
+
+data: {"content":" 140 mm | ✅"}
+
+data: {"content":" | ✅ | ✅ |\n"}
+
+data: {"content":"| F ≥ 250"}
+
+data: {"content":" mm | ✅ | ✅"}
+
+data: {"content":" | ✅ |\n| G"}
+
+data: {"content":" ≤ 1200 mm"}
+
+data: {"content":" | ✅ | ✅ |"}
+
+data: {"content":" ✅ |\n\n【"}
+
+data: {"content":"原文"}
+
+data: {"content":"事实】A 草案"}
+
+data: {"content":" 5.3."}
+
+data: {"content":"4.1 引入"}
+
+data: {"content":" G ≤"}
+
+data: {"content":" 1200 mm 上"}
+
+data: {"content":"限与"}
+
+data: {"content":" C"}
+
+data: {"content":" UN R48 一致"}
+
+data: {"content":"；B 201"}
+
+data: {"content":"9 仅"}
+
+data: {"content":" 5.22"}
+
+data: {"content":".4.1"}
+
+data: {"content":" 标注\"符合"}
+
+data: {"content":" 5.2"}
+
+data: {"content":".4.2\""}
+
+data: {"content":"未"}
+
+data: {"content":"单"}
+
+data: {"content":"列上限。\n\n---\n\n##"}
+
+data: {"content":" 五、联网证据补充"}
+
+data: {"content":"\n\n由于三份文件"}
+
+data: {"content":"均为官方"}
+
+data: {"content":"标准"}
+
+data: {"content":"文本，需"}
+
+data: {"content":"通过官方"}
+
+data: {"content":"渠道核实变更"}
+
+data: {"content":"条款：\n\n| 证据"}
+
+data: {"content":"来源 | 用途 |"}
+
+data: {"content":" 链接/"}
+
+data: {"content":"途径"}
+
+data: {"content":" |\n|---|---|---|\n|"}
+
+data: {"content":" UNECE WP."}
+
+data: {"content":"29 工作文件"}
+
+data: {"content":" | 核实"}
+
+data: {"content":" UN"}
+
+data: {"content":" R48 09 系列"}
+
+data: {"content":" + S1 官方"}
+
+data: {"content":"文本 | https"}
+
+data: {"content":"://une"}
+
+data: {"content":"ce.org/transport"}
+
+data: {"content":"/vehicle-regulations |\n"}
+
+data: {"content":"| 全国"}
+
+data: {"content":"标准信息公共服务平台 |"}
+
+data: {"content":" 核实 GB 478"}
+
+data: {"content":"5 系列"}
+
+data: {"content":"演变"}
+
+data: {"content":" | http"}
+
+data: {"content":"://www.std"}
+
+data: {"content":".samr.gov.cn"}
+
+data: {"content":"/（"}
+
+data: {"content":"需付费/"}
+
+data: {"content":"订阅"}
+
+data: {"content":"） |\n| 国家汽车"}
+
+data: {"content":"标准化技术"}
+
+data: {"content":"委员会（S"}
+
+data: {"content":"AC/TC 114"}
+
+data: {"content":"） | GB"}
+
+data: {"content":" 478"}
+
+data: {"content":"5 草案反馈意见"}
+
+data: {"content":"渠道"}
+
+data: {"content":" | 工业"}
+
+data: {"content":"和信息化部归"}
+
+data: {"content":"口 |\n| 国家市场"}
+
+data: {"content":"监督管理总局 |"}
+
+data: {"content":" 强制性"}
+
+data: {"content":"国家标准发布公告"}
+
+data: {"content":" | https://www.s"}
+
+data: {"content":"amr.gov.cn/"}
+
+data: {"content":" |\n\n**【待人工"}
+
+data: {"content":"确认】** A"}
+
+data: {"content":" 草案 2026"}
+
+data: {"content":"-08-26 V"}
+
+data: {"content":"4.3."}
+
+data: {"content":"5 为内部"}
+
+data: {"content":"草案"}
+
+data: {"content":"版本，未公开发布，最终"}
+
+data: {"content":"条文可能"}
+
+data: {"content":"与"}
+
+data: {"content":"本"}
+
+data: {"content":"分析"}
+
+data: {"content":"存在差异"}
+
+data: {"content":"。法"}
+
+data: {"content":"务/认证"}
+
+data: {"content":"团队应通过"}
+
+data: {"content":"工信部或"}
+
+data: {"content":" SAC"}
+
+data: {"content":"/TC 114 "}
+
+data: {"content":"索取最终"}
+
+data: {"content":"送"}
+
+data: {"content":"审稿。\n\n---\n\n##"}
+
+data: {"content":" 六、差异严重"}
+
+data: {"content":"性分级\n\n|"}
+
+data: {"content":" 严重性 | "}
+
+data: {"content":"差异项 |\n"}
+
+data: {"content":"|---|---|\n| **"}
+
+data: {"content":"高（High"}
+
+data: {"content":"）** | "}
+
+data: {"content":"① ADS"}
+
+data: {"content":" 标志灯全新"}
+
+data: {"content":"引入；"}
+
+data: {"content":"② A2"}
+
+data: {"content":" 类"}
+
+data: {"content":"位置灯新增"}
+
+data: {"content":"自动激活"}
+
+data: {"content":"要求"}
+
+data: {"content":"；③ 主"}
+
+data: {"content":"/"}
+
+data: {"content":"从属/扩展功能"}
+
+data: {"content":"章节重构"}
+
+data: {"content":"；"}
+
+data: {"content":"④ 近"}
+
+data: {"content":"光倾斜"}
+
+data: {"content":"度公式化 |\n|"}
+
+data: {"content":" **中（Medium）"}
+
+data: {"content":"** | ①"}
+
+data: {"content":" A"}
+
+data: {"content":"FS 与远近"}
+
+data: {"content":"光灯章节合并；②"}
+
+data: {"content":" 驾驶员辅助投射/"}
+
+data: {"content":"光信号投射新增；"}
+
+data: {"content":"③ 角"}
+
+data: {"content":"灯/"}
+
+data: {"content":"慢"}
+
+data: {"content":"行灯速度"}
+
+data: {"content":"阈值统一"}
+
+data: {"content":"（15 km"}
+
+data: {"content":"/h，与"}
+
+data: {"content":" B 的"}
+
+data: {"content":" 10 km/h 不"}
+
+data: {"content":"一致）"}
+
+data: {"content":" |\n| **低（"}
+
+data: {"content":"Low）** | "}
+
+data: {"content":"① 引用标准"}
+
+data: {"content":"更新（如"}
+
+data: {"content":" GB/T 456"}
+
+data: {"content":"03 "}
+
+data: {"content":"替代 GB 157"}
+
+data: {"content":"66.1"}
+
+data: {"content":"）；② 电压允"}
+
+data: {"content":"差文字"}
+
+data: {"content":"微"}
+
+data: {"content":"调；③ 图示"}
+
+data: {"content":"与示例"}
+
+data: {"content":"更新"}
+
+data: {"content":" |\n\n---\n\n```"}
+
+data: {"content":"json\n{\n  \""}
+
+data: {"content":"changes\": [\n    {\n"}
+
+data: {"content":"      \"id\": \""}
+
+data: {"content":"CHG"}
+
+data: {"content":"-001\",\n      \""}
+
+data: {"content":"title\": \"章节"}
+
+data: {"content":"体系"}
+
+data: {"content":"重构：主"}
+
+data: {"content":"/从属/扩展"}
+
+data: {"content":"功能拆分\",\n      \""}
+
+data: {"content":"type\": \"structural\",\n"}
+
+data: {"content":"      \"sever"}
+
+data: {"content":"ity\": \"high"}
+
+data: {"content":"\",\n      \"oldExcerpt"}
+
+data: {"content":"\": \"5"}
+
+data: {"content":" 特殊规定（5"}
+
+data: {"content":".1 远光灯"}
+
+data: {"content":"..."}
+
+data: {"content":"5.26 追"}
+
+data: {"content":"尾警告信号，混合"}
+
+data: {"content":"编排）\",\n      \""}
+
+data: {"content":"newExcerpt\": \"5"}
+
+data: {"content":" 主功能的特殊规定；"}
+
+data: {"content":"6 从属功能的特殊"}
+
+data: {"content":"规定；"}
+
+data: {"content":"7 扩展功能的"}
+
+data: {"content":"特殊规定\",\n      \""}
+
+data: {"content":"anchor\": \"A"}
+
+data: {"content":" 草案目录"}
+
+data: {"content":"页 II"}
+
+data: {"content":"；B 201"}
+
+data: {"content":"9 第 III"}
+
+data: {"content":" 页"}
+
+data: {"content":"目录\"\n    },\n   "}
+
+data: {"content":" {\n      \"id\":"}
+
+data: {"content":" \"CHG-002"}
+
+data: {"content":"\",\n      \"title\":"}
+
+data: {"content":" \"近光"}
+
+data: {"content":"倾斜度由"}
+
+data: {"content":"离散"}
+
+data: {"content":"表格改为函数公式\",\n"}
+
+data: {"content":"      \"type"}
+
+data: {"content":"\": \"parameter"}
+
+data: {"content":"_form"}
+
+data: {"content":"ula\",\n      \"sever"}
+
+data: {"content":"ity\": \"high\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"0.8"}
+
+data: {"content":"≤h≤1."}
+
+data: {"content":"0m：限值"}
+
+data: {"content":":-"}
+
+data: {"content":"0.5%~-"}
+
+data: {"content":"2.5%；"}
+
+data: {"content":"初始照准:-1"}
+
+data: {"content":".0%~-1"}
+
+data: {"content":".5% 或"}
+
+data: {"content":" -1.0%"}
+
+data: {"content":"~-3.0%；"}
+
+data: {"content":"-"}
+
+data: {"content":"1.5%~-"}
+
+data: {"content":"2.0%\",\n"}
+
+data: {"content":"      \"newExcerpt"}
+
+data: {"content":"\": \"0.9"}
+
+data: {"content":"<h≤1.2：上限-(h×"}
+
+data: {"content":"2.17-1"}
+
+data: {"content":".45)，下限-("}
+
+data: {"content":"h×2.17"}
+
+data: {"content":"+0.15"}
+
+data: {"content":")\",\n      \"anchor\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"5.2.6"}
+
+data: {"content":".1."}
+
+data: {"content":"2 表 7；"}
+
+data: {"content":"B 2019 "}
+
+data: {"content":"5.2.6"}
+
+data: {"content":".1.2；"}
+
+data: {"content":"C UN R48 "}
+
+data: {"content":"6.2.6"}
+
+data: {"content":".1.2\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"id\": \"CH"}
+
+data: {"content":"G-003\",\n     "}
+
+data: {"content":" \"title\": \"新增"}
+
+data: {"content":" ADS 标志灯（"}
+
+data: {"content":"自动化"}
+
+data: {"content":"驾驶系统）\",\n     "}
+
+data: {"content":" \"type\": \"new"}
+
+data: {"content":"_function\",\n      \"sever"}
+
+data: {"content":"ity\": \"high\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"无对应"}
+
+data: {"content":"内容\",\n      \"new"}
+
+data: {"content":"Excerpt\": \"5"}
+
+data: {"content":".24.1"}
+
+data: {"content":"：L3级及以上"}
+
+data: {"content":"自动化驾驶车辆，应配备"}
+
+data: {"content":"前ADS标志灯、后"}
+
+data: {"content":"ADS标志灯和侧"}
+
+data: {"content":"ADS标志灯\",\n     "}
+
+data: {"content":" \"anchor\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"24；B "}
+
+data: {"content":"2019 无"}
+
+data: {"content":"；C UN R48"}
+
+data: {"content":" 无\"\n    },\n   "}
+
+data: {"content":" {\n      \"id\":"}
+
+data: {"content":" \"CHG-004"}
+
+data: {"content":"\",\n      \"title\":"}
+
+data: {"content":" \"新增 A2 类"}
+
+data: {"content":"自动位置"}
+
+data: {"content":"灯\",\n      \"type"}
+
+data: {"content":"\": \"new_function\",\n"}
+
+data: {"content":"      \"severity\":"}
+
+data: {"content":" \"high\",\n      \""}
+
+data: {"content":"oldExcerpt\": \"B"}
+
+data: {"content":" 2019 "}
+
+data: {"content":"5.9 仅简单"}
+
+data: {"content":"电路"}
+
+data: {"content":"连接，无"}
+
+data: {"content":" A1"}
+
+data: {"content":"/A2 "}
+
+data: {"content":"分类\",\n      \"new"}
+
+data: {"content":"Excerpt\": \"5."}
+
+data: {"content":"9.7"}
+
+data: {"content":".2 A"}
+
+data: {"content":"2 类"}
+
+data: {"content":"位置灯：发动机可"}
+
+data: {"content":"启动时应"}
+
+data: {"content":"自动激活并点亮\",\n"}
+
+data: {"content":"      \"anchor\": \""}
+
+data: {"content":"A 草案 5"}
+
+data: {"content":".9.1"}
+
+data: {"content":" /"}
+
+data: {"content":" 5.9."}
+
+data: {"content":"7.2；B"}
+
+data: {"content":" 2019 5"}
+
+data: {"content":".9；C UN"}
+
+data: {"content":" R48 "}
+
+data: {"content":"6.9"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"id"}
+
+data: {"content":"\": \"CHG-"}
+
+data: {"content":"005\",\n      \"title"}
+
+data: {"content":"\": \"新增驾驶员辅助"}
+
+data: {"content":"投射功能\",\n      \""}
+
+data: {"content":"type\": \"new_function"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"medium"}
+
+data: {"content":"\",\n      \"old"}
+
+data: {"content":"Excerpt\": \"B "}
+
+data: {"content":"2019 无对应章节"}
+
+data: {"content":"\",\n      \"newExcerpt"}
+
+data: {"content":"\": \"6.1"}
+
+data: {"content":" 驾驶员辅助投射功能"}
+
+data: {"content":"：作为近/"}
+
+data: {"content":"远光自适应"}
+
+data: {"content":"从"}
+
+data: {"content":"属功能，自动"}
+
+data: {"content":"提供"}
+
+data: {"content":"警示"}
+
+data: {"content":"信息"}
+
+data: {"content":"\",\n      \"anchor\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"6.1；C"}
+
+data: {"content":" UN R48 5"}
+
+data: {"content":".35 +"}
+
+data: {"content":" Annex 16\"\n   "}
+
+data: {"content":" },\n    {\n      \""}
+
+data: {"content":"id\": \"CHG"}
+
+data: {"content":"-006\",\n      \""}
+
+data: {"content":"title\": \"新增光"}
+
+data: {"content":"信号投射功能\",\n     "}
+
+data: {"content":" \"type\": \"new"}
+
+data: {"content":"_function\",\n      \"sever"}
+
+data: {"content":"ity\": \"medium\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"B 2019"}
+
+data: {"content":" 无；"}
+
+data: {"content":"C UN R48 "}
+
+data: {"content":"提及 Annex 14"}
+
+data: {"content":" 但无单独章节\",\n"}
+
+data: {"content":"      \"newExcerpt\":"}
+
+data: {"content":" \"6.2 光"}
+
+data: {"content":"信号投射功能：在路"}
+
+data: {"content":"面上投射符号加强"}
+
+data: {"content":"光"}
+
+data: {"content":"信号\",\n"}
+
+data: {"content":"      \"anchor\": \""}
+
+data: {"content":"A 草案 6"}
+
+data: {"content":".2\"\n    },\n"}
+
+data: {"content":"    {\n      \"id"}
+
+data: {"content":"\": \"CHG-"}
+
+data: {"content":"007\",\n      \"title"}
+
+data: {"content":"\": \"新增图文"}
+
+data: {"content":"交互功能\",\n      \""}
+
+data: {"content":"type\": \"new_function"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"medium\",\n"}
+
+data: {"content":"      \"old"}
+
+data: {"content":"Excerpt\": \"B "}
+
+data: {"content":"2019 / C UN"}
+
+data: {"content":" R48 无对应独立"}
+
+data: {"content":"章节\",\n      \"new"}
+
+data: {"content":"Excerpt\": \"6."}
+
+data: {"content":"3 图文交互："}
+
+data: {"content":"前"}
+
+data: {"content":"位灯、后"}
+
+data: {"content":"位灯、ADS "}
+
+data: {"content":"标志灯允许配备"}
+
+data: {"content":"图文交互从"}
+
+data: {"content":"属功能\",\n      \""}
+
+data: {"content":"anchor\": \"A "}
+
+data: {"content":"草案 6.3"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"id\": \""}
+
+data: {"content":"CHG-008\",\n"}
+
+data: {"content":"      \"title\": \""}
+
+data: {"content":"新增发光徽标规定"}
+
+data: {"content":"\",\n      \"type\":"}
+
+data: {"content":" \"new_function\",\n     "}
+
+data: {"content":" \"severity\": \""}
+
+data: {"content":"medium\",\n      \"old"}
+
+data: {"content":"Excerpt\": \"B "}
+
+data: {"content":"2019 无"}
+
+data: {"content":"独立"}
+
+data: {"content":"章节；C UN R"}
+
+data: {"content":"48 5.5"}
+
+data: {"content":".5 限制性"}
+
+data: {"content":"提及\",\n      \"new"}
+
+data: {"content":"Excerpt\": \"6."}
+
+data: {"content":"4 发光徽标"}
+
+data: {"content":"：分为光信号装置"}
+
+data: {"content":"发光徽标（≤"}
+
+data: {"content":"2"}
+
+data: {"content":"只/朝"}
+
+data: {"content":"前朝"}
+
+data: {"content":"后）和"}
+
+data: {"content":"照明装置发光徽标"}
+
+data: {"content":"（≤400"}
+
+data: {"content":" cm²）\",\n     "}
+
+data: {"content":" \"anchor\": \"A"}
+
+data: {"content":" 草案 6."}
+
+data: {"content":"4\"\n    },\n   "}
+
+data: {"content":" {\n      \""}
+
+data: {"content":"id\": \"CHG"}
+
+data: {"content":"-009\",\n      \""}
+
+data: {"content":"title\": \"AFS"}
+
+data: {"content":" 章节位置"}
+
+data: {"content":"调整：从"}
+
+data: {"content":"独立"}
+
+data: {"content":"章节并"}
+
+data: {"content":"入远近光灯\",\n"}
+
+data: {"content":"      \"type\": \""}
+
+data: {"content":"structural\",\n      \"sever"}
+
+data: {"content":"ity\": \"medium"}
+
+data: {"content":"\",\n      \"oldExcerpt"}
+
+data: {"content":"\": \"B 201"}
+
+data: {"content":"9 5.22"}
+
+data: {"content":" 自适应前照明系统"}
+
+data: {"content":"（AFS）独立"}
+
+data: {"content":"成章"}
+
+data: {"content":"\",\n      \"newExcerpt"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 5.3 "}
+
+data: {"content":"带有自适应模式的前照"}
+
+data: {"content":"灯（近光灯和"}
+
+data: {"content":"/或远光灯）"}
+
+data: {"content":"\",\n      \"anchor"}
+
+data: {"content":"\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"3；B 201"}
+
+data: {"content":"9 5.22"}
+
+data: {"content":"；C UN R48"}
+
+data: {"content":" 6.22\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"id\": \"CH"}
+
+data: {"content":"G-010\",\n     "}
+
+data: {"content":" \"title\": \"电压"}
+
+data: {"content":"允差表述"}
+
+data: {"content":"差异\",\n      \"type"}
+
+data: {"content":"\": \"parameter_text"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"low\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"C"}
+
+data: {"content":" UN R48 5"}
+
+data: {"content":".27.2："}
+
+data: {"content":"终端"}
+
+data: {"content":"电压不应超过 13"}
+
+data: {"content":".5V（"}
+
+data: {"content":"12V 系统"}
+
+data: {"content":"）的"}
+
+data: {"content":" 3"}
+
+data: {"content":"% 以上\",\n"}
+
+data: {"content":"      \"newExcerpt\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"4.25"}
+
+data: {"content":"b)"}
+
+data: {"content":" / B 201"}
+
+data: {"content":"9 "}
+
+data: {"content":"4.27b"}
+
+data: {"content":")："}
+
+data: {"content":"终端稳定"}
+
+data: {"content":"电压不得超过 13"}
+
+data: {"content":".5V（12"}
+
+data: {"content":"V 系统）或 28"}
+
+data: {"content":".0V（24"}
+
+data: {"content":"V 系统）的 5"}
+
+data: {"content":"%"}
+
+data: {"content":" 以上\",\n      \"anchor"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 4.25；"}
+
+data: {"content":"B 2019 "}
+
+data: {"content":"4.27；C"}
+
+data: {"content":" UN R48 5"}
+
+data: {"content":".27.2\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"id\": \"CH"}
+
+data: {"content":"G-011\",\n     "}
+
+data: {"content":" \"title\": \"远"}
+
+data: {"content":"光灯最大光强度量"}
+
+data: {"content":"单位差异"}
+
+data: {"content":"\",\n      \"type"}
+
+data: {"content":"\": \"parameter_unit"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"low\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"B 2019"}
+
+data: {"content":" 5.1."}
+
+data: {"content":"9.1：所有"}
+
+data: {"content":"可同时开启"}
+
+data: {"content":"的远光灯，其"}
+
+data: {"content":"最大发光强度之和应"}
+
+data: {"content":"不超过 430000"}
+
+data: {"content":"cd"}
+
+data: {"content":"\",\n      \"newExcerpt"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 5.1."}
+
+data: {"content":"9.1：最大"}
+
+data: {"content":"发光强度之和应不超过"}
+
+data: {"content":" 430 "}
+
+data: {"content":"000 cd；C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"1.9.1"}
+
+data: {"content":"：reference value shall"}
+
+data: {"content":" not exceed 100\",\n"}
+
+data: {"content":"      \"anchor\": \""}
+
+data: {"content":"A 草案 5"}
+
+data: {"content":".1.9."}
+
+data: {"content":"1；B 201"}
+
+data: {"content":"9 5.1"}
+
+data: {"content":".9.1；"}
+
+data: {"content":"C UN R48 "}
+
+data: {"content":"6.1.9"}
+
+data: {"content":".1\"\n    },\n"}
+
+data: {"content":"    {\n      \"id"}
+
+data: {"content":"\": \"CH"}
+
+data: {"content":"G-012\",\n     "}
+
+data: {"content":" \"title\": \"角"}
+
+data: {"content":"灯与倒车联动"}
+
+data: {"content":"速度"}
+
+data: {"content":"阈值\",\n      \"type"}
+
+data: {"content":"\": \"parameter_value"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"medium\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"B 2019"}
+
+data: {"content":" 5.20"}
+
+data: {"content":".7.3"}
+
+data: {"content":"：当倒车灯打开时"}
+
+data: {"content":"...车辆向前行驶速度"}
+
+data: {"content":"超过 10km"}
+
+data: {"content":"/h 时，"}
+
+data: {"content":"角灯应关闭\",\n"}
+
+data: {"content":"      \"newExcerpt\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"5.5.7"}
+
+data: {"content":".4：当倒车灯"}
+
+data: {"content":"点亮时...车辆"}
+
+data: {"content":"向前行驶速度超过 "}
+
+data: {"content":"15km/h 时，"}
+
+data: {"content":"角灯应关闭；"}
+
+data: {"content":"C UN R48 "}
+
+data: {"content":"6.20"}
+
+data: {"content":".7.2"}
+
+data: {"content":"(b"}
+
+data: {"content":")：15 km/h\",\n"}
+
+data: {"content":"      \"anchor\": \""}
+
+data: {"content":"A 草案 5"}
+
+data: {"content":".5.7."}
+
+data: {"content":"4；B 201"}
+
+data: {"content":"9 5.20"}
+
+data: {"content":".7.3；"}
+
+data: {"content":"C UN R48 "}
+
+data: {"content":"6.20.7"}
+
+data: {"content":".2\"\n    },\n"}
+
+data: {"content":"    {\n      \"id"}
+
+data: {"content":"\": \"CHG-"}
+
+data: {"content":"013\",\n      \"title"}
+
+data: {"content":"\": \"慢"}
+
+data: {"content":"行灯最大"}
+
+data: {"content":"开启"}
+
+data: {"content":"速度\",\n      \"type"}
+
+data: {"content":"\": \"parameter_value\",\n"}
+
+data: {"content":"      \"severity\":"}
+
+data: {"content":" \"medium\",\n      \""}
+
+data: {"content":"oldExcerpt\": \"B"}
+
+data: {"content":" 2019 5"}
+
+data: {"content":".25"}
+
+data: {"content":".7：手动"}
+
+data: {"content":"启动后..."}
+
+data: {"content":"自动"}
+
+data: {"content":"开启"}
+
+data: {"content":"直至车速达到 10"}
+
+data: {"content":"km/h\",\n      \""}
+
+data: {"content":"newExcerpt\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"22.7."}
+
+data: {"content":"1：..."}
+
+data: {"content":"自动"}
+
+data: {"content":"点亮直至车速达到 "}
+
+data: {"content":"15km/h；C"}
+
+data: {"content":" UN R48 6"}
+
+data: {"content":".26"}
+
+data: {"content":".7：15 km"}
+
+data: {"content":"/h\",\n      \"anchor"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 5.22"}
+
+data: {"content":".7."}
+
+data: {"content":"1；B 201"}
+
+data: {"content":"9 5.25"}
+
+data: {"content":".7；C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"26.7\"\n   "}
+
+data: {"content":" },\n    {\n      \""}
+
+data: {"content":"id\": \"CHG"}
+
+data: {"content":"-014\",\n      \""}
+
+data: {"content":"title\": \"B"}
+
+data: {"content":" 2019 "}
+
+data: {"content":"缺少"}
+
+data: {"content":" Answer"}
+
+data: {"content":"-back signal"}
+
+data: {"content":" 与 Exterior courtesy lamp"}
+
+data: {"content":"\",\n      \"type"}
+
+data: {"content":"\": \"coverage_g"}
+
+data: {"content":"ap\",\n      \"sever"}
+
+data: {"content":"ity\": \"low"}
+
+data: {"content":"\",\n      \"old"}
+
+data: {"content":"Excerpt\": \"B"}
+
+data: {"content":" 2019 与"}
+
+data: {"content":" A"}
+
+data: {"content":" 草案均无对应"}
+
+data: {"content":"章节"}
+
+data: {"content":"\",\n      \"new"}
+
+data: {"content":"Excerpt\": \"C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"24 Exterior"}
+
+data: {"content":" courtesy lamp"}
+
+data: {"content":"；6.27"}
+
+data: {"content":" Answer-back signal\",\n     "}
+
+data: {"content":" \"anchor\": \"C"}
+
+data: {"content":" UN R48 "}
+
+data: {"content":"6.24 / "}
+
+data: {"content":"6.27\"\n   "}
+
+data: {"content":" },\n    {\n      \""}
+
+data: {"content":"id\": \"CHG"}
+
+data: {"content":"-015\",\n      \""}
+
+data: {"content":"title\": \"实施"}
+
+data: {"content":"日期条款"}
+
+data: {"content":"位置"}
+
+data: {"content":"变更"}
+
+data: {"content":"\",\n      \"type"}
+
+data: {"content":"\": \"structural\",\n     "}
+
+data: {"content":" \"severity\": \""}
+
+data: {"content":"low\",\n      \"old"}
+
+data: {"content":"Excerpt\": \"B "}
+
+data: {"content":"2019 第 7"}
+
+data: {"content":" 章 "}
+
+data: {"content":"实施日期\",\n      \""}
+
+data: {"content":"newExcerpt\": \"A"}
+
+data: {"content":" 草案第 10"}
+
+data: {"content":" 章 实施日期（"}
+
+data: {"content":"增加表"}
+
+data: {"content":" 7 和"}
+
+data: {"content":"图 1 过渡"}
+
+data: {"content":"期："}
+
+data: {"content":"自实施之日起第"}
+
+data: {"content":" 25/"}
+
+data: {"content":"37/"}
+
+data: {"content":"61 个月）\",\n     "}
+
+data: {"content":" \"anchor\": \"A"}
+
+data: {"content":" 草案 10"}
+
+data: {"content":"；B 2019"}
+
+data: {"content":" 7\"\n    },\n"}
+
+data: {"content":"    {\n      \"id"}
+
+data: {"content":"\": \"CH"}
+
+data: {"content":"G-016\",\n     "}
+
+data: {"content":" \"title\": \"规范性"}
+
+data: {"content":"引用文件"}
+
+data: {"content":"变更"}
+
+data: {"content":"\",\n      \"type"}
+
+data: {"content":"\": \"reference_update"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"low\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"B 2019"}
+
+data: {"content":" 引用 GB "}
+
+data: {"content":"157"}
+
+data: {"content":"66.1、GB"}
+
+data: {"content":" 4599（"}
+
+data: {"content":"灯丝灯泡）、GB"}
+
+data: {"content":" 21259"}
+
+data: {"content":"、GB 259"}
+
+data: {"content":"91 等\",\n      \""}
+
+data: {"content":"newExcerpt\": \"A"}
+
+data: {"content":" 草案引用"}
+
+data: {"content":" GB/T 45603"}
+
+data: {"content":"、"}
+
+data: {"content":"UN"}
+
+data: {"content":" R37"}
+
+data: {"content":"/R99/R"}
+
+data: {"content":"128 替代部分"}
+
+data: {"content":"国"}
+
+data: {"content":"标\",\n      \"anchor"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 第"}
+
+data: {"content":" 5"}
+
+data: {"content":" 页 第"}
+
+data: {"content":" 2 章"}
+
+data: {"content":"；B 201"}
+
+data: {"content":"9 第 5-"}
+
+data: {"content":"6 页 第"}
+
+data: {"content":" 2 章\"\n   "}
+
+data: {"content":" },\n    {\n      \""}
+
+data: {"content":"id\": \"CHG"}
+
+data: {"content":"-017\",\n      \""}
+
+data: {"content":"title\": \"示"}
+
+data: {"content":"廓灯"}
+
+data: {"content":"与位置灯最小"}
+
+data: {"content":"间距\",\n      \"type"}
+
+data: {"content":"\": \"parameter_value"}
+
+data: {"content":"\",\n      \"sever"}
+
+data: {"content":"ity\": \"low\",\n"}
+
+data: {"content":"      \"oldExcerpt\":"}
+
+data: {"content":" \"B 201"}
+
+data: {"content":"9 5.13"}
+
+data: {"content":".9：在"}
+
+data: {"content":"两灯各自的基准轴"}
+
+data: {"content":"线方向上，视表面上"}
+
+data: {"content":"最相邻的点在一"}
+
+data: {"content":"横向垂直平面内的投影"}
+
+data: {"content":"间距应不小于 "}
+
+data: {"content":"200mm\",\n      \""}
+
+data: {"content":"newExcerpt\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"13.9：在基准"}
+
+data: {"content":"轴线方向上，两"}
+
+data: {"content":"灯视表面间距不"}
+
+data: {"content":"小于 200mm（"}
+
+data: {"content":"表述统一）\",\n     "}
+
+data: {"content":" \"anchor\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"13.9；B"}
+
+data: {"content":" 2019 5"}
+
+data: {"content":".13.9\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"id\": \"CH"}
+
+data: {"content":"G-018\",\n     "}
+
+data: {"content":" \"title\": \"B"}
+
+data: {"content":" 201"}
+
+data: {"content":"9 与"}
+
+data: {"content":" C"}
+
+data: {"content":" UN"}
+
+data: {"content":" R48 关于 D"}
+
+data: {"content":"RL 转向"}
+
+data: {"content":"灯联动要求差异"}
+
+data: {"content":"\",\n      \"type\":"}
+
+data: {"content":" \"parameter_co"}
+
+data: {"content":"verage\",\n      \"sever"}
+
+data: {"content":"ity\": \"low"}
+
+data: {"content":"\",\n      \"oldExcerpt"}
+
+data: {"content":"\": \"B 201"}
+
+data: {"content":"9 5.19"}
+
+data: {"content":".7.6"}
+
+data: {"content":"：DRL 与"}
+
+data: {"content":"转向灯联动逻辑"}
+
+data: {"content":"（部分"}
+
+data: {"content":"覆盖"}
+
+data: {"content":"）\",\n      \"new"}
+
+data: {"content":"Excerpt\": \"C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"19.7.6"}
+
+data: {"content":"-6.19"}
+
+data: {"content":".7.7："}
+
+data: {"content":"分 a/b 两"}
+
+data: {"content":"类完全"}
+
+data: {"content":"覆盖，HV"}
+
+data: {"content":" 光"}
+
+data: {"content":"强 50% "}
+
+data: {"content":"阈值规则；A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"19.7.6"}
+
+data: {"content":"/5"}
+
+data: {"content":".19.7."}
+
+data: {"content":"7 沿用 C"}
+
+data: {"content":" "}
+
+data: {"content":"逻辑\",\n      \"anchor"}
+
+data: {"content":"\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"19.7；B"}
+
+data: {"content":" 2019 5"}
+
+data: {"content":".19.7；"}
+
+data: {"content":"C UN R48 "}
+
+data: {"content":"6.19.7"}
+
+data: {"content":"\"\n    }\n  ],\n"}
+
+data: {"content":"  \"parameters\": [\n"}
+
+data: {"content":"    {\n      \"name"}
+
+data: {"content":"\": \"近"}
+
+data: {"content":"光灯最大光强总和"}
+
+data: {"content":"（远"}
+
+data: {"content":"光灯）\",\n      \""}
+
+data: {"content":"oldValue\": \"430"}
+
+data: {"content":"000\",\n      \"new"}
+
+data: {"content":"Value\": \"430"}
+
+data: {"content":"000 (A/B"}
+
+data: {"content":") vs reference"}
+
+data: {"content":" "}
+
+data: {"content":"100 (C)\",\n     "}
+
+data: {"content":" \"unit\": \"cd"}
+
+data: {"content":" /"}
+
+data: {"content":" REF\",\n"}
+
+data: {"content":"      \"source"}
+
+data: {"content":"\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"1.9.1"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 5.1."}
+
+data: {"content":"9.1"}
+
+data: {"content":" / C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"1.9.1"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name\": \""}
+
+data: {"content":"近光"}
+
+data: {"content":"倾斜度公式（"}
+
+data: {"content":"0.5≤"}
+
+data: {"content":"h≤0.9"}
+
+data: {"content":"m）\",\n      \""}
+
+data: {"content":"oldValue\": \"限"}
+
+data: {"content":"值 -"}
+
+data: {"content":"0.5%~-"}
+
+data: {"content":"2.5%；初始"}
+
+data: {"content":" -1.0%"}
+
+data: {"content":"~-1.5%（"}
+
+data: {"content":"离散）\",\n      \""}
+
+data: {"content":"newValue\": \"上限"}
+
+data: {"content":" -0.50%；"}
+
+data: {"content":"下限 -(h+1"}
+
+data: {"content":".2)（函数式"}
+
+data: {"content":"）\",\n      \"unit"}
+
+data: {"content":"\": \"%"}
+
+data: {"content":"\",\n      \"source"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":"表"}
+
+data: {"content":" 7 / B "}
+
+data: {"content":"2019 5."}
+
+data: {"content":"2.6.1"}
+
+data: {"content":".2 / C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"2.6"}
+
+data: {"content":".1."}
+
+data: {"content":"2\"\n    },\n   "}
+
+data: {"content":" {\n      \"name\":"}
+
+data: {"content":" \"近光"}
+
+data: {"content":"倾斜度公式（0"}
+
+data: {"content":".9"}
+
+data: {"content":"<h≤1.2m）\",\n      \"old"}
+
+data: {"content":"Value\": \"0"}
+
+data: {"content":".8≤h≤"}
+
+data: {"content":"1.0：限"}
+
+data: {"content":"值 -0.5"}
+
+data: {"content":"%~-2.5"}
+
+data: {"content":"%；初始"}
+
+data: {"content":" -1.0%"}
+
+data: {"content":"~-1.5%"}
+
+data: {"content":" 或 -1.0"}
+
+data: {"content":"%~-3.0"}
+
+data: {"content":"%；-1.5"}
+
+data: {"content":"%~-2.0"}
+
+data: {"content":"%\",\n      \"new"}
+
+data: {"content":"Value\": \"上限"}
+
+data: {"content":" -("}
+
+data: {"content":"h×2.17"}
+
+data: {"content":"-1.45)；"}
+
+data: {"content":"下限 -(h×2"}
+
+data: {"content":".17+0."}
+
+data: {"content":"15)\",\n      \"unit"}
+
+data: {"content":"\": \"%\",\n      \""}
+
+data: {"content":"source\": \"A "}
+
+data: {"content":"草案表 7 /"}
+
+data: {"content":" B 2019 "}
+
+data: {"content":"5.2.6"}
+
+data: {"content":".1.2 /"}
+
+data: {"content":" C UN R48 "}
+
+data: {"content":"6.2.6"}
+
+data: {"content":".1.2\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"name\": \"12"}
+
+data: {"content":"V 系统电压允"}
+
+data: {"content":"差\",\n      \"old"}
+
+data: {"content":"Value\": \"13."}
+
+data: {"content":"5V +"}
+
+data: {"content":"3%（"}
+
+data: {"content":"≤3% 超额"}
+
+data: {"content":"）\",\n      \"new"}
+
+data: {"content":"Value\": \"13."}
+
+data: {"content":"5V ±"}
+
+data: {"content":"5%（A/B）"}
+
+data: {"content":"vs"}
+
+data: {"content":" 13.5V"}
+
+data: {"content":" +3%（C）"}
+
+data: {"content":"\",\n      \"unit\":"}
+
+data: {"content":" \"V\",\n      \""}
+
+data: {"content":"source\": \"A "}
+
+data: {"content":"草案 4.25"}
+
+data: {"content":"b / B 201"}
+
+data: {"content":"9 4"}
+
+data: {"content":".27b / C"}
+
+data: {"content":" UN R48 5"}
+
+data: {"content":".27.2\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"name\": \"24"}
+
+data: {"content":"V 系统电压允差"}
+
+data: {"content":"\",\n      \"oldValue"}
+
+data: {"content":"\": \"28V"}
+
+data: {"content":" +3%"}
+
+data: {"content":"\",\n      \"newValue"}
+
+data: {"content":"\": \"28.0"}
+
+data: {"content":"V ±5%（"}
+
+data: {"content":"A/B）vs "}
+
+data: {"content":"28V +3%（"}
+
+data: {"content":"C）\",\n      \""}
+
+data: {"content":"unit\": \"V\",\n"}
+
+data: {"content":"      \"source"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 4.25b"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 4.27b"}
+
+data: {"content":" / C UN R48"}
+
+data: {"content":" 5.27."}
+
+data: {"content":"2\"\n    },\n   "}
+
+data: {"content":" {\n      \"name\":"}
+
+data: {"content":" \"转向灯"}
+
+data: {"content":"闪烁频率\",\n      \""}
+
+data: {"content":"oldValue\": \"90"}
+
+data: {"content":"±30\",\n      \""}
+
+data: {"content":"newValue\": \"90"}
+
+data: {"content":"±30（A"}
+
+data: {"content":"/B/C"}
+
+data: {"content":" 一"}
+
+data: {"content":"致）\",\n      \""}
+
+data: {"content":"unit\": \"次/min"}
+
+data: {"content":"\",\n      \"source\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"5.6"}
+
+data: {"content":".9 / B "}
+
+data: {"content":"2019 5."}
+
+data: {"content":"5.9 / C"}
+
+data: {"content":" UN R48 6"}
+
+data: {"content":".5.9"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name"}
+
+data: {"content":"\": \"紧急制动信号"}
+
+data: {"content":"频率\",\n      \"old"}
+
+data: {"content":"Value\": \"4"}
+
+data: {"content":".0±1."}
+
+data: {"content":"0\",\n      \"new"}
+
+data: {"content":"Value\": \"4."}
+
+data: {"content":"0±1.0"}
+
+data: {"content":"（A/B/C 一致"}
+
+data: {"content":"）\",\n      \"unit"}
+
+data: {"content":"\": \"Hz\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 7."}
+
+data: {"content":"2.7.1"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 5.23."}
+
+data: {"content":"7.1 / C"}
+
+data: {"content":" UN R48 6"}
+
+data: {"content":".23.7."}
+
+data: {"content":"1\"\n    },\n   "}
+
+data: {"content":" {\n      \"name"}
+
+data: {"content":"\": \"追"}
+
+data: {"content":"尾警告"}
+
+data: {"content":"信号作用时间\",\n     "}
+
+data: {"content":" \"oldValue\": \""}
+
+data: {"content":"≤3\",\n      \""}
+
+data: {"content":"newValue\": \"≤"}
+
+data: {"content":"3（A/B/C 一"}
+
+data: {"content":"致）\",\n      \""}
+
+data: {"content":"unit\": \"s"}
+
+data: {"content":"\",\n      \"source\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"7.3.7"}
+
+data: {"content":".6 / B "}
+
+data: {"content":"2019 5."}
+
+data: {"content":"26.7.6"}
+
+data: {"content":" / C UN R48"}
+
+data: {"content":" 6.25."}
+
+data: {"content":"7.6\"\n   "}
+
+data: {"content":" },\n    {\n      \""}
+
+data: {"content":"name\": \"追"}
+
+data: {"content":"尾警告 TTC 触发"}
+
+data: {"content":"阈值"}
+
+data: {"content":"（Vr"}
+
+data: {"content":">30）\",\n     "}
+
+data: {"content":" \"oldValue\": \""}
+
+data: {"content":"≤1.4\",\n"}
+
+data: {"content":"      \"newValue\":"}
+
+data: {"content":" \"≤1.4"}
+
+data: {"content":"（A/B/C 一致"}
+
+data: {"content":"）\",\n      \"unit"}
+
+data: {"content":"\": \"s\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 7."}
+
+data: {"content":"3.7.5"}
+
+data: {"content":" /"}
+
+data: {"content":" B 2019 "}
+
+data: {"content":"5.26.7"}
+
+data: {"content":".5 / C UN"}
+
+data: {"content":" R"}
+
+data: {"content":"48 6.25"}
+
+data: {"content":".7.5\"\n"}
+
+data: {"content":"    },\n    {\n     "}
+
+data: {"content":" \"name\": \"自动"}
+
+data: {"content":"远光关闭照"}
+
+data: {"content":"度阈值\",\n      \""}
+
+data: {"content":"oldValue\": \"700"}
+
+data: {"content":"0\",\n      \"new"}
+
+data: {"content":"Value\": \"7000"}
+
+data: {"content":"（A/B/C 一致"}
+
+data: {"content":"）\",\n      \"unit"}
+
+data: {"content":"\": \"lx\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"1.9.2"}
+
+data: {"content":".4 / B "}
+
+data: {"content":"2019 5."}
+
+data: {"content":"1.9.3"}
+
+data: {"content":".5 / C UN"}
+
+data: {"content":" R"}
+
+data: {"content":"48 6.1"}
+
+data: {"content":".9"}
+
+data: {"content":".3"}
+
+data: {"content":".5\"\n    },\n"}
+
+data: {"content":"    {\n      \"name"}
+
+data: {"content":"\": \"角灯关闭"}
+
+data: {"content":"速度阈值\",\n      \""}
+
+data: {"content":"oldValue\": \"40"}
+
+data: {"content":"\",\n      \"newValue"}
+
+data: {"content":"\": \"40（A"}
+
+data: {"content":"/B/C 一致）"}
+
+data: {"content":"\",\n      \"unit\":"}
+
+data: {"content":" \"km/h\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"5.7."}
+
+data: {"content":"1 / B 201"}
+
+data: {"content":"9 5.20"}
+
+data: {"content":".9"}
+
+data: {"content":" / C UN"}
+
+data: {"content":" R"}
+
+data: {"content":"48 6.20"}
+
+data: {"content":".9"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name\": \""}
+
+data: {"content":"角灯随"}
+
+data: {"content":"倒车灯"}
+
+data: {"content":"开启关闭"}
+
+data: {"content":"速度\",\n      \"old"}
+
+data: {"content":"Value\": \"10\",\n"}
+
+data: {"content":"      \"newValue\":"}
+
+data: {"content":" \"10"}
+
+data: {"content":"（B"}
+
+data: {"content":" 201"}
+
+data: {"content":"9）→"}
+
+data: {"content":" 15（A 草案"}
+
+data: {"content":" / C UN"}
+
+data: {"content":" R48）\",\n     "}
+
+data: {"content":" \"unit\": \"km"}
+
+data: {"content":"/h\",\n      \"source"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 5.5."}
+
+data: {"content":"7.4 /"}
+
+data: {"content":" B 2019 "}
+
+data: {"content":"5.20.7"}
+
+data: {"content":".3 / C UN"}
+
+data: {"content":" R48 6."}
+
+data: {"content":"20.7.2"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name"}
+
+data: {"content":"\": \"慢行灯"}
+
+data: {"content":"最大开启速度\",\n     "}
+
+data: {"content":" \"oldValue\": \""}
+
+data: {"content":"10\",\n      \"new"}
+
+data: {"content":"Value\": \"10"}
+
+data: {"content":"（B 2019）"}
+
+data: {"content":"→ 15（A "}
+
+data: {"content":"草案 / C UN R"}
+
+data: {"content":"48）\",\n      \""}
+
+data: {"content":"unit\": \"km"}
+
+data: {"content":"/h\",\n      \"source"}
+
+data: {"content":"\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"22.7."}
+
+data: {"content":"1 / B 201"}
+
+data: {"content":"9 5"}
+
+data: {"content":".25.7 /"}
+
+data: {"content":" C UN R48 "}
+
+data: {"content":"6.26.7"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name\": \""}
+
+data: {"content":"近光灯"}
+
+data: {"content":"最小离地高度\",\n"}
+
+data: {"content":"      \"oldValue\":"}
+
+data: {"content":" \"500\",\n      \""}
+
+data: {"content":"newValue\": \"500"}
+
+data: {"content":"（A/B/C 一致"}
+
+data: {"content":"）\",\n      \"unit"}
+
+data: {"content":"\": \"mm\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"2.4.2"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 5.2."}
+
+data: {"content":"4.2 / C"}
+
+data: {"content":" UN R48 6"}
+
+data: {"content":".2.4"}
+
+data: {"content":".2\"\n    },\n"}
+
+data: {"content":"    {\n      \"name"}
+
+data: {"content":"\": \"近光灯最大"}
+
+data: {"content":"离地高度（N"}
+
+data: {"content":"3G 越野"}
+
+data: {"content":"）\",\n      \"old"}
+
+data: {"content":"Value\": \"1500"}
+
+data: {"content":"\",\n      \"newValue"}
+
+data: {"content":"\": \"1500（A"}
+
+data: {"content":"/B/C 一致）"}
+
+data: {"content":"\",\n      \"unit\":"}
+
+data: {"content":" \"mm\",\n      \""}
+
+data: {"content":"source\": \"A "}
+
+data: {"content":"草案 5.2"}
+
+data: {"content":".4.2 /"}
+
+data: {"content":" B 2019 "}
+
+data: {"content":"5.2.4"}
+
+data: {"content":".2 / C UN"}
+
+data: {"content":" R"}
+
+data: {"content":"48 6.2"}
+
+data: {"content":".4.2"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name\": \""}
+
+data: {"content":"AF"}
+
+data: {"content":"S 发光单元最小"}
+
+data: {"content":"离地高度\",\n     "}
+
+data: {"content":" \"oldValue\": \""}
+
+data: {"content":"250\",\n      \"new"}
+
+data: {"content":"Value\": \"250（A"}
+
+data: {"content":"/B/C 一致）"}
+
+data: {"content":"\",\n      \"unit"}
+
+data: {"content":"\": \"mm\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"3.4.1"}
+
+data: {"content":" F / B"}
+
+data: {"content":" 2019 5"}
+
+data: {"content":".22.4."}
+
+data: {"content":"1 /"}
+
+data: {"content":" C UN R48 "}
+
+data: {"content":"6.22"}
+
+data: {"content":".4.1"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name"}
+
+data: {"content":"\": \"AFS 发"}
+
+data: {"content":"光单元最大离地"}
+
+data: {"content":"高度\",\n      \"old"}
+
+data: {"content":"Value\": \"未明示"}
+
+data: {"content":"\",\n      \"newValue"}
+
+data: {"content":"\": \"1200（A"}
+
+data: {"content":"/C"}
+
+data: {"content":" 一致）\",\n     "}
+
+data: {"content":" \"unit\": \"mm"}
+
+data: {"content":"\",\n      \"source"}
+
+data: {"content":"\": \"A 草案"}
+
+data: {"content":" 5.3."}
+
+data: {"content":"4.1 G /"}
+
+data: {"content":" C UN R48 "}
+
+data: {"content":"6.22.4"}
+
+data: {"content":".1\"\n    },\n"}
+
+data: {"content":"    {\n      \"name"}
+
+data: {"content":"\": \"倒"}
+
+data: {"content":"车位"}
+
+data: {"content":"灯间距\",\n"}
+
+data: {"content":"      \"old"}
+
+data: {"content":"Value\": \">"}
+
+data: {"content":"100\",\n      \"new"}
+
+data: {"content":"Value\": \">100（A"}
+
+data: {"content":"/B/C 一致）"}
+
+data: {"content":"\",\n      \"unit\":"}
+
+data: {"content":" \"mm\",\n      \""}
+
+data: {"content":"source\": \"A "}
+
+data: {"content":"草案 5.11"}
+
+data: {"content":".9"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 5.11."}
+
+data: {"content":"9 / C UN R"}
+
+data: {"content":"48 6.11"}
+
+data: {"content":".9"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name\": \""}
+
+data: {"content":"侧标志"}
+
+data: {"content":"灯最小"}
+
+data: {"content":"离地高度\",\n     "}
+
+data: {"content":" \"oldValue\": \""}
+
+data: {"content":"250\",\n      \"new"}
+
+data: {"content":"Value\": \""}
+
+data: {"content":"250（A/B/C 一"}
+
+data: {"content":"致）\",\n      \""}
+
+data: {"content":"unit\": \"mm\",\n"}
+
+data: {"content":"      \"source\": \""}
+
+data: {"content":"A 草案 5"}
+
+data: {"content":".18.4."}
+
+data: {"content":"2 / B 201"}
+
+data: {"content":"9 5.18"}
+
+data: {"content":".4."}
+
+data: {"content":"2 / C UN R"}
+
+data: {"content":"48 6.18"}
+
+data: {"content":".4.2"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"name\": \""}
+
+data: {"content":"大件货车后"}
+
+data: {"content":"位灯透光面"}
+
+data: {"content":"直径\",\n      \"old"}
+
+data: {"content":"Value\": \"≥80"}
+
+data: {"content":"\",\n      \"new"}
+
+data: {"content":"Value\": \""}
+
+data: {"content":"≥80（A/B/C"}
+
+data: {"content":" 一致）\",\n     "}
+
+data: {"content":" \"unit\": \"mm"}
+
+data: {"content":"\",\n      \"source\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"4.27 / B"}
+
+data: {"content":" 2019 4"}
+
+data: {"content":".29 / C UN"}
+
+data: {"content":" R48 "}
+
+data: {"content":"5.15\"\n   "}
+
+data: {"content":" },\n    {\n      \""}
+
+data: {"content":"name\": \"转向"}
+
+data: {"content":"灯-D"}
+
+data: {"content":"RL "}
+
+data: {"content":"间距"}
+
+data: {"content":"阈值\",\n      \"old"}
+
+data: {"content":"Value\": \"≤40"}
+
+data: {"content":"\",\n      \"new"}
+
+data: {"content":"Value\": \"≤40"}
+
+data: {"content":"（A/B/C 一致"}
+
+data: {"content":"）\",\n      \"unit"}
+
+data: {"content":"\": \"mm\",\n     "}
+
+data: {"content":" \"source\": \"A"}
+
+data: {"content":" 草案 5."}
+
+data: {"content":"19.7.6"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 5.19."}
+
+data: {"content":"7.5 / C"}
+
+data: {"content":" UN R48 6"}
+
+data: {"content":".19.7."}
+
+data: {"content":"6\"\n    },\n   "}
+
+data: {"content":" {\n      \"name\":"}
+
+data: {"content":" \"示"}
+
+data: {"content":"廓灯与位置灯"}
+
+data: {"content":"最小间距\",\n      \""}
+
+data: {"content":"oldValue\": \"200"}
+
+data: {"content":"\",\n      \"newValue"}
+
+data: {"content":"\": \"200"}
+
+data: {"content":"（A/B/C"}
+
+data: {"content":" 一致）\",\n     "}
+
+data: {"content":" \"unit\": \"mm"}
+
+data: {"content":"\",\n      \"source\":"}
+
+data: {"content":" \"A 草案 "}
+
+data: {"content":"5.13.9"}
+
+data: {"content":" / B 2019"}
+
+data: {"content":" 5.13"}
+
+data: {"content":".9 / C UN"}
+
+data: {"content":" R48 6"}
+
+data: {"content":".13.9\"\n"}
+
+data: {"content":"    }\n  ],\n"}
+
+data: {"content":"  \"evidence\": [\n"}
+
+data: {"content":"    {\n      \"title"}
+
+data: {"content":"\": \"UN Regulation"}
+
+data: {"content":" No. 48 -"}
+
+data: {"content":" Revision 13 ("}
+
+data: {"content":"09 series"}
+
+data: {"content":" + Suppl"}
+
+data: {"content":"."}
+
+data: {"content":" 1)\",\n"}
+
+data: {"content":"      \"source"}
+
+data: {"content":"Name\": \"UNECE"}
+
+data: {"content":" WP.29 /"}
+
+data: {"content":" GRE 官方"}
+
+data: {"content":"文档\",\n      \"source"}
+
+data: {"content":"Url\": \""}
+
+data: {"content":"https://une"}
+
+data: {"content":"ce.org/"}
+
+data: {"content":"transport/vehicle-regulations"}
+
+data: {"content":"\",\n"}
+
+data: {"content":"      \"level"}
+
+data: {"content":"\": \"official"}
+
+data: {"content":"_in"}
+
+data: {"content":"ternational\"\n    },\n   "}
+
+data: {"content":" {\n      \"title\":"}
+
+data: {"content":" \"GB 4785"}
+
+data: {"content":"-XXXX"}
+
+data: {"content":" 草案 V"}
+
+data: {"content":"4.3.5"}
+
+data: {"content":" (2026-08"}
+
+data: {"content":"-26)\",\n      \""}
+
+data: {"content":"sourceName\": \"全国"}
+
+data: {"content":"汽车标准化技术委员会（S"}
+
+data: {"content":"AC/TC 114"}
+
+data: {"content":"）\",\n      \"source"}
+
+data: {"content":"Url\": \"http"}
+
+data: {"content":"://www.cat"}
+
+data: {"content":"arc.com"}
+
+data: {"content":".cn/ 或"}
+
+data: {"content":" 工"}
+
+data: {"content":"信部装备"}
+
+data: {"content":"工业"}
+
+data: {"content":"司"}
+
+data: {"content":"\",\n      \"level\":"}
+
+data: {"content":" \"draft"}
+
+data: {"content":"_china"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"title\": \""}
+
+data: {"content":"GB 4785-"}
+
+data: {"content":"2019 现行版"}
+
+data: {"content":"\",\n      \"sourceName"}
+
+data: {"content":"\": \"国家"}
+
+data: {"content":"标准化"}
+
+data: {"content":"管理委员会"}
+
+data: {"content":" / 国家标准"}
+
+data: {"content":"全文公开系统\",\n     "}
+
+data: {"content":" \"sourceUrl\": \""}
+
+data: {"content":"http://open"}
+
+data: {"content":"std"}
+
+data: {"content":".samr.gov.cn"}
+
+data: {"content":"/\",\n      \"level\":"}
+
+data: {"content":" \"current"}
+
+data: {"content":"_china\"\n    },\n"}
+
+data: {"content":"    {\n      \"title"}
+
+data: {"content":"\": \"UN R"}
+
+data: {"content":"48 09 系列 +"}
+
+data: {"content":" S1 生效"}
+
+data: {"content":"时间表\",\n      \""}
+
+data: {"content":"sourceName\": \"UN"}
+
+data: {"content":"ECE WP.29 "}
+
+data: {"content":"会议"}
+
+data: {"content":"报告"}
+
+data: {"content":"\",\n      \"sourceUrl"}
+
+data: {"content":"\": \"https://une"}
+
+data: {"content":"ce.org/wp29"}
+
+data: {"content":"-vienna"}
+
+data: {"content":"-"}
+
+data: {"content":"agre"}
+
+data: {"content":"ements/reg"}
+
+data: {"content":"ulations\",\n      \"level"}
+
+data: {"content":"\": \"official_international"}
+
+data: {"content":"\"\n    },\n    {\n"}
+
+data: {"content":"      \"title\": \""}
+
+data: {"content":"中国 GB"}
+
+data: {"content":" 强制性"}
+
+data: {"content":"标准发布与实施"}
+
+data: {"content":"流程\",\n      \"source"}
+
+data: {"content":"Name\": \"国家"}
+
+data: {"content":"市场监督管理总局\",\n     "}
+
+data: {"content":" \"sourceUrl\": \""}
+
+data: {"content":"https://www.sam"}
+
+data: {"content":"r.gov.cn/\",\n     "}
+
+data: {"content":" \"level\": \"reg"}
+
+data: {"content":"ulatory"}
+
+data: {"content":"_china\"\n    },\n"}
+
+data: {"content":"    {\n      \"title"}
+
+data: {"content":"\": \"ECE"}
+
+data: {"content":" R48 系列修订"}
+
+data: {"content":"技术"}
+
+data: {"content":"说明"}
+
+data: {"content":"\",\n      \"sourceName"}
+
+data: {"content":"\": \"UN"}
+
+data: {"content":"ECE"}
+
+data: {"content":" GRE 工作"}
+
+data: {"content":"组文件"}
+
+data: {"content":" WP.29/202"}
+
+data: {"content":"4/28"}
+
+data: {"content":", WP."}
+
+data: {"content":"29/2025/"}
+
+data: {"content":"36\",\n      \"source"}
+
+data: {"content":"Url\": \"https://"}
+
+data: {"content":"unece.org/transport"}
+
+data: {"content":"/doc"}
+
+data: {"content":"uments\",\n"}
+
+data: {"content":"      \"level\": \""}
+
+data: {"content":"official_in"}
+
+data: {"content":"ternational\"\n    },\n   "}
+
+data: {"content":" {\n      \"title\":"}
+
+data: {"content":" \"AF"}
+
+data: {"content":"S 自"}
+
+data: {"content":"适应前照"}
+
+data: {"content":"灯系统标准对照"}
+
+data: {"content":"\",\n      \"sourceName"}
+
+data: {"content":"\": \"UN R149"}
+
+data: {"content":"（"}
+
+data: {"content":"光源"}
+
+data: {"content":"）+"}
+
+data: {"content":" UN R48"}
+
+data: {"content":"（安装"}
+
+data: {"content":"）\",\n      \"source"}
+
+data: {"content":"Url\": \"https://"}
+
+data: {"content":"unece.org/transport"}
+
+data: {"content":"/vehicle"}
+
+data: {"content":"-regulations\",\n      \""}
+
+data: {"content":"level\": \"official"}
+
+data: {"content":"_international\"\n    },\n"}
+
+data: {"content":"    {\n      \"title"}
+
+data: {"content":"\": \"【"}
+
+data: {"content":"待人工确认】A"}
+
+data: {"content":" 草案正式"}
+
+data: {"content":"送"}
+
+data: {"content":"审稿与发布"}
+
+data: {"content":"稿"}
+
+data: {"content":"差异"}
+
+data: {"content":"\",\n      \"sourceName"}
+
+data: {"content":"\": \"SAC/TC"}
+
+data: {"content":" 114 秘书"}
+
+data: {"content":"处\",\n      \"source"}
+
+data: {"content":"Url\": \"（需"}
+
+data: {"content":"通过工信部归"}
+
+data: {"content":"口渠道"}
+
+data: {"content":"获取）\",\n      \""}
+
+data: {"content":"level\": \"pending"}
+
+data: {"content":"_confirmation\"\n    },\n"}
+
+data: {"content":"    {\n      \"title"}
+
+data: {"content":"\": \"【"}
+
+data: {"content":"待人工确认】GB"}
+
+data: {"content":" 4785 "}
+
+data: {"content":"草案反馈"}
+
+data: {"content":"意见"}
+
+data: {"content":"汇总"}
+
+data: {"content":"\",\n      \"sourceName"}
+
+data: {"content":"\": \"工信部"}
+
+data: {"content":"装备工业司\",\n     "}
+
+data: {"content":" \"sourceUrl\": \""}
+
+data: {"content":"（需"}
+
+data: {"content":"通过官方"}
+
+data: {"content":"渠道获取）\",\n     "}
+
+data: {"content":" \"level\": \"pending"}
+
+data: {"content":"_confirmation\"\n    },\n   "}
+
+data: {"content":" {\n      \"title\":"}
+
+data: {"content":" \"【待人工确认"}
+
+data: {"content":"】C UN R48"}
+
+data: {"content":" 09 系列 + S"}
+
+data: {"content":"1 完整"}
+
+data: {"content":"附录"}
+
+data: {"content":" "}
+
+data: {"content":"16 文本\",\n     "}
+
+data: {"content":" \"sourceName\": \""}
+
+data: {"content":"UNECE "}
+
+data: {"content":"法规"}
+
+data: {"content":"文本"}
+
+data: {"content":"库\",\n      \"source"}
+
+data: {"content":"Url\": \"https://"}
+
+data: {"content":"unece.org/sites"}
+
+data: {"content":"/default/files/"}
+
+data: {"content":"2025"}
+
+data: {"content":"-09/R"}
+
+data: {"content":"48r"}
+
+data: {"content":"13s"}
+
+data: {"content":"1.pdf\",\n      \""}
+
+data: {"content":"level\": \"pending"}
+
+data: {"content":"_confirmation\"\n    }\n "}
+
+data: {"content":" ]\n}\n```"}
+
+data: {"done":true}
+

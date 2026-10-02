@@ -11,13 +11,13 @@ function Router() {
   return (
     <DashboardLayout>
       <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/projects" component={Home} />
-        <Route path="/documents" component={Home} />
-        <Route path="/review" component={Home} />
-        <Route path="/research" component={Home} />
-        <Route path="/reports" component={Home} />
-        <Route path="/settings" component={Home} />
+        <Route path="/" component={() => <Home />} />
+        <Route path="/projects" component={() => <Home defaultView="projects" />} />
+        <Route path="/documents" component={() => <Home defaultView="documents" />} />
+        <Route path="/review" component={() => <Home defaultView="review" />} />
+        <Route path="/research" component={() => <Home defaultView="research" />} />
+        <Route path="/reports" component={() => <Home defaultView="reports" />} />
+        <Route path="/settings" component={() => <Home defaultView="settings" />} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

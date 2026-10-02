@@ -177,6 +177,13 @@
       .rc-prose {
         line-height: 1.5;
       }
+      /* Streamdown 把 markdown 空行渲染成空 <p>/<div>，导致视觉上的大片空白。
+         彻底隐藏所有空块级元素，消除空白。 */
+      .rc-prose p:empty,
+      .rc-prose div:empty,
+      .rc-prose span:empty {
+        display: none !important;
+      }
     </style>
   </head>
 

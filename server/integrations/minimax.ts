@@ -18,6 +18,9 @@ export async function* streamMiniMaxChat(
   options?: {
     model?: string;
     temperature?: number;
+    /** Max output tokens. Default 8192 — large enough for a deep multi-section
+     * comparison of 100+ page regulatory documents. */
+    maxTokens?: number;
     onReasoning?: (delta: string) => void;
   },
 ): AsyncGenerator<string> {
@@ -38,6 +41,7 @@ export async function* streamMiniMaxChat(
       thinking: { type: "adaptive" },
       stream: true,
       temperature: options?.temperature ?? 0.2,
+      max_tokens: options?.maxTokens ?? 8192,
     }),
   });
 

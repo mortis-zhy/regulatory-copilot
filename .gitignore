@@ -112,3 +112,12 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# 运行时缓存/上传副本(原始 PDF 由外层工作台仓库跟踪)
+.mineru-work/
+.text-cache/
+.ocr-pages/
+uploaded-docs/
+dist/
+extract-cache/
+sidecar-cache/

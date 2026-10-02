@@ -1,0 +1,1563 @@
+/**
+ * htmlRenderV8 — full three-version design system (final).
+ *
+ * v8 improvements over v7:
+ *   1. CJK font base64 @font-face embed (searchable/copyable Chinese text).
+ *   2. LaTeX $...$ / $$...$$ reduced to HTML (sub/sup/greek/operators),
+ *      with a bulletproof escape round-trip (no sentinel collisions).
+ *   3. Triptych comparison cards for every `| 版本/来源 |` table — ALWAYS
+ *      three cards; missing version rows get an honest gray placeholder
+ *      ("源数据未提供"). Handles multi-line table rows (ch14 style).
+ *   4. 4-dim Impact Matrix (🔧 设计 / 🧪 测试 / 📋 认证 / ⚠ 风险) parsed
+ *      from `> 🔧 …` blockquote or bare-emoji lines.
+ *   5. 变化判定 verdict strip (backtick or emoji labels) styled by severity.
+ *   6. Master Parameter Index at the front — header-driven column mapping
+ *      (参数 col, per-version value/条款/页码 cols, B-before-A safe), with
+ *      a numeric guard so only real quantitative rows are listed.
+ *   7. Clause cross-reference index at the front — A/B/C 条款+页码 per topic,
+ *      harvested from every version-row comparison table.
+ *   8. Two-pass rendering with mupdf anchor search → real TOC page numbers.
+ */
+
+import fs from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import type { ReportOutline } from "./reportGenerator";
+
+export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
+export type ReportAppendix = { id: string; title: string; markdown?: string; page?: number };
+
+export type RenderableReport = {
+  outline: ReportOutline;
+  chapters: ReportChapter[];
+  appendices?: ReportAppendix[];
+  sourceDocuments?: Array<{ label: string; name: string; meta: string }>;
+  generatedAt?: string;
+};
+
+// ---------------------------------------------------------------------------
+// 1. CJK font discovery + base64 embed
+// ---------------------------------------------------------------------------
+
+const FONT_CANDIDATES: Array<{ path: string; weight: number; family: string }> = [
+  { path: "C:\\Windows\\Fonts\\msyh.ttc", weight: 400, family: "NotoSansSC" },
+  { path: "C:\\Windows\\Fonts\\simhei.ttf", weight: 400, family: "NotoSansSC" },
+  { path: "C:\\Windows\\Fonts\\msyhbd.ttc", weight: 700, family: "NotoSansSC" },
+  { path: "C:\\Windows\\Fonts\\simsun.ttc", weight: 400, family: "NotoSerifSC" },
+  { path: "C:\\Windows\\Fonts\\simsunb.ttf", weight: 700, family: "NotoSerifSC" },
+  { path: "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", weight: 400, family: "NotoSansSC" },
+  { path: "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", weight: 400, family: "NotoSansSC" },
+  { path: "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc", weight: 400, family: "NotoSerifSC" },
+];
+
+interface FontAsset {
+  family: string;
+  weight: number;
+  format: string;
+  dataUri: string;
+}
+
+async function loadFonts(): Promise<FontAsset[]> {
+  const found = new Map<string, FontAsset>();
+  for (const cand of FONT_CANDIDATES) {
+    try {
+      const bytes = await fs.readFile(cand.path);
+      const ext = path.extname(cand.path).toLowerCase();
+      const format = ext === ".ttc" ? "collection" : "truetype";
+      const key = `${cand.family}-${cand.weight}`;
+      if (!found.has(key)) {
+        found.set(key, {
+          family: cand.family,
+          weight: cand.weight,
+          format,
+          dataUri: `data:font/${format === "collection" ? "ttc" : "ttf"};base64,${bytes.toString("base64")}`,
+        });
+        console.log(`[htmlRenderV8] font loaded: ${cand.path} (${(bytes.length / 1024).toFixed(0)} KB)`);
+      }
+    } catch {
+      /* try next candidate */
+    }
+  }
+  if (found.size === 0) console.warn("[htmlRenderV8] no CJK font found — Chinese will fall back to Type3");
+  return Array.from(found.values());
+}
+
+function fontFaceBlock(fonts: FontAsset[]): string {
+  const unique = new Map<string, FontAsset>();
+  for (const f of fonts) unique.set(`${f.family}-${f.weight}-${f.format}`, f);
+  return Array.from(unique.values())
+    .map(
+      (f) =>
+        `@font-face { font-family: "${f.family}"; font-weight: ${f.weight}; src: url("${f.dataUri}") format("${f.format}"); font-display: block; }`,
+    )
+    .join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// 2. Escape / math / inline
+// ---------------------------------------------------------------------------
+
+/**
+ * CJK Kangxi/radical → real unified ideograph map.
+ *
+ * Upstream PDF extraction (and some PDF viewers' copy) can emit radical
+ * codepoints (⻚⾊⻅⽅ …) instead of real characters (页色见方). NFKC does
+ * NOT fix these, so we keep a conservative map of unambiguous equivalents.
+ */
+const RADICAL_MAP: Record<string, string> = {
+  "⻚": "页", "⾊": "色", "⻅": "见", "⽅": "方", "⻋": "车", "⻉": "贝",
+  "⻔": "门", "⻢": "马", "⻥": "鱼", "⻦": "鸟", "⻰": "龙",
+  "⼈": "人", "⼉": "儿", "⼊": "入", "⼑": "刀", "⼒": "力",
+  "⼗": "十", "⼝": "口", "⼠": "士", "⼤": "大", "⼥": "女", "⼦": "子",
+  "⼩": "小", "⼭": "山", "⼯": "工", "⼰": "己", "⼣": "夕", "⼴": "广",
+  "⼱": "巾", "⼲": "干", "⼸": "弓", "⼼": "心", "⼿": "手",
+  "⽆": "无", "⽇": "日", "⽉": "月", "⽊": "木", "⽋": "欠",
+  "⽌": "止", "⽍": "歹", "⽓": "气", "⽔": "水", "⽕": "火", "⽗": "父",
+  "⽜": "牛", "⽞": "玄", "⽟": "玉", "⽢": "甘", "⽣": "生", "⽤": "用",
+  "⽥": "田", "⽪": "皮", "⽬": "目", "⽯": "石", "⽰": "示", "⽲": "禾",
+  "⽳": "穴", "⽴": "立", "⽵": "竹", "⽶": "米", "⽷": "糸", "⽻": "羽",
+  "⽼": "老", "⽽": "而", "⽿": "耳", "⾃": "自", "⾄": "至", "⾆": "舌",
+  "⾈": "舟", "⾍": "虫", "⾎": "血", "⾏": "行", "⾐": "衣",
+  "⾒": "见", "⾓": "角", "⾔": "言", "⾕": "谷", "⾖": "豆", "⾚": "赤",
+  "⾛": "走", "⾞": "车", "⾟": "辛", "⾠": "辰",
+  "⾣": "酉", "⾤": "采", "⾥": "里", "⾦": "金", "⾨": "门",
+  "⾬": "雨", "⾭": "青", "⾮": "非", "⾯": "面",
+  "⾰": "革", "⾱": "韦", "⾲": "韭", "⾳": "音", "⾴": "页", "⾵": "风",
+  "⾶": "飞", "⾷": "食", "⾹": "香", "⾺": "马", "⾻": "骨", "⾼": "高",
+  "⿂": "鱼", "⿃": "鸟", "⿅": "鹿", "⿆": "麦", "⿇": "麻",
+  "⿈": "黄", "⿉": "黍", "⿊": "黑",
+  "⿍": "鼎", "⿎": "鼓", "⿏": "鼠", "⿐": "鼻", "⿑": "齐",
+  "⿒": "齿", "⿓": "龙", "⿔": "龟",
+};
+
+function fixRadicals(s: string): string {
+  if (!s) return s;
+  // U+2E80–U+2FDF = CJK Radicals Supplement + Kangxi Radicals (the full
+  // range both the observed and plausible variants live in).
+  return s.replace(/[⺀-⿟]/g, (ch) => RADICAL_MAP[ch] ?? ch);
+}
+
+function esc(s: string): string {
+  return fixRadicals(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Undo inlineMd's pre-escaping so we operate on raw text inside $...$. */
+function unesc(s: string): string {
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+/**
+ * Reduce a LaTeX fragment to HTML. Escape everything, then restore only the
+ * exact tags we emit — no sentinel/placeholder tricks.
+ */
+function reduceLatex(tex: string): string {
+  let t = unesc(tex);
+  t = t.replace(/%[^\n]*/g, "");
+  // Normalize upstream spacing damage FIRST:
+  //   \mathrm { O } _ { 2 }  →  \mathrm{O}_{2}
+  t = t.replace(/\\([a-zA-Z]+)\s*\{/g, "\\$1{");
+  t = t.replace(/([_^])\s*\{/g, "$1{");
+  t = t.replace(/_\{([^{}]+)\}/g, "<sub>$1</sub>");
+  t = t.replace(/\^\{([^{}]+)\}/g, "<sup>$1</sup>");
+  t = t.replace(/_([A-Za-z0-9])/g, "<sub>$1</sub>");
+  t = t.replace(/\^([A-Za-z0-9])/g, "<sup>$1</sup>");
+  // \mathrm{X} — double-brace form first ({ {FR} }), then single, trimming
+  // inner spaces. Both tolerate the spacing normalized above.
+  t = t.replace(/\\mathrm\s*\{\{([^{}]+)\}\}/g, (_m, c: string) => c.trim());
+  t = t.replace(/\\mathrm\s*\{([^{}]*)\}/g, (_m, c: string) => c.trim());
+  t = t.replace(/\\[,;]\s*/g, " ");
+  t = t.replace(/\\quad\s*/g, "  ");
+  t = t.replace(/\\cdot/g, "·");
+  t = t.replace(/\\times/g, "×");
+  t = t.replace(/\\le\b/g, "≤");
+  t = t.replace(/\\ge\b/g, "≥");
+  t = t.replace(/\\ne\b/g, "≠");
+  t = t.replace(/\\to\b/g, "→");
+  t = t.replace(/\\rightarrow\b/g, "→");
+  t = t.replace(/\\leftarrow\b/g, "←");
+  t = t.replace(/\\pm\b/g, "±");
+  t = t.replace(/\\approx\b/g, "≈");
+  t = t.replace(/\\sim\b/g, "~");
+  t = t.replace(/\\infty\b/g, "∞");
+  t = t.replace(/\\sum\b/g, "Σ");
+  t = t.replace(/\\prod\b/g, "Π");
+  t = t.replace(/\\alpha\b/g, "α");
+  t = t.replace(/\\beta\b/g, "β");
+  t = t.replace(/\\gamma\b/g, "γ");
+  t = t.replace(/\\theta\b/g, "θ");
+  t = t.replace(/\\pi\b/g, "π");
+  t = t.replace(/\\mu\b/g, "μ");
+  t = t.replace(/\\lambda\b/g, "λ");
+  t = t.replace(/\\Delta\b/g, "Δ");
+  t = t.replace(/\\([a-zA-Z]+)\s*/g, "$1");
+  // After the backslash strip above, leftover backslash-less `mathrm` tokens
+  // (upstream extraction sometimes drops the backslash entirely):
+  t = t.replace(/(^|[^a-zA-Z])mathrm\s*\{([^{}]*)\}/g, (_m, a: string, b: string) => a + b.trim());
+  t = t.replace(/(^|[^a-zA-Z])mathrm\b/g, "$1");
+  t = t.replace(/[{}]/g, "");
+  t = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  t = t.replace(/&lt;(\/?)(sub|sup|i|b)&gt;/g, "<$1$2>");
+  return t;
+}
+
+function renderMath(input: string): string {
+  if (!input) return "";
+  let out = "";
+  let i = 0;
+  while (i < input.length) {
+    if (input[i] === "$" && input[i + 1] === "$") {
+      const end = input.indexOf("$$", i + 2);
+      if (end === -1) {
+        out += input.slice(i);
+        break;
+      }
+      out += `<div class="math-block">${reduceLatex(input.slice(i + 2, end))}</div>`;
+      i = end + 2;
+    } else if (input[i] === "$") {
+      const end = input.indexOf("$", i + 1);
+      if (end === -1) {
+        out += input.slice(i);
+        break;
+      }
+      out += `<span class="math">${reduceLatex(input.slice(i + 1, end))}</span>`;
+      i = end + 1;
+    } else {
+      out += input[i];
+      i++;
+    }
+  }
+  return out;
+}
+
+function inlineMd(s: string): string {
+  let t = esc(s ?? "");
+  t = renderMath(t);
+  t = t.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  t = t.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\[新增\]/g, '<span class="mk mk-add">新增</span>');
+  t = t.replace(/\[删除\]/g, '<span class="mk mk-del">删除</span>');
+  t = t.replace(/\[修改\]/g, '<span class="mk mk-mod">修改</span>');
+  t = t.replace(/\[保留\]/g, '<span class="mk mk-keep">保留</span>');
+  t = t.replace(/【原文事实】/g, '<span class="tag tag-fact">原文事实</span>');
+  t = t.replace(/【模型推断】/g, '<span class="tag tag-infer">模型推断</span>');
+  t = t.replace(/【待人工确认】/g, '<span class="tag tag-todo">待人工确认</span>');
+  t = t.replace(/《([^》\n]+)》/g, '<span class="quote">《$1》</span>');
+  return t;
+}
+
+/** Render a table cell — multi-line cells become <br> separated lines. */
+function cellHtml(s: string): string {
+  if (!s) return "";
+  return s
+    .split("\n")
+    .map((l) => inlineMd(l))
+    .join("<br>");
+}
+
+// ---------------------------------------------------------------------------
+// 3. Table collection (multi-line rows) + parsing
+// ---------------------------------------------------------------------------
+
+type ParsedTable = {
+  rows: string[][]; // rows[0] = header; multi-line cells joined with \n
+  isComparison: boolean; // version-in-row table (| 版本/来源 | ... |)
+  versionIdx: number;
+  comparisonCols: Array<"A" | "B" | "C">;
+};
+
+function parseTableRow(line: string): string[] {
+  const trimmed = line.replace(/^\|/, "").replace(/\|$/, "").replace(/\\\|/g, "@@PIPE@@");
+  return trimmed.split("|").map((c) => c.trim().replace(/@@PIPE@@/g, "|"));
+}
+
+/**
+ * Collect a table block starting at `start`. Each `|`-leading line starts a
+ * NEW row (regardless of whether the previous row was "open" / multi-line).
+ * Within a row, non-`|` continuation lines accumulate until the next `|` line.
+ *
+ * Why the change: when a row's last cell has multi-line content (no trailing
+ * `|`), the previous implementation kept accumulating into a `open=true`
+ * state, then when it hit the next `|`-leading line (which is supposed to be
+ * the NEXT row), it incorrectly appended that line to the same row. The fix
+ * is to always treat `|`-leading lines as new-row boundaries.
+ */
+function collectTableRows(lines: string[], start: number): { rowLines: string[]; next: number } {
+  const rowLines: string[] = [];
+  let cur: string[] = [];
+  let open = false;
+  let i = start;
+  while (i < lines.length) {
+    const raw = lines[i];
+    const t = raw.trim();
+    if (t === "") break;
+    if (t.startsWith("|")) {
+      // Always start a new row on `|`.
+      if (open) rowLines.push(cur.join("\n"));
+      cur = [raw];
+      open = !t.endsWith("|");
+      i++;
+      continue;
+    }
+    // non-pipe line: only accumulate if current row is open
+    if (open) {
+      cur.push(raw);
+      i++;
+      continue;
+    }
+    break;
+  }
+  // Flush trailing open row (last row may not end with `|`).
+  if (open && cur.length) rowLines.push(cur.join("\n"));
+  return { rowLines, next: i };
+}
+
+/** Which header cell holds the version label (版本 / 来源 / version). */
+function findVersionIdx(header: string[]): number {
+  for (let i = 0; i < header.length; i++) {
+    const h = (header[i] ?? "").replace(/\*/g, "").trim();
+    if (/^(版本|来源|version)$/i.test(h)) return i;
+  }
+  return -1;
+}
+
+/** Normalize a raw version label ("A 草案", "**B 现行**", "C") to A/B/C. */
+function normVersion(label: string): "A" | "B" | "C" | null {
+  const t = (label ?? "").replace(/\*/g, "").trim().toUpperCase();
+  if (/^A(\s|$|版|草案)/.test(t)) return "A";
+  if (/^B(\s|$|版|现行)/.test(t)) return "B";
+  if (/^C(\s|$|版|UN|R48)/.test(t)) return "C";
+  return null;
+}
+
+function parseTable(rowLines: string[]): ParsedTable | null {
+  if (rowLines.length < 2) return null;
+  const rows: string[][] = [];
+  for (const raw of rowLines) {
+    const line = raw.trim();
+    if (/^\|[\s:|-]+\|?$/.test(line) && !line.includes("\n")) continue; // separator row
+    rows.push(parseTableRow(raw));
+  }
+  if (rows.length < 2) return null;
+  const header = rows[0];
+  const versionIdx = findVersionIdx(header);
+  if (versionIdx < 0) {
+    return { rows, isComparison: false, versionIdx: -1, comparisonCols: [] };
+  }
+  const cols: Array<"A" | "B" | "C"> = [];
+  for (const r of rows.slice(1)) {
+    const v = normVersion(r[versionIdx] ?? "");
+    if (v && !cols.includes(v)) cols.push(v);
+  }
+  return {
+    rows,
+    isComparison: cols.length >= 1,
+    versionIdx,
+    comparisonCols: (["A", "B", "C"] as const).filter((v) => cols.includes(v)),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 4. Impact Matrix (🔧 🧪 📋 ⚠)
+// ---------------------------------------------------------------------------
+
+type ImpactMatrix = { design: string; test: string; certification: string; risk: string };
+
+function extractImpactMatrix(block: string): ImpactMatrix | null {
+  const pick = (icon: string, label: string): string => {
+    const re = new RegExp(`${icon}\\s*\\**\\s*${label}\\s*\\**\\s*[：:]\\s*([^\\n]+)`);
+    const m = block.match(re);
+    return m ? m[1].trim().replace(/\*\*/g, "") : "";
+  };
+  const design = pick("🔧", "设计影响");
+  const test = pick("🧪", "测试影响");
+  const certification = pick("📋", "认证影响");
+  const risk = pick("⚠", "风险等级");
+  if (!design && !test && !certification && !risk) return null;
+  return { design, test, certification, risk };
+}
+
+function renderImpactMatrix(im: ImpactMatrix): string {
+  const cell = (icon: string, label: string, content: string, accent: string) => `
+<div class="impact-cell" style="--accent:${accent}">
+  <div class="impact-head"><span class="impact-icon">${icon}</span><span class="impact-label">${esc(label)}</span></div>
+  <div class="impact-body">${content ? cellHtml(content) : '<span class="impact-empty">未填写</span>'}</div>
+</div>`;
+  return `
+<div class="impact-matrix">
+  ${cell("🔧", "设计影响", im.design, "#a17334")}
+  ${cell("🧪", "测试影响", im.test, "#0c1a2b")}
+  ${cell("📋", "认证影响", im.certification, "#3a6b4f")}
+  ${cell("⚠", "风险等级", im.risk, "#a23030")}
+</div>`;
+}
+
+const IMPACT_LINE = /^(🔧|🧪|📋|⚠)/;
+
+function tryExtractImpactMatrix(lines: string[], start: number): { html: string; consumed: number } | null {
+  const buffer: string[] = [];
+  let i = start;
+  while (i < lines.length) {
+    const t = lines[i].trim();
+    if (t.startsWith(">") || IMPACT_LINE.test(t)) {
+      buffer.push(t.replace(/^>\s?/, ""));
+      i++;
+    } else break;
+  }
+  if (buffer.length < 2) return null;
+  const im = extractImpactMatrix(buffer.join("\n"));
+  if (!im) return null;
+  return { html: renderImpactMatrix(im), consumed: buffer.length };
+}
+
+// ---------------------------------------------------------------------------
+// 5. 变化判定 verdict strip
+// ---------------------------------------------------------------------------
+
+function renderVerdict(text: string): string {
+  // Normalize bold markers FIRST so `**变化判定**：` matches the patterns.
+  const src = text.replace(/\*\*变化判定\*\*/g, "变化判定").replace(/\*\*/g, "");
+  const bk = src.match(/变化判定\s*[：:]\s*`([^`]+)`/);
+  const em = bk ? null : src.match(/变化判定\s*[：:]\s*([🔴🟢🟡⚪🟠]\s*[^\s—–|，,。;；]*)/);
+  const pl = bk || em ? null : src.match(/变化判定\s*[：:]\s*([^\s—–|，,。;；]+)/);
+  const label = bk ? bk[1].trim() : em ? em[1].trim() : pl ? pl[1].trim() : "变化判定";
+  let rest = src.replace(/变化判定\s*[：:]\s*/, "");
+  if (bk) rest = rest.replace(`\`${bk[1]}\``, "");
+  else if (em) rest = rest.replace(em[1], "");
+  else if (pl) rest = rest.replace(pl[1], "");
+  rest = rest.replace(/^[｜|\s·\-—*]+/, "").trim();
+  let cls = "v-gray";
+  if (/🔴|实质/.test(label)) cls = "v-red";
+  else if (/🟡|格式|局部/.test(label)) cls = "v-amber";
+  else if (/🟢|一致|相同|保留|无需/.test(label)) cls = "v-green";
+  return `<div class="verdict-strip ${cls}"><span class="v-chip">${esc(label)}</span><span class="v-rest">${cellHtml(rest)}</span></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// 6. Master Parameter Index (header-driven, numeric-guarded)
+// ---------------------------------------------------------------------------
+
+type MasterParamRow = { param: string; aValue: string; bValue: string; cValue: string; note: string; src: string };
+
+const PARAM_PATTERNS = [/主题·参数/, /参数/, /项目/, /指标/, /^主题$/, /^装置$/, /^类别$/, /新概念/];
+
+function findCol(header: string[], re: RegExp): number {
+  return header.findIndex((h) => re.test((h ?? "").replace(/\*/g, "").trim()));
+}
+
+function extractMasterParams(chapters: ReportChapter[]): MasterParamRow[] {
+  const seen = new Map<string, MasterParamRow>();
+  // Quantitative guard: digit next to a unit, or a decimal number.
+  const quantitative = /(\d+(\.\d+)?\s*(mm|cm|km\/h|m\b|cd|Hz|%|°|lx|s\b|ms|min|V\b|mA\b|W\b|nm|只|条|个|级|档|类|种|km\b))|(\d+\.\d+)/i;
+
+  for (const ch of chapters) {
+    const lines = ch.markdown.split("\n");
+    let i = 0;
+    while (i < lines.length) {
+      if (!lines[i].trim().startsWith("|")) {
+        i++;
+        continue;
+      }
+      const { rowLines, next } = collectTableRows(lines, i);
+      i = next;
+      const parsed = parseTable(rowLines);
+      if (!parsed || parsed.rows.length < 2) continue;
+      const header = parsed.rows[0];
+
+      // Must be an A/B comparison table with explicit version columns.
+      const bValue = findCol(header, /B\s*现行/);
+      const aValue = findCol(header, /A\s*草案/);
+      if (aValue < 0 || bValue < 0) continue;
+
+      // Param column by priority.
+      let paramIdx = -1;
+      for (const p of PARAM_PATTERNS) {
+        paramIdx = findCol(header, p);
+        if (paramIdx >= 0) break;
+      }
+      if (paramIdx < 0 || paramIdx === aValue || paramIdx === bValue) continue;
+
+      // Optional locator / C / note columns.
+      const aClause = findCol(header, /A\s*编号/);
+      const aPage = findCol(header, /A\s*页码/);
+      const bClause = findCol(header, /B\s*编号/);
+      const bPage = findCol(header, /B\s*页码/);
+      const cIdx = findCol(header, /C\s*参照|C\s*UN|R48|国际参照/);
+      const noteIdx = findCol(header, /差异|说明|降级|分级|判定|状态|核验/);
+
+      const clean = (s: string): string => {
+        const t = (s ?? "").replace(/\*\*/g, " ").replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+        if (!t) return "—";
+        return t.length > 44 ? t.slice(0, 44) + "…" : t;
+      };
+      const joinCols = (row: string[], ...idxs: number[]): string => {
+        const parts: string[] = [];
+        for (const idx of idxs) {
+          if (idx < 0 || idx === paramIdx) continue;
+          const v = clean(row[idx] ?? "");
+          if (v && v !== "—" && !parts.includes(v)) parts.push(v);
+        }
+        return parts.join(" · ");
+      };
+
+      for (const row of parsed.rows.slice(1)) {
+        const param = clean(row[paramIdx] ?? "");
+        if (!param || param === "—" || param.length < 2 || param.length > 60) continue;
+        if (seen.has(param)) continue;
+        const aC = clean(joinCols(row, aValue, aClause, aPage) || "—");
+        const bC = clean(joinCols(row, bValue, bClause, bPage) || "—");
+        const cC = cIdx >= 0 ? clean(row[cIdx] ?? "") : "—";
+        if (!quantitative.test(`${aC} ${bC} ${cC}`)) continue;
+        seen.set(param, {
+          param,
+          aValue: aC,
+          bValue: bC,
+          cValue: cC,
+          note: noteIdx >= 0 ? clean(row[noteIdx] ?? "") : "",
+          src: `${ch.id} ${ch.title}`,
+        });
+        if (seen.size >= 40) break;
+      }
+      if (seen.size >= 40) break;
+    }
+  }
+  return Array.from(seen.values());
+}
+
+function renderMasterParams(rows: MasterParamRow[]): string {
+  if (!rows.length) return "";
+  const body = rows
+    .map(
+      (r) => `<tr>
+      <td class="mp-name">${cellHtml(r.param)}</td>
+      <td>${cellHtml(r.aValue)}</td>
+      <td>${cellHtml(r.bValue)}</td>
+      <td>${cellHtml(r.cValue)}</td>
+      <td class="mp-note">${cellHtml(r.note || "—")}</td>
+      <td class="mp-src">${esc(r.src)}</td>
+    </tr>`,
+    )
+    .join("");
+  return `
+<section class="front-block">
+  <header class="mp-head">
+    <span class="mp-eyebrow">Master Parameter Index</span>
+    <h2>核心参数 A/B/C 同框总表</h2>
+    <p class="mp-sub">从全报告扫描并按表头对齐的关键量化参数（A/B/C 三版并排）· 共 ${rows.length} 项 · “—” = 源数据未提供该版本数值</p>
+  </header>
+  <table class="mp-table">
+    <thead>
+      <tr>
+        <th>参数</th>
+        <th style="--c:#a17334">A 草案</th>
+        <th style="--c:#0c1a2b">B 现行</th>
+        <th style="--c:#3a6b4f">C UN R48</th>
+        <th>差异 / 状态</th>
+        <th>来源</th>
+      </tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>
+</section>`;
+}
+
+// ---------------------------------------------------------------------------
+// 7. Clause cross-reference index (from version-row comparison tables)
+// ---------------------------------------------------------------------------
+
+type ClauseMapRow = { topic: string; a: string; b: string; c: string; src: string };
+
+function looksLikePage(s: string): boolean {
+  return /第\s*\d+\s*页|^p\s*\d+$/i.test((s ?? "").trim());
+}
+
+function extractClauseMapping(chapters: ReportChapter[]): ClauseMapRow[] {
+  const rows: ClauseMapRow[] = [];
+  const seen = new Set<string>();
+  for (const ch of chapters) {
+    const lines = ch.markdown.split("\n");
+    let topic = "";
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i].trim();
+      const hm = line.match(/^#{2,4}\s+(.*)$/);
+      if (hm) {
+        topic = hm[1].replace(/[*`]/g, "").trim().slice(0, 36);
+        i++;
+        continue;
+      }
+      if (line.startsWith("|")) {
+        const { rowLines, next } = collectTableRows(lines, i);
+        i = next;
+        const parsed = parseTable(rowLines);
+        if (!parsed || !parsed.isComparison) continue;
+        const vIdx = parsed.versionIdx;
+        const byVer: Record<string, string[]> = {};
+        for (const r of parsed.rows.slice(1)) {
+          const v = normVersion(r[vIdx] ?? "");
+          if (v && !byVer[v]) byVer[v] = r.slice(vIdx + 1);
+        }
+        if (!byVer.A && !byVer.B && !byVer.C) continue;
+        const fmt = (cells?: string[]): string => {
+          if (!cells || !cells.length) return "—";
+          const page = cells.find((c) => looksLikePage(c));
+          // clause: a short cell that is not a page, not a raw formula, and
+          // not a pointer/placeholder or column-header name from the source
+          // table (见下方表格内容 / 表头摘要 … are NOT clause identifiers).
+          const POINTER = /^(见下方|见下表|见上面|见上表|见表|见下|见上|同上|同左|同前|略|无|N\/?A|（略）)/;
+          const HEADER_NAME = /^(表头摘要|完整内容|页码|来源|条款|页|编号|版本|状态|说明|备注)$/;
+          const clause = cells.find((c) => {
+            const s = (c ?? "").replace(/[*\s]/g, "");
+            return s && !looksLikePage(c) && !/[$\\{}]/.test(c) && !POINTER.test(s) && !HEADER_NAME.test(s) && s.length <= 30;
+          });
+          const parts: string[] = [];
+          if (clause) parts.push(clause.replace(/\*\*/g, "").replace(/\n/g, " ").slice(0, 24));
+          if (page) parts.push(page.replace(/\*\*/g, "").trim());
+          return parts.join(" · ") || "—";
+        };
+        const entry: ClauseMapRow = {
+          topic: topic || "（本章）",
+          a: fmt(byVer.A),
+          b: fmt(byVer.B),
+          c: fmt(byVer.C),
+          src: `第${ch.id}章`,
+        };
+        const key = `${entry.a}|${entry.b}|${entry.c}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rows.push(entry);
+        if (rows.length >= 70) return rows;
+        continue;
+      }
+      i++;
+    }
+  }
+  return rows;
+}
+
+function renderMappingIndex(rows: ClauseMapRow[]): string {
+  if (!rows.length) return "";
+  const body = rows
+    .map(
+      (r) => `<tr>
+        <td class="mp-name">${cellHtml(r.topic)}</td>
+        <td>${cellHtml(r.a)}</td>
+        <td>${cellHtml(r.b)}</td>
+        <td>${cellHtml(r.c)}</td>
+        <td class="mp-src">${esc(r.src)}</td>
+      </tr>`,
+    )
+    .join("");
+  return `
+<section class="front-block">
+  <header class="mp-head">
+    <span class="mp-eyebrow">Cross-Reference Index</span>
+    <h2>三版条款 · 页码映射总表</h2>
+    <p class="mp-sub">按主题横向对应 A / B / C 三份文件的条款号与原文页码 · 共 ${rows.length} 条 · 用于全文反查定位</p>
+  </header>
+  <table class="mp-table">
+    <thead>
+      <tr>
+        <th style="width:26%">主题</th>
+        <th style="--c:#a17334">A 草案 条款 · 页</th>
+        <th style="--c:#0c1a2b">B 现行 条款 · 页</th>
+        <th style="--c:#3a6b4f">C UN R48 条款 · 页</th>
+        <th>来源</th>
+      </tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>
+</section>`;
+}
+
+// ---------------------------------------------------------------------------
+// 8. Triptych (always 3 cards) + plain table
+// ---------------------------------------------------------------------------
+
+const DOC_META: Record<string, { label: string; short: string; name: string; color: string; bg: string }> = {
+  A: { label: "A", short: "草案", name: "GB 4785 草案 V4.3.5", color: "#a17334", bg: "#fdf3df" },
+  B: { label: "B", short: "现行", name: "GB 4785-2019", color: "#0c1a2b", bg: "#eef1f5" },
+  C: { label: "C", short: "UN", name: "UN R48-09", color: "#3a6b4f", bg: "#e3f2e8" },
+};
+
+function renderTriptych(t: ParsedTable): string {
+  const cols: Array<"A" | "B" | "C"> = ["A", "B", "C"]; // always three columns
+  const body = t.rows.slice(1);
+  const byVersion = new Map<string, string[]>();
+  for (const row of body) {
+    const v = normVersion(row[t.versionIdx] ?? "");
+    if (v && !byVersion.has(v)) byVersion.set(v, row);
+  }
+
+  // Map columns by header names instead of position — real tables use
+  // either |版本|条款|页码|原文摘录| or |来源|页码|表头摘要|完整内容|.
+  const header = t.rows[0] ?? [];
+  const normH = (h: string) => (h ?? "").replace(/[\s*]/g, "");
+  const clauseCol = header.findIndex(
+    (h, i) =>
+      i > t.versionIdx &&
+      normH(h).length <= 6 &&
+      /条款|条目|主题|对照项|参数|位置|项目|级别|装置/.test(normH(h)) &&
+      !/正文|摘录|内容/.test(normH(h)),
+  );
+  const pageCol = header.findIndex((h, i) => i > t.versionIdx && /^(页码|页)$/.test(normH(h)));
+  let cCol = clauseCol;
+  let pCol = pageCol;
+  if (cCol < 0 && pCol < 0) {
+    // completely unknown header — fall back to positional convention
+    cCol = t.versionIdx + 1;
+    pCol = t.versionIdx + 2;
+  }
+  const textCols = header.map((_, i) => i).filter((i) => i > t.versionIdx && i !== cCol && i !== pCol);
+
+  const cards = cols
+    .map((v) => {
+      const meta = DOC_META[v];
+      const row = byVersion.get(v);
+      if (!row) {
+        return `
+<article class="trip-card trip-card-missing" style="--accent:#b9a27a;--accent-bg:#f0eada">
+  <header class="trip-head">
+    <span class="trip-label">${meta.label}</span>
+    <span class="trip-tag">${esc(meta.short)}</span>
+    <span class="trip-doc">${esc(meta.name)}</span>
+  </header>
+  <div class="trip-missing">
+    <div class="missing-mark">—</div>
+    <div class="missing-text">源数据未提供</div>
+    <div class="missing-hint">（报告生成时 ${meta.label} 版无对应条款行；<br>渲染器补位以保持三栏对齐）</div>
+  </div>
+</article>`;
+      }
+      const clause = cCol >= 0 ? (row[cCol] ?? "—") : "—";
+      const page = pCol >= 0 ? (row[pCol] ?? "—") : "—";
+      const text = textCols
+        .map((i) => row[i] ?? "")
+        .filter((s) => s && s !== "—")
+        .join("\n");
+      const badge = (p: string): string => {
+        const s = (p ?? "").replace(/\*\*/g, "").trim() || "—";
+        const inner = cellHtml(s); // math-safe (cells may hold $...$ formulas)
+        if (/✓/.test(s)) return `<span class="page-ok">${inner}</span>`;
+        if (/⚠|未核验/.test(s)) return `<span class="page-warn">${inner}</span>`;
+        if (/^—$|未规定|未适用/.test(s)) return `<span class="page-none">${inner}</span>`;
+        return `<span class="page-ok">${inner}</span>`;
+      };
+      return `
+<article class="trip-card" style="--accent:${meta.color};--accent-bg:${meta.bg}">
+  <header class="trip-head">
+    <span class="trip-label">${meta.label}</span>
+    <span class="trip-tag">${esc(meta.short)}</span>
+    <span class="trip-doc">${esc(meta.name)}</span>
+  </header>
+  <dl class="trip-meta">
+    <dt>条款</dt><dd>${cellHtml(clause)}</dd>
+    <dt>页码</dt><dd>${badge(page)}</dd>
+  </dl>
+  <div class="trip-text">${text ? cellHtml(text) : '<span class="impact-empty">本版本无对应原文</span>'}</div>
+</article>`;
+    })
+    .join("\n");
+  return `<section class="triptych">${cards}</section>`;
+}
+
+/**
+ * Normalize a row's cell count to match the header width.
+ * - row shorter than header → pad with "—" placeholders
+ * - row longer than header → merge overflow into the last cell with <br>
+ * This fixes "缺角" tables where markdown source extraction produced
+ * inconsistent row widths (e.g., p41 速度 row has 4 cells vs 3-column header,
+ * p39 B 表 has rows with only 2 cells vs 3-column header).
+ */
+function normalizeRow(row: string[], width: number): string[] {
+  if (row.length === width) return row;
+  if (row.length < width) {
+    const pad = Array(width - row.length).fill("—");
+    return [...row, ...pad];
+  }
+  // row.length > width — merge overflow into last cell
+  const head = row.slice(0, width - 1);
+  const tail = row.slice(width - 1).filter((c) => c && c.trim() !== "");
+  const merged = tail.length ? tail.join("<br>") : "—";
+  return [...head, merged];
+}
+
+function renderPlainTable(rows: string[][]): string {
+  if (!rows.length) return "";
+  const [header, ...body] = rows;
+  const width = header.length;
+  // Normalize every body row to header width so the table renders without
+  // ragged columns. Cells with no source data become "—".
+  const normBody = body.map((r) => normalizeRow(r, width));
+  const thead = "<thead><tr>" + header.map((c) => `<th>${cellHtml(c)}</th>`).join("") + "</tr></thead>";
+  const tbody =
+    "<tbody>" +
+    normBody
+      .map((r) => "<tr>" + r.map((c) => `<td>${cellHtml(c || "—")}</td>`).join("") + "</tr>")
+      .join("") +
+    "</tbody>";
+  return `<table>${thead}${tbody}</table>`;
+}
+
+// ---------------------------------------------------------------------------
+// 9. Markdown → HTML
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 8.5 Typed table loader (aligned-tables.json)
+// ---------------------------------------------------------------------------
+
+type TypedTableEntry = {
+  id: string;            // e.g. "ch11.t0"
+  chapter: string;
+  kind: "triptych" | "plain";
+  header: string[];
+  rows: string[][];      // already row-width-normalized
+  source_page_hint?: { A?: string | null; B?: string | null; C?: string | null };
+};
+
+type TypedTablesBundle = {
+  tables: TypedTableEntry[];
+  stats?: Record<string, unknown>;
+};
+
+/**
+ * Load aligned-tables.json produced by extract_aligned_tables.py.
+ * Returns an empty bundle if the file is missing or malformed — the caller
+ * can then fall back to the legacy markdown path without crashing.
+ */
+function loadTypedTables(distDir: string): TypedTablesBundle {
+  try {
+    const path = `${distDir}/aligned-tables.json`;
+    if (!existsSync(path)) return { tables: [] };
+    const raw = readFileSync(path, "utf8");
+    const data = JSON.parse(raw);
+    return { tables: Array.isArray(data.tables) ? data.tables : [], stats: data.stats };
+  } catch {
+    return { tables: [] };
+  }
+}
+
+/**
+ * Build per-chapter Map<"tN", preRenderedHtml>. N is the ordinal of the
+ * markdown table within the chapter. mdToHtml looks up "t0" for the first
+ * table, "t1" for the second, etc.
+ *
+ * For triptych entries we route through renderTriptych (the same renderer
+ * used by the markdown path) so the visual output is identical to before
+ * but the cell values come from the already-normalized typed payload.
+ */
+function buildTableOverrideMap(
+  chapterTables: TypedTableEntry[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  chapterTables.forEach((entry, idx) => {
+    try {
+      const parsed: ParsedTable = {
+        rows: [entry.header, ...entry.rows],
+        isComparison: entry.kind === "triptych",
+        versionIdx: entry.kind === "triptych" ? findVersionIdx(entry.header) : -1,
+        comparisonCols: [],
+      };
+      const html =
+        entry.kind === "triptych"
+          ? renderTriptych(parsed)
+          : renderPlainTable(parsed.rows);
+      map.set(`t${idx}`, html);
+    } catch {
+      // Skip entry on parse error; markdown fallback will render this slot.
+    }
+  });
+  return map;
+}
+
+function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
+  if (!md) return "";
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  const out: string[] = [];
+  let listType: "ul" | "ol" | null = null;
+  let tableCounter = 0; // local counter; used as override key suffix
+  const closeLists = () => {
+    if (listType === "ul") out.push("</ul>");
+    if (listType === "ol") out.push("</ol>");
+    listType = null;
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    // Impact matrix: blockquote lines or bare emoji lines.
+    if (line.startsWith(">") || IMPACT_LINE.test(line)) {
+      closeLists();
+      const ex = tryExtractImpactMatrix(lines, i);
+      if (ex) {
+        out.push(ex.html);
+        i += ex.consumed;
+        continue;
+      }
+      if (line.startsWith(">")) {
+        out.push(`<blockquote>${cellHtml(line.replace(/^>\s?/, ""))}</blockquote>`);
+        i++;
+        continue;
+      }
+      // bare emoji line that is not an impact matrix → fall through to paragraph
+    }
+
+    // Table
+    if (line.startsWith("|")) {
+      closeLists();
+      const overrideKey = tableOverrides ? `t${tableCounter}` : undefined;
+      tableCounter++;
+      if (overrideKey && tableOverrides?.has(overrideKey)) {
+        // Use pre-rendered typed HTML from aligned-tables.json
+        out.push(tableOverrides.get(overrideKey)!);
+        // skip the markdown table block (consume until next non-pipe line)
+        while (i < lines.length && /\|/.test(lines[i])) i++;
+        continue;
+      }
+      const { rowLines, next } = collectTableRows(lines, i);
+      i = next;
+      const parsed = parseTable(rowLines);
+      if (parsed) {
+        if (parsed.isComparison) out.push(renderTriptych(parsed));
+        else out.push(renderPlainTable(parsed.rows));
+      } else if (rowLines.length) {
+        out.push(`<pre>${esc(rowLines.join("\n"))}</pre>`);
+      }
+      continue;
+    }
+
+    // Heading
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      closeLists();
+      const level = Math.min(h[1].length + 2, 6); // # → h3 (chapter title is h1)
+      out.push(`<h${level}>${inlineMd(h[2])}</h${level}>`);
+      i++;
+      continue;
+    }
+    if (/^(-{3,}|_{3,})$/.test(line)) {
+      closeLists();
+      out.push("<hr>");
+      i++;
+      continue;
+    }
+    const ul = line.match(/^[-*+]\s+(.*)$/);
+    if (ul) {
+      if (listType === "ol") closeLists();
+      if (listType !== "ul") {
+        out.push("<ul>");
+        listType = "ul";
+      }
+      out.push(`<li>${inlineMd(ul[1])}</li>`);
+      i++;
+      continue;
+    }
+    const ol = line.match(/^\d+[.)]\s+(.*)$/);
+    if (ol) {
+      if (listType === "ul") closeLists();
+      if (listType !== "ol") {
+        out.push("<ol>");
+        listType = "ol";
+      }
+      out.push(`<li>${inlineMd(ol[1])}</li>`);
+      i++;
+      continue;
+    }
+    if (line === "") {
+      closeLists();
+      i++;
+      continue;
+    }
+
+    // Paragraph (consume until blank / structural line)
+    closeLists();
+    const buf: string[] = [line];
+    i++;
+    while (i < lines.length) {
+      const t = lines[i].trim();
+      if (
+        t === "" ||
+        /^#{1,6}\s/.test(t) ||
+        /^[-*+]\s/.test(t) ||
+        /^\d+[.)]\s/.test(t) ||
+        t.startsWith(">") ||
+        t.startsWith("|") ||
+        IMPACT_LINE.test(t)
+      )
+        break;
+      buf.push(t);
+      i++;
+    }
+    const joined = buf.join(" ");
+    if (/变化判定/.test(joined)) {
+      out.push(renderVerdict(joined));
+      continue;
+    }
+    out.push(`<p>${cellHtml(joined)}</p>`);
+  }
+  closeLists();
+  return out.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// 10. Cover / TOC / chapter utilities
+// ---------------------------------------------------------------------------
+
+function cleanDocName(fileName: string): string {
+  let n = (fileName ?? "").replace(/\.(pdf|docx?|DOCX?|PDF)$/i, "");
+  if (/R0?48|R48/i.test(n) && /UN|UNR|ECE/i.test(n)) return "UN R48-09";
+  if (/R0?48|R48/i.test(n)) return "UN R48-09";
+  if (/GB[\s_]*4785/i.test(n) && /草案|征求意见|draft|V4\.3/i.test(n)) {
+    const ver = n.match(/V(\d+\.\d+(\.\d+)?)/);
+    return ver ? `GB 4785 草案 V${ver[1]}` : "GB 4785 草案";
+  }
+  if (/GB[\s_]*4785/i.test(n)) return "GB 4785-2019";
+  n = n.replace(/^\d{4}-\d{2}-\d{2}[_-]?/, "").replace(/_+/g, " ").trim();
+  return n.length > 24 ? n.slice(0, 24) + "…" : n;
+}
+
+function stripDuplicateChapterTitle(md: string, chapterId: number, title: string): string {
+  const lines = md.split("\n");
+  if (lines.length === 0) return md;
+  const first = lines[0].trim();
+  const hashed = first.replace(/^\s{0,3}#{1,6}\s+/, "").trim();
+  const titleKey = title.replace(/\s+/g, "").slice(0, 8);
+  const firstKey = hashed.replace(/\s+/g, "");
+  const isDup =
+    /^第?\s*\d+\s*章/.test(hashed) ||
+    new RegExp(`^${chapterId}\\s*章?`).test(hashed) ||
+    (titleKey.length >= 4 && firstKey.includes(titleKey)) ||
+    (firstKey.length >= 4 && title.replace(/\s+/g, "").includes(firstKey));
+  if (!isDup) return md;
+  return lines.slice(1).join("\n").replace(/^\n+/, "");
+}
+
+function chapterCover(numLabel: string, title: string): string {
+  return `
+<section class="chapter-cover">
+  <div class="chapter-num">${numLabel}</div>
+  <h1 class="chapter-cover-title">${esc(title)}</h1>
+</section>`;
+}
+
+const chAnchor = (id: number) => `CHPAGEANCHOR${String(id).padStart(3, "0")}`;
+const apAnchor = (id: string) => `CHPAGEANCHORAP${id}`;
+
+// ---------------------------------------------------------------------------
+// 11. CSS
+// ---------------------------------------------------------------------------
+
+function buildCss(fonts: FontAsset[]): string {
+  const ff = fonts.length
+    ? fonts.map((f) => `"${f.family}"`).join(", ") + ', "Microsoft YaHei", "PingFang SC", "Source Han Sans SC", "Noto Sans SC", sans-serif'
+    : '"Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+  const serif = fonts.find((f) => f.family === "NotoSerifSC")
+    ? '"NotoSerifSC", "Source Han Serif SC", "Noto Serif SC", "SimSun", serif'
+    : '"SimSun", "Noto Serif SC", "Source Han Serif SC", serif';
+  return `
+${fontFaceBlock(fonts)}
+
+@page { size: A4; margin: 18mm 14mm 18mm 14mm; }
+@page :first { margin: 0; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: ${ff};
+  color: #1c2733;
+  font-size: 10pt;
+  line-height: 1.7;
+  background: #fff;
+}
+
+/* invisible anchor for two-pass TOC page numbering */
+.ch-anchor { font-size: 2pt; color: #ffffff; }
+
+/* ====== Cover ====== */
+.cover {
+  page-break-after: always;
+  padding: 36mm 22mm 22mm;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(161,115,52,0.08), transparent 40%),
+    radial-gradient(circle at 80% 100%, rgba(58,107,79,0.06), transparent 40%),
+    #faf6ec;
+  min-height: 100vh;
+  position: relative;
+}
+.cover::before {
+  content: ""; position: absolute; top: 14mm; left: 16mm; right: 16mm;
+  height: 0.5pt; background: #0c1a2b;
+}
+.cover::after {
+  content: ""; position: absolute; bottom: 14mm; left: 16mm; right: 16mm;
+  height: 0.5pt; background: #0c1a2b;
+}
+.cover-eyebrow {
+  font-size: 9pt; letter-spacing: 6px; color: #a17334;
+  text-transform: uppercase; margin-bottom: 6mm; font-weight: 600;
+}
+.cover h1 {
+  font-family: ${serif};
+  font-size: 30pt; margin: 0 0 4mm; color: #0c1a2b;
+  letter-spacing: 1px; line-height: 1.25; font-weight: 700;
+}
+.cover .sub { font-size: 12pt; color: #5e5240; margin-bottom: 14mm; line-height: 1.6; }
+.cover-strip {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 6mm; margin-bottom: 16mm;
+}
+.cover-card {
+  border: 0.6pt solid #d8cfb8; background: #fff;
+  padding: 8mm 6mm; position: relative; border-radius: 2mm;
+}
+.cover-card::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2mm; background: var(--accent, #0c1a2b);
+  border-radius: 2mm 0 0 2mm;
+}
+.cover-card[data-doc="A"] { --accent: #a17334; }
+.cover-card[data-doc="B"] { --accent: #0c1a2b; }
+.cover-card[data-doc="C"] { --accent: #3a6b4f; }
+.cover-card .doc-label { font-size: 22pt; font-weight: 700; color: var(--accent); margin-bottom: 1mm; }
+.cover-card .doc-name { font-size: 10pt; color: #3a3027; line-height: 1.4; min-height: 8mm; }
+.cover-card .doc-meta { font-size: 8pt; color: #9c8b6c; margin-top: 1.5mm; }
+.cover-meta { font-size: 9pt; color: #5e5240; line-height: 1.9; border-top: 0.5pt solid #ece4d1; padding-top: 4mm; }
+.cover-disclaimer {
+  position: absolute; bottom: 22mm; left: 22mm; right: 22mm;
+  font-size: 8pt; color: #9c8b6c; line-height: 1.5;
+  border-top: 0.3pt solid #ece4d1; padding-top: 3mm;
+}
+
+/* ====== Front blocks: mapping index / master params ====== */
+.front-block { page-break-after: always; padding-top: 2mm; }
+.mp-head { margin-bottom: 5mm; border-bottom: 1pt solid #0c1a2b; padding-bottom: 3mm; }
+.mp-eyebrow { font-size: 8pt; letter-spacing: 4px; color: #a17334; text-transform: uppercase; font-weight: 600; }
+.mp-head h2 {
+  font-family: ${serif};
+  font-size: 19pt; color: #0c1a2b;
+  margin: 2mm 0 1mm; letter-spacing: 1px;
+}
+.mp-sub { font-size: 9.5pt; color: #5e5240; margin: 0; line-height: 1.55; }
+.mp-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+.mp-table th {
+  text-align: left; padding: 2mm 2.2mm;
+  border-bottom: 1pt solid #0c1a2b;
+  color: var(--c, #0c1a2b);
+  font-weight: 700; font-size: 8.8pt;
+}
+.mp-table td { padding: 1.8mm 2.2mm; border-bottom: 0.4pt solid #ece4d1; vertical-align: top; line-height: 1.45; }
+.mp-table tbody tr:nth-child(even) td { background: #fbf9f3; }
+.mp-table .mp-name { font-weight: 600; color: #0c1a2b; }
+.mp-table .mp-note { font-size: 8pt; color: #5e5240; }
+.mp-table .mp-src { font-size: 7.8pt; color: #9c8b6c; font-style: italic; white-space: nowrap; }
+
+/* ====== TOC ====== */
+.front-section { page-break-after: always; padding-top: 6mm; }
+.front-section h1 {
+  font-family: ${serif}; font-size: 22pt; color: #0c1a2b;
+  margin: 0 0 6mm; letter-spacing: 1px;
+  border-bottom: 1pt solid #0c1a2b; padding-bottom: 3mm;
+}
+.toc-row {
+  display: flex; align-items: baseline; gap: 3mm;
+  padding: 2.6mm 0; font-size: 11pt; break-inside: avoid;
+  border-bottom: 0.3pt dotted #ece4d1;
+}
+.toc-num { width: 11mm; font-weight: 700; color: #a17334; font-family: ${serif}; flex-shrink: 0; }
+.toc-title { color: #1c2733; flex: 1; }
+.toc-dots { flex: 0 0 30mm; border-bottom: 1px dotted #b9a27a; transform: translateY(-1.2mm); }
+.toc-page { min-width: 10mm; text-align: right; font-weight: 700; color: #0c1a2b; }
+.toc-row.ap .toc-num { color: #3a6b4f; }
+
+/* ====== Chapter ====== */
+.chapter { page-break-before: always; }
+.chapter-cover {
+  min-height: 46mm;
+  display: flex; align-items: center; gap: 8mm;
+  border-bottom: 1pt solid #0c1a2b; padding-bottom: 5mm;
+  margin-bottom: 6mm;
+}
+.chapter-num { font-family: ${serif}; font-size: 42pt; color: #a17334; font-weight: 700; line-height: 1; min-width: 22mm; }
+.chapter-cover-title { font-family: ${serif}; font-size: 20pt; color: #0c1a2b; margin: 0; line-height: 1.3; }
+
+/* ====== Body ====== */
+h3 { font-size: 13pt; color: #0c1a2b; border-left: 3pt solid #a17334; padding-left: 3.5mm;
+  margin: 6mm 0 3mm; page-break-after: avoid; }
+h4 { font-size: 11.5pt; color: #0c1a2b; margin: 4mm 0 2mm; page-break-after: avoid; }
+h5 { font-size: 10.5pt; color: #3a3027; margin: 3mm 0 1.5mm; page-break-after: avoid; }
+h6 { font-size: 10pt; color: #5e5240; margin: 3mm 0 1.5mm; page-break-after: avoid; }
+p { margin: 0 0 3mm; text-align: justify; orphans: 3; widows: 3; }
+ul, ol { margin: 0 0 3mm; padding-left: 8mm; }
+li { margin-bottom: 1mm; }
+blockquote {
+  margin: 3mm 0; padding: 3mm 4mm; background: #f7fbf8;
+  border-left: 3pt solid #a17334; font-size: 9.5pt; color: #3a3027;
+}
+hr { border: none; border-top: 0.6pt solid #ece4d1; margin: 5mm 0; }
+code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
+  padding: 0 1.5mm; font-size: 8.5pt; font-family: "Consolas", monospace; }
+
+/* ====== Triptych ====== */
+.triptych {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 3mm; margin: 4mm 0; page-break-inside: avoid;
+}
+.trip-card {
+  border: 0.5pt solid #d8cfb8; border-radius: 2mm;
+  background: #fff; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.trip-head {
+  display: flex; align-items: baseline; gap: 2mm;
+  padding: 3mm 3.5mm; background: var(--accent-bg);
+  border-bottom: 0.5pt solid var(--accent); position: relative;
+}
+.trip-head::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2mm; background: var(--accent);
+}
+.trip-label { font-family: ${serif}; font-size: 17pt; font-weight: 700; color: var(--accent); line-height: 1; }
+.trip-tag { font-size: 8pt; padding: 0.4mm 1.6mm; background: var(--accent); color: #fff;
+  border-radius: 1mm; font-weight: 600; letter-spacing: 0.5px; }
+.trip-doc { font-size: 8.2pt; color: #5e5240; margin-left: auto; text-align: right; line-height: 1.2; }
+.trip-meta { display: grid; grid-template-columns: 11mm 1fr; gap: 1mm 2mm; margin: 2.5mm 3.5mm; font-size: 8.8pt; }
+.trip-meta dt { color: #9c8b6c; font-weight: 600; }
+.trip-meta dd { margin: 0; color: #1c2733; font-weight: 500; }
+.trip-text { padding: 0 3.5mm 4mm; font-size: 8.8pt; line-height: 1.5; color: #1c2733; flex: 1; }
+
+.trip-card-missing { background: #faf6ec; border-style: dashed; border-color: #d8cfb8; }
+.trip-card-missing .trip-head { background: #f0eada; border-bottom-color: #b9a27a; }
+.trip-card-missing .trip-label { color: #9c8b6c; }
+.trip-card-missing .trip-tag { background: #b9a27a; }
+.trip-card-missing .trip-doc { color: #9c8b6c; }
+.trip-missing { flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 7mm 4mm; text-align: center; color: #9c8b6c; }
+.missing-mark { font-family: ${serif}; font-size: 26pt; color: #c8b893; line-height: 1; margin-bottom: 2mm; }
+.missing-text { font-size: 10.5pt; color: #7c6a4f; font-weight: 600; margin-bottom: 1.5mm; }
+.missing-hint { font-size: 7.2pt; color: #9c8b6c; line-height: 1.4; font-style: italic; }
+
+.page-ok { color: #1f7a44; font-weight: 600; }
+.page-warn { color: #a17334; font-weight: 600; }
+.page-none { color: #9c8b6c; }
+
+/* ====== Impact Matrix ====== */
+.impact-matrix {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 2.5mm; margin: 3mm 0 5mm; page-break-inside: avoid;
+}
+.impact-cell {
+  border: 0.5pt solid #d8cfb8; border-left: 2mm solid var(--accent);
+  background: #fff; border-radius: 2mm; padding: 2.5mm 3mm;
+  display: flex; flex-direction: column;
+}
+.impact-head { display: flex; align-items: center; gap: 2mm; margin-bottom: 1.5mm; }
+.impact-icon { font-size: 11pt; width: 5mm; }
+.impact-label { font-size: 8.8pt; color: var(--accent); font-weight: 700; letter-spacing: 0.5px; }
+.impact-body { font-size: 8.6pt; line-height: 1.5; color: #1c2733; }
+.impact-empty { color: #b9a27a; font-style: italic; font-size: 8pt; }
+
+/* ====== 变化判定 verdict strip ====== */
+.verdict-strip {
+  display: flex; align-items: baseline; gap: 3mm;
+  margin: 3mm 0 4mm; padding: 2.5mm 3mm;
+  border-left: 2.5mm solid var(--v-color, #9c8b6c);
+  background: var(--v-bg, #f7f8fa);
+  border-radius: 1.5mm;
+  font-size: 9.2pt;
+  page-break-inside: avoid;
+}
+.verdict-strip .v-chip { font-weight: 700; color: var(--v-color); white-space: nowrap; }
+.verdict-strip .v-rest { color: #3a3027; flex: 1; }
+.v-red { --v-color: #a23030; --v-bg: #fdf0f0; }
+.v-amber { --v-color: #a17334; --v-bg: #fdf7ec; }
+.v-green { --v-color: #1f7a44; --v-bg: #f0faf4; }
+.v-gray { --v-color: #5e748c; --v-bg: #f4f6f9; }
+
+/* ====== Plain tables ====== */
+table { width: 100%; border-collapse: collapse; font-size: 8.6pt;
+  margin: 3mm 0 4mm; page-break-inside: auto; }
+thead { display: table-header-group; }
+tr { page-break-inside: avoid; }
+th, td { border: 0.5pt solid #d8cfb8; padding: 1.8mm 2.2mm;
+  vertical-align: top; text-align: left; line-height: 1.45; }
+th { background: #f5efe0; color: #0c1a2b; font-weight: 700; }
+tbody tr:nth-child(even) td { background: #fbf9f3; }
+
+/* ====== Markers & tags ====== */
+.mk { display: inline-block; padding: 0 1.6mm; border-radius: 2px;
+  font-size: 8.5pt; font-weight: 700; white-space: nowrap; }
+.mk-add { background: #e3f2e8; color: #1f7a44; border: 0.4pt solid #9fd6b4; }
+.mk-del { background: #fbe4e4; color: #a23030; border: 0.4pt solid #e7a9a9; text-decoration: line-through; }
+.mk-mod { background: #fdeed9; color: #a17334; border: 0.4pt solid #ecc78a; }
+.mk-keep { background: #eef1f5; color: #5e748c; border: 0.4pt solid #c9d3e0; }
+.tag { display: inline-block; padding: 0 1.6mm; border-radius: 2px; font-size: 8pt; font-weight: 700; }
+.tag-fact { background: #fde0e0; color: #a23030; }
+.tag-infer { background: #fdf3df; color: #a17334; }
+.tag-todo { background: #ece4d1; color: #3a3027; }
+.quote { color: #5e5240; }
+
+/* ====== Math ====== */
+.math-block { margin: 3mm auto; text-align: center; font-size: 11pt; font-style: italic; }
+.math { font-style: italic; font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", serif; padding: 0 0.5mm; }
+
+/* ====== Thin chapter fallback ====== */
+.thin-chapter {
+  color: #9c8b6c; font-size: 9.5pt; font-style: italic;
+  background: #faf6ec; border: 0.5pt dashed #d8cfb8;
+  border-radius: 3mm; padding: 3mm 4mm;
+}
+`;
+}
+
+// ---------------------------------------------------------------------------
+// 12. Build full HTML document
+// ---------------------------------------------------------------------------
+
+export async function buildHtml(
+  report: RenderableReport,
+  fonts: FontAsset[],
+  opts: { withAnchors?: boolean; distDir?: string } = {},
+): Promise<string> {
+  // Defensive: clients occasionally POST partial RenderableReport JSON
+  // (missing chapters/appendices/outline). Default to empty collections so
+  // the renderer never crashes with "Cannot read properties of undefined
+  // (reading 'map')".
+  const outline = report?.outline ?? { title: "", chapters: [], appendices: [] };
+  const chapters = Array.isArray(report?.chapters) ? report.chapters : [];
+  const appendices = Array.isArray(report?.appendices) ? report.appendices : [];
+  const sourceDocuments = Array.isArray(report?.sourceDocuments) ? report.sourceDocuments : [];
+  const generatedAt = report?.generatedAt;
+  const stamp = generatedAt ?? new Date().toLocaleString("zh-CN");
+
+  // Load typed tables from aligned-tables.json if available. Falls back to
+  // an empty bundle so markdown rendering remains the default path.
+  const distDir = opts.distDir ?? path.resolve(process.cwd(), "dist");
+  const typedBundle = loadTypedTables(distDir);
+  const typedById = new Map<string, TypedTableEntry>();
+  for (const t of typedBundle.tables) typedById.set(t.id, t);
+
+  // Pre-build per-chapter override maps. chapter index `ci` aligns with
+  // aligned-tables.json's "ch{ci}.t{N}" ids.
+  const chapterOverrides = new Map<number, Map<string, string>>();
+  for (let ci = 0; ci < chapters.length; ci++) {
+    const entries = typedBundle.tables
+      .map((t, _idx) => ({ t, m: t.id.match(/^ch(\d+)\.t(\d+)$/) }))
+      .filter(({ m }) => m && Number(m[1]) === ci)
+      .sort((a, b) => Number(a.m![2]) - Number(b.m![2]))
+      .map(({ t }) => t);
+    chapterOverrides.set(ci, buildTableOverrideMap(entries));
+  }
+
+  const sourceCards = (sourceDocuments.length
+    ? sourceDocuments
+    : [
+        { label: "A", name: "GB 4785 草案", meta: "" },
+        { label: "B", name: "GB 4785-2019", meta: "" },
+        { label: "C", name: "UN R48", meta: "" },
+      ]
+  )
+    .map(
+      (d) => `<div class="cover-card" data-doc="${esc(d.label)}">
+        <div class="doc-label">${esc(d.label)}</div>
+        <div class="doc-name">${esc(cleanDocName(d.name))}</div>
+        <div class="doc-meta">${esc(d.meta ?? "")}</div>
+      </div>`,
+    )
+    .join("");
+
+  const tocEntries = chapters
+    .map(
+      (c) => `<div class="toc-row">
+        <span class="toc-num">${String(c.id).padStart(2, "0")}</span>
+        <span class="toc-title">${esc(c.title)}</span>
+        <span class="toc-dots"></span>
+        <span class="toc-page">${c.page ?? "—"}</span>
+      </div>`,
+    )
+    .join("");
+  const appendixEntries = appendices
+    .map(
+      (a) => `<div class="toc-row ap">
+        <span class="toc-num">附${esc(a.id)}</span>
+        <span class="toc-title">${esc(a.title)}</span>
+        <span class="toc-dots"></span>
+        <span class="toc-page">${a.page ?? "—"}</span>
+      </div>`,
+    )
+    .join("");
+
+  // Front blocks (skip when empty to avoid blank pages)
+  const mappingHtml = renderMappingIndex(extractClauseMapping(chapters));
+  const masterParamsHtml = renderMasterParams(extractMasterParams(chapters));
+
+  const chapterSections = chapters
+    .map((c, ci) => {
+      const body = stripDuplicateChapterTitle(c.markdown, c.id, c.title);
+      const bodyHtml = mdToHtml(body, chapterOverrides.get(ci));
+      const textLen = body.replace(/[#*>|`\-\[\]()]/g, "").trim().length;
+      const fallback =
+        textLen < 120
+          ? `<p class="thin-chapter">（本章正文生成内容不足——已生成其余章节的详细对比；该章要点请参见"变化点总结"与相邻章节，或稍后重新生成报告。）</p>`
+          : "";
+      return `<section class="chapter" id="ch-${c.id}">
+        ${opts.withAnchors === false ? "" : `<span class="ch-anchor">${chAnchor(c.id)}</span>`}
+        ${chapterCover(String(c.id).padStart(2, "0"), c.title)}
+        <div class="chapter-body">${bodyHtml}${fallback}</div>
+      </section>`;
+    })
+    .join("\n");
+
+  const appendixSections = appendices
+    .filter((a) => a.markdown)
+    .map((a) => {
+      const body = mdToHtml(a.markdown!);
+      const textLen = (a.markdown ?? "").replace(/[#*>|`\-\[\]()\s]/g, "").trim().length;
+      const fallback =
+        textLen < 120
+          ? `<p class="thin-chapter">（本附录生成内容不足——其他附录与正文已完整生成；该附录如需补全，可重新生成报告。）</p>`
+          : "";
+      return `<section class="chapter" id="ap-${esc(a.id)}">
+        ${opts.withAnchors === false ? "" : `<span class="ch-anchor">${apAnchor(a.id)}</span>`}
+        ${chapterCover(`附${esc(a.id)}`, a.title)}
+        <div class="chapter-body">${body}${fallback}</div>
+      </section>`;
+    })
+    .join("\n");
+
+  const frontBlocks = [mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>${esc(outline.title)}</title>
+<style>${buildCss(fonts)}</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-eyebrow">Regulatory Comparative Report · V8</div>
+  <h1>${esc(outline.title)}</h1>
+  <div class="sub">现行版 · 草案版 · 欧版 — 三维度对照分析（条款级 · 参数级 · 影响级 · 映射级）</div>
+  <div class="cover-strip">${sourceCards}</div>
+  <div class="cover-meta">
+    报告编号：GB4785-CMP-2026-09-001<br>
+    编制日期：${esc(stamp)}<br>
+    文档版本：V8 · CJK 字体嵌入 · 公式排版 · 三版同框 · 4 维影响卡 · 映射索引 · 参数总表
+  </div>
+  <div class="cover-disclaimer">
+    本报告基于公开法规资料及专业知识编制，仅供技术研究使用。涉及具体产品的合规判定，请以官方发布的法规原文为准。
+  </div>
+</div>
+
+${frontBlocks}
+
+<div class="front-section">
+  <h1>目录</h1>
+  ${tocEntries}
+  ${appendixEntries}
+</div>
+
+${chapterSections}
+${appendixSections}
+
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------------------
+// 13. Two-pass PDF rendering (mupdf anchor search → TOC page numbers)
+// ---------------------------------------------------------------------------
+
+async function findAnchorPages(pdf: Buffer, anchors: string[]): Promise<Map<string, number>> {
+  const found = new Map<string, number>();
+  try {
+    const mupdf = await import("mupdf");
+    const doc = mupdf.Document.openDocument(pdf, "application/pdf");
+    const n = doc.countPages();
+    for (let i = 0; i < n; i++) {
+      const page = doc.loadPage(i);
+      for (const a of anchors) {
+        if (found.has(a)) continue;
+        try {
+          const quads = page.search(a, {});
+          if (quads && quads.length) found.set(a, i + 1);
+        } catch {
+          /* search unsupported on this page — skip */
+        }
+      }
+      if (found.size === anchors.length) break;
+    }
+    try { doc.destroy(); } catch { /* already freed */ }
+  } catch (e) {
+    console.warn("[htmlRenderV8] anchor page search failed:", (e as Error).message);
+  }
+  return found;
+}
+
+export async function renderPdfFromReportV8(report: RenderableReport): Promise<Buffer> {
+  const fonts = await loadFonts();
+  const { chromium } = await import("playwright-core");
+  const browser = await chromium.launch({ channel: "chrome" });
+  try {
+    const page = await browser.newPage();
+    const render = async (html: string): Promise<Buffer> => {
+      await page.setContent(html, { waitUntil: "load", timeout: 120_000 });
+      await page.evaluate(() => (document as any).fonts?.ready);
+      await page.waitForTimeout(250);
+      const pdf = await page.pdf({
+        title: report.outline.title,
+        creator: "GB 4785 多版本对比报告 pipeline v8",
+        subject: "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照（三版同框 · 4 维影响卡 · 参数总表 · 条款映射）",
+        keywords: "GB 4785, UN R48, AFS, 三版对比, 影响卡, 参数总表, 条款映射, CJK",
+        format: "A4",
+        printBackground: true,
+        margin: { top: "18mm", bottom: "18mm", left: "14mm", right: "14mm" },
+        displayHeaderFooter: true,
+        headerTemplate:
+          `<div style="width:100%;text-align:center;font-size:8px;color:#9c8b6c;">` + esc(report.outline.title) + `</div>`,
+        footerTemplate:
+          `<div style="width:100%;display:flex;justify-content:space-between;font-size:8px;color:#9c8b6c;padding:0 14mm;">` +
+          `<span>汽车外部照明与光信号装置安装规定对比分析 · V8</span>` +
+          `<span><span class="pageNumber"></span> / <span class="totalPages"></span></span>` +
+          `</div>`,
+      });
+      return Buffer.from(pdf);
+    };
+
+    // Pass 1 — render with invisible anchors to discover chapter page numbers.
+    const pdf1 = await render(await buildHtml(report, fonts, { withAnchors: true }));
+    const anchors = [
+      ...report.chapters.map((c) => chAnchor(c.id)),
+      ...(report.appendices ?? []).filter((a) => a.markdown).map((a) => apAnchor(a.id)),
+    ];
+    const pages = await findAnchorPages(pdf1, anchors);
+    for (const c of report.chapters) {
+      const p = pages.get(chAnchor(c.id));
+      if (p) c.page = p;
+    }
+    for (const a of report.appendices ?? []) {
+      if (!a.markdown) continue;
+      const p = pages.get(apAnchor(a.id));
+      if (p) a.page = p;
+    }
+    // Pass 2 — final PDF: TOC shows real page numbers AND the invisible
+    // anchor strings are dropped from the text layer entirely.
+    // (TOC rows are fixed-height, so pagination does not shift between passes.)
+    console.log(`[htmlRenderV8] pass-2 render without anchors (${pages.size}/${anchors.length} anchors found)`);
+    return await render(await buildHtml(report, fonts, { withAnchors: false }));
+  } finally {
+    await browser.close();
+  }
+}

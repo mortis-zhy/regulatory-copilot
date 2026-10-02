@@ -6,6 +6,11 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { Bot, Clock3, FileSearch, FolderOpen, LogOut, Menu, MessageSquare, PanelLeftClose, Search, Settings2, SquarePen, WandSparkles, X } from "lucide-react";
 import { useState } from "react";
 
+const DEMO_USER = {
+  name: import.meta.env.VITE_DEMO_USER_NAME ?? "Demo 用户",
+  email: import.meta.env.VITE_DEMO_USER_EMAIL ?? "demo@regulatory-copilot.local",
+};
+
 const conversations = [
   { title: "GB 4785 草案变化总结", meta: "刚刚", active: true },
   { title: "9.22 14点抢票提醒", meta: "昨天" },
@@ -13,17 +18,22 @@ const conversations = [
   { title: "灯具参数合规检查", meta: "9 月 18 日" },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children, onNavigate }: { children: React.ReactNode; onNavigate?: (view: string) => void }) {
   const { loading, user, logout } = useAuth();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
+
+  const nav = (view: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    onNavigate?.(view);
+  };
 
   // Demo mode: when the runtime was launched without OAuth portal config (or
   // VITE_DEMO_MODE is explicitly set), skip the login wall and render the app
   // with a placeholder user so the agent UI is reachable for investor demos.
   const demoMode = import.meta.env.VITE_DEMO_MODE === "true" || !import.meta.env.VITE_OAUTH_PORTAL_URL;
   const effectiveUser = demoMode
-    ? user ?? { name: "Demo 用户", email: "demo@regulatory-copilot.local" }
+    ? user ?? DEMO_USER
     : user;
 
   if (loading && !demoMode) return <div className="min-h-screen bg-[#f7f7f7]" />;
