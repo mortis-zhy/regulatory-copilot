@@ -1,0 +1,34 @@
+feat: render pipeline hardening — auto-extract + closure dashboard + legend + transition table + exec summary filter
+
+Site-level integration:
+- agentRoutes.ts: after /api/agent/report/generate saves last-report.json,
+  fire-and-forget spawn of extract_aligned_tables.py so the typed-table
+  bundle is regenerated automatically. The renderer reads the fresh
+  bundle on the next /report/render request.
+
+Front matter additions (buildHtml):
+- renderSymbolLegend: a one-page dl explaining every marker (✅ ⚠ 🟡 🔢 ✍
+  etc.) so readers don't lose context between chapters.
+- renderClosureDashboard: extracts 5-category counts from Ch10/Ch11
+  markdown via plain .indexOf (esbuild drops stars inside emoji
+  alternations, so a long regex is fragile). 27 entries scanned
+  (3 confirmed / 21 candidate / 3 errata / 0 renum / 0 format).
+- renderTransitionTable: scans chapters 0..11 for 12.7.x / 12.8.x /
+  table-7 / figure-1 / 实施之日起 patterns. 10 transitional rows
+  surfaced incl. B 2020-07-01, C 2025-09-26, A 实施之日起 25 / 37 个月.
+
+Generator tightening (reportGenerator):
+- chapterPrompt: when chapter.id === 0, inject exec-summary hard
+  rules (only ✅ dual-source items; no ⚠ / 🟡 / 🔢 / ✍; need both A and B
+  anchors; no 占位 filler).
+
+Defensive fixes:
+- htmlRenderV8: added missing mono font-family constant; CSS templates
+  that referenced ${mono} now resolve cleanly.
+
+Verified:
+- 141-page fresh render, 3.84 MB.
+- Unit tests: 9/9, 6/6.
+- verify_pipeline: 41/0/0.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
