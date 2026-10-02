@@ -693,27 +693,46 @@ const DOC_META: Record<string, { label: string; short: string; name: string; col
  * readers don't lose context between chapters. Pre-pended by buildHtml.
  */
 function renderSymbolLegend(): string {
-  const items: Array<[string, string]> = [
-    ["✅ / 已核验", "实质技术变更。A、B 两份原文及双方页码已核验到位。"],
-    ["⚠ / 待复核", "单源核验 / 未定位 / 待人工确认 — 不能直接作为变更依据。"],
-    ["🟡 / 同文勘误", "文本差异但实质内容相同 — 通常是之前误判为变更的勘误条目。"],
-    ["🔢 / 仅编号重排", "章节重构导致条款号变化，但技术内容未变。"],
-    ["✍ / 格式同义改写", "措辞 / 标点 / 数字格式差异，技术含义一致（如「两只」→「2只」）。"],
-    ["🔧 / 🧪 / 📋", "设计影响 / 测试影响 / 认证影响 — 4 维影响卡。"],
-    ["⚠ 风险等级", "高 / 中 / 低 — 由变化判定后的风险评估自动归类。"],
-    ["本版未规定", "该版本无对应子条款 / 数据未抽取 — 渲染占位卡，不视作差异。"],
-    ["•", "执行摘要 / 速查表的项目符号，每行一项。"],
+  const status = [
+    { sym: "✅", tag: "已核验", cls: "ok",     desc: "实质技术变更 — A、B 两份原文 + 双方页码均已核验到位。", sample: "可直接作为变更依据。" },
+    { sym: "⚠", tag: "待复核", cls: "warn",   desc: "单源核验 / 未定位 / 待人工确认 — 不能直接采信。", sample: "需工程师逐条人工核对原始 PDF。" },
+    { sym: "🟡", tag: "同文勘误", cls: "muted", desc: "文本差异但实质内容相同 — 常见于 OCR 截断、标点差异。", sample: "通常从「变更汇总」中剔除。" },
+    { sym: "🔢", tag: "仅编号重排", cls: "muted", desc: "A 草案做章节重组，条款号变化但技术内容未变。", sample: "不计入技术变化。" },
+    { sym: "✍", tag: "格式同义改写", cls: "muted", desc: "措辞 / 标点 / 数字格式差异，技术含义一致。", sample: "如「两只」→「2只」。不计入技术变化。" },
   ];
-  const rows = items
-    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
-    .join("\n");
+  const impact = [
+    { sym: "🔧", tag: "设计影响",   cls: "design", desc: "硬件 / 软件设计层面需要变更的内容。", sample: "例：增加 AFS 单元 / 重新开模。" },
+    { sym: "🧪", tag: "测试影响",   cls: "test",   desc: "新增 / 调整的测试项目或试验条件。", sample: "例：近光 4° 对称性测试。" },
+    { sym: "📋", tag: "认证影响",   cls: "cert",   desc: "对认证流程 / 周期 / 文件的影响。", sample: "例：型式认证新增 1 道工序。" },
+    { sym: "⚠", tag: "风险等级",   cls: "warn",   desc: "高 / 中 / 低 — 由 4 维影响卡自动归类。", sample: "风险高 → 立刻评估产品端。" },
+    { sym: "本版未规定", tag: "占位", cls: "muted", desc: "该版本无对应子条款 / 数据未抽取。", sample: "灰色卡，不视作差异。" },
+    { sym: "•", tag: "项目符号",   cls: "muted", desc: "执行摘要 / 速查表的列表项，每行一项。", sample: "" },
+  ];
+  const card = (g: typeof status[0]) => `
+    <article class="legend-card legend-${g.cls}">
+      <header class="legend-card-h">
+        <span class="legend-sym">${esc(g.sym)}</span>
+        <span class="legend-tag">${esc(g.tag)}</span>
+      </header>
+      <p class="legend-desc">${esc(g.desc)}</p>
+      ${g.sample ? `<p class="legend-sample">${esc(g.sample)}</p>` : ""}
+    </article>`;
   return `
 <section class="symbol-legend">
   <h1 class="legend-title">符号说明 · Report Legend</h1>
   <p class="legend-intro">本报告所有章节共用以下符号。请在阅读任意章节前先浏览一遍，避免忘记标记含义。</p>
-  <dl class="legend-list">
-${rows}
-  </dl>
+
+  <h2 class="legend-h2">状态标记 · 决定条目是否可信</h2>
+  <div class="legend-grid">
+    ${status.map(card).join("\n")}
+  </div>
+
+  <h2 class="legend-h2">影响标记 · 决定工程师关注点</h2>
+  <div class="legend-grid">
+    ${impact.map(card).join("\n")}
+  </div>
+
+  <p class="legend-warn">⚠ 重要：执行摘要（首页）只引用 ✅ 条目；⚠ / 🟡 / 🔢 / ✍ 仅出现在主章节与汇总表中，不得作为变更依据。</p>
 </section>`;
 }
 
@@ -751,12 +770,22 @@ function extractClosureCounts(chapters: { title: string; markdown?: string }[]) 
 }
 
 /**
+ * Classify a transition row by intended audience — this drives the row's
+ * visual grouping in the table.
+ */
+function classifyScope(text: string): "新申请车型" | "已获批准车型" | "通用" {
+  if (/新申请|新近|2026-09-?30|现行|本日|新型式/.test(text)) return "新申请车型";
+  if (/已获|已批准|扩展|延续|transitional|extension/.test(text)) return "已获批准车型";
+  return "通用";
+}
+
+/**
  * Extract transitional/effective-date mentions across all chapters. Heuristic
  * scan for ISO 8601 (yyyy-MM-dd), Chinese 年/月/日, and "N months after entry
  * into force" patterns. Returns one row per clause/source excerpt.
  */
 function extractTransitionDates(chapters: { title: string; markdown?: string }[]) {
-  type Row = { tag: string; trigger: string; delay: string; excerpt: string };
+  type Row = { tag: string; trigger: string; delay: string; excerpt: string; scope: "新申请车型" | "已获批准车型" | "通用" };
   const rows: Row[] = [];
   const tagSet = new Set<string>();
   // Match dates inside clauses like 12.7.2 / 12.8.4 / 12.8.5 and following text
@@ -774,11 +803,13 @@ function extractTransitionDates(chapters: { title: string; markdown?: string }[]
       const tag = clause || line.slice(0, 40);
       if (tagSet.has(tag)) continue;
       tagSet.add(tag);
+      const excerpt = line.slice(0, 200).replace(/\|/g, " ");
       rows.push({
         tag,
         trigger: (date || "").trim(),
         delay: /\d+\s*个?月/.test(line) ? (line.match(/\d+\s*个?月[^,。;\n]{0,15}/)?.[0] ?? "") : "",
-        excerpt: line.slice(0, 200).replace(/\|/g, " "),
+        excerpt,
+        scope: classifyScope(excerpt),
       });
       if (rows.length >= 12) return rows;
     }
@@ -786,21 +817,40 @@ function extractTransitionDates(chapters: { title: string; markdown?: string }[]
   return rows;
 }
 
+/**
+ * Bold key milestones (25/37/61/24/36 个月, transition dates) inside the
+ * excerpt so they survive a quick scan.
+ */
+function highlightMilestones(html: string): string {
+  return html
+    .replace(/(\d{1,3}\s*个?月)/g, '<strong class="ms">$1</strong>')
+    .replace(/(20\d{2}-\d{2}-\d{2})/g, '<strong class="ms">$1</strong>');
+}
+
 function renderTransitionTable(rows: ReturnType<typeof extractTransitionDates>): string {
   if (!rows.length) return "";
-  const body = rows.map((r) => `<tr>
-    <td class="td-tag">${esc(r.tag)}</td>
-    <td class="td-trigger">${esc(r.trigger)}</td>
-    <td class="td-delay">${esc(r.delay)}</td>
-    <td class="td-excerpt">${esc(r.excerpt)}</td>
-  </tr>`).join("\n");
+  const order = { "新申请车型": 0, "已获批准车型": 1, "通用": 2 } as const;
+  const sorted = [...rows].sort((a, b) => order[a.scope] - order[b.scope]);
+  let lastScope = "";
+  const body = sorted.map((r) => {
+    const scopeRow = r.scope !== lastScope
+      ? `<tr class="scope-row"><td colspan="3">${esc(r.scope)}</td></tr>`
+      : "";
+    lastScope = r.scope;
+    const trigger = [r.trigger, r.delay].filter(Boolean).join(" · ");
+    return `${scopeRow}<tr>
+      <td class="td-tag">${esc(r.tag)}</td>
+      <td class="td-trigger">${esc(trigger)}</td>
+      <td class="td-excerpt">${highlightMilestones(esc(r.excerpt))}</td>
+    </tr>`;
+  }).join("\n");
   return `
 <section class="transition-table">
   <h1 class="transition-title">过渡期生效汇总表 · Transition Periods</h1>
-  <p class="transition-intro">A 草案 / UN R48-09 12.7.x 与 12.8.x 系列中明文规定的过渡条款与生效时点，按出现顺序抓取（最多 12 条）。</p>
+  <p class="transition-intro">按「新申请车型 / 已获批准车型 / 通用」三类分组；按出现顺序抓取最多 12 条。<strong class="ms">加粗月份</strong>为关键节点，必须按版本发布日换算绝对生效日。</p>
   <table class="transition-grid">
     <thead>
-      <tr><th>条款 / 表号</th><th>生效触发</th><th>延迟</th><th>原文摘录</th></tr>
+      <tr><th class="bg-mono">条款 / 表号</th><th class="bg-mono">生效触发</th><th>原文摘录（<strong class="ms">关键月份加粗</strong>）</th></tr>
     </thead>
     <tbody>${body}</tbody>
   </table>
@@ -810,25 +860,56 @@ function renderTransitionTable(rows: ReturnType<typeof extractTransitionDates>):
 
 function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>): string {
   const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
+  const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+  const candidateShare = pct(counts.candidate);
+  const isHighRisk = candidateShare >= 50;
+
+  // Stacked-bar chart at the top. Each segment uses SVG <rect> with width
+  // proportional to its share. Total width 100%.
+  const seg = (n: number, color: string) => n > 0
+    ? `<rect x="${(100 * (1 - pct(n) / 100)).toFixed(2)}" y="0" width="${(100 * pct(n) / 100).toFixed(2)}%" height="14" fill="${color}" />`
+    : "";
+  const bar = `
+  <svg class="dashboard-bar" viewBox="0 0 100 14" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    ${seg(counts.confirmed, "#3a6b4f")}
+    ${seg(counts.candidate, isHighRisk ? "#c9542a" : "#b9a173")}
+    ${seg(counts.errata, "#9c8b6c")}
+    ${seg(counts.renum, "#c0b89c")}
+    ${seg(counts.format, "#d9cfb6")}
+  </svg>`;
+
   const row = (cls: string, icon: string, label: string, n: number, note: string) => `
     <tr class="${cls}">
       <td class="td-icon">${esc(icon)}</td>
       <td class="td-label">${esc(label)}</td>
       <td class="td-count">${n}</td>
-      <td class="td-pct">${total > 0 ? Math.round((n / total) * 100) : 0}%</td>
+      <td class="td-pct">${pct(n)}%</td>
       <td class="td-note">${esc(note)}</td>
     </tr>`;
+
   return `
 <section class="closure-dashboard">
   <h1 class="dashboard-title">候选差异闭环统计 · Closure Dashboard</h1>
-  <p class="dashboard-intro">对第 11 章「关键变化点汇总」与第 10 章「新增/删除/重大修订」逐项扫描后，按 5 类差异标记的总数与占比。仅显示全报告已生成的闭环数据，⚠ 待复核项不可作为变更依据。</p>
+  <p class="dashboard-intro">对第 11 章「关键变化点汇总」与第 10 章「新增/删除/重大修订」逐项扫描后，按 5 类差异标记分类计数。${total} 条候选差异中，<strong>${counts.candidate} 条 (${candidateShare}%) 仍处于待复核状态</strong>${isHighRisk ? " — 比例偏高，工程师在采信前必须人工逐条核对原始 PDF。" : "。"}</p>
+
+  <figure class="claim-figure">
+    ${bar}
+    <figcaption class="claim-caption">
+      <span><b style="color:#3a6b4f">✅</b> ${pct(counts.confirmed)}%</span>
+      <span><b style="color:${isHighRisk ? "#c9542a" : "#b9a173"}">⚠</b> ${candidateShare}%</span>
+      <span><b style="color:#9c8b6c">🟡</b> ${pct(counts.errata)}%</span>
+      <span><b style="color:#c0b89c">🔢</b> ${pct(counts.renum)}%</span>
+      <span><b style="color:#d9cfb6">✍</b> ${pct(counts.format)}%</span>
+    </figcaption>
+  </figure>
+
   <table class="closure-table">
     <thead>
       <tr><th>标记</th><th>类别</th><th>数量</th><th>占比</th><th>说明</th></tr>
     </thead>
     <tbody>
       ${row("row-confirmed", "✅", "已双源核验", counts.confirmed, "A、B 原文与页码均已定位，可作为变更依据")}
-      ${row("row-candidate", "⚠", "待复核", counts.candidate, "单源 / 缺页码 — 仅供工程师 / 输入合规判定前必须人工确认")}
+      ${row("row-candidate", "⚠", "待复核", counts.candidate, "单源 / 缺页码 — 仅供工程师参考，输入合规判定前必须人工确认")}
       ${row("row-errata", "🟡", "同文勘误", counts.errata, "之前误判为变化的文本差异，实质内容相同")}
       ${row("row-renum", "🔢", "仅编号重排", counts.renum, "章节号变更但技术内容不变 — 不计入技术变化")}
       ${row("row-format", "✍", "格式同义改写", counts.format, "标点 / 措辞差异（如「两只」→「2只」）— 不计入技术变化")}
@@ -840,7 +921,10 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>)
       </tr>
     </tbody>
   </table>
-  <p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09）。⚠ 待复核条目不可作为变更依据。</p>
+
+  ${isHighRisk
+    ? `<p class="dashboard-disclaimer dashboard-risk">⚠ 风险提示：本报告 ${candidateShare}% 的差异尚未完成双源核验 — 切勿直接采信任何 ⚠ 条目结论。所有 ✅ / ⚠ 之外的标记（🟡 / 🔢 / ✍）均不计入「实质技术变化」总数。</p>`
+    : `<p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09）。</p>`}
 </section>`;
 }
 
@@ -1400,16 +1484,33 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 
 /* Symbol legend page */
 .symbol-legend { padding: 4mm 0 8mm; page-break-after: always; }
-.legend-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 4mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
-.legend-intro { font-size: 9pt; color: #5e5240; margin: 0 0 4mm; }
-.legend-list { display: grid; grid-template-columns: 36mm 1fr; column-gap: 4mm; row-gap: 2mm; margin: 0; padding: 3mm 4mm; border: 0.6pt solid #d8cfb8; border-radius: 2mm; background: #fbf9f3; }
-.legend-list dt { font-family: ${mono}; font-size: 9pt; font-weight: 600; color: #a17334; margin: 0; }
-.legend-list dd { font-size: 9pt; color: #1c2733; margin: 0; line-height: 1.45; }
+.legend-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 2mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
+.legend-intro { font-size: 9pt; color: #5e5240; margin: 0 0 5mm; line-height: 1.5; }
+.legend-h2 { font-family: ${serif}; font-size: 11pt; font-weight: 700; color: #a17334; margin: 4mm 0 2mm; letter-spacing: 0.4px; }
+.legend-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2.5mm; margin: 0 0 4mm; }
+.legend-card { border: 0.6pt solid #d8cfb8; border-radius: 2mm; padding: 3mm 3mm 3.5mm; background: #fbf9f3; page-break-inside: avoid; }
+.legend-card-h { display: flex; align-items: baseline; gap: 2mm; margin-bottom: 1.5mm; }
+.legend-sym { font-size: 14pt; line-height: 1; }
+.legend-tag { font-family: ${serif}; font-size: 10pt; font-weight: 700; color: #1c2733; }
+.legend-desc { font-size: 8.5pt; color: #1c2733; margin: 0 0 1.5mm; line-height: 1.45; }
+.legend-sample { font-size: 8pt; color: #5e5240; margin: 0; padding-left: 7mm; text-indent: -7mm; line-height: 1.4; }
+.legend-warn { font-size: 9pt; color: #c9542a; background: #fbf6f0; border-left: 3pt solid #c9542a; padding: 2mm 3mm; margin: 4mm 0 0; line-height: 1.5; }
+.legend-ok     { background: #f1f5ec; border-color: #b7c8a8; }
+.legend-warn   { background: #fbf6f0; border-color: #e0c8a8; }
+.legend-design { background: #f6f2e7; border-color: #d6cba8; }
+.legend-test   { background: #f0eee9; border-color: #c8c0aa; }
+.legend-cert   { background: #f0f1ee; border-color: #b5c0b0; }
+.legend-muted  { background: #fbf9f3; border-color: #d8cfb8; }
 
 /* Closure dashboard */
 .closure-dashboard { padding: 4mm 0 6mm; page-break-after: always; }
 .dashboard-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
-.dashboard-intro { font-size: 9pt; color: #5e5240; margin: 0 0 4mm; line-height: 1.5; }
+.dashboard-intro { font-size: 9.5pt; color: #1c2733; margin: 0 0 4mm; line-height: 1.55; }
+.dashboard-intro strong { color: #c9542a; font-weight: 700; }
+.claim-figure { margin: 0 0 5mm; }
+.claim-figure .dashboard-bar { width: 100%; height: 18px; display: block; border-radius: 2mm; overflow: hidden; }
+.claim-caption { display: flex; gap: 8mm; margin-top: 1.5mm; font-size: 9pt; color: #4a4a4a; flex-wrap: wrap; }
+.claim-caption span { display: inline-flex; align-items: center; gap: 2mm; font-family: ${mono}; }
 .closure-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
 .closure-table th { background: #fdf3df; color: #a17334; padding: 2mm 3mm; text-align: left; font-weight: 600; border-bottom: 0.8pt solid #a17334; }
 .closure-table td { padding: 1.8mm 3mm; border-bottom: 0.4pt solid #ece4d1; vertical-align: middle; }
@@ -1424,20 +1525,24 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .closure-table .row-renum .td-count,
 .closure-table .row-format .td-count { color: #9c8b6c; }
 .closure-table .row-total td { background: #f7f1e3; border-top: 0.6pt solid #a17334; }
-.dashboard-disclaimer { font-size: 8pt; color: #9c8b6c; margin: 3mm 0 0; padding: 2mm 3mm; border-left: 2pt solid #b94e2c; background: #fbf6f0; }
+.dashboard-disclaimer { font-size: 8.5pt; color: #5e5240; margin: 4mm 0 0; padding: 2mm 3mm; border-left: 2pt solid #b94e2c; background: #fbf6f0; line-height: 1.5; }
+.dashboard-disclaimer.dashboard-risk { color: #c9542a; border-left-width: 3pt; background: #fbede2; }
 
 /* Transition period table */
 .transition-table { padding: 4mm 0 6mm; page-break-after: always; }
 .transition-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
-.transition-intro { font-size: 9pt; color: #5e5240; margin: 0 0 4mm; }
+.transition-intro { font-size: 9.5pt; color: #1c2733; margin: 0 0 4mm; line-height: 1.55; }
+.transition-intro .ms { color: #c9542a; font-weight: 700; }
 .transition-grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
 .transition-grid th { background: #eef1f5; color: #0c1a2b; padding: 1.8mm 2.5mm; text-align: left; border-bottom: 0.6pt solid #0c1a2b; }
+.transition-grid th.bg-mono { font-family: ${mono}; font-size: 8pt; }
 .transition-grid td { padding: 1.6mm 2.5mm; border-bottom: 0.3pt solid #ece4d1; vertical-align: top; }
+.transition-grid .scope-row td { background: #fbf3df; padding: 1.2mm 2.5mm; font-family: ${serif}; font-weight: 700; color: #a17334; font-size: 9pt; letter-spacing: 0.4px; border-bottom: 0.3pt solid #e5d6a8; }
 .transition-grid .td-tag { font-family: ${mono}; font-weight: 600; color: #a17334; width: 22mm; }
-.transition-grid .td-trigger { font-family: ${mono}; color: #0c1a2b; width: 28mm; }
-.transition-grid .td-delay { font-family: ${mono}; color: #b94e2c; width: 22mm; }
-.transition-grid .td-excerpt { font-size: 8pt; color: #5e5240; line-height: 1.4; }
-.transition-warn { font-size: 8pt; color: #9c8b6c; margin: 3mm 0 0; padding: 1.5mm 2.5mm; border-left: 2pt solid #b9a17334; background: #fbf6f0; }
+.transition-grid .td-trigger { font-family: ${mono}; color: #0c1a2b; width: 32mm; }
+.transition-grid .td-excerpt { font-size: 8pt; color: #5e5240; line-height: 1.45; }
+.transition-grid .ms { color: #c9542a; font-weight: 700; background: #fbede2; padding: 0 1mm; border-radius: 1mm; }
+.transition-warn { font-size: 8.5pt; color: #9c8b6c; margin: 3mm 0 0; padding: 2mm 2.5mm; border-left: 3pt solid #b9a173; background: #fbf6f0; line-height: 1.5; }
 .trip-text { padding: 0 3.5mm 4mm; font-size: 8.8pt; line-height: 1.5; color: #1c2733; flex: 1; }
 
 .trip-card-missing { background: #faf6ec; border-style: dashed; border-color: #d8cfb8; }

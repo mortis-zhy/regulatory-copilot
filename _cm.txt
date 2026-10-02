@@ -1,10 +1,24 @@
-feat(htmlRenderV8): closure dashboard + symbol legend + transition table + mono font
+feat(htmlRenderV8): 重做封面 3 页 — 符号字典 / 闭环统计 / 过渡期表
 
-- renderSymbolLegend: one-page dl explaining every marker (✅ ⚠ 🟡 🔢 ✍ etc.).
-- renderClosureDashboard: scans Ch10/Ch11 markdown for 5-category tags via plain .indexOf (esbuild drops stars inside emoji alternations). 27 entries (3 confirmed / 21 candidate / 3 errata / 0 renum / 0 format).
-- renderTransitionTable: scans chapters for 12.7.x / 12.8.x / 表 7 / 图 1 / 实施之日起 patterns. 10 transitional rows incl. B 2020-07-01, C 2025-09-26, A 实施之日起 25 / 37 个月.
-- Fixed missing mono font-family constant.
+Symbol legend (p2):
+- 改为 6 张彩色卡片,2 列布局(状态 + 影响)
+- 每张卡片放大符号、tag、描述 + 样例
+- 末尾加红色 warning box 提醒"执行摘要只引 ✅"
 
-Verified: 141-page render, 9/9 + 6/6 tests, 41/0/0 verifier.
+Closure dashboard (p3):
+- 顶部加 SVG 堆叠条形图,占比一目了然
+- 当 ⚠ 占比 ≥ 50% 时切橙色高亮
+- 5 个分类的图例也着色
+- 风险提示框独立样式区分
+
+Transition table (p4):
+- 按「新申请车型 / 已获批准车型 / 通用」三类分组,scope-row 加底色
+- 删除冗余的「延迟」列,合并到「生效触发」
+- 关键月份(25/37/61/24/36 个月)用 <strong class="ms"> 加粗并橙色高亮
+- 标题与表头样式同步
+
+新增 highlightMilestones() + classifyScope() 辅助函数。
+
+Verified: 141 页 / 4.06 MB / 41/0/0 verifier。
 
 Co-Authored-By: Claude <noreply@anthropic.com>
