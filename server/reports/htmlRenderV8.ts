@@ -300,14 +300,15 @@ function collectTableRows(lines: string[], start: number): { rowLines: string[];
     const t = raw.trim();
     if (t === "") break;
     if (t.startsWith("|")) {
-      // Always start a new row on `|`.
-      if (open) rowLines.push(cur.join("\n"));
+      //  Always flush previous row, then start a new one. A row that ends
+      // with `|` still needs to be pushed ( old code only pushed  when the
+      // row was "open" / multi-line, which silently dropped closed rows).
+      if (cur.length) rowLines.push(cur.join("\n"));
       cur = [raw];
       open = !t.endsWith("|");
       i++;
       continue;
     }
-    // non-pipe line: only accumulate if current row is open
     if (open) {
       cur.push(raw);
       i++;
@@ -315,8 +316,7 @@ function collectTableRows(lines: string[], start: number): { rowLines: string[];
     }
     break;
   }
-  // Flush trailing open row (last row may not end with `|`).
-  if (open && cur.length) rowLines.push(cur.join("\n"));
+  if (cur.length) rowLines.push(cur.join("\n"));
   return { rowLines, next: i };
 }
 
@@ -827,6 +827,8 @@ type TypedTableEntry = {
 type TypedTablesBundle = {
   tables: TypedTableEntry[];
   stats?: Record<string, unknown>;
+  /** generatedAt of the report JSON this bundle was extracted from. */
+  source_generated_at?: string;
 };
 
 /**
@@ -840,7 +842,11 @@ function loadTypedTables(distDir: string): TypedTablesBundle {
     if (!existsSync(path)) return { tables: [] };
     const raw = readFileSync(path, "utf8");
     const data = JSON.parse(raw);
-    return { tables: Array.isArray(data.tables) ? data.tables : [], stats: data.stats };
+    return {
+      tables: Array.isArray(data.tables) ? data.tables : [],
+      stats: data.stats,
+      source_generated_at: typeof data.source_generated_at === "string" ? data.source_generated_at : undefined,
+    };
   } catch {
     return { tables: [] };
   }
@@ -1344,19 +1350,34 @@ export async function buildHtml(
   // an empty bundle so markdown rendering remains the default path.
   const distDir = opts.distDir ?? path.resolve(process.cwd(), "dist");
   const typedBundle = loadTypedTables(distDir);
+  // STALENESS GUARD: aligned-tables.json must have been extracted from THIS
+  // exact report (matched via generatedAt). Otherwise the ordinal keys
+  // (t0/t1/…) would splice tables from an older report into this one.
+  // A bundle without the field (older extractor) is treated as stale too.
+  const bundleFresh =
+    !!typedBundle.source_generated_at &&
+    !!report?.generatedAt &&
+    typedBundle.source_generated_at === report.generatedAt;
+  if (!bundleFresh) {
+    console.warn(
+      `[htmlRenderV8] aligned-tables.json is STALE (bundle=${typedBundle.source_generated_at}, report=${report?.generatedAt}) — ignoring typed overrides, using markdown render path`,
+    );
+  }
   const typedById = new Map<string, TypedTableEntry>();
-  for (const t of typedBundle.tables) typedById.set(t.id, t);
+  if (bundleFresh) for (const t of typedBundle.tables) typedById.set(t.id, t);
 
   // Pre-build per-chapter override maps. chapter index `ci` aligns with
   // aligned-tables.json's "ch{ci}.t{N}" ids.
   const chapterOverrides = new Map<number, Map<string, string>>();
-  for (let ci = 0; ci < chapters.length; ci++) {
-    const entries = typedBundle.tables
-      .map((t, _idx) => ({ t, m: t.id.match(/^ch(\d+)\.t(\d+)$/) }))
-      .filter(({ m }) => m && Number(m[1]) === ci)
-      .sort((a, b) => Number(a.m![2]) - Number(b.m![2]))
-      .map(({ t }) => t);
-    chapterOverrides.set(ci, buildTableOverrideMap(entries));
+  if (bundleFresh) {
+    for (let ci = 0; ci < chapters.length; ci++) {
+      const entries = typedBundle.tables
+        .map((t, _idx) => ({ t, m: t.id.match(/^ch(\d+)\.t(\d+)$/) }))
+        .filter(({ m }) => m && Number(m[1]) === ci)
+        .sort((a, b) => Number(a.m![2]) - Number(b.m![2]))
+        .map(({ t }) => t);
+      chapterOverrides.set(ci, buildTableOverrideMap(entries));
+    }
   }
 
   const sourceCards = (sourceDocuments.length

@@ -1,0 +1,14 @@
+fix(htmlRenderV8): collectTableRows flush + buildHtml freshness guard
+
+Issue: collectTableRows silently dropped closed rows (rows ending with closing pipe).
+buildHtml unconditionally loaded dist/aligned-tables.json without freshness check,
+so a stale bundle could splice a different reports tables into fresh renders.
+
+Fixes:
+- collectTableRows: flush previous row on every pipe-start; trailing flush always pushes.
+- loadTypedTables: parse bundle.source_generated_at.
+- buildHtml: skip typed overrides when stale or missing the field; warn on stdout.
+
+Verified: unit tests 9/9, 6/6. verifier 41/0/0.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
