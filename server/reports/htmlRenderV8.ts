@@ -23,6 +23,10 @@ import fs from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { extractTypedTables, type TypedTableEntry as ExtractedTypedTable } from "./typedTables";
+import {
+  extractClosureCounts as extractClosureCountsFromMd,
+  reportMarkdown,
+} from "./trustChecks";
 import type { ReportOutline } from "./reportGenerator";
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
@@ -738,36 +742,17 @@ function renderSymbolLegend(): string {
 }
 
 /**
- * Aggregate candidate-difference closure counts from Ch10 (关键变化点)
- * and Ch11 (变化点汇总) markdown. Scans for tag patterns and counts how
- * many entries fall into each category.
+ * Aggregate candidate-difference closure counts.
+ *
+ * Delegates to trustChecks.extractClosureCounts so the PDF front-matter and
+ * the /review workbench can never disagree. This used to be a second,
+ * slightly-different implementation (it filtered chapters by title), which
+ * produced 27/21/3 in the PDF vs 39/30/4 in the UI for the same report —
+ * exactly the kind of drift a reader loses trust over.
  */
-function extractClosureCounts(chapters: { title: string; markdown?: string }[]) {
-  const counts = { confirmed: 0, candidate: 0, errata: 0, renum: 0, format: 0 };
-  // Avoid a single huge alternation regex (esbuild drops stars inside emoji
-  // alternations). Use plain .includes() — markdown text is short enough.
-  const markers = {
-    confirmed: ["已双源核验", "[已核验]", "✅"],
-    candidate: ["待复核", "待人工确认", "审核中", "manual-audit", "⚠"],
-    errata:    ["同文勘误", "🟡"],
-    renum:     ["仅编号重排", "🔢"],
-    format:    ["格式同义改写", "✍"],
-  } as const;
-  for (const ch of chapters) {
-    const t = ch.title || "";
-    if (!/变化|候选|思路|对比|建议/.test(t)) continue;
-    const md = ch.markdown || "";
-    for (const cat of Object.keys(markers) as Array<keyof typeof markers>) {
-      for (const tag of markers[cat]) {
-        let idx = 0;
-        while ((idx = md.indexOf(tag, idx)) > -1) {
-          counts[cat]++;
-          idx += tag.length;
-        }
-      }
-    }
-  }
-  return counts;
+function extractClosureCounts(chapters: { markdown?: string }[]) {
+  const md = reportMarkdown(chapters as Array<{ markdown?: string }>);
+  return extractClosureCountsFromMd(md);
 }
 
 /**
@@ -865,11 +850,17 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>)
   const candidateShare = pct(counts.candidate);
   const isHighRisk = candidateShare >= 50;
 
-  // Stacked-bar chart at the top. Each segment uses SVG <rect> with width
-  // proportional to its share. Total width 100%.
-  const seg = (n: number, color: string) => n > 0
-    ? `<rect x="${(100 * (1 - pct(n) / 100)).toFixed(2)}" y="0" width="${(100 * pct(n) / 100).toFixed(2)}%" height="14" fill="${color}" />`
-    : "";
+  // Stacked-bar chart at the top. Segments are laid out left-to-right by
+  // accumulating a running offset — computing x from (1 - pct) made every
+  // segment start at 0, so they overlapped and only the last one was visible.
+  let offset = 0;
+  const seg = (n: number, color: string) => {
+    if (n <= 0 || total <= 0) return "";
+    const w = (n / total) * 100;
+    const rect = `<rect x="${offset.toFixed(2)}" y="0" width="${w.toFixed(2)}" height="14" fill="${color}" />`;
+    offset += w;
+    return rect;
+  };
   const bar = `
   <svg class="dashboard-bar" viewBox="0 0 100 14" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
     ${seg(counts.confirmed, "#3a6b4f")}
