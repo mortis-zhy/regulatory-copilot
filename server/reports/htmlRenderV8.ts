@@ -277,6 +277,8 @@ type ParsedTable = {
   isComparison: boolean; // version-in-row table (| 版本/来源 | ... |)
   versionIdx: number;
   comparisonCols: Array<"A" | "B" | "C">;
+  /** Present when the table is horizontal (A/B/C as header columns). */
+  horizontalCols?: { A: number; B: number; C: number };
 };
 
 function parseTableRow(line: string): string[] {
@@ -355,6 +357,17 @@ function parseTable(rowLines: string[]): ParsedTable | null {
   const header = rows[0];
   const versionIdx = findVersionIdx(header);
   if (versionIdx < 0) {
+    // No 版本/来源 column — try the horizontal form before giving up.
+    const hCols = findHorizontalVersionCols(header);
+    if (hCols) {
+      return {
+        rows,
+        isComparison: true,
+        versionIdx: -1,
+        comparisonCols: ["A", "B", "C"],
+        horizontalCols: hCols,
+      };
+    }
     return { rows, isComparison: false, versionIdx: -1, comparisonCols: [] };
   }
   const cols: Array<"A" | "B" | "C"> = [];
@@ -920,7 +933,101 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>)
 </section>`;
 }
 
+/**
+ * Detect a HORIZONTAL three-version table:
+ *   | 项目 | A（GB 4785 草案） | B（GB 4785-2019） | C（UN R48-09） |
+ *   |------|-----|-----|-----|
+ *   | 成对/对称要求 | … | … | … |
+ *
+ * The LLM picks the orientation per run. Only supporting the vertical form
+ * (| 版本 | … | rows `| **A 草案** |`) made every horizontal table in a fresh
+ * report degrade to a plain table — no triptych cards, no version colors.
+ *
+ * Returns the column index for A/B/C, or null when this isn't such a table.
+ */
+function findHorizontalVersionCols(header: string[]): { A: number; B: number; C: number } | null {
+  const clean = header.map((h) => (h ?? "").replace(/\*/g, "").trim());
+  const idx = (v: "A" | "B" | "C") =>
+    clean.findIndex((h) => new RegExp(`^\\s*${v}(?![A-Za-z])[（(【\\s]|${v}\\s*$`).test(h));
+  const A = idx("A");
+  const B = idx("B");
+  const C = idx("C");
+  // Require three distinct columns and at least one non-version first column
+  // (the topic column). Column 0 being "项目" is fine.
+  if (A < 0 || B < 0 || C < 0) return null;
+  if (new Set([A, B, C]).size !== 3) return null;
+  return { A, B, C };
+}
+
+/** Render a horizontal 3-version table as the same triptych card layout. */
+function renderHorizontalTriptych(t: ParsedTable, cols: { A: number; B: number; C: number }): string {
+  const header = t.rows[0] ?? [];
+  const body = t.rows.slice(1);
+  // The topic column is whatever sits left of the first version column. Using
+  // "first column" instead breaks on tables that begin with an empty cell.
+  const versionCols = new Set([cols.A, cols.B, cols.C]);
+  let topicIdx = 0;
+  for (let i = 0; i < header.length; i++) {
+    if (!versionCols.has(i)) { topicIdx = i; break; }
+  }
+  const topicLabel = (header[topicIdx] ?? "").trim() || "对比项";
+
+  const cards = (["A", "B", "C"] as const)
+    .map((v) => {
+      const meta = DOC_META[v];
+      const col = cols[v];
+      const entries: Array<{ topic: string; text: string }> = [];
+      body.forEach((r, ri) => {
+        const tName = (r[topicIdx] ?? "").trim() || `第 ${ri + 1} 项`;
+        const val = (r[col] ?? "").replace(/^\*\*|\*\*$/g, "").trim();
+        if (val) entries.push({ topic: tName, text: val });
+      });
+
+      if (entries.length === 0) {
+        return `
+<article class="trip-card trip-card-missing" style="--accent:#b9a27a;--accent-bg:#f0eada">
+  <header class="trip-head">
+    <span class="trip-label">${esc(meta.label)}</span>
+    <span class="trip-tag">${esc(meta.short)}</span>
+    <span class="trip-doc">${esc(meta.name)}</span>
+  </header>
+  <div class="trip-missing">
+    <div class="missing-mark">—</div>
+    <div class="missing-text">源数据未提供</div>
+    <div class="missing-hint">（本表无 ${esc(meta.label)} 版对应内容）</div>
+  </div>
+</article>`;
+      }
+
+      const rowsHtml = entries
+        .map(
+          (e) => `<div class="hz-row">
+            <div class="hz-topic">${cellHtml(e.topic)}</div>
+            <div class="hz-text">${cellHtml(e.text)}</div>
+          </div>`,
+        )
+        .join("\n");
+      return `
+<article class="trip-card" style="--accent:${meta.color};--accent-bg:${meta.bg}">
+  <header class="trip-head">
+    <span class="trip-label">${esc(meta.label)}</span>
+    <span class="trip-tag">${esc(meta.short)}</span>
+    <span class="trip-doc">${esc(meta.name)}</span>
+  </header>
+  <div class="trip-meta">
+    <dt>维度</dt><dd>${cellHtml(topicLabel)}</dd>
+    <dt>条目</dt><dd>${entries.length}</dd>
+  </div>
+  <div class="hz-rows">${rowsHtml}</div>
+</article>`;
+    })
+    .join("\n");
+  return `<section class="triptych">${cards}</section>`;
+}
+
 function renderTriptych(t: ParsedTable): string {
+  // Horizontal tables take a different path — see renderHorizontalTriptych.
+  if (t.horizontalCols) return renderHorizontalTriptych(t, t.horizontalCols);
   const cols: Array<"A" | "B" | "C"> = ["A", "B", "C"]; // always three columns
   const body = t.rows.slice(1);
   const byVersion = new Map<string, string[]>();
@@ -1126,6 +1233,11 @@ function buildTableOverrideMap(
         isComparison: entry.kind === "triptych",
         versionIdx: entry.kind === "triptych" ? findVersionIdx(entry.header) : -1,
         comparisonCols: [],
+        // Horizontal tables (A/B/C as header columns) need this to reach
+        // renderHorizontalTriptych — without it they silently fall through to
+        // the vertical path, which finds no version column and renders the
+        // comparison as an unstyled grid.
+        ...(entry.horizontalCols ? { horizontalCols: entry.horizontalCols } : {}),
       };
       const html =
         entry.kind === "triptych"
@@ -1572,6 +1684,13 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .transition-grid .ms { color: #c9542a; font-weight: 700; background: #fbede2; padding: 0 1mm; border-radius: 1mm; }
 .transition-warn { font-size: 8.5pt; color: #9c8b6c; margin: 3mm 0 0; padding: 2mm 2.5mm; border-left: 3pt solid #b9a173; background: #fbf6f0; line-height: 1.5; }
 .trip-text { padding: 0 3.5mm 4mm; font-size: 8.8pt; line-height: 1.5; color: #1c2733; flex: 1; }
+
+/* Horizontal-table triptych: many topic/value pairs stacked in one card */
+.hz-rows { padding: 0 3.5mm 3.5mm; flex: 1; font-size: 8.2pt; line-height: 1.45; }
+.hz-row { padding: 1.4mm 0; border-bottom: 0.3pt solid #ece4d1; }
+.hz-row:last-child { border-bottom: none; }
+.hz-topic { font-weight: 600; color: #5e5240; font-size: 8pt; margin-bottom: 0.6mm; }
+.hz-text { color: #1c2733; }
 
 .trip-card-missing { background: #faf6ec; border-style: dashed; border-color: #d8cfb8; }
 .trip-card-missing .trip-head { background: #f0eada; border-bottom-color: #b9a27a; }

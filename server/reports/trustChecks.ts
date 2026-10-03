@@ -351,34 +351,71 @@ export function checkPageAnchors(md: string): TrustWarning {
   };
 }
 
-/** G — three-column integrity: can we still tell A from B from C? */
+/** G — three-column integrity: can we still tell A from B from C?
+ *
+ * Two table conventions exist in practice:
+ *   vertical — | 版本 | 条款 | 页码 | 原文 | with rows `| **A 草案** | … |`
+ *   horizontal — | 项目 | A（GB 4785 草案） | B（GB 4785-2019） | C（UN R48-09） |
+ * The LLM picks one per run. Counting only the vertical form made a perfectly
+ * good horizontal report look like "no version markers at all".
+ */
 export function checkVersionColumns(md: string): TrustWarning {
-  const a = countOccurrences(md, "**A 草案**") + countOccurrences(md, "**A**");
-  const b = countOccurrences(md, "**B 现行**") + countOccurrences(md, "**B**");
-  const c = countOccurrences(md, "**C UN R48-09**") + countOccurrences(md, "**C**");
-  if (a === 0 && b === 0 && c === 0) {
+  const vA = countOccurrences(md, "**A 草案**") + countOccurrences(md, "**A**");
+  const vB = countOccurrences(md, "**B 现行**") + countOccurrences(md, "**B**");
+  const vC = countOccurrences(md, "**C UN R48-09**") + countOccurrences(md, "**C**");
+  const vertical = vA + vB + vC;
+
+  // Header row carrying all three version labels on one line. Avoid \b — it
+  // behaves inconsistently before full-width brackets in JS regex. The
+  // character class escapes the ASCII "(" so it isn't read as a group opener.
+  const OPEN = "[（(【 ]";
+  const horizontal = (
+    md.match(
+      new RegExp(
+        "^\\|[^\\n|]*\\|[^\\n|]*A" + OPEN + "[^\\n|]*\\|[^\\n|]*B" + OPEN +
+        "[^\\n|]*\\|[^\\n|]*C" + OPEN,
+        "gm",
+      ),
+    ) ?? []
+  ).length;
+
+  if (vertical === 0 && horizontal === 0) {
     return {
       label: "三栏对照 · 版本标记",
       status: "fail",
       detail: "全报告无任何 A/B/C 版本标记 — 无法区分三版内容，对照表已失效",
     };
   }
-  const missing = [
-    a === 0 ? "A" : null,
-    b === 0 ? "B" : null,
-    c === 0 ? "C" : null,
-  ].filter(Boolean) as string[];
+
+  const missing: string[] = [];
+  if (vertical > 0) {
+    if (vA === 0) missing.push("A");
+    if (vB === 0) missing.push("B");
+    if (vC === 0) missing.push("C");
+  } else {
+    // Horizontal tables must carry A, B and C headers.
+    for (const v of ["A", "B", "C"]) {
+      if (!new RegExp(`^\\|[^\\n|]*\\|[^\\n|]*${v}[（(【 ]`, "m").test(md)) missing.push(v);
+    }
+  }
+
   if (missing.length) {
     return {
       label: "三栏对照 · 版本标记",
       status: "warn",
-      detail: `缺少 ${missing.join("/")} 版标记 (A=${a} B=${b} C=${c})`,
+      detail: `缺少 ${missing.join("/")} 版标记 (纵向 ${vertical} 处 / 横向表头 ${horizontal} 张)`,
     };
   }
+  const shape =
+    vertical > 0 && horizontal > 0
+      ? `纵向 ${vertical} 处 + 横向表头 ${horizontal} 张`
+      : vertical > 0
+        ? `纵向 ${vertical} 处`
+        : `横向表头 ${horizontal} 张`;
   return {
     label: "三栏对照 · 版本标记",
     status: "pass",
-    detail: `A=${a} B=${b} C=${c} 处版本标记`,
+    detail: `${shape}`,
   };
 }
 

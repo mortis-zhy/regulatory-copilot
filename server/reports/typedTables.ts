@@ -35,6 +35,8 @@ export type TypedTableEntry = {
   rows: string[][];
   /** Index of the version column within header (triptych only), else -1. */
   versionIdx: number;
+  /** Present when A/B/C are header columns rather than row labels. */
+  horizontalCols?: { A: number; B: number; C: number };
 };
 
 export type TypedTablesBundle = {
@@ -196,10 +198,28 @@ function findVersionCol(header: string[]): number {
   return -1;
 }
 
+/**
+ * Detect a horizontal three-version header:
+ *   | 项目 | A（GB 4785 草案） | B（GB 4785-2019） | C（UN R48-09） |
+ * The LLM emits this orientation on some runs; treating it as "plain" makes
+ * every comparison table in such a report degrade to an unstyled grid.
+ */
+function findHorizontalVersionCols(header: string[]): { A: number; B: number; C: number } | null {
+  const clean = header.map((h) => (h ?? "").replace(/\*/g, "").trim());
+  const idx = (v: "A" | "B" | "C") =>
+    clean.findIndex((h) => new RegExp(`^\\s*${v}(?![A-Za-z])[（(【\\s]|${v}\\s*$`).test(h));
+  const A = idx("A");
+  const B = idx("B");
+  const C = idx("C");
+  if (A < 0 || B < 0 || C < 0) return null;
+  if (new Set([A, B, C]).size !== 3) return null;
+  return { A, B, C };
+}
+
 function classifyTable(
   header: string[],
   rows: string[][],
-): { kind: TypedTableKind; versionIdx: number } {
+): { kind: TypedTableKind; versionIdx: number; horizontalCols?: { A: number; B: number; C: number } } {
   const versionCol = findVersionCol(header);
 
   if (versionCol >= 0) {
@@ -212,6 +232,10 @@ function classifyTable(
   // Fallback: first column holds A/B/C markers on ≥2 rows
   const abC = rows.filter((r) => normVersionLabel(r[0] ?? ""));
   if (abC.length >= 2) return { kind: "triptych", versionIdx: 0 };
+
+  // Horizontal form: A/B/C are header columns.
+  const hCols = findHorizontalVersionCols(header);
+  if (hCols) return { kind: "triptych", versionIdx: -1, horizontalCols: hCols };
 
   return { kind: "plain", versionIdx: -1 };
 }
@@ -255,7 +279,7 @@ export function extractTypedTables(
         return normalizeRow(r, width);
       });
 
-      const { kind, versionIdx } = classifyTable(tbl.header, rows);
+      const { kind, versionIdx, horizontalCols } = classifyTable(tbl.header, rows);
       if (kind === "triptych") stats.triptych_tables++;
       else stats.plain_tables++;
 
@@ -266,6 +290,7 @@ export function extractTypedTables(
         header: tbl.header,
         rows,
         versionIdx,
+        ...(horizontalCols ? { horizontalCols } : {}),
       });
     });
   });

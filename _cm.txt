@@ -1,0 +1,41 @@
+feat(render): 支持横向三栏表 — 换数据源后 LLM 换了表格约定，旧渲染器全退化
+
+实测跑了一次完整生成（13 章 + 4 附录，MiniMax-M3，全部成功），
+发现新报告用的是**横向**三栏表约定：
+
+    | 项目 | A（GB 4785 草案 V4.3.5） | B（GB 4785-2019） | C（UN R48-09） |
+    |------|------------------------|-----------------|---------------|
+    | 术语体系 | 3 层定义架构 | 扁平提编 | General/Type/Vehicle |
+
+而基线用的是**纵向**（版本作行）：
+
+    | 版本 | 条款 | 页码 | 原文摘录 |
+    | **A 草案** | 5.1 | 第10页 | … |
+
+渲染器只认纵向 → 新报告的 52 张对比表全部退化成无样式网格，
+trustChecks 的「三栏对照」检查直接报 fail（0/0/0 版本标记）。
+
+改动：
+- htmlRenderV8.findHorizontalVersionCols()  — 识别 A/B/C 为表头列的表
+- htmlRenderV8.renderHorizontalTriptych()   — 复用三栏卡版式，
+  每张卡内按 主题/正文 逐条堆叠（.hz-row / .hz-topic / .hz-text）
+- htmlRenderV8.parseTable()                 — 无版本列时尝试横向识别
+- htmlRenderV8.buildTableOverrideMap()      — 传递 horizontalCols（漏了会导致
+  classified 正确但仍走纵向分支）
+- typedTables.classifyTable()               — 同步横向识别
+- trustChecks.checkVersionColumns()         — 纵向/横向分别统计，任一存在即 pass
+
+minimax.ts 顺带修：原生端点 /v1/text/chatcompletion_v2 在余额不足时返回
+HTTP 200 + base_resp.status_code=1008，旧代码只看 HTTP status 于是整条流被
+静默跳过，调用方收到空章节且无任何解释。现在检查 base_resp 并抛错。
+
+踩坑：正则里 `[（(【 ]` 的半角 `(` 被当作分组起始符导致 esbuild 语法错误；
+`\b` 在全角括号前语义不稳定。改用字符串拼接 + `(?![A-Za-z])` 负向断言。
+
+实测结果：
+- 73 张表 → 52 张 triptych（全部横向）+ 21 plain
+- integrity = ok（4 项全 pass）
+- 132 页 · 2.58 MB（三栏卡把内容撑开，从 110 页增至 132 页）
+- 对比基线：页码锚点 274 处、术语体系/功能分层等结论具体到条款号
+
+Co-Authored-By: Claude <noreply@anthropic.com>

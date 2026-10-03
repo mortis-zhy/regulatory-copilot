@@ -121,3 +121,8 @@ uploaded-docs/
 dist/
 extract-cache/
 sidecar-cache/
+
+# 本地密钥备份（禁止入库）
+.env.backup
+.env*
+!.env.example
