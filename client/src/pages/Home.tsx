@@ -688,6 +688,17 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
             toast.error(detail?.error ?? "尚未生成对比报告，请先生成完整报告");
             return;
           }
+          if (response.status === 422) {
+            // Integrity gate blocked the export. Surface the actual reasons
+            // instead of dumping the raw JSON payload into a toast.
+            const detail = await response.json().catch(() => null);
+            const blockers: Array<{ label: string; detail: string }> = detail?.blockers ?? [];
+            toast.error(
+              `报告完整性检查未通过：${blockers.map((b) => b.label).join("；")}`,
+              { description: blockers.map((b) => b.detail).join("\n") || "请重新生成报告" },
+            );
+            return;
+          }
           if (!response.ok) throw new Error(await response.text());
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);

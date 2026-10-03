@@ -51,11 +51,20 @@ type Rumor = {
 
 type Warning = { label: string; status: string; detail: string; evidence?: string };
 
+/** Structural integrity gate (trustChecks.assessIntegrity). */
+type IntegrityCheck = { label: string; status: "pass" | "warn" | "fail"; detail: string };
+type IntegrityGate = {
+  level: "ok" | "degraded" | "blocked";
+  checks: IntegrityCheck[];
+  blockers: IntegrityCheck[];
+};
+
 type TrustPayload = {
   dashboard: Dashboard;
   errata: Erratum[];
   rumors: Rumor[];
   warnings: Warning[];
+  integrity?: IntegrityGate;
   generatedAt: string | null;
 };
 
@@ -266,6 +275,70 @@ export default function ReviewWorkbench() {
       {/* ── 模块 1：仪表盘 ── */}
       {tab === "dashboard" && (
         <div className="flex flex-col gap-4">
+          {/* 完整性门禁：抽取/生成失败时这里会红色报警 */}
+          {data.integrity && data.integrity.level !== "ok" && (
+            <section
+              className="rounded-2xl border p-5"
+              style={{
+                borderColor: data.integrity.level === "blocked" ? "#c9542a" : "#c0a86a",
+                background: data.integrity.level === "blocked" ? "#fbede2" : "#fdf8ee",
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <ShieldAlert
+                  className="mt-0.5 h-5 w-5 shrink-0"
+                  style={{ color: data.integrity.level === "blocked" ? "#c9542a" : "#a17334" }}
+                />
+                <div className="min-w-0 flex-1">
+                  <h2
+                    className="text-sm font-semibold"
+                    style={{ color: data.integrity.level === "blocked" ? "#c9542a" : "#a17334" }}
+                  >
+                    {data.integrity.level === "blocked"
+                      ? "报告完整性检查未通过 — PDF 导出已被阻止"
+                      : "报告完整性检查发现隐患"}
+                  </h2>
+                  <ul className="mt-2 space-y-1.5">
+                    {data.integrity.checks
+                      .filter((c) => c.status !== "pass")
+                      .map((c) => (
+                        <li key={c.label} className="text-xs leading-relaxed" style={{ color: "#5e5240" }}>
+                          <span
+                            className="mr-1.5 inline-block font-semibold"
+                            style={{ color: c.status === "fail" ? "#c9542a" : "#a17334" }}
+                          >
+                            {c.status === "fail" ? "✗" : "!"}
+                          </span>
+                          <b>{c.label}</b> — {c.detail}
+                        </li>
+                      ))}
+                  </ul>
+                  {data.integrity.level === "blocked" && (
+                    <p className="mt-3 text-[11px]" style={{ color: "#8a7a5c" }}>
+                      原因通常是抽取环节失败（源 PDF 为扫描件 / 加密）或生成中断。修复抽取后重新生成报告；
+                      若确认内容无误，可在请求 URL 加 <code>?force=1</code> 强制导出。
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* 完整性全绿时的轻量提示 */}
+          {data.integrity && data.integrity.level === "ok" && (
+            <div
+              className="flex items-center gap-2.5 rounded-xl border px-4 py-2.5"
+              style={{ borderColor: "#cfe0d3", background: "#f4f9f5" }}
+            >
+              <BadgeCheck className="h-4 w-4 shrink-0" style={{ color: "#3a6b4f" }} />
+              <p className="text-xs" style={{ color: "#3a6b4f" }}>
+                完整性检查通过 — 无空章节 ·{" "}
+                {data.integrity.checks.find((c) => c.label.includes("页码"))?.detail ?? "页码锚点正常"} ·{" "}
+                {data.integrity.checks.find((c) => c.label.includes("版本标记"))?.detail ?? "三栏标记齐全"}
+              </p>
+            </div>
+          )}
+
           <section className="overflow-hidden rounded-2xl border bg-white" style={{ borderColor: LINE }}>
             <div className="border-b px-5 py-3" style={{ borderColor: LINE }}>
               <h2 className="text-sm font-semibold" style={{ color: INK }}>5 类差异闭环统计</h2>
@@ -312,18 +385,24 @@ export default function ReviewWorkbench() {
               <h2 className="text-sm font-semibold" style={{ color: INK }}>
                 自动校验告警
                 <span className="ml-2 text-[11px] font-normal" style={{ color: MUTED }}>
-                  verify_pipeline.py 共 45 项检查
+                  完整性门禁（进程内）+ 数据交叉校验
                 </span>
               </h2>
             </div>
-            {data.warnings.length === 0 ? (
+            {data.warnings.length === 0 && (!data.integrity || data.integrity.checks.every((c) => c.status === "pass")) ? (
               <p className="px-5 py-6 text-xs" style={{ color: MUTED }}>无告警 —— 全部校验项通过。</p>
             ) : (
               <ul>
-                {data.warnings.map((w) => (
+                {[...data.integrity?.checks ?? [], ...data.warnings].map((w) => (
                   <li key={w.label} className="border-b px-5 py-3 last:border-b-0" style={{ borderColor: "#f0eada" }}>
                     <div className="flex items-start gap-2.5">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#c9542a" }} />
+                      {w.status === "pass" ? (
+                        <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#3a6b4f" }} />
+                      ) : w.status === "warn" ? (
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#a17334" }} />
+                      ) : (
+                        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#c9542a" }} />
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold" style={{ color: INK }}>{w.label}</p>
                         <p className="mt-1 text-[11px] leading-relaxed" style={{ color: MUTED }}>{w.detail}</p>
