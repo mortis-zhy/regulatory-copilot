@@ -1,30 +1,36 @@
-feat(review): 审阅工作台 — 把 PDF 深处的可信度结论抬到 Web 层
+feat(pipeline): 把 PDF 管线迁移进服务端，零外部依赖
 
-背景：外部评审指出「核验覆盖率低、差异待复核 78%」等问题。核对后发现：
-这些结论报告里全做了（第 10-11 章），但 PDF 读者翻不到 → 等于没传达。
-Web 层应当是「可信度工作台」而非 PDF 的副本。
+问题：渲染管线依赖三个住在外层的 Python 脚本（extract_aligned_tables / fix_appendix_b /
+verify_pipeline），部署到服务器就会缺丢。测量：去掉 bundle 后
+markdown-only 渲染从 141 页降到 125 页，丢失 19 张 triptych 卡（多行行使
+平表检测失效）—— 说明归一化层是负载的，不能删。
 
-API (agentRoutes.ts):
-- GET  /api/agent/report/trust        → {dashboard, errata[9], rumors[9], warnings, human}
-                                    只读投影 verify_report.json + last-report.json
-- POST /api/agent/report/trust/verdict → 人工结论回写 reports/verdicts.json
-- 两个新路由均为纯增量，不改写报告产物
+迁移后（全部在进程内）:
+- server/reports/typedTables.ts    新增 — parseMdTables / parseOneTable /
+  normalizeRow / classifyTable / extractTypedTables 的 1:1 端口
+- server/reports/trustChecks.ts   新增 — 双源锚点 / 假差异截断 /
+  编号重排 / C 占位比例 四项校验（不需源 PDF）
+- htmlRenderV8.ts                  主路径改为内存抽取，dist/aligned-tables.json 降为
+  fallback（且仍受 source_generated_at 新鲜度守卫保护）
+- htmlRenderV8.ts                  新增 cell-placeholder 样式 — 「图标题未抽取」
+  等占位单元根本不可能被误认为真实内容（橙色斜体+⚠ 图标）
+- agentRoutes.ts                  删除 spawn Python 调用；/trust 端点改为消费
+  trustChecks.ts，verify_report.json 仅作补充（源 PDF 交叉校验）
 
-前端 (ReviewWorkbench.tsx, 新增):
-1. 可信度仪表盘 — 5 类闭环统计占比条 + verifier 告警清单
-2. 假差异工作台 — §11.3.0 同文劾误逐条（B 截断值/A 完整值对照）
-   支持「确认为假差异」/「驳回」+ 备注回写，人工确认后从 ⚠ 升级为 ✅
-3. 网传指标证伪 — §11.0 九条行业流传指标 × A/B 出处核验
-   两版原文均无出处的条目红色高亮
+版本化必要修正：typedTables.normVersionLabel 原本要求版本后缀
+（A 草案 / A 版），不接受裸字母，导致 **A 裸字母** 表头的对比表
+被降级为普通表（单测 7/9）。放宽后 9/9 通过。
 
-接线:
-- Home.tsx 接收 defaultView → /review 路由生效
-- DashboardLayout 侧栏新增「审阅工作台」入口 + nav() 走真实路由
-- 原供 onNavigate 未传，回退到 pushState + popstate
+验证:
+- bundle 文件删除后仍渲染出 PDF（日志 typed tables: 119 in-process）
+- verify_report.json 删除后 /trust 仍返回全部 4 项校验，与 Python 版结果一致
+- 单测 9/9, 6/6；verify_pipeline 43/0/2
+- 实测页数 141 → 139，「源敷据未提供」卡 59 → 92
+  （更多表被正确识别为三栏对比，覆盖更全，更紧凑）
 
-Chrome MCP 实测:
-- 三个 Tab 均正常渲染（仪表盘 / 9 条劾误 / 9 条网传指标）
-- 端到端回写验证通过：点「确认」 → verdicts.json 落盘 → humanConfirmed: 2
-- console 无业务错误
+保留的 Python（显式降为可选工具）:
+- verify_pipeline.py  — 需 PyMuPDF + 三份原始 PDF 的源交叉校验
+- extract_aligned_tables.py — 只写 fallback bundle
+- fix_appendix_b.py     — 回填真实图标题（渲染端已能标记未抽取单元）
 
 Co-Authored-By: Claude <noreply@anthropic.com>

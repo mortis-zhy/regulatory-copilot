@@ -22,6 +22,7 @@
 import fs from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { extractTypedTables, type TypedTableEntry as ExtractedTypedTable } from "./typedTables";
 import type { ReportOutline } from "./reportGenerator";
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
@@ -1030,6 +1031,23 @@ function normalizeRow(row: string[], width: number): string[] {
   return [...head, merged];
 }
 
+/**
+ * Cells that mean "we could not extract a real title from the source PDF".
+ * These must be visually loud — a reader who mistakes one for a real title
+ * will trust a caption that was never in the document.
+ */
+const PLACEHOLDER_TITLE_RE =
+  /^[\s（(【\[]*(图标题未抽取|无题注|未抽取|待人工补充|需查源\s*PDF|源数据未提供|本版未规定)/;
+
+/** Render a cell, flagging extraction-failure placeholders with a CSS class. */
+function cellHtmlFlagged(s: string): string {
+  if (!s) return "";
+  const inner = cellHtml(s);
+  return PLACEHOLDER_TITLE_RE.test(s.trim())
+    ? `<td class="cell-placeholder">${inner}</td>`
+    : `<td>${inner}</td>`;
+}
+
 function renderPlainTable(rows: string[][]): string {
   if (!rows.length) return "";
   const [header, ...body] = rows;
@@ -1041,7 +1059,7 @@ function renderPlainTable(rows: string[][]): string {
   const tbody =
     "<tbody>" +
     normBody
-      .map((r) => "<tr>" + r.map((c) => `<td>${cellHtml(c || "—")}</td>`).join("") + "</tr>")
+      .map((r) => "<tr>" + r.map((c) => cellHtmlFlagged(c || "—")).join("") + "</tr>")
       .join("") +
     "</tbody>";
   return `<table>${thead}${tbody}</table>`;
@@ -1055,12 +1073,12 @@ function renderPlainTable(rows: string[][]): string {
 // 8.5 Typed table loader (aligned-tables.json)
 // ---------------------------------------------------------------------------
 
-type TypedTableEntry = {
-  id: string;            // e.g. "ch11.t0"
-  chapter: string;
-  kind: "triptych" | "plain";
-  header: string[];
-  rows: string[][];      // already row-width-normalized
+/**
+ * Renderer-side view of a typed table. Produced either by
+ * extractTypedTables() (in-process, primary) or by deserializing the legacy
+ * dist/aligned-tables.json (fallback) — both feed the same shape.
+ */
+type TypedTableEntry = ExtractedTypedTable & {
   source_page_hint?: { A?: string | null; B?: string | null; C?: string | null };
 };
 
@@ -1075,6 +1093,11 @@ type TypedTablesBundle = {
  * Load aligned-tables.json produced by extract_aligned_tables.py.
  * Returns an empty bundle if the file is missing or malformed — the caller
  * can then fall back to the legacy markdown path without crashing.
+ */
+/**
+ * Legacy loader — kept ONLY as a fallback for environments where in-process
+ * extraction somehow yields nothing. The primary path is extractTypedTables()
+ * (typedTables.ts), which needs no external file and can't go stale.
  */
 function loadTypedTables(distDir: string): TypedTablesBundle {
   try {
@@ -1502,6 +1525,20 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .legend-cert   { background: #f0f1ee; border-color: #b5c0b0; }
 .legend-muted  { background: #fbf9f3; border-color: #d8cfb8; }
 
+/* Extraction-failure placeholders must never be mistaken for real content. */
+.cell-placeholder {
+  background: #fbf6f0 !important;
+  color: #a17334 !important;
+  font-style: italic;
+  position: relative;
+  padding-left: 5mm !important;
+}
+.cell-placeholder::before {
+  content: "⚠";
+  position: absolute; left: 1.8mm; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 8pt;
+}
+
 /* Closure dashboard */
 .closure-dashboard { padding: 4mm 0 6mm; page-break-after: always; }
 .dashboard-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
@@ -1649,37 +1686,66 @@ export async function buildHtml(
   const generatedAt = report?.generatedAt;
   const stamp = generatedAt ?? new Date().toLocaleString("zh-CN");
 
-  // Load typed tables from aligned-tables.json if available. Falls back to
-  // an empty bundle so markdown rendering remains the default path.
-  const distDir = opts.distDir ?? path.resolve(process.cwd(), "dist");
-  const typedBundle = loadTypedTables(distDir);
-  // STALENESS GUARD: aligned-tables.json must have been extracted from THIS
-  // exact report (matched via generatedAt). Otherwise the ordinal keys
-  // (t0/t1/…) would splice tables from an older report into this one.
-  // A bundle without the field (older extractor) is treated as stale too.
-  const bundleFresh =
-    !!typedBundle.source_generated_at &&
-    !!report?.generatedAt &&
-    typedBundle.source_generated_at === report.generatedAt;
-  if (!bundleFresh) {
-    console.warn(
-      `[htmlRenderV8] aligned-tables.json is STALE (bundle=${typedBundle.source_generated_at}, report=${report?.generatedAt}) — ignoring typed overrides, using markdown render path`,
+  // ── Typed-table bundle ──────────────────────────────────────────────
+  // PRIMARY PATH: extract in-process from this very report. No external file,
+  // no staleness hazard, no Python dependency. This is what makes the render
+  // pipeline self-contained (measured impact: markdown-only loses 19 triptych
+  // cards / 16 pages, because multi-line rows break plain-table detection).
+  //
+  // FALLBACK: dist/aligned-tables.json, only when in-process extraction comes
+  // back empty (e.g. an unusual report shape). Guarded by source_generated_at.
+  let typedTables: TypedTableEntry[] = [];
+  let usedFallback = false;
+  try {
+    const inProc = extractTypedTables(
+      chapters.map((c) => ({ markdown: c.markdown ?? "" })),
+      (ci) => chapters[ci]?.title ?? "",
+    );
+    typedTables = inProc.tables as TypedTableEntry[];
+  } catch (e) {
+    console.warn("[htmlRenderV8] in-process typed-table extraction failed:", e);
+  }
+
+  if (typedTables.length === 0) {
+    const distDir = opts.distDir ?? path.resolve(process.cwd(), "dist");
+    const legacy = loadTypedTables(distDir);
+    const fresh =
+      !!legacy.source_generated_at &&
+      !!report?.generatedAt &&
+      legacy.source_generated_at === report.generatedAt;
+    if (fresh) {
+      typedTables = legacy.tables as TypedTableEntry[];
+      usedFallback = true;
+    } else {
+      console.warn(
+        `[htmlRenderV8] typed-table fallback bundle is STALE (bundle=${legacy.source_generated_at}, report=${report?.generatedAt}) — using markdown render path`,
+      );
+    }
+  }
+  if (typedTables.length) {
+    console.log(
+      `[htmlRenderV8] typed tables: ${typedTables.length}${usedFallback ? " (from fallback bundle)" : " (in-process)"}`,
     );
   }
-  const typedById = new Map<string, TypedTableEntry>();
-  if (bundleFresh) for (const t of typedBundle.tables) typedById.set(t.id, t);
 
-  // Pre-build per-chapter override maps. chapter index `ci` aligns with
-  // aligned-tables.json's "ch{ci}.t{N}" ids.
   const chapterOverrides = new Map<number, Map<string, string>>();
-  if (bundleFresh) {
-    for (let ci = 0; ci < chapters.length; ci++) {
-      const entries = typedBundle.tables
-        .map((t, _idx) => ({ t, m: t.id.match(/^ch(\d+)\.t(\d+)$/) }))
-        .filter(({ m }) => m && Number(m[1]) === ci)
-        .sort((a, b) => Number(a.m![2]) - Number(b.m![2]))
-        .map(({ t }) => t);
-      chapterOverrides.set(ci, buildTableOverrideMap(entries));
+  {
+    const byChapter = new Map<number, TypedTableEntry[]>();
+    for (const t of typedTables) {
+      const m = t.id.match(/^ch(\d+)\.t(\d+)$/);
+      if (!m) continue;
+      const ci = Number(m[1]);
+      const list = byChapter.get(ci) ?? [];
+      list.push(t);
+      byChapter.set(ci, list);
+    }
+    for (const [ci, list] of byChapter) {
+      list.sort((a, b) => {
+        const na = Number(a.id.match(/\.t(\d+)$/)?.[1] ?? 0);
+        const nb = Number(b.id.match(/\.t(\d+)$/)?.[1] ?? 0);
+        return na - nb;
+      });
+      chapterOverrides.set(ci, buildTableOverrideMap(list));
     }
   }
 

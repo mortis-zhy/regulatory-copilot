@@ -1,0 +1,329 @@
+/**
+ * trustChecks — TypeScript port of verify_pipeline.py (the source-independent
+ * half of it).
+ *
+ * Scope note: verify_pipeline.py has two halves:
+ *   A. Cross-checks that need the three source PDFs (page counts, voltage
+ *      values, clause page numbers, units). Those stay in Python because they
+ *      need PyMuPDF + the original files, which the server legitimately may
+ *      not have.
+ *   B. Report-internal consistency checks (dual-source anchors, false-diff
+ *      truncation, renumber mapping, C-placeholder ratio). These only read
+ *      last-report.json — pure string analysis, so they belong in-process.
+ *
+ * This module implements group B. The /api/agent/report/trust endpoint uses
+ * it as the source of truth; verify_report.json, when present, is merged on
+ * top so the PDF-vs-source checks still surface in the UI.
+ */
+
+export type TrustCounts = {
+  confirmed: number;
+  candidate: number;
+  errata: number;
+  renum: number;
+  format: number;
+};
+
+export type TrustWarning = {
+  label: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+  evidence?: string;
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Real markdown with newlines — never json.dumps (it escapes them to \n). */
+export function reportMarkdown(chapters: Array<{ markdown?: string }>): string {
+  return chapters.map((c) => c?.markdown ?? "").join("\n");
+}
+
+function countOccurrences(haystack: string, needle: string): number {
+  if (!needle) return 0;
+  let n = 0;
+  let i = 0;
+  for (;;) {
+    const j = haystack.indexOf(needle, i);
+    if (j < 0) break;
+    n++;
+    i = j + needle.length;
+  }
+  return n;
+}
+
+// ---------------------------------------------------------------------------
+// 5-category closure counts (same tag table as htmlRenderV8's dashboard)
+// ---------------------------------------------------------------------------
+
+const COUNT_TAGS: Record<keyof TrustCounts, string[]> = {
+  confirmed: ["已双源核验", "[已核验]", "✅"],
+  candidate: ["待复核", "待人工确认", "审核中", "manual-audit", "⚠"],
+  errata: ["同文勘误", "🟡"],
+  renum: ["仅编号重排", "🔢"],
+  format: ["格式同义改写", "✍"],
+};
+
+export function extractClosureCounts(md: string): TrustCounts {
+  const counts: TrustCounts = { confirmed: 0, candidate: 0, errata: 0, renum: 0, format: 0 };
+  for (const cat of Object.keys(COUNT_TAGS) as Array<keyof TrustCounts>) {
+    for (const tag of COUNT_TAGS[cat]) counts[cat] += countOccurrences(md, tag);
+  }
+  return counts;
+}
+
+// ---------------------------------------------------------------------------
+// §11.3.0 同文假差异 (errata) — the table that says why a "change" isn't one
+// ---------------------------------------------------------------------------
+
+export type Erratum = {
+  no: string;
+  topic: string;
+  bValue: string;
+  aValue: string;
+  reason: string;
+  humanVerdict: "pending" | "confirmed" | "rejected";
+  humanNote?: string;
+};
+
+export function extractErrata(md: string): Erratum[] {
+  const sec =
+    md.match(/####\s*11\.3\.0[^\n]*\n([\s\S]{0,6000}?)(?=\n####|\n###)/)?.[1] ??
+    md.match(/11\.3\.0\s*同文勘误[^\n]*\n([\s\S]{0,6000}?)(?=\n####|\n###)/)?.[1];
+  if (!sec) return [];
+
+  const out: Erratum[] = [];
+  for (const line of sec.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("|")) continue;
+    if (/\|-{3,}\||\|\s*#\s*\|/.test(t)) continue;
+    const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
+    if (c.length < 5 || !/^\d+$/.test(c[0])) continue;
+    out.push({
+      no: c[0],
+      topic: c[1],
+      bValue: c[2],
+      aValue: c[3],
+      reason: c[4] ?? "",
+      humanVerdict: "pending",
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// §11.0 网传指标核验 (rumors)
+// ---------------------------------------------------------------------------
+
+export type Rumor = {
+  metric: string;
+  bValue: string;
+  aValue: string;
+  verdict: string;
+  status: "两版均有出处" | "仅草案单边出现" | "仅现行单边出现" | "两版原文均无出处";
+};
+
+export function extractRumors(md: string): Rumor[] {
+  const out: Rumor[] = [];
+  for (const line of md.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("|")) continue;
+    if (!/GB4785指标|网传|行业流传/.test(t)) continue;
+    const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
+    if (c.length < 5) continue;
+    const metric = c[2] || c[1] || "";
+    if (!metric || metric === "指标" || /^-{3,}$/.test(metric)) continue;
+    const bRaw = c[3] ?? "";
+    const aRaw = c[4] ?? "";
+    const bFound = bRaw !== "—" && bRaw !== "";
+    const aFound = aRaw !== "—" && aRaw !== "";
+    out.push({
+      metric,
+      bValue: bRaw,
+      aValue: aRaw,
+      verdict: c[5] ?? "",
+      status: bFound && aFound
+        ? "两版均有出处"
+        : aFound
+          ? "仅草案单边出现"
+          : bFound
+            ? "仅现行单边出现"
+            : "两版原文均无出处",
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Check A — dual-source anchors
+// ---------------------------------------------------------------------------
+
+export function checkDualSource(md: string): TrustWarning {
+  const rowA = /\|\s*\*\*\s*A\s*(?:草案|版)?\s*\*\*\s*\|/;
+  const rowB = /\|\s*\*\*\s*B\s*(?:现行|版|2019)?\s*\*\*\s*\|/;
+  let checked = 0;
+  let ok = 0;
+  let bad = 0;
+  const samples: string[] = [];
+
+  for (const m of md.matchAll(/((?:\|[^\n]*\n){3,})/g)) {
+    const lines = m[1].split("\n");
+    const aLine = lines.find((l) => rowA.test(l));
+    const bLine = lines.find((l) => rowB.test(l));
+    if (!aLine || !bLine) continue;
+    const header = lines[0] + (lines[1] ?? "");
+    if (!/页码/.test(header)) continue; // skip |文档|页|标题| index tables
+
+    checked++;
+    const cells = (l: string) => l.split("|").map((c) => c.trim());
+    const hasPage = (cs: string[]) => cs.some((c) => /第\s*\d+\s*页|\bp\d+\b/.test(c));
+    const hasClause = (cs: string[]) => cs.some((c) => /\d+\.\d+/.test(c));
+    const aOk = hasPage(cells(aLine)) && hasClause(cells(aLine));
+    const bOk = hasPage(cells(bLine)) && hasClause(cells(bLine));
+
+    if (aOk && bOk) {
+      ok++;
+    } else {
+      bad++;
+      if (samples.length < 5) {
+        const miss: string[] = [];
+        if (!aOk) miss.push("A 行缺页码/条款号");
+        if (!bOk) miss.push("B 行缺页码/条款号");
+        samples.push(`${(lines[0] ?? "").replace(/^\||\|$/g, "").trim().slice(0, 40)} → ${miss.join("; ")}`);
+      }
+    }
+  }
+
+  if (checked === 0) {
+    return { label: "双源核验 · A+B 锚点", status: "warn", detail: "未扫描到含 A/B 行的「页码 + 条款」三栏对比表" };
+  }
+  return {
+    label: "双源核验 · A+B 锚点",
+    status: bad === 0 ? "pass" : "warn",
+    detail: `扫描 ${checked} 张 A/B 对比表, 双源锚点完整 ${ok}, 缺锚点 ${bad}`,
+    evidence: samples.join("; ") || undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Check B — false-diff truncation (B excerpt much shorter than A)
+// ---------------------------------------------------------------------------
+
+export function checkFalseDiff(md: string): TrustWarning {
+  const rowA = /\*\*\s*A\s*(?:草案|版)?\s*\*\*/;
+  const rowB = /\*\*\s*B\s*(?:现行|版|2019)?\s*\*\*/;
+  const pairs: Array<{ topic: string; a: number; b: number }> = [];
+
+  for (const m of md.matchAll(/((?:\|[^\n]*\n){3,})/g)) {
+    const lines = m[1].split("\n");
+    const aLine = lines.find((l) => rowA.test(l));
+    const bLine = lines.find((l) => rowB.test(l));
+    if (!aLine || !bLine) continue;
+    const cells = (l: string) => l.split("|").map((c) => c.trim()).filter(Boolean);
+    const a = cells(aLine);
+    const b = cells(bLine);
+    if (a.length < 4 || b.length < 4) continue;
+    const aText = a.slice(3).join(" ");
+    const bText = b.slice(3).join(" ");
+    if (aText.length > 0 && bText.length > 0 && aText.length > bText.length * 3) {
+      pairs.push({ topic: a[0].slice(0, 30), a: aText.length, b: bText.length });
+    }
+  }
+
+  if (!pairs.length) {
+    return { label: "假差异 · B 列截断", status: "pass", detail: "未发现 B 列截断嫌疑(长度比 ≤ 3)" };
+  }
+  return {
+    label: "假差异 · B 列截断",
+    status: "warn",
+    detail: `发现 ${pairs.length} 个对比表 A/B 长度差 >3 倍`,
+    evidence: pairs.slice(0, 5).map((p) => `${p.topic} A=${p.a}B=${p.b}`).join("; "),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Check C — §11.6.1 renumber mapping exists
+// ---------------------------------------------------------------------------
+
+export function checkRenumber(md: string): TrustWarning {
+  const sec = md.match(/11\.6\.1\s*章节级重排.{0,30}.*?(?=###)/s)?.[0];
+  if (!sec) {
+    return { label: "编号重排 · 11.6.1", status: "warn", detail: "未找到 11.6.1 / 章节级重排 子节标题" };
+  }
+  const tableRows = sec
+    .split("\n")
+    .filter((l) => l.trim().startsWith("|") && !/\|\s*-{3,}\s*\|/.test(l));
+  const pairs = tableRows.filter((l) => {
+    const nums = l.match(/\|\s*\d+(?:\.\d+)?\s*\|/g);
+    return (nums?.length ?? 0) >= 2;
+  });
+  if (!pairs.length) {
+    return { label: "编号重排 · 11.6.1", status: "warn", detail: "11.6.1 子节无 B/A 编号配对行(可能有数据遗漏)" };
+  }
+  return {
+    label: "编号重排 · 11.6.1",
+    status: "pass",
+    detail: `找到 ${pairs.length} 行 B/A 编号映射, 已纳入 🔢 闭环统计`,
+    evidence: sec.slice(0, 300),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Check D — C-version placeholder ratio
+// ---------------------------------------------------------------------------
+
+export function checkCPlaceholder(md: string): TrustWarning {
+  const explicit = (md.match(/\*\*\s*C\s*(?:UN|版|草案)?[^*]*\*\*\s*\|\s*[^|]*本版未规定[^|]*/g) ?? []).length;
+  const fallback = countOccurrences(md, "源数据未提供");
+  const missing = Math.max(explicit, fallback);
+  const slots =
+    countOccurrences(md, "**C ") + countOccurrences(md, "**C UN") + countOccurrences(md, "**C 现行") + countOccurrences(md, "**C 版");
+
+  if (slots === 0) {
+    return { label: "C 版占位检测", status: "pass", detail: "未检测到 C 灰卡(C 版未参与本次对比或全有内容)" };
+  }
+  const pct = Math.round((missing / slots) * 100);
+  if (pct >= 50) {
+    return {
+      label: "C 版占位检测",
+      status: "warn",
+      detail: `C 灰卡 ${missing}/${slots} (${pct}%),可能存在抽取失败,非纯数据问题`,
+      evidence: `灰卡计数 ${missing}`,
+    };
+  }
+  return {
+    label: "C 版占位检测",
+    status: "pass",
+    detail: `C 灰卡 ${missing}/${slots} (${pct}%),比例合理`,
+    evidence: `总 C 槽 ${slots}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate
+// ---------------------------------------------------------------------------
+
+export type TrustBundle = {
+  counts: TrustCounts;
+  total: number;
+  candidateShare: number;
+  errata: Erratum[];
+  rumors: Rumor[];
+  warnings: TrustWarning[];
+};
+
+export function buildTrustBundle(chapters: Array<{ markdown?: string }>): TrustBundle {
+  const md = reportMarkdown(chapters);
+  const counts = extractClosureCounts(md);
+  const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
+  const warnings = [checkDualSource(md), checkFalseDiff(md), checkRenumber(md), checkCPlaceholder(md)];
+  return {
+    counts,
+    total,
+    candidateShare: total > 0 ? Math.round((counts.candidate / total) * 100) : 0,
+    errata: extractErrata(md),
+    rumors: extractRumors(md),
+    warnings,
+  };
+}

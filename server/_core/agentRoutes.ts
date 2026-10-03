@@ -327,29 +327,9 @@ export function registerAgentRoutes(router: Router) {
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(path.join(dir, "last-report.json"), JSON.stringify(report), "utf-8");
             console.log(`[report] saved last-report.json (${chapters.length} chapters, ${appendices.length} appendices)`);
-            // Auto-regenerate typed-table bundle so /report/render uses the
-            // current report's tables rather than a stale one. Fire-and-forget
-            // so the SSE response stream isn't blocked; a 1-2s lag is fine.
-            try {
-                const { spawn: childSpawn } = await import("node:child_process");
-                const py = process.env.PYTHON ?? "python";
-                const scriptPath = path.resolve(import.meta.dirname, "../../extract_aligned_tables.py");
-                const child = childSpawn(py, [scriptPath], {
-                    cwd: path.resolve(import.meta.dirname, "../.."),
-                    stdio: "ignore",
-                    windowsHide: true,
-                });
-                child.on("exit", (code) => {
-                    if (code === 0) {
-                        console.log("[report] typed-table bundle refreshed");
-                    } else {
-                        console.warn(`[report] typed-table refresh failed (exit=${code})`);
-                    }
-                });
-                child.on("error", (e) => console.warn("[report] typed-table refresh error:", e?.message));
-            } catch (e) {
-                console.warn("[report] failed to spawn typed-table refresh:", e);
-            }
+            // No bundle regeneration needed: htmlRenderV8 extracts typed tables
+            // in-process from whatever report it is handed (typedTables.ts), so
+            // the render path has no external file dependency and cannot go stale.
           } catch (e) {
             console.error("[report] failed to persist report:", e);
           }
@@ -397,74 +377,37 @@ export function registerAgentRoutes(router: Router) {
       const reportFile = path.resolve(import.meta.dirname, "../reports/last-report.json");
       if (!fs.existsSync(reportFile)) return res.status(404).json({ error: "no report generated yet" });
       const report = JSON.parse(fs.readFileSync(reportFile, "utf-8"));
+      // PRIMARY: in-process trust analysis (trustChecks.ts) — no external file.
+      const { buildTrustBundle } = await import("../reports/trustChecks");
+      const inProc = buildTrustBundle(report.chapters ?? []);
       const md = (report.chapters ?? []).map((c: { markdown?: string }) => c.markdown ?? "").join("\n");
+      const counts = inProc.counts;
+      const total = inProc.total;
+      const errata = inProc.errata as Array<Record<string, unknown>>;
+      const rumors = inProc.rumors;
+      let warnings = inProc.warnings as Array<{ label: string; status: string; detail: string; evidence?: string }>;
 
-      // ---------- 1. 闭环统计 ----------
-      const counts = { confirmed: 0, candidate: 0, errata: 0, renum: 0, format: 0 };
-      const tags = {
-        confirmed: ["已双源核验", "[已核验]", "✅"],
-        candidate: ["待复核", "待人工确认", "审核中", "manual-audit", "⚠"],
-        errata: ["同文勘误", "🟡"],
-        renum: ["仅编号重排", "🔢"],
-        format: ["格式同义改写", "✍"],
-      } as const;
-      for (const cat of Object.keys(tags) as Array<keyof typeof tags>) {
-        for (const tag of tags[cat]) {
-          let i = 0;
-          while ((i = md.indexOf(tag, i)) > -1) { counts[cat]++; i += tag.length; }
-        }
-      }
-      const total = Object.values(counts).reduce((a, b) => a + b, 0);
-
-      // ---------- 2. 同文勘误 (§11.3.0 表格) ----------
-      const errata: Array<Record<string, string>> = [];
-      const errataSec = md.match(/####\s*11\.3\.0[^\n]*\n([\s\S]{0,6000}?)(?=\n####|\n###)/)
-        ?? md.match(/11\.3\.0\s*同文勘误[^\n]*\n([\s\S]{0,6000}?)(?=\n####|\n###)/);
-      if (errataSec) {
-        for (const line of errataSec[1].split("\n")) {
-          const t = line.trim();
-          if (!t.startsWith("|") || /\|-{3,}\||\|\s*#\s*\|/.test(t)) continue;
-          const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
-          if (c.length < 5 || !/^\d+$/.test(c[0])) continue;
-          errata.push({ no: c[0], topic: c[1], bValue: c[2], aValue: c[3], reason: c[4] ?? "" });
-        }
-      }
-
-      // ---------- 3. 网传指标核验 (§11.0 表格) ----------
-      const rumors: Array<Record<string, string>> = [];
-      for (const line of md.split("\n")) {
-        const t = line.trim();
-        if (!t.startsWith("|")) continue;
-        if (!/GB4785指标|网传|行业流传/.test(t)) continue;
-        const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
-        if (c.length < 5) continue;
-        const metric = c[2] ?? c[1] ?? "";
-        if (!metric || metric === "指标" || /^\|?-+$/.test(metric)) continue;
-        const bRaw = c[3] ?? "";
-        const aRaw = c[4] ?? "";
-        const verdict = c[5] ?? "";
-        const bFound = bRaw !== "—" && bRaw !== "" ;
-        const aFound = aRaw !== "—" && aRaw !== "";
-        rumors.push({
-          metric,
-          bValue: bRaw,
-          aValue: aRaw,
-          verdict,
-          status: bFound && aFound ? "两版均有出处" : aFound ? "仅草案单边出现" : bFound ? "仅现行单边出现" : "两版原文均无出处",
-        });
-      }
-
-      // ---------- 4. verify_report.json 告警 ----------
+      // ---------- 2/3. 同文勘误 + 网传指标：来自 trustChecks.ts ----------
+      // ---------- 4. verify_report.json 告警（补充 PDF↔源 的校验项） ----------
+      // The TS bundle already covers report-internal checks. verify_report.json
+      // adds the source-PDF cross-checks (page counts, voltages, clause pages)
+      // which legitimately need PyMuPDF. Merge without duplicating labels.
       const verifyFile = path.join(repoRoot, "verify_report.json");
-      let warnings: Array<{ label: string; status: string; detail: string; evidence?: string }> = [];
       if (fs.existsSync(verifyFile)) {
         try {
           const vr = JSON.parse(fs.readFileSync(verifyFile, "utf-8"));
-          warnings = (vr.checks ?? [])
-            .filter((c: { status?: string }) => c.status === "warn" || c.status === "fail")
-            .map((c: { label: string; status: string; detail: string; source_evidence?: string }) => ({
-              label: c.label, status: c.status, detail: c.detail, evidence: c.source_evidence,
-            }));
+          const seen = new Set(warnings.map((w) => w.label));
+          for (const c of vr.checks ?? []) {
+            if (c.status !== "warn" && c.status !== "fail") continue;
+            if (seen.has(c.label)) continue;
+            seen.add(c.label);
+            warnings.push({
+              label: c.label,
+              status: c.status,
+              detail: c.detail,
+              evidence: c.source_evidence,
+            });
+          }
         } catch { /* 诊断文件损坏时静默降级 */ }
       }
 
