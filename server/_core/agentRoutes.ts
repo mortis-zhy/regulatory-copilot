@@ -363,6 +363,31 @@ export function registerAgentRoutes(router: Router) {
             })),
             generatedAt: new Date().toLocaleString("zh-CN"),
           };
+
+          // ── Persist gate ────────────────────────────────────────────
+          // A mid-run failure (LLM 402/429/timeout) leaves placeholder text in
+          // `chapters`. Writing that to disk would silently destroy the last
+          // good report — the next render would then serve a mostly-empty
+          // document. Detect it and keep the previous artifact.
+          const failedChapters = chapters.filter(
+            (c: { markdown?: string }) =>
+              /本章生成失败|MiniMax request failed|生成失败[:：]/.test(c?.markdown ?? ""),
+          );
+          const shouldPersist = failedChapters.length === 0 || failedChapters.length < chapters.length / 2;
+          if (!shouldPersist) {
+            console.error(
+              `[report] generation degraded: ${failedChapters.length}/${chapters.length} chapters failed — NOT overwriting last-report.json`,
+            );
+            safeWrite({
+              type: "error",
+              message: `生成失败：${failedChapters.length}/${chapters.length} 个章节未成功，已保留上一份报告。`,
+              code: "generation_degraded",
+              failedChapters: failedChapters.map((c: { title: string }) => c.title),
+            });
+            if (!res.writableEnded) res.end();
+            return;
+          }
+
           try {
             const fs = await import("node:fs");
             const path = await import("node:path");
@@ -371,6 +396,13 @@ export function registerAgentRoutes(router: Router) {
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(path.join(dir, "last-report.json"), JSON.stringify(report), "utf-8");
             console.log(`[report] saved last-report.json (${chapters.length} chapters, ${appendices.length} appendices)`);
+            if (failedChapters.length) {
+              console.warn(
+                `[report] persisted with ${failedChapters.length} degraded chapters: ${failedChapters
+                  .map((c: { title: string }) => c.title)
+                  .join(", ")}`,
+              );
+            }
             // No bundle regeneration needed: htmlRenderV8 extracts typed tables
             // in-process from whatever report it is handed (typedTables.ts), so
             // the render path has no external file dependency and cannot go stale.
