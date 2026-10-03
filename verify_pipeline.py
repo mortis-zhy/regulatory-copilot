@@ -160,6 +160,171 @@ def check_unit_consistency(label: str, version: str, source_pattern: str, unit_m
                  source_evidence=full[:200])
 
 
+# ---------------------------------------------------------------------------
+# 高级校验 (双源 / 假差异 / 编号重排 / C 占位)
+# ---------------------------------------------------------------------------
+
+def _read_report_markdown() -> str:
+    """读 last-report.json 的全部 markdown(真实换行版)。
+
+    注意:不能用 json.dumps 拍平整个 JSON — 那会把 markdown 里的换行
+    转义成字面 \\n 两字符,后续按行 split 全部失效。这里直接把每章
+    markdown 用真实换行拼接。
+    """
+    with open(REPORT_JSON, "r", encoding="utf8") as f:
+        rpt = json.load(f)
+    parts = []
+    for ch in rpt.get("chapters", []):
+        parts.append(ch.get("markdown", "") or "")
+    for ap in rpt.get("appendices", []):
+        parts.append(ap.get("markdown", "") or "")
+    return "\n".join(parts)
+
+
+def check_dual_source_validation() -> list[dict]:
+    """Check A — 双源核验。
+
+    对每张「来源 | 页码 | 条款正文」三栏对比表:
+      - 该表必须同时含 A 行 与 B 行(缺一方 → 无法做双源比对)
+      - A/B 行的「页码」列必须含真实页码(第 N 页 / pN)
+      - A/B 行的「条款」列必须含条款号(x.y 或 x.y.z)
+    缺任意一项 → 自动降级为 ⚠ 待复核,报告给使用者。
+    """
+    md = _read_report_markdown()
+    # 逐表扫描:连续 | 行组成的块
+    row_pat_a = re.compile(r"\|\s*\*\*\s*A\s*(?:草案|版)?\s*\*\*\s*\|")
+    row_pat_b = re.compile(r"\|\s*\*\*\s*B\s*(?:现行|版|2019)?\s*\*\*\s*\|")
+    checked = 0
+    pass_cnt = 0
+    warn_cnt = 0
+    samples: list[str] = []
+    for table in re.finditer(r"((?:\|[^\n]*\n){3,})", md):
+        body = table.group(1)
+        lines = body.split("\n")
+        a_line = next((l for l in lines if row_pat_a.search(l)), None)
+        b_line = next((l for l in lines if row_pat_b.search(l)), None)
+        if not (a_line and b_line):
+            continue
+        # 判定这是「版本 × 页码 × 条款」三栏表(而非「文档 | 页 | 标题」索引表)
+        if not re.search(r"页码", lines[0]) and not re.search(r"页码", lines[1] if len(lines) > 1 else ""):
+            continue
+        checked += 1
+        def cells(line: str) -> list[str]:
+            return [c.strip() for c in line.split("|")]
+        a_cells, b_cells = cells(a_line), cells(b_line)
+        # 找页码列(含 "第N页" 或 pN 的那一格)
+        def has_page(cs: list[str]) -> bool:
+            return any(re.search(r"第\s*\d+\s*页|\bp\d+\b", c) for c in cs)
+        def has_clause(cs: list[str]) -> bool:
+            return any(re.search(r"\d+\.\d+", c) for c in cs)
+        a_ok, b_ok = has_page(a_cells) and has_clause(a_cells), has_page(b_cells) and has_clause(b_cells)
+        if a_ok and b_ok:
+            pass_cnt += 1
+        else:
+            warn_cnt += 1
+            if len(samples) < 5:
+                miss = []
+                if not a_ok: miss.append("A 行缺页码/条款号")
+                if not b_ok: miss.append("B 行缺页码/条款号")
+                topic = next((l for l in lines if l.startswith("| 来源") or l.startswith("| 版本")), lines[0])
+                samples.append(f"{topic.strip('| ')[:40]} → {'; '.join(miss)}")
+    if checked == 0:
+        return [check("双源核验 · A+B 锚点", "warn", "未扫描到含 A/B 行的「页码 + 条款」三栏对比表")]
+    detail = f"扫描 {checked} 张 A/B 对比表, 双源锚点完整 {pass_cnt}, 缺锚点 {warn_cnt}"
+    return [check("双源核验 · A+B 锚点", "pass" if warn_cnt == 0 else "warn", detail,
+                  source_evidence="; ".join(samples) or "(无样本)")]
+
+
+def check_false_diff_truncation() -> list[dict]:
+    """Check B — 假差异检测。
+
+    同一个对比表里,A、B 两行摘录长度差距 > 3 倍且 B 行短,可能 B 摘录被截断
+    (经典例子: B 原文 "≤250mm,可放宽至 750mm" 只摘了 "≤250mm")。
+    """
+    md = _read_report_markdown()
+    pairs = []
+    for table in re.finditer(r"((?:\|[^\n]*\n){3,})", md):
+        body = table.group(1)
+        lines = body.split("\n")
+        if len(lines) < 4:
+            continue
+        a_row, b_row = None, None
+        for line in lines:
+            if re.search(r"\*\*\s*A\s*(草案|版)?\s*\*\*", line):
+                a_row = line
+            elif re.search(r"\*\*\s*B\s*(现行|版|2019)?\s*\*\*", line):
+                b_row = line
+        if not (a_row and b_row):
+            continue
+        a_cells = [c.strip() for c in a_row.split("|") if c.strip()]
+        b_cells = [c.strip() for c in b_row.split("|") if c.strip()]
+        if len(a_cells) < 4 or len(b_cells) < 4:
+            continue
+        a_text = " ".join(a_cells[3:])
+        b_text = " ".join(b_cells[3:])
+        if len(a_text) > 0 and len(b_text) > 0 and len(a_text) > len(b_text) * 3:
+            pairs.append({
+                "topic": a_cells[0][:30] if a_cells else "(?)",
+                "a_len": len(a_text),
+                "b_len": len(b_text),
+                "ratio": round(len(a_text) / max(len(b_text), 1), 1),
+            })
+    if not pairs:
+        return [check("假差异 · B 列截断", "pass", "未发现 B 列截断嫌疑(长度比 ≤ 3)")]
+    detail = f"发现 {len(pairs)} 个对比表 A/B 长度差 >3 倍"
+    samples = pairs[:5]
+    return [check("假差异 · B 列截断", "warn", detail,
+                  source_evidence="; ".join(f"{p['topic']} A={p['a_len']}B={p['b_len']}" for p in samples))]
+
+
+def check_renumber_classification() -> list[dict]:
+    """Check C — 编号重排检测。
+
+    Ch10 第 11.6.1 节 「章节级重排」应列出所有章节号变更但技术内容不变的项。
+    校验:有重排表,且表里至少有 1 个 B 编号 vs A 编号 配对。
+    """
+    md = _read_report_markdown()
+    sec_match = re.search(r"11\.6\.1\s*章节级重排.{0,30}.*?(?=###)", md, re.DOTALL)
+    if not sec_match:
+        return [check("编号重排 · 11.6.1", "warn", "未找到 11.6.1 / 章节级重排 子节标题")]
+    section = sec_match.group(0)
+    table_rows = [l for l in section.split("\n") if l.strip().startswith("|") and not re.search(r"\|\s*-{3,}\s*\|", l)]
+    renum_rows = [l for l in table_rows if re.search(r"\|\s*\d+(\.\d+)?\s*\|", l) and not l.startswith("| #")]
+    renum_rows = [l for l in renum_rows if len(re.findall(r"\|\s*\d+(\.\d+)?\s*\|", l)) >= 2]
+    if not renum_rows:
+        return [check("编号重排 · 11.6.1", "warn", "11.6.1 子节无 B/A 编号配对行(可能有数据遗漏)")]
+    return [check("编号重排 · 11.6.1", "pass",
+                  f"找到 {len(renum_rows)} 行 B/A 编号映射, 已纳入 🔢 闭环统计",
+                  source_evidence=section[:300])]
+
+
+def check_c_placeholder_classification() -> list[dict]:
+    """Check D — C 版占位检测。
+
+    区分两种「C 缺失」:
+      1) C 真无对应子条款 — 用「本版未规定」灰卡占位(设计意图,正常)
+      2) C 未抽取 / 抽取失败 — 同样是「本版未规定」占位,可能是数据缺失
+    检测:统计 C 灰卡总占比,>50% 则提示用户人工核验。
+    """
+    md = _read_report_markdown()
+    real_missing = 0
+    for m in re.finditer(r"\*\*\s*C\s*(UN|版|草案)?[^*]*\*\*\s*\|\s*([^|]*本版未规定[^\|]*)", md):
+        real_missing += 1
+    fallback = md.count("源数据未提供")
+    real_missing = max(real_missing, fallback)
+    total_c_slots = md.count("**C ") + md.count("**C UN") + md.count("**C 现行") + md.count("**C 版")
+    if total_c_slots == 0:
+        return [check("C 版占位检测", "pass", "未检测到 C 灰卡(C 版未参与本次对比或全有内容)")]
+    pct = round(real_missing / max(total_c_slots, 1) * 100)
+    if pct >= 50:
+        return [check("C 版占位检测", "warn",
+                      f"C 灰卡 {real_missing}/{total_c_slots} ({pct}%),可能存在抽取失败,非纯数据问题",
+                      source_evidence=f"灰卡行样本计数 {real_missing}")]
+    return [check("C 版占位检测", "pass",
+                  f"C 灰卡 {real_missing}/{total_c_slots} ({pct}%),比例合理",
+                  source_evidence=f"总 C 槽 {total_c_slots}")]
+
+
 def check_clause_in_report(label: str, version: str, clause: str, expected_page: int | None = None) -> dict:
     """检查报告里某个条款引用是否对应到正确的页。
 
@@ -297,6 +462,11 @@ def build_checks() -> list[dict]:
             continue
         else:
             out.append(check("未知 check kind", "warn", f"{spec}", "", ""))
+    # 高级校验 (双源 / 假差异 / 编号重排 / C 占位)
+    out.extend(check_dual_source_validation())
+    out.extend(check_false_diff_truncation())
+    out.extend(check_renumber_classification())
+    out.extend(check_c_placeholder_classification())
     return out
 
 
