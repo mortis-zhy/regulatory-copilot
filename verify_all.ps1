@@ -1,24 +1,31 @@
-# verify_all.ps1 -- one-shot verify pipeline
+# verify_all.ps1 -- optional diagnostics runner
 #
-# Chain:
-#   1. extract_aligned_tables.py -- extract markdown tables to structured JSON
-#   2. fix_appendix_b.py         -- repair "(no title)" pollution in Appendix B
-#   3. verify_pipeline.py        -- source PDF vs report JSON cross-check
-#   4. (optional) re-render PDF
+# ARCHITECTURE NOTE (v8.6.0+):
+#   The PDF render pipeline is now fully self-contained in TypeScript. No
+#   Python script is required to produce a correct PDF:
+#     - table extraction / row normalization / triptych classification
+#       -> server/reports/typedTables.ts (in-process, during buildHtml)
+#     - trust checks (dual-source / false-diff / renumber / C-placeholder)
+#       -> server/reports/trustChecks.ts (in-process, via /api/agent/report/trust)
+#     - extraction-failure placeholders
+#       -> rendered with a loud .cell-placeholder style in htmlRenderV8.ts
+#
+#   The Python scripts in this directory are therefore OPTIONAL tooling:
+#     verify_pipeline.py       adds source-PDF cross-checks (page counts,
+#                              voltages, clause pages, units) that need PyMuPDF
+#                              and the three original files
+#     extract_aligned_tables.py  writes dist/aligned-tables.json, which is now
+#                              only a fallback the renderer never needs
+#     fix_appendix_b.py       back-fills real figure titles from source PDFs;
+#                              the renderer already flags unfilled cells
+#
+# Run this script when you want the PDF-vs-source cross-check. Skip it for a
+# normal generate -> render cycle.
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File verify_all.ps1             # verify only
-#   powershell -ExecutionPolicy Bypass -File verify_all.ps1 -Render     # verify + render hint
-#   $env:SKIP_RENDER = "1"; powershell -File verify_all.ps1            # env-var skip
+#   powershell -ExecutionPolicy Bypass -File verify_all.ps1
 #
-# Exit code: 0 = all pass, 1 = verify found failures
-#
-# Render step (PowerShell 5.1 has known Copy-Item bug on Chinese paths;
-# this script does NOT directly overwrite target PDF). Manual command:
-#   curl -X POST -H "Content-Type: application/json" `
-#        -d @comparison_agent-main/reports/last-report.json `
-#        -o GB4785_<multi-version>.pdf `
-#        http://localhost:3000/api/agent/report/render
+# Exit code: 0 all pass, 1 verify found failures
 
 param([switch]$Render = $false)
 
@@ -28,42 +35,50 @@ $env:PYTHONIOENCODING = "utf-8"
 $ROOT = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ROOT
 
-# 1. Extract aligned tables
+# 1. Optional: write the legacy typed-table bundle (fallback only)
 Write-Host ""
-Write-Host "==== 1. Extract aligned tables -> dist/aligned-tables.json ====" -ForegroundColor Cyan
+Write-Host "==== [optional] dist/aligned-tables.json (fallback bundle) ====" -ForegroundColor DarkGray
 python extract_aligned_tables.py
-if ($LASTEXITCODE -ne 0) { Write-Host "[FAIL] step 1" -ForegroundColor Red; exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) { Write-Host "[warn] step 1 skipped" -ForegroundColor Yellow }
 
-# 2. Repair Appendix B title pollution
+# 2. Optional: back-fill appendix B figure titles from the source PDFs
 Write-Host ""
-Write-Host "==== 2. Repair Appendix B title pollution ====" -ForegroundColor Cyan
+Write-Host "==== [optional] appendix B figure titles ====" -ForegroundColor DarkGray
 python fix_appendix_b.py
-if ($LASTEXITCODE -ne 0) { Write-Host "[FAIL] step 2" -ForegroundColor Red; exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) { Write-Host "[warn] step 2 skipped" -ForegroundColor Yellow }
 
-# 3. Cross-check source PDF vs report JSON
+# 3. Source-PDF cross-check (the only part that genuinely needs Python)
 Write-Host ""
-Write-Host "==== 3. Cross-check (source PDF vs last-report.json) ====" -ForegroundColor Cyan
+Write-Host "==== source PDF cross-check (needs PyMuPDF + 3 original files) ====" -ForegroundColor Cyan
 python verify_pipeline.py
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[FAIL] verify_pipeline.py reported failures" -ForegroundColor Yellow
     exit $LASTEXITCODE
 }
 
-# 4. (Optional) Render PDF
-$skipRender = ($env:SKIP_RENDER -eq "1")
-if ($Render -and -not $skipRender) {
+# 4. In-process trust checks (always available via the API)
+Write-Host ""
+Write-Host "==== in-process trust checks (TS, no Python needed) ====" -ForegroundColor Cyan
+try {
+    $trust = Invoke-RestMethod -Uri "http://localhost:3000/api/agent/report/trust" -TimeoutSec 10
+    Write-Host ("  closure: " + ($trust.dashboard | ConvertTo-Json -Compress))
+    Write-Host ("  errata: " + $trust.errata.Count + " | rumors: " + $trust.rumors.Count)
+    foreach ($w in $trust.warnings) {
+        Write-Host ("  [" + $w.status + "] " + $w.label + " -- " + $w.detail)
+    }
+} catch {
+    Write-Host "[warn] server not reachable on :3000 -- skip in-process checks" -ForegroundColor DarkGray
+}
+
+# 5. Optional render hint
+if ($Render) {
     Write-Host ""
-    Write-Host "==== 4. Render PDF ====" -ForegroundColor Cyan
-    Write-Host "Run manually to avoid PowerShell 5.1 Chinese-path bug:" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host '  curl -X POST -H "Content-Type: application/json" `' -ForegroundColor Cyan
-    Write-Host '       -d @comparison_agent-main/reports/last-report.json `' -ForegroundColor Cyan
-    Write-Host '       -o GB4785_<multi-version>.pdf `' -ForegroundColor Cyan
-    Write-Host '       http://localhost:3000/api/agent/report/render' -ForegroundColor Cyan
-    Write-Host ""
-} elseif (-not $Render) {
-    Write-Host ""
-    Write-Host "(skipped render -- pass -Render for hint)" -ForegroundColor DarkGray
+    Write-Host "==== render hint ====" -ForegroundColor Cyan
+    Write-Host "Run manually (PowerShell 5.1 Chinese-path bug):" -ForegroundColor Yellow
+    Write-Host "  curl -X POST -H ""Content-Type: application/json"" ``"
+    Write-Host "       -d @comparison_agent-main/reports/last-report.json ``"
+    Write-Host "       -o GB4785_report.pdf ``"
+    Write-Host "       http://localhost:3000/api/agent/report/render" -ForegroundColor Cyan
 }
 
 Write-Host ""
