@@ -173,7 +173,21 @@ export function registerAgentRoutes(router: Router) {
           });
         }
         const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
-        const rawPdf = await renderPdfFromReportV8(JSON.parse(fs.readFileSync(file, "utf-8")));
+        const report = JSON.parse(fs.readFileSync(file, "utf-8"));
+        // Same integrity gate as /report/render — never hand a degraded
+        // report to the user as if it were complete.
+        const { buildTrustBundle } = await import("../reports/trustChecks");
+        const { integrity } = buildTrustBundle(report.chapters ?? []);
+        if (integrity.level === "blocked" && !req.query?.force) {
+          return res.status(422).json({
+            error: "报告完整性检查未通过，已阻止导出",
+            code: "integrity_blocked",
+            level: integrity.level,
+            blockers: integrity.blockers.map((b) => ({ label: b.label, detail: b.detail })),
+            hint: "确认可以导出请加 ?force=1；或重新生成报告。",
+          });
+        }
+        const rawPdf = await renderPdfFromReportV8(report);
         return res
           .status(200)
           .set({
@@ -466,6 +480,7 @@ export function registerAgentRoutes(router: Router) {
         errata,
         rumors,
         warnings,
+        integrity: inProc.integrity,
         human,
         generatedAt: report.generatedAt ?? null,
       });
@@ -534,6 +549,31 @@ export function registerAgentRoutes(router: Router) {
   /** POST /api/agent/report/render — receive a RenderableReport, return a PDF. */
   router.post("/api/agent/report/render", async (req, res) => {
     try {
+      // ── Integrity gate ──────────────────────────────────────────────
+      // A report that failed extraction (empty chapters, no page anchors,
+      // no A/B/C markers, no verdicts) still renders into a confident-looking
+      // 100-page PDF. Refuse unless the caller explicitly overrides, so a
+      // degraded generation can't silently ship. ?force=1 still renders but
+      // the UI surfaces the blockers.
+      const { buildTrustBundle } = await import("../reports/trustChecks");
+      const { integrity } = buildTrustBundle(req.body?.chapters ?? []);
+      if (integrity.level === "blocked" && !req.query?.force) {
+        return res.status(422).json({
+          error: "报告完整性检查未通过，已阻止渲染",
+          code: "integrity_blocked",
+          level: integrity.level,
+          blockers: integrity.blockers.map((b) => ({ label: b.label, detail: b.detail })),
+          hint: "确认可以导出请加 ?force=1；或重新生成报告。",
+        });
+      }
+      if (integrity.level !== "ok") {
+        console.warn(
+          `[report/render] integrity=${integrity.level}: ${integrity.blockers
+            .map((b) => b.label)
+            .join(", ")}`,
+        );
+      }
+
       const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
       const rawPdf = await renderPdfFromReportV8(req.body);
       res

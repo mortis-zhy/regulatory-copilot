@@ -1921,13 +1921,18 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
     };
 
     // Pass 1 — render with invisible anchors to discover chapter page numbers.
+    // Normalize the arrays here exactly like buildHtml does — this function
+    // is the entry point for POST /report/render and receives whatever the
+    // client POSTed, which may be missing chapters/appendices entirely.
+    const safeChapters = Array.isArray(report?.chapters) ? report.chapters : [];
+    const safeAppendices = Array.isArray(report?.appendices) ? report.appendices : [];
     const pdf1 = await render(await buildHtml(report, fonts, { withAnchors: true }));
     const anchors = [
-      ...report.chapters.map((c) => chAnchor(c.id)),
-      ...(report.appendices ?? []).filter((a) => a.markdown).map((a) => apAnchor(a.id)),
+      ...safeChapters.map((c) => chAnchor(c.id)),
+      ...safeAppendices.filter((a) => a.markdown).map((a) => apAnchor(a.id)),
     ];
     const pages = await findAnchorPages(pdf1, anchors);
-    for (const c of report.chapters) {
+    for (const c of safeChapters) {
       const p = pages.get(chAnchor(c.id));
       if (p) c.page = p;
     }

@@ -301,6 +301,128 @@ export function checkCPlaceholder(md: string): TrustWarning {
 }
 
 // ---------------------------------------------------------------------------
+// Check E–H — report-integrity gates
+//
+// These answer a different question from A–D. A–D ask "is each entry
+// trustworthy?"; E–H ask "is this document structurally whole?" The
+// difference matters when the extractor or the generator fails on a new
+// source PDF: without these gates a degraded report renders a confident-looking
+// 100-page PDF with an empty chapter and no page anchors, and the reader has
+// no way to tell.
+// ---------------------------------------------------------------------------
+
+/** E — chapters whose body is effectively empty (extraction failure). */
+export function checkEmptyChapters(
+  chapters: Array<{ title?: string; markdown?: string }>,
+): TrustWarning {
+  const thin: string[] = [];
+  for (const ch of chapters) {
+    const md = (ch?.markdown ?? "").replace(/\s+/g, "");
+    if (md.length < 80) thin.push(`${ch?.title ?? "(untitled)"} (${md.length}字)`);
+  }
+  if (thin.length === 0) {
+    return { label: "章节完整性 · 空章节检测", status: "pass", detail: "无空章节" };
+  }
+  return {
+    label: "章节完整性 · 空章节检测",
+    status: "fail",
+    detail: `${thin.length} 个章节正文近乎为空 — 抽取或生成环节失败: ${thin.slice(0, 4).join(", ")}`,
+  };
+}
+
+/** F — page-anchor coverage: can a reader actually trace a claim back? */
+export function checkPageAnchors(md: string): TrustWarning {
+  const real = (md.match(/第\s*\d+\s*页/g) ?? []).length;
+  const vague = (md.match(/某页|未核验\s*⚠|未标注/g) ?? []).length;
+  if (real === 0 && vague > 0) {
+    return {
+      label: "溯源 · 页码锚点",
+      status: "fail",
+      detail: `全报告 0 个可核验页码，却有 ${vague} 处「某页/未核验」占位 — 无法回查原文`,
+    };
+  }
+  if (real === 0) {
+    return { label: "溯源 · 页码锚点", status: "warn", detail: "未检出任何页码锚点" };
+  }
+  return {
+    label: "溯源 · 页码锚点",
+    status: "pass",
+    detail: `${real} 处页码锚点`,
+  };
+}
+
+/** G — three-column integrity: can we still tell A from B from C? */
+export function checkVersionColumns(md: string): TrustWarning {
+  const a = countOccurrences(md, "**A 草案**") + countOccurrences(md, "**A**");
+  const b = countOccurrences(md, "**B 现行**") + countOccurrences(md, "**B**");
+  const c = countOccurrences(md, "**C UN R48-09**") + countOccurrences(md, "**C**");
+  if (a === 0 && b === 0 && c === 0) {
+    return {
+      label: "三栏对照 · 版本标记",
+      status: "fail",
+      detail: "全报告无任何 A/B/C 版本标记 — 无法区分三版内容，对照表已失效",
+    };
+  }
+  const missing = [
+    a === 0 ? "A" : null,
+    b === 0 ? "B" : null,
+    c === 0 ? "C" : null,
+  ].filter(Boolean) as string[];
+  if (missing.length) {
+    return {
+      label: "三栏对照 · 版本标记",
+      status: "warn",
+      detail: `缺少 ${missing.join("/")} 版标记 (A=${a} B=${b} C=${c})`,
+    };
+  }
+  return {
+    label: "三栏对照 · 版本标记",
+    status: "pass",
+    detail: `A=${a} B=${b} C=${c} 处版本标记`,
+  };
+}
+
+/** H — substance check: does the conclusions chapter carry anything? */
+export function checkSubstance(md: string): TrustWarning {
+  // The change-summary chapter is where verdicts live; if it's gone the whole
+  // document is just source dump with no analysis.
+  const verdicts = countOccurrences(md, "变化判定") + countOccurrences(md, "实质差异") + countOccurrences(md, "已核验");
+  if (verdicts === 0) {
+    return {
+      label: "结论完整性 · 判定条目",
+      status: "fail",
+      detail: "未检出任何变化判定条目 — 报告只有原文转录，没有对比结论",
+    };
+  }
+  return { label: "结论完整性 · 判定条目", status: "pass", detail: `${verdicts} 处判定条目` };
+}
+
+/** Roll several integrity checks into one gate verdict for the UI. */
+export type IntegrityGate = {
+  level: "ok" | "degraded" | "blocked";
+  checks: TrustWarning[];
+  blockers: TrustWarning[];
+};
+
+export function assessIntegrity(
+  chapters: Array<{ title?: string; markdown?: string }>,
+  md: string,
+): IntegrityGate {
+  const checks = [
+    checkEmptyChapters(chapters),
+    checkPageAnchors(md),
+    checkVersionColumns(md),
+    checkSubstance(md),
+  ];
+  const blockers = checks.filter((c) => c.status === "fail");
+  return {
+    level: blockers.length === 0 ? "ok" : blockers.length >= 2 ? "blocked" : "degraded",
+    checks,
+    blockers,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Aggregate
 // ---------------------------------------------------------------------------
 
@@ -311,13 +433,22 @@ export type TrustBundle = {
   errata: Erratum[];
   rumors: Rumor[];
   warnings: TrustWarning[];
+  integrity: IntegrityGate;
 };
 
-export function buildTrustBundle(chapters: Array<{ markdown?: string }>): TrustBundle {
+export function buildTrustBundle(
+  chapters: Array<{ markdown?: string; title?: string }>,
+): TrustBundle {
   const md = reportMarkdown(chapters);
   const counts = extractClosureCounts(md);
   const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
-  const warnings = [checkDualSource(md), checkFalseDiff(md), checkRenumber(md), checkCPlaceholder(md)];
+  const warnings = [
+    checkDualSource(md),
+    checkFalseDiff(md),
+    checkRenumber(md),
+    checkCPlaceholder(md),
+  ];
+  const integrity = assessIntegrity(chapters, md);
   return {
     counts,
     total,
@@ -325,5 +456,6 @@ export function buildTrustBundle(chapters: Array<{ markdown?: string }>): TrustB
     errata: extractErrata(md),
     rumors: extractRumors(md),
     warnings,
+    integrity,
   };
 }
