@@ -1,24 +1,30 @@
-feat(htmlRenderV8): 重做封面 3 页 — 符号字典 / 闭环统计 / 过渡期表
+feat(review): 审阅工作台 — 把 PDF 深处的可信度结论抬到 Web 层
 
-Symbol legend (p2):
-- 改为 6 张彩色卡片,2 列布局(状态 + 影响)
-- 每张卡片放大符号、tag、描述 + 样例
-- 末尾加红色 warning box 提醒"执行摘要只引 ✅"
+背景：外部评审指出「核验覆盖率低、差异待复核 78%」等问题。核对后发现：
+这些结论报告里全做了（第 10-11 章），但 PDF 读者翻不到 → 等于没传达。
+Web 层应当是「可信度工作台」而非 PDF 的副本。
 
-Closure dashboard (p3):
-- 顶部加 SVG 堆叠条形图,占比一目了然
-- 当 ⚠ 占比 ≥ 50% 时切橙色高亮
-- 5 个分类的图例也着色
-- 风险提示框独立样式区分
+API (agentRoutes.ts):
+- GET  /api/agent/report/trust        → {dashboard, errata[9], rumors[9], warnings, human}
+                                    只读投影 verify_report.json + last-report.json
+- POST /api/agent/report/trust/verdict → 人工结论回写 reports/verdicts.json
+- 两个新路由均为纯增量，不改写报告产物
 
-Transition table (p4):
-- 按「新申请车型 / 已获批准车型 / 通用」三类分组,scope-row 加底色
-- 删除冗余的「延迟」列,合并到「生效触发」
-- 关键月份(25/37/61/24/36 个月)用 <strong class="ms"> 加粗并橙色高亮
-- 标题与表头样式同步
+前端 (ReviewWorkbench.tsx, 新增):
+1. 可信度仪表盘 — 5 类闭环统计占比条 + verifier 告警清单
+2. 假差异工作台 — §11.3.0 同文劾误逐条（B 截断值/A 完整值对照）
+   支持「确认为假差异」/「驳回」+ 备注回写，人工确认后从 ⚠ 升级为 ✅
+3. 网传指标证伪 — §11.0 九条行业流传指标 × A/B 出处核验
+   两版原文均无出处的条目红色高亮
 
-新增 highlightMilestones() + classifyScope() 辅助函数。
+接线:
+- Home.tsx 接收 defaultView → /review 路由生效
+- DashboardLayout 侧栏新增「审阅工作台」入口 + nav() 走真实路由
+- 原供 onNavigate 未传，回退到 pushState + popstate
 
-Verified: 141 页 / 4.06 MB / 41/0/0 verifier。
+Chrome MCP 实测:
+- 三个 Tab 均正常渲染（仪表盘 / 9 条劾误 / 9 条网传指标）
+- 端到端回写验证通过：点「确认」 → verdicts.json 落盘 → humanConfirmed: 2
+- console 无业务错误
 
 Co-Authored-By: Claude <noreply@anthropic.com>

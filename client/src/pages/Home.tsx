@@ -3,6 +3,7 @@ import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, TEMPLATES, type TemplateId } from 
 import { APP_CONFIG } from "@/lib/config";
 import { extractPdfText, normalizeExtractedText } from "@/lib/pdfExtract";
 import ReportBuilder from "@/components/ReportBuilder";
+import ReviewWorkbench from "@/components/ReviewWorkbench";
 import {
   CHANGE_TYPE_LABEL,
   SEVERITY_LABEL,
@@ -366,7 +367,16 @@ async function streamChat(
  * 主组件
  * --------------------------------------------------------------------------*/
 
-export default function Home() {
+export type ViewId =
+  | "compare"
+  | "projects"
+  | "documents"
+  | "review"
+  | "research"
+  | "reports"
+  | "settings";
+
+export default function Home({ defaultView }: { defaultView?: ViewId }) {
   const [templateId, setTemplateId] = useState<TemplateId>(DEFAULT_TEMPLATE_ID);
   const template = TEMPLATE_BY_ID[templateId];
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -385,7 +395,7 @@ export default function Home() {
   const activeDoc = useMemo(() => docs.find((d) => d.id === activeDocId) ?? docs[0] ?? null, [docs, activeDocId]);
 
   // Navigation view state
-  const [currentView, setCurrentView] = useState<"compare" | "projects" | "documents" | "review" | "research" | "reports" | "settings">("compare");
+  const [currentView, setCurrentView] = useState<ViewId>(defaultView ?? "compare");
 
   // Multi-chapter report builder (Regex + streaming LLM + HTML→PDF)
   const [showReportBuilder, setShowReportBuilder] = useState(false);
@@ -712,11 +722,13 @@ export default function Home() {
       <main className="mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-5 pb-44 pt-8 md:px-8 md:pt-10">
         {currentView === "settings" ? (
           <SettingsPanel settings={settings} onSettingsChange={setSettings} />
-        ) : currentView === "projects" || currentView === "documents" || currentView === "review" || currentView === "research" || currentView === "reports" ? (
+        ) : currentView === "review" ? (
+          <ReviewWorkbench />
+        ) : currentView === "projects" || currentView === "documents" || currentView === "research" || currentView === "reports" ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border bg-white py-20" style={{ borderColor: "#e6dfd0" }}>
             <FolderOpen className="h-12 w-12 text-[#9c8b6c]" />
             <p className="mt-4 text-lg font-semibold" style={{ fontFamily: '"Noto Serif SC", serif' }}>
-              {currentView === "projects" ? "我的项目" : currentView === "documents" ? "资料与引用" : currentView === "review" ? "审阅工作台" : currentView === "research" ? "联网研究" : "报告中心"}
+              {currentView === "projects" ? "我的项目" : currentView === "documents" ? "资料与引用" : currentView === "research" ? "联网研究" : "报告中心"}
             </p>
             <p className="mt-2 text-sm text-[#7c6a4f]">该功能即将上线</p>
           </div>

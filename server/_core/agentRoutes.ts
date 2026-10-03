@@ -381,6 +381,154 @@ export function registerAgentRoutes(router: Router) {
   });
 
   /**
+   * GET /api/agent/report/trust — 审阅工作台数据源。
+   *
+   * 把三块"埋在 PDF 第 10 章深处"的可信度信息抬到 API 层:
+   *   1. dashboard  — verify_report.json 的 5 类闭环统计 + 告警清单
+   *   2. errata      — §11.3.0 同文勘误逐条(B 截断值 / A 完整值 / 降级依据)
+   *   3. rumors      — §11.0 网传指标核验(⚠ 行业流传但两版原文无出处)
+   * 全部为**只读投影**:不改写报告,只把已有结论结构化给前端。
+   */
+  router.get("/api/agent/report/trust", async (_req, res) => {
+    try {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const repoRoot = path.resolve(import.meta.dirname, "../..");
+      const reportFile = path.resolve(import.meta.dirname, "../reports/last-report.json");
+      if (!fs.existsSync(reportFile)) return res.status(404).json({ error: "no report generated yet" });
+      const report = JSON.parse(fs.readFileSync(reportFile, "utf-8"));
+      const md = (report.chapters ?? []).map((c: { markdown?: string }) => c.markdown ?? "").join("\n");
+
+      // ---------- 1. 闭环统计 ----------
+      const counts = { confirmed: 0, candidate: 0, errata: 0, renum: 0, format: 0 };
+      const tags = {
+        confirmed: ["已双源核验", "[已核验]", "✅"],
+        candidate: ["待复核", "待人工确认", "审核中", "manual-audit", "⚠"],
+        errata: ["同文勘误", "🟡"],
+        renum: ["仅编号重排", "🔢"],
+        format: ["格式同义改写", "✍"],
+      } as const;
+      for (const cat of Object.keys(tags) as Array<keyof typeof tags>) {
+        for (const tag of tags[cat]) {
+          let i = 0;
+          while ((i = md.indexOf(tag, i)) > -1) { counts[cat]++; i += tag.length; }
+        }
+      }
+      const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+      // ---------- 2. 同文勘误 (§11.3.0 表格) ----------
+      const errata: Array<Record<string, string>> = [];
+      const errataSec = md.match(/####\s*11\.3\.0[^\n]*\n([\s\S]{0,6000}?)(?=\n####|\n###)/)
+        ?? md.match(/11\.3\.0\s*同文勘误[^\n]*\n([\s\S]{0,6000}?)(?=\n####|\n###)/);
+      if (errataSec) {
+        for (const line of errataSec[1].split("\n")) {
+          const t = line.trim();
+          if (!t.startsWith("|") || /\|-{3,}\||\|\s*#\s*\|/.test(t)) continue;
+          const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
+          if (c.length < 5 || !/^\d+$/.test(c[0])) continue;
+          errata.push({ no: c[0], topic: c[1], bValue: c[2], aValue: c[3], reason: c[4] ?? "" });
+        }
+      }
+
+      // ---------- 3. 网传指标核验 (§11.0 表格) ----------
+      const rumors: Array<Record<string, string>> = [];
+      for (const line of md.split("\n")) {
+        const t = line.trim();
+        if (!t.startsWith("|")) continue;
+        if (!/GB4785指标|网传|行业流传/.test(t)) continue;
+        const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
+        if (c.length < 5) continue;
+        const metric = c[2] ?? c[1] ?? "";
+        if (!metric || metric === "指标" || /^\|?-+$/.test(metric)) continue;
+        const bRaw = c[3] ?? "";
+        const aRaw = c[4] ?? "";
+        const verdict = c[5] ?? "";
+        const bFound = bRaw !== "—" && bRaw !== "" ;
+        const aFound = aRaw !== "—" && aRaw !== "";
+        rumors.push({
+          metric,
+          bValue: bRaw,
+          aValue: aRaw,
+          verdict,
+          status: bFound && aFound ? "两版均有出处" : aFound ? "仅草案单边出现" : bFound ? "仅现行单边出现" : "两版原文均无出处",
+        });
+      }
+
+      // ---------- 4. verify_report.json 告警 ----------
+      const verifyFile = path.join(repoRoot, "verify_report.json");
+      let warnings: Array<{ label: string; status: string; detail: string; evidence?: string }> = [];
+      if (fs.existsSync(verifyFile)) {
+        try {
+          const vr = JSON.parse(fs.readFileSync(verifyFile, "utf-8"));
+          warnings = (vr.checks ?? [])
+            .filter((c: { status?: string }) => c.status === "warn" || c.status === "fail")
+            .map((c: { label: string; status: string; detail: string; source_evidence?: string }) => ({
+              label: c.label, status: c.status, detail: c.detail, evidence: c.source_evidence,
+            }));
+        } catch { /* 诊断文件损坏时静默降级 */ }
+      }
+
+      // ---------- 5. 合并人工审阅结论 ----------
+      const verdictFile = path.join(path.resolve(import.meta.dirname, "../reports"), "verdicts.json");
+      const human: Record<string, { verdict: string; note: string; at: string }> = {};
+      if (fs.existsSync(verdictFile)) {
+        try { Object.assign(human, JSON.parse(fs.readFileSync(verdictFile, "utf-8"))); } catch { /* ignore */ }
+      }
+      // 人工确认的勘误 → 从 candidate 移到 confirmed
+      let humanConfirmed = 0;
+      for (const e of errata) {
+        const v = human[`errata:${e.no}`];
+        if (v?.verdict === "confirmed") { e.humanVerdict = "confirmed"; e.humanNote = v.note; humanConfirmed++; }
+        else if (v?.verdict === "rejected") { e.humanVerdict = "rejected"; e.humanNote = v.note; }
+        else e.humanVerdict = "pending";
+      }
+
+      res.type("application/json").send({
+        dashboard: {
+          counts,
+          total,
+          candidateShare: total ? Math.round((counts.candidate / total) * 100) : 0,
+          humanConfirmed,
+        },
+        errata,
+        rumors,
+        warnings,
+        human,
+        generatedAt: report.generatedAt ?? null,
+      });
+    } catch (e) {
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
+  /**
+   * POST /api/agent/report/trust/verdict — 人工审阅结论回写。
+   * 前端在"假差异工作台"点确认/驳回后调用,结果落 reports/verdicts.json,
+   * 下次拉取 /trust 时合并(人工确认的勘误从 ⚠ 升级为 ✅)。
+   */
+  router.post("/api/agent/report/trust/verdict", async (req, res) => {
+    try {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const dir = path.resolve(import.meta.dirname, "../reports");
+      fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, "verdicts.json");
+      const body = req.body as { id?: string; verdict?: "confirmed" | "rejected"; note?: string };
+      if (!body?.id || !body?.verdict) return res.status(400).json({ error: "id and verdict required" });
+
+      let store: Record<string, unknown> = {};
+      if (fs.existsSync(file)) {
+        try { store = JSON.parse(fs.readFileSync(file, "utf-8")); } catch { store = {}; }
+      }
+      store[body.id] = { verdict: body.verdict, note: body.note ?? "", at: new Date().toISOString() };
+      fs.writeFileSync(file, JSON.stringify(store, null, 2), "utf-8");
+      res.type("application/json").send({ ok: true, id: body.id, verdict: body.verdict, total: Object.keys(store).length });
+    } catch (e) {
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
+  /**
    * POST /api/agent/diff — structured extraction + programmatic B→A diff.
    * Body: { documents: [{ label, fileName, text }] } (full extracted texts).
    * Returns deterministic changes/parameters (cached extractions → fast).
