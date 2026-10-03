@@ -1,23 +1,22 @@
-fix(htmlRenderV8): 统一 PDF 与 Web 的闭环统计，修 SVG 堆叠条分段
+fix(ui-pdf): 界面 PDF 按钮改走 V8 管线
 
-问题（比对 PDF 与 /review 时发现）:
-- PDF 封面写「27 条候选差异中 21 条（78%）」，Web 工作台写「39 条中 30 条（77%）」
-  —— 同一份报告给出两套数字。根因：htmlRenderV8 里的 extractClosureCounts
-  是第二份实现，额外按章节标题过滤（/变化|候选|思路|对比|建议/），
-  trustChecks.ts 的版本没有。
-  对一份报告给出两个数字，正是读者会失去信任的形似。
-- SVG 堆叠条的每个段都用 x = 100 * (1 - pct) 算开始，全部重叠在 0，
-  实际只看得到最后一段。
+问题（用浏览器 MCP 实测发现）:
+界面右上角的「PDF」按钮打的是 **/api/agent/report/pdf**，而不是
+/api/agent/report/render。该端点使用 export.ts 的旧 renderPdf，把当前对话内容
+（794 字节，只有欢迎语）渲染成 PDF。实测结果：
+- 修复前：界面下载到的 PDF = **1 页 / 239 字符**（空壳）
+- 修复后：**139 页 / 240403 字符**，与 curl 走 V8 结果逐字符相同
 
 修法:
-- htmlRenderV8.extractClosureCounts 删除，改为转发 trustChecks.extractClosureCounts
-  → PDF 与 Web 强制共用同一实现，不再可能漂移。
-- SVG 段改为累加 offset（从左向右堆叠）。
+- agentRoutes /api/agent/report/pdf 新增 V8 分支（body.useV8 === true）：读 reports/
+  last-report.json → renderPdfFromReportV8 → 139 页。旧分支保留（Word 仍用）。
+- Home.tsx 顶部 PDF 按钮改为直接 POST {useV8:true}，不再依赖对话内容。
+- Content-Disposition 改 ASCII 文件名：RFC 6266 禁止原生非 ASCII 字节出现在响应头
+  （Chromium 拒绝，返回500 Invalid character in header content）。中文显示名由前端 link.download 设定。
 
-验证（像素采样）:
-- 条形图区域主色 #3a6a4e 2.0% / #c85329 14.5% / #9c8b6b 1.9%
-  → 对应 13% / 77% / 10%，与表格完全一致
-- PDF p3: 39 条 / 30 条 / 77% 与 Web 完全一致
-- 单测 9/9, 6/6；verify_pipeline 43/0/2；139 页
+验证（Chrome MCP 实测）:
+- 点击界面 PDF 按钮 → POST /api/agent/report/pdf 200，content-length 4348029
+- 下载文件 C:/Users/zsndz/Downloads/GB4785_多版本横向对比报告.pdf
+  → 139 页，文本与 curl 产出 **完全一致**
 
 Co-Authored-By: Claude <noreply@anthropic.com>

@@ -157,7 +157,37 @@ export function registerAgentRoutes(router: Router) {
 
   router.post("/api/agent/report/pdf", async (req, res) => {
     try {
-      const bytes = await renderPdf(req.body as ReportPayload);
+      // V8 path: the client asks for the full regulatory comparison report.
+      // The server ignores the chat payload and renders the last generated
+      // report through htmlRenderV8 (the same renderer /report/render uses),
+      // so the toolbar PDF button and the API produce byte-equivalent output.
+      const body = req.body as { useV8?: boolean } & ReportPayload;
+      if (body?.useV8) {
+        const fs = await import("node:fs");
+        const path = await import("node:path");
+        const file = path.resolve(import.meta.dirname, "../reports/last-report.json");
+        if (!fs.existsSync(file)) {
+          return res.status(409).json({
+            error: "尚未生成对比报告。请先在「法规对比任务」页生成完整报告，再导出 PDF。",
+            code: "no_report",
+          });
+        }
+        const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
+        const rawPdf = await renderPdfFromReportV8(JSON.parse(fs.readFileSync(file, "utf-8")));
+        return res
+          .status(200)
+          .set({
+            "Content-Type": "application/pdf",
+            // ASCII-only filename in the header — RFC 6266 forbids raw
+            // non-ASCII bytes in header values (Chromium rejects it).
+            // The browser-side link sets the Chinese display name instead.
+            "Content-Disposition": `attachment; filename="GB4785-multiversion-comparison-report.pdf"`,
+          })
+          .send(rawPdf);
+      }
+      // Legacy path: chat-answer export via export.ts (kept for /report/word
+      // parity and any external consumer that posts a ReportPayload).
+      const bytes = await renderPdf(body as ReportPayload);
       res.status(200).set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.pdf` }).send(Buffer.from(bytes));
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "PDF generation failed" });

@@ -672,6 +672,38 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
   // 报告导出（导出最近一条回答）
   const exportReport = useCallback(
     async (format: "word" | "pdf") => {
+      // PDF exports the full regulatory comparison report (V8 pipeline:
+      // 139 pages, triptych cards, closure dashboard), NOT the chat answer.
+      // The server reads reports/last-report.json and renders it through
+      // htmlRenderV8 — byte-identical to POST /api/agent/report/render.
+      if (format === "pdf") {
+        try {
+          const response = await fetch("/api/agent/report/pdf", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ useV8: true }),
+          });
+          if (response.status === 409) {
+            const detail = await response.json().catch(() => null);
+            toast.error(detail?.error ?? "尚未生成对比报告，请先生成完整报告");
+            return;
+          }
+          if (!response.ok) throw new Error(await response.text());
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "GB4785_多版本横向对比研究报告.pdf";
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success("对比报告 PDF 已下载（完整多版本横评）");
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "报告生成失败");
+        }
+        return;
+      }
+
+      // Word still exports the latest chat answer (export.ts renderer).
       const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.text);
       // Prefer the synchronously-captured full text (set at onDone) so we
       // don't read a half-rendered m.text if the user clicks immediately.
