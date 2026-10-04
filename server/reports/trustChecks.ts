@@ -16,6 +16,8 @@
  * top so the PDF-vs-source checks still surface in the UI.
  */
 
+import { buildLedger, ledgerToCounts } from "./closureLedger";
+
 export type TrustCounts = {
   confirmed: number;
   candidate: number;
@@ -54,23 +56,29 @@ function countOccurrences(haystack: string, needle: string): number {
 }
 
 // ---------------------------------------------------------------------------
-// 5-category closure counts (same tag table as htmlRenderV8's dashboard)
+// 5-category closure counts
+//
+// Entry-level, NOT string-level.
+//
+// The previous implementation counted how many times a tag string appeared in
+// the markdown. That produced nonsense on a real report: the dashboard showed
+// "4 条同文勘误" while §11.3.0 listed 9 rows, because "同文勘误" appears in a
+// heading and two cross-references but the rows themselves carry no such tag.
+// The same report also declares "45 条候选" in prose while the tag scan said 39.
+//
+// closureLedger.ts walks the actual tables instead, so every number now equals
+// "how many rows does this table have".
 // ---------------------------------------------------------------------------
 
-const COUNT_TAGS: Record<keyof TrustCounts, string[]> = {
-  confirmed: ["已双源核验", "[已核验]", "✅"],
-  candidate: ["待复核", "待人工确认", "审核中", "manual-audit", "⚠"],
-  errata: ["同文勘误", "🟡"],
-  renum: ["仅编号重排", "🔢"],
-  format: ["格式同义改写", "✍"],
-};
-
 export function extractClosureCounts(md: string): TrustCounts {
-  const counts: TrustCounts = { confirmed: 0, candidate: 0, errata: 0, renum: 0, format: 0 };
-  for (const cat of Object.keys(COUNT_TAGS) as Array<keyof TrustCounts>) {
-    for (const tag of COUNT_TAGS[cat]) counts[cat] += countOccurrences(md, tag);
-  }
-  return counts;
+  const c = ledgerToCounts(buildLedger(md));
+  return {
+    confirmed: c.confirmed,
+    candidate: c.candidate,
+    errata: c.errata,
+    renum: c.renum,
+    format: c.format,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -471,13 +479,47 @@ export type TrustBundle = {
   rumors: Rumor[];
   warnings: TrustWarning[];
   integrity: IntegrityGate;
+  /** Entry-level ledger — every count above traces back to rows here. */
+  ledger: {
+    entries: Array<{
+      category: string;
+      section: string;
+      no: string;
+      topic: string;
+      reason?: string;
+      pages?: string[];
+    }>;
+    /** 30 待复核条目逐条列出，供工程师分工核验 */
+    candidateDetail: Array<{
+      no: string;
+      section: string;
+      topic: string;
+      reason: string;
+      pages: string[];
+    }>;
+    /** 报告自述数字 vs 台账实算数字 */
+    reconciliation: {
+      selfReported: Record<string, number | undefined>;
+      ledgerCounts: Record<string, number>;
+      discrepancies: string[];
+      ledgerTotal: number;
+    };
+  };
 };
 
 export function buildTrustBundle(
   chapters: Array<{ markdown?: string; title?: string }>,
 ): TrustBundle {
   const md = reportMarkdown(chapters);
-  const counts = extractClosureCounts(md);
+  const ledger = buildLedger(md);
+  const c = ledgerToCounts(ledger);
+  const counts: TrustCounts = {
+    confirmed: c.confirmed,
+    candidate: c.candidate,
+    errata: c.errata,
+    renum: c.renum,
+    format: c.format,
+  };
   const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
   const warnings = [
     checkDualSource(md),
@@ -485,6 +527,15 @@ export function buildTrustBundle(
     checkRenumber(md),
     checkCPlaceholder(md),
   ];
+  // Report-internal number disagreement is itself a defect the reader must see.
+  if (ledger.discrepancies.length) {
+    warnings.push({
+      label: "账目闭环 · 统计口径",
+      status: "warn",
+      detail: ledger.discrepancies.join("；"),
+      evidence: "台账按表格行逐条统计，报告正文按自述数字声明，两者不一致需人工裁定",
+    });
+  }
   const integrity = assessIntegrity(chapters, md);
   return {
     counts,
@@ -494,5 +545,23 @@ export function buildTrustBundle(
     rumors: extractRumors(md),
     warnings,
     integrity,
+    ledger: {
+      entries: ledger.entries,
+      candidateDetail: ledger.entries
+        .filter((e) => e.category === "candidate")
+        .map((e) => ({
+          no: e.no,
+          section: e.section,
+          topic: e.topic,
+          reason: e.reason ?? "",
+          pages: e.pages ?? [],
+        })),
+      reconciliation: {
+        selfReported: ledger.selfReported,
+        ledgerCounts: { ...counts, added: c.added ?? 0 },
+        discrepancies: ledger.discrepancies,
+        ledgerTotal: ledger.entries.length,
+      },
+    },
   };
 }

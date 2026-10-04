@@ -27,6 +27,7 @@ import {
   extractClosureCounts as extractClosureCountsFromMd,
   reportMarkdown,
 } from "./trustChecks";
+import { buildLedger, ledgerToCounts } from "./closureLedger";
 import type { ReportOutline } from "./reportGenerator";
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
@@ -857,7 +858,7 @@ function renderTransitionTable(rows: ReturnType<typeof extractTransitionDates>):
 </section>`;
 }
 
-function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>): string {
+function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>, discrepancies: string[] = []): string {
   const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
   const candidateShare = pct(counts.candidate);
@@ -930,6 +931,20 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>)
   ${isHighRisk
     ? `<p class="dashboard-disclaimer dashboard-risk">⚠ 风险提示：本报告 ${candidateShare}% 的差异尚未完成双源核验 — 切勿直接采信任何 ⚠ 条目结论。所有 ✅ / ⚠ 之外的标记（🟡 / 🔢 / ✍）均不计入「实质技术变化」总数。</p>`
     : `<p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09）。</p>`}
+
+  <p class="dashboard-method">
+    统计口径：以上数字由 <b>条目级台账</b>逐表统计得出（每个数字 = 对应表格的实际行数），
+    <u>不是</u>对标记字符串的出现次数。台账来源：§11.3 数值变化表 · §11.3.0 同文勘误表 ·
+    §11.6.1 章节重排表 · §11.8 表述复核清单 · 各章 ⚠ 未找到 / manual-audit 行。
+  </p>
+${discrepancies.length ? `<div class="reconcile-box">
+    <p class="reconcile-title">⚠ 账目对账：报告自述与台账实算不一致（${discrepancies.length} 项）</p>
+    <ul class="reconcile-list">
+      ${discrepancies.map((d) => `<li>${esc(d)}</li>`).join("\n      ")}
+    </ul>
+    <p class="reconcile-hint">以上差异源于报告正文自述数字与表格实际行数不符。
+    以台账（表格行数）为准；正文中冲突的数字需人工裁定后修正。</p>
+  </div>` : ""}
 </section>`;
 }
 
@@ -1667,6 +1682,21 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .closure-table .row-total td { background: #f7f1e3; border-top: 0.6pt solid #a17334; }
 .dashboard-disclaimer { font-size: 8.5pt; color: #5e5240; margin: 4mm 0 0; padding: 2mm 3mm; border-left: 2pt solid #b94e2c; background: #fbf6f0; line-height: 1.5; }
 .dashboard-disclaimer.dashboard-risk { color: #c9542a; border-left-width: 3pt; background: #fbede2; }
+.dashboard-method {
+  font-size: 8pt; color: #8a7a5c; margin: 4mm 0 0; padding: 2mm 3mm;
+  background: #f7f4ec; border-left: 2pt solid #c9bfa8; line-height: 1.5;
+}
+.dashboard-method b { color: #5e5240; }
+.reconcile-box {
+  margin-top: 4mm; padding: 3mm 4mm; border: 0.8pt solid #c9542a;
+  border-radius: 2mm; background: #fdf3f0;
+}
+.reconcile-title {
+  font-size: 9.5pt; font-weight: 700; color: #c9542a; margin: 0 0 2mm;
+}
+.reconcile-list { margin: 0 0 2mm; padding-left: 5mm; }
+.reconcile-list li { font-size: 8.5pt; color: #5e5240; line-height: 1.5; margin-bottom: 1mm; }
+.reconcile-hint { font-size: 8pt; color: #8a7a5c; margin: 0; line-height: 1.5; }
 
 /* Transition period table */
 .transition-table { padding: 4mm 0 6mm; page-break-after: always; }
@@ -1936,7 +1966,11 @@ export async function buildHtml(
     .join("\n");
 
   const symbolLegendHtml = renderSymbolLegend();
-  const closureDashboardHtml = renderClosureDashboard(extractClosureCounts(chapters));
+  const ledger = buildLedger(chapters.map((c) => ({ markdown: c.markdown ?? "" })));
+  const closureDashboardHtml = renderClosureDashboard(
+    ledgerToCounts(ledger) as ReturnType<typeof extractClosureCounts>,
+    ledger.discrepancies,
+  );
   const transitionHtml = renderTransitionTable(extractTransitionDates(chapters));
   const frontBlocks = [symbolLegendHtml, closureDashboardHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
 

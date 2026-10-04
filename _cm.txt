@@ -1,41 +1,34 @@
-feat(render): 支持横向三栏表 — 换数据源后 LLM 换了表格约定，旧渲染器全退化
+fix(trust): 台账统计改为条目级 — 修复「劾误 4 条 vs 表格 9 行」的核心矛盾
 
-实测跑了一次完整生成（13 章 + 4 附录，MiniMax-M3，全部成功），
-发现新报告用的是**横向**三栏表约定：
+评审指出「闭环统计里同文劾误 4 条，而 §11.3.0 实际列了 9 条」——
+核对后确认：**错在我的仪表盘，不在报告。**
+extractClosureCounts 用 md.count("同文劾误") 数字符出现次数，
+而劾误表的行里根本没有这个标签——“同文劾误”只出现在标题和两处交叉引用里。
 
-    | 项目 | A（GB 4785 草案 V4.3.5） | B（GB 4785-2019） | C（UN R48-09） |
-    |------|------------------------|-----------------|---------------|
-    | 术语体系 | 3 层定义架构 | 扁平提编 | General/Type/Vehicle |
+新增 closureLedger.ts：逐表统计真实条目。
+  §11.3      数值变化表   → confirmed / candidate（按核验列分）
+  §11.3.0    同文劾误表   → errata
+  §11.1      新增条款汇总 → added
+  §11.6.1    章节重排表   → renumber
+  §11.8      表述/格式复核清单 → format
+  各章 ⚠/未找到/manual-audit 行 → candidate
 
-而基线用的是**纵向**（版本作行）：
+实测基线：仪表盘从 39 条 变为 71 条，全部与表格实际行数一致：
+  confirmed 3 / candidate 26 / errata 9 / renumber 3 / format 30
 
-    | 版本 | 条款 | 页码 | 原文摘录 |
-    | **A 草案** | 5.1 | 第10页 | … |
+新增「账目对账」：取报告正文所有「N 条候选的完整去向…合计 M」声明，
+逐条拆分项与台账对比，并检出多处声明之间的矛盾。
+实测筢获的两项（即评审首条指控的根源）：
+  1. 执行摘要写「13 条」，§11.3 写「45 条」——同一份报告自述口径冲突
+  2. 「13 条 = 3 + 9」分项相加 12，文中写「合计 13」
 
-渲染器只认纵向 → 新报告的 52 张对比表全部退化成无样式网格，
-trustChecks 的「三栏对照」检查直接报 fail（0/0/0 版本标记）。
+PDF 封面新增：
+  - 仪表盘底部「统计口径」说明（条目级台账，非字符串计数，列出台账来源表）
+  - 账目对账红框：列出所有矛盾及其在报告中的字符偏移位置，并声明「以台账为准」
 
-改动：
-- htmlRenderV8.findHorizontalVersionCols()  — 识别 A/B/C 为表头列的表
-- htmlRenderV8.renderHorizontalTriptych()   — 复用三栏卡版式，
-  每张卡内按 主题/正文 逐条堆叠（.hz-row / .hz-topic / .hz-text）
-- htmlRenderV8.parseTable()                 — 无版本列时尝试横向识别
-- htmlRenderV8.buildTableOverrideMap()      — 传递 horizontalCols（漏了会导致
-  classified 正确但仍走纵向分支）
-- typedTables.classifyTable()               — 同步横向识别
-- trustChecks.checkVersionColumns()         — 纵向/横向分别统计，任一存在即 pass
+/双仓输出：/trust 端点新增 ledger.candidateDetail（30 条待复核逐条列出）与
+ledger.reconciliation（对账结果）。
 
-minimax.ts 顺带修：原生端点 /v1/text/chatcompletion_v2 在余额不足时返回
-HTTP 200 + base_resp.status_code=1008，旧代码只看 HTTP status 于是整条流被
-静默跳过，调用方收到空章节且无任何解释。现在检查 base_resp 并抛错。
-
-踩坑：正则里 `[（(【 ]` 的半角 `(` 被当作分组起始符导致 esbuild 语法错误；
-`\b` 在全角括号前语义不稳定。改用字符串拼接 + `(?![A-Za-z])` 负向断言。
-
-实测结果：
-- 73 张表 → 52 张 triptych（全部横向）+ 21 plain
-- integrity = ok（4 项全 pass）
-- 132 页 · 2.58 MB（三栏卡把内容撑开，从 110 页增至 132 页）
-- 对比基线：页码锚点 274 处、术语体系/功能分层等结论具体到条款号
+验证：139 页与基线一致，单测 9/9 · 6/6
 
 Co-Authored-By: Claude <noreply@anthropic.com>
