@@ -513,6 +513,9 @@ export function registerAgentRoutes(router: Router) {
         rumors,
         warnings,
         integrity: inProc.integrity,
+        // Entry-level ledger: every dashboard count traces back to rows here,
+        // plus the per-item worklist and the self-report reconciliation.
+        ledger: inProc.ledger,
         human,
         generatedAt: report.generatedAt ?? null,
       });
