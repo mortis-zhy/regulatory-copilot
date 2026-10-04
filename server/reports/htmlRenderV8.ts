@@ -949,6 +949,65 @@ ${discrepancies.length ? `<div class="reconcile-box">
 }
 
 /**
+ * 待复核明细 — every ⚠ entry, one row each.
+ *
+ * The dashboard only says "26 条待复核". An engineer cannot act on a count;
+ * they need to know WHICH parameters, WHY each is unverified, and which pages
+ * to open. This renders the ledger's candidate rows as a worklist.
+ */
+function renderCandidateWorklist(ledger: ReturnType<typeof buildLedger>): string {
+  const items = ledger.entries.filter((e) => e.category === "candidate");
+  if (!items.length) return "";
+
+  // Group by reason so a reviewer can see which failure mode dominates.
+  const byReason = new Map<string, number>();
+  for (const it of items) {
+    const key = (it.reason ?? "未分类").slice(0, 24);
+    byReason.set(key, (byReason.get(key) ?? 0) + 1);
+  }
+  const reasonSummary = [...byReason.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([r, n]) => `<li><b>${esc(r)}</b> · ${n} 条</li>`)
+    .join("");
+
+  const rows = items
+    .map((it, i) => {
+      const pages = (it.pages ?? []).length ? it.pages.join(" / ") : "—";
+      const sec = it.section && it.section !== "正文" ? it.section : "—";
+      return `<tr>
+        <td class="cw-idx">${i + 1}</td>
+        <td class="cw-topic">${cellHtml(it.topic)}</td>
+        <td class="cw-sec">${esc(sec)}</td>
+        <td class="cw-reason">${esc(it.reason ?? "未分类")}</td>
+        <td class="cw-pages">${esc(pages)}</td>
+      </tr>`;
+    })
+    .join("\n");
+
+  return `
+<section class="candidate-worklist">
+  <h1 class="cw-title">待复核明细清单 · Review Worklist</h1>
+  <p class="cw-intro">
+    下表逐条列出本报告 <b>${items.length}</b> 个尚未完成双源核验的条目 ——
+    每条含参数、所在章节、未核验原因、可回查的原文页码。工程师可按「原因」分组分工，
+    逐条打开页码核对后在审阅工作台（<code>/review</code>）标记确认 / 驳回。
+  </p>
+  <div class="cw-reasons">
+    <p class="cw-reasons-title">未核验原因分布</p>
+    <ul>${reasonSummary}</ul>
+  </div>
+  <table class="cw-table">
+    <thead>
+      <tr><th class="cw-idx">#</th><th>参数 / 主题</th><th>章节</th><th>未核验原因</th><th>可回查页码</th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <p class="cw-warn">⚠ 本清单条目<b>不得</b>直接作为合规判定依据。核验方式：打开对应页码，
+  逐字比对 A 草案 V4.3.5 与 B GB 4785-2019 原文，确认差异是否真实存在。</p>
+</section>`;
+}
+
+/**
  * Detect a HORIZONTAL three-version table:
  *   | 项目 | A（GB 4785 草案） | B（GB 4785-2019） | C（UN R48-09） |
  *   |------|-----|-----|-----|
@@ -1698,6 +1757,31 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .reconcile-list li { font-size: 8.5pt; color: #5e5240; line-height: 1.5; margin-bottom: 1mm; }
 .reconcile-hint { font-size: 8pt; color: #8a7a5c; margin: 0; line-height: 1.5; }
 
+/* Candidate worklist */
+.candidate-worklist { padding: 4mm 0 6mm; page-break-after: always; }
+.cw-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
+.cw-intro { font-size: 9pt; color: #1c2733; margin: 0 0 3mm; line-height: 1.55; }
+.cw-intro b { color: #c9542a; }
+.cw-intro code { font-family: ${mono}; font-size: 8.5pt; background: #f0eada; padding: 0.3mm 1.2mm; border-radius: 1mm; }
+.cw-reasons { margin: 0 0 4mm; padding: 2.5mm 4mm; background: #fdf3df; border-left: 2.5pt solid #a17334; border-radius: 1.5mm; }
+.cw-reasons-title { font-size: 9pt; font-weight: 700; color: #a17334; margin: 0 0 1.5mm; }
+.cw-reasons ul { margin: 0; padding-left: 5mm; columns: 2; column-gap: 6mm; }
+.cw-reasons li { font-size: 8.5pt; color: #5e5240; line-height: 1.5; break-inside: avoid; }
+.cw-reasons li b { color: #1c2733; }
+.cw-table { width: 100%; border-collapse: collapse; font-size: 8.2pt; }
+.cw-table th { background: #eef1f5; color: #0c1a2b; padding: 1.8mm 2.2mm; text-align: left; font-weight: 600; border-bottom: 0.6pt solid #0c1a2b; }
+.cw-table td { padding: 1.5mm 2.2mm; border-bottom: 0.3pt solid #ece4d1; vertical-align: top; }
+.cw-table tr:nth-child(even) td { background: #fbf9f3; }
+.cw-table .cw-idx { font-family: ${mono}; font-size: 8pt; color: #9c8b6c; width: 7mm; text-align: right; }
+.cw-table .cw-topic { font-weight: 600; color: #1c2733; width: 62mm; }
+.cw-table .cw-sec { font-family: ${mono}; font-size: 7.5pt; color: #a17334; width: 14mm; }
+.cw-table .cw-reason { color: #8a6a4a; width: 46mm; line-height: 1.4; }
+.cw-table .cw-pages { font-family: ${mono}; font-size: 8pt; color: #3a6b4f; width: 22mm; }
+.cw-warn {
+  font-size: 8.5pt; color: #c9542a; margin: 4mm 0 0; padding: 2mm 3mm;
+  border-left: 3pt solid #c9542a; background: #fbede2; line-height: 1.5;
+}
+
 /* Transition period table */
 .transition-table { padding: 4mm 0 6mm; page-break-after: always; }
 .transition-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
@@ -1972,7 +2056,8 @@ export async function buildHtml(
     ledger.discrepancies,
   );
   const transitionHtml = renderTransitionTable(extractTransitionDates(chapters));
-  const frontBlocks = [symbolLegendHtml, closureDashboardHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
+  const worklistHtml = renderCandidateWorklist(ledger);
+  const frontBlocks = [symbolLegendHtml, closureDashboardHtml, worklistHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
