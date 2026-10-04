@@ -1214,8 +1214,11 @@ function renderTriptych(t: ParsedTable): string {
       const badge = (p: string): string => {
         const s = (p ?? "").replace(/\*\*/g, "").trim() || "—";
         const inner = cellHtml(s); // math-safe (cells may hold $...$ formulas)
+        // Order matters: an unverified marker must win over the ✓ branch,
+        // because "未核验 ⚠" rows are exactly what we must not let a reader
+        // mistake for a confirmed page anchor.
+        if (UNVERIFIED_RE.test(s)) return unverifiedBadge(s);
         if (/✓/.test(s)) return `<span class="page-ok">${inner}</span>`;
-        if (/⚠|未核验/.test(s)) return `<span class="page-warn">${inner}</span>`;
         if (/^—$|未规定|未适用/.test(s)) return `<span class="page-none">${inner}</span>`;
         return `<span class="page-ok">${inner}</span>`;
       };
@@ -1266,13 +1269,54 @@ function normalizeRow(row: string[], width: number): string[] {
 const PLACEHOLDER_TITLE_RE =
   /^[\s（(【\[]*(图标题未抽取|无题注|未抽取|待人工补充|需查源\s*PDF|源数据未提供|本版未规定)/;
 
+/**
+ * Cells that say "we could not verify this". A reader who mistakes
+ * 未核验 ⚠ for a checked page anchor is exactly the failure mode the report's
+ * own disclaimer warns about, so these get their own class.
+ */
+const UNVERIFIED_RE = /未核验|待核实|未找到|待人工确认|manual-audit|源数据未提供|本版未规定/;
+
+function unverifiedBadge(text: string): string {
+  const t = text.trim();
+  const label = /manual-audit|人工对照/.test(t)
+    ? "待人工核验"
+    : /未找到/.test(t)
+      ? "原文未找到"
+      : /源数据未提供/.test(t)
+        ? "源数据缺失"
+        : /本版未规定/.test(t)
+          ? "本版未规定"
+          : "未核验";
+  const cls = /未找到|缺失/.test(label) ? "uv-missing" : "uv-pending";
+  return `<span class="cell-unverified ${cls}">⚠ ${esc(label)}</span>`;
+}
+
 /** Render a cell, flagging extraction-failure placeholders with a CSS class. */
 function cellHtmlFlagged(s: string): string {
   if (!s) return "";
-  const inner = cellHtml(s);
-  return PLACEHOLDER_TITLE_RE.test(s.trim())
-    ? `<td class="cell-placeholder">${inner}</td>`
-    : `<td>${inner}</td>`;
+  const trimmed = s.trim();
+
+  // 1. Unverified markers ("未核验 ⚠" / "待人工确认" / "未找到" …).
+  //    These must not look like a verified page anchor — confusing the two is
+  //    exactly the failure mode the report's own disclaimer warns about.
+  if (UNVERIFIED_RE.test(trimmed)) {
+    if (trimmed.replace(UNVERIFIED_RE, "").replace(/[\s⚠️]/g, "").length === 0) {
+      return `<td class="cell-uv">${unverifiedBadge(trimmed)}</td>`;
+    }
+    return `<td class="cell-uv">${unverifiedBadge(trimmed)} ${cellHtml(s)}</td>`;
+  }
+
+  // 2. Extraction-failure placeholders ("图标题未抽取" …).
+  if (PLACEHOLDER_TITLE_RE.test(trimmed)) {
+    return `<td class="cell-placeholder">${cellHtml(s)}</td>`;
+  }
+
+  // 3. A real, checked page anchor — green so verified ≠ unverified at a glance.
+  if (/✓/.test(trimmed) && /第\s*\d+\s*页|\bp\d+\b/.test(trimmed)) {
+    return `<td class="cell-verified">${cellHtml(s)}</td>`;
+  }
+
+  return `<td>${cellHtml(s)}</td>`;
 }
 
 function renderPlainTable(rows: string[][]): string {
@@ -1756,6 +1800,18 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .legend-test   { background: #f0eee9; border-color: #c8c0aa; }
 .legend-cert   { background: #f0f1ee; border-color: #b5c0b0; }
 .legend-muted  { background: #fbf9f3; border-color: #d8cfb8; }
+
+/* Verified vs unverified page anchors — the distinction must be visible
+   at a glance, not just readable in the disclaimer. */
+td.cell-verified { background: #f4f9f5 !important; }
+td.cell-verified:has(✓) { border-left: 2pt solid #3a6b4f; }
+td.cell-uv { background: #fdf3f0 !important; border-left: 2.5pt solid #c9542a; }
+.cell-unverified {
+  display: inline-block; font-size: 7.5pt; font-weight: 700;
+  padding: 0.2mm 1.4mm; border-radius: 1mm; white-space: nowrap;
+}
+.cell-unverified.uv-pending  { background: #f6e3dc; color: #a8501f; }
+.cell-unverified.uv-missing { background: #f0dcd6; color: #8f2f14; }
 
 /* Extraction-failure placeholders must never be mistaken for real content. */
 .cell-placeholder {
