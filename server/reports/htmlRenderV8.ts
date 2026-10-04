@@ -936,7 +936,10 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>,
   <p class="dashboard-method">
     统计口径：以上数字由 <b>条目级台账</b>逐表统计得出（每个数字 = 对应表格的实际行数），
     <u>不是</u>对标记字符串的出现次数。台账来源：§11.3 数值变化表 · §11.3.0 同文勘误表 ·
-    §11.6.1 章节重排表 · §11.8 表述复核清单 · 各章 ⚠ 未找到 / manual-audit 行。
+    §11.6.1 章节重排表 · §11.8 表述复核清单 · 各章 ⚠ 未找到 / manual-audit 行。<br>
+    <b>两套口径不可相加</b>：§11.3 的「候选差异条目」只统计"看起来像变更的参数"；
+    上表的「待复核」统计的是全文所有 <code>⚠未找到 / 未核验</code> 标记行（含 §11.0 的 9 条网传指标）。
+    二者成员不同、相交但不等价。
   </p>
 ${discrepancies.length ? `<div class="reconcile-box">
     <p class="reconcile-title">⚠ 账目对账：报告自述与台账实算不一致（${discrepancies.length} 项）</p>

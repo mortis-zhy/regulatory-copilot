@@ -9,7 +9,7 @@ import { buildLedger, ledgerToCounts } from "./dist/closureLedger.js";
 
 const ROOT = path.resolve("..");
 const report = JSON.parse(
-  fs.readFileSync(path.join(ROOT, "baseline/last-report_V8.6_calibrated.json"), "utf8"),
+  fs.readFileSync(path.join(ROOT, "comparison_agent-main/reports/last-report.json"), "utf8"),
 );
 
 const md = report.chapters.map((c) => c.markdown || "").join("\n");
@@ -20,5 +20,5 @@ L.discrepancies.forEach((d) => console.log("   !", d));
 
 console.log("\n[pdf] rendering…");
 const pdf = await renderPdfFromReportV8(report);
-fs.writeFileSync(path.join(ROOT, "GB4785_修复台账版.pdf"), pdf);
+fs.writeFileSync(path.join(ROOT, "GB4785_最终版_141页.pdf"), pdf);
 console.log(`[pdf] written: ${(pdf.length / 1024 / 1024).toFixed(2)} MB`);

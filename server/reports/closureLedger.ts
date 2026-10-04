@@ -279,6 +279,12 @@ export function buildLedger(src: string | Array<{ markdown?: string }>): Ledger 
       ? src
       : src.map((c) => c?.markdown ?? "").join("\n");
   const confirmed = harvestConfirmed(md);
+  // NOTE ON TWO DIFFERENT UNIVERSES — the single most confusing thing in this
+  // report, so state it where the numbers are produced:
+  //   §11.3「N 条候选」  = 差异候选条目（看起来像变更的参数）
+  //   ledger.candidate   = 待复核抽取点（正文里 ⚠未找到 / 未核验 的行，
+  //                        含 §11.0 的 9 条网传指标）
+  // They overlap in spirit but not in membership. Never add them together.
   const errata = harvestErrata(md);
   const added = harvestAdded(md);
   const renumber = harvestRenumber(md);
