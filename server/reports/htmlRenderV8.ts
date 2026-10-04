@@ -28,6 +28,7 @@ import {
   reportMarkdown,
 } from "./trustChecks";
 import { buildLedger, ledgerToCounts } from "./closureLedger";
+import { checkConsistency } from "./consistency";
 import type { ReportOutline } from "./reportGenerator";
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
@@ -949,6 +950,60 @@ ${discrepancies.length ? `<div class="reconcile-box">
 }
 
 /**
+ * 一致性自查 — 单位 / 术语 / 重复 / 截断 的机器检出结果。
+ *
+ * 这些不需要业务知识：只要比对同一行里两个版本栏的文本就能发现
+ * "数值相同但单位不同"这类摘录错误。放在封面让读者先看到报告的
+ * 已知瑕疵，再决定要不要采信。
+ */
+function renderConsistencyPanel(report: ReturnType<typeof checkConsistency>): string {
+  const { issues, counts } = report;
+  if (!issues.length) return "";
+
+  const ICON: Record<string, string> = { high: "⛔", medium: "⚠", low: "ℹ" };
+  const KIND_LABEL: Record<string, string> = {
+    unit: "单位",
+    term: "术语",
+    duplicate: "重复",
+    numeric: "数值",
+  };
+  const summary = (["high", "medium", "low"] as const)
+    .map((sev) => {
+      const n = issues.filter((i) => i.severity === sev).length;
+      return n ? `${ICON[sev]} ${n} 项${sev === "high" ? "严重" : sev === "medium" ? "中等" : "提示"}` : "";
+    })
+    .filter(Boolean)
+    .join("　");
+
+  const rows = issues
+    .slice(0, 12)
+    .map((i) => `<tr>
+        <td class="cc-sev">${ICON[i.severity] ?? "·"}</td>
+        <td class="cc-kind">${esc(KIND_LABEL[i.kind] ?? i.kind)}</td>
+        <td class="cc-label">${esc(i.label)}${i.where ? `<span class="cc-where"> @ ${esc(i.where)}</span>` : ""}</td>
+        <td class="cc-detail">${esc(i.detail)}</td>
+      </tr>`)
+    .join("\n");
+
+  const more = issues.length > 12 ? `<p class="cc-more">另有 ${issues.length - 12} 项同类检出，完整清单见 <code>/review</code> 审阅工作台。</p>` : "";
+
+  return `
+<section class="consistency-panel">
+  <h1 class="cc-title">一致性自查 · Consistency Findings</h1>
+  <p class="cc-intro">
+    渲染期对全文表格做的机器扫描（单位互换 / 同义术语混用 / 同表重复行 / 截断摘录）。
+    这些是<b>自动检出</b>的已知瑕疵，读者在采信具体结论前应先确认相关参数不在下列清单内。
+    <span class="cc-summary">${esc(summary)}</span>
+  </p>
+  <table class="cc-table">
+    <thead><tr><th>级别</th><th>类型</th><th>检出项</th><th>说明</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${more}
+</section>`;
+}
+
+/**
  * 待复核明细 — every ⚠ entry, one row each.
  *
  * The dashboard only says "26 条待复核". An engineer cannot act on a count;
@@ -1782,6 +1837,23 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
   border-left: 3pt solid #c9542a; background: #fbede2; line-height: 1.5;
 }
 
+/* Consistency findings panel */
+.consistency-panel { padding: 4mm 0 6mm; page-break-after: always; }
+.cc-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
+.cc-intro { font-size: 9pt; color: #1c2733; margin: 0 0 3mm; line-height: 1.55; }
+.cc-intro b { color: #a17334; }
+.cc-summary { font-family: ${mono}; font-size: 8.5pt; color: #c9542a; margin-left: 2mm; }
+.cc-table { width: 100%; border-collapse: collapse; font-size: 8.4pt; }
+.cc-table th { background: #fbf6f0; color: #c9542a; padding: 1.8mm 2.4mm; text-align: left; font-weight: 600; border-bottom: 0.6pt solid #d9c4a8; }
+.cc-table td { padding: 1.6mm 2.4mm; border-bottom: 0.3pt solid #ece4d1; vertical-align: top; }
+.cc-table .cc-sev { width: 8mm; text-align: center; font-size: 11pt; }
+.cc-table .cc-kind { width: 12mm; color: #a17334; font-weight: 600; }
+.cc-table .cc-label { width: 56mm; color: #1c2733; }
+.cc-table .cc-where { color: #9c8b6c; font-family: ${mono}; font-size: 8pt; }
+.cc-table .cc-detail { color: #5e5240; line-height: 1.4; }
+.cc-more { font-size: 8pt; color: #8a7a5c; margin: 3mm 0 0; }
+.cc-more code { font-family: ${mono}; background: #f0eada; padding: 0.3mm 1.2mm; border-radius: 1mm; }
+
 /* Transition period table */
 .transition-table { padding: 4mm 0 6mm; page-break-after: always; }
 .transition-title { font-family: ${serif}; font-size: 22pt; font-weight: 700; color: #0c1a2b; margin: 0 0 3mm; border-bottom: 1pt solid #a17334; padding-bottom: 2mm; }
@@ -2057,7 +2129,8 @@ export async function buildHtml(
   );
   const transitionHtml = renderTransitionTable(extractTransitionDates(chapters));
   const worklistHtml = renderCandidateWorklist(ledger);
-  const frontBlocks = [symbolLegendHtml, closureDashboardHtml, worklistHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
+  const consistencyHtml = renderConsistencyPanel(checkConsistency(reportMarkdown(chapters)));
+  const frontBlocks = [symbolLegendHtml, closureDashboardHtml, consistencyHtml, worklistHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
