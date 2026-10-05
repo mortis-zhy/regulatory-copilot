@@ -218,6 +218,63 @@ function harvestFormatCandidates(md: string): LedgerEntry[] {
  * "⚠ 未找到" rows in the quantitative tables and as "manual-audit" rows. Those
  * are the ones an engineer actually has to chase, so collect them explicitly.
  */
+/**
+ * Rows that look like a page-index table: `| A | p57 | 醒目标志 |`
+ * (文档 | 页 | 标题). These are navigation aids, NOT comparison results —
+ * a ⚠ appearing in them is a column-mapping artefact, not an unverified
+ * claim. Counting them inflated the ⚠ total.
+ */
+function isIndexRow(row: string[]): boolean {
+  const first = (row[0] ?? "").replace(/\*\*/g, "").trim();
+  return /^[ABC]$/.test(first) && /^[pP]\d+$/.test((row[1] ?? "").trim());
+}
+
+/**
+ * Rows that are NOT table rows at all — prose lines that happen to contain a
+ * pipe, e.g. the executive-summary sentence listing
+ * "9 条人工对照补录（AFS 数量、慢行灯 10→15 km/h、…）".
+ *
+ * The scanner splits on "\n|" so a prose bullet that opens with "|" can look
+ * like a one-cell table row. Those mentions point at entries that ARE
+ * verified elsewhere (§11.0 marks them 「[修改] ✓已核验」with page numbers),
+ * so counting them as ⚠ work items is a false positive.
+ *
+ * Detection: a real comparison row has ≥3 cells, or its cells look like
+ * markdown table content. A prose fragment yields one long cell that ends
+ * with a full-stop / closing bracket and contains "（" + "）" spans.
+ */
+function isProseFragment(row: string[], rawLine: string): boolean {
+  if (row.length > 2) return false;
+  // Heuristic: a single very long cell that reads like a sentence.
+  const only = (row[0] ?? "").trim();
+  return (
+    only.length > 24 &&
+    /[，。；：）】]$/.test(only) &&
+    !/^\|/.test(rawLine.slice(1).trim())
+  );
+}
+
+/**
+ * §11.0.2 溯源结果表的行：`| 指标 | A页 | B页 | C页 | 原文摘录 |`。
+ * 这里的「未找到」只针对 C 版（UN R48-09），A/B 两版已回原文定位。
+ */
+/**
+ * §11.0.2 溯源结果表的行：`| 指标 | A 草案 | B 现行 | C UN R48-09 | 原文摘录 |`
+ * 其中「未找到」只针对 **C 版**，A/B 两版列都是实打实的页码。
+ *
+ * 这类行不是"待核验抽取点"，而是**已核验 + C 版不适用**（UN R48 章节
+ * 体系与 GB 不同）。混进 ⚠ 计数会让读者误以为 A/B 的数据也还没核。
+ *
+ * 判定：至少两个单元格是 `pNN` 页码格式，且整行不含「核验状态」字样
+ * （§11.0.3 的「声称对照表」有 `核验状态` 列，那些是误传清单，该保留 ⚠）。
+ */
+function isTraceabilityRow(row: string[]): boolean {
+  if (row.length < 5) return false;
+  if (row.some((c) => /核验状态|GB4785\s*声称/.test(c))) return false;
+  const pageCells = row.filter((c) => /\*\*p\d+\*\*|^p\d+$/.test(c.trim()));
+  return pageCells.length >= 2;
+}
+
 function harvestCandidates(md: string): LedgerEntry[] {
   const out: LedgerEntry[] = [];
   // Rows whose verdict cell is ⚠ / 未找到 / manual-audit.
@@ -227,11 +284,14 @@ function harvestCandidates(md: string): LedgerEntry[] {
       const isWarn = /⚠|未找到|manual-audit|未核验/.test(joined);
       if (!isWarn) continue;
       if (!row.length) continue;
-      // Skip the errata block — those are already counted as errata.
-      const first = row[1] ?? "";
+      // Skip `| A | p57 | … |` index rows — their page column is a locator,
+      // not a verification status.
+      if (isIndexRow(row)) continue;
+      // §11.0.2 traceability rows: A/B located, C not applicable → not ⚠.
+      if (isTraceabilityRow(row)) continue;
       out.push({
         category: "candidate",
-        section: inferSection(first) ?? "正文",
+        section: inferSection(row[1] ?? "") ?? "正文",
         no: /^\d+$/.test(row[0] ?? "") ? row[0] : "",
         topic: (row[1] ?? row[0] ?? "").replace(/\*\*/g, "").slice(0, 60),
         reason: /未找到/.test(joined)
@@ -296,12 +356,41 @@ export function buildLedger(src: string | Array<{ markdown?: string }>): Ledger 
   const confirmedOnly = confirmed.filter((e) => e.category === "confirmed");
   const unverified = confirmed.filter((e) => e.category === "candidate");
 
-  // Dedupe candidates: same section+topic+page set seen twice is one item.
+  // Dedupe candidates. Two keys, because the same unverified metric can appear
+  // twice with different column layout: the §11.0 speed-check rows put the
+  // metric name in col 1 with "—" in the value columns, while the §11.0.2
+  // verification rows put it in col 0 with "A x → B y" in the last column.
   const seen = new Set<string>();
+  const norm = (s: string) => s.replace(/\s+/g, "").replace(/[（）()：:·]/g, "").trim();
+  // Topics already verified in §11.0 with 「[修改] ✓已核验」+ page anchors.
+  // The executive summary re-mentions them in prose ("9 条人工对照补录（AFS
+  // 数量、慢行灯 10→15 km/h …）"), and the scanner picks that prose up as if
+  // it were an unverified work item. Cross-check against the verified set
+  // so those mentions don't inflate ⚠.
+  const verifiedTopics = new Set<string>();
+  for (const line of md.split("\n")) {
+    if (!line.trim().startsWith("|") || !/✓\s*已核验|已核验/.test(line)) continue;
+    for (const cell of line.split("|").slice(3)) {
+      const t = norm(cell);
+      if (t.length >= 4) verifiedTopics.add(t);
+    }
+  }
+  const mentionedInVerified = (topic: string): boolean => {
+    const t = norm(topic);
+    if (t.length < 4) return false;
+    for (const v of verifiedTopics) {
+      if (v.includes(t) || t.includes(v)) return true;
+    }
+    return false;
+  };
+
   const dedupCandidates = unverified.concat(candidates).filter((e) => {
-    const key = `${e.section}|${e.topic}|${(e.pages ?? []).join(",")}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (mentionedInVerified(e.topic)) return false;
+    const byFull = `${e.section}|${norm(e.topic)}|${(e.pages ?? []).join(",")}`;
+    const byTopic = norm(e.topic);
+    if (seen.has(byFull) || seen.has(byTopic)) return false;
+    seen.add(byFull);
+    seen.add(byTopic);
     return true;
   });
 
