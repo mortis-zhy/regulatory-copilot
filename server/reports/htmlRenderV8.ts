@@ -753,7 +753,56 @@ function renderSymbolLegend(): string {
   </div>
 
   <p class="legend-warn">⚠ 重要：执行摘要（首页）只引用 ✅ 条目；⚠ / 🟡 / 🔢 / ✍ 仅出现在主章节与汇总表中，不得作为变更依据。</p>
+
+  ${renderGlossary()}
 </section>`;
+}
+
+/**
+ * 术语对照表 — 发光面 / 视表面 / 透光面。
+ *
+ * 这三个词**不是同义混用**，而是三个不同的物理面（回三份源 PDF 原文核实）：
+ *   A p7 3.1.8  透光面 light emitting surface — 光源光线能穿过并到达的配光镜外表面
+ *   A p7 3.1.9  发光面 illuminating surface — 照明装置的有效辐射面
+ *   B 3.9.x    视表面 apparent surface      — 从观察方向看到的装置表面
+ * A/B 两版定义不同（GB4785-2019 修订说明明确"透光面、发光面、视表面等定义与
+ * GB4785-2007 存在差异"），所以**不能统一替换**，只能对照使用。
+ */
+function renderGlossary(): string {
+  const rows = [
+    ["透光面", "light emitting surface", "A 3.1.8",
+      "灯具主功能上，光源光线能够达到并穿过的配光镜透明材料外表面，由制造商在试验图纸中标出"],
+    ["发光面", "illuminating surface", "A 3.1.9",
+      "照明装置的有效辐射面，附录 A 给出图示"],
+    ["视表面", "apparent surface", "B 3.9 系列",
+      "从观察方向看到的装置表面，用于几何可见度判定"],
+  ];
+  const tr = rows
+    .map(
+      ([cn, en, clause, def]) => `<tr>
+        <td class="gl-cn">${esc(cn)}</td>
+        <td class="gl-en">${esc(en)}</td>
+        <td class="gl-clause">${esc(clause)}</td>
+        <td class="gl-def">${esc(def)}</td>
+      </tr>`,
+    )
+    .join("\n");
+  return `
+  <h2 class="legend-h2">术语对照 · 三个「面」不是同义词</h2>
+  <div class="glossary-box">
+    <p class="gl-intro">
+      全文出现的<b>发光面 / 视表面 / 透光面</b>看似同义实则<b>指三个不同的物理面</b>。
+      GB 4785-2019 修订说明已明确「透光面、发光面、视表面等定义与 GB4785-2007 存在差异」，
+      本报告<b>按原文分别使用、不做统一替换</b>。换算时请对照下表。
+    </p>
+    <table class="gl-table">
+      <thead><tr><th>中文</th><th>英文</th><th>出处</th><th>定义（原文口径）</th></tr></thead>
+      <tbody>${tr}</tbody>
+    </table>
+    <p class="gl-warn">⚠ 跨版本比较时，「B 版视表面」与「A 版发光面」在部分条款中指同一功能面，
+    但<b>测量基准与判定阈值可能不同</b>。涉及几何可见度 / 安装位置的差异，必须回原文逐条比对，
+    不可按名称相近直接对应。</p>
+  </div>`;
 }
 
 /**
@@ -1797,6 +1846,20 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 .legend-desc { font-size: 8.5pt; color: #1c2733; margin: 0 0 1.5mm; line-height: 1.45; }
 .legend-sample { font-size: 8pt; color: #5e5240; margin: 0; padding-left: 7mm; text-indent: -7mm; line-height: 1.4; }
 .legend-warn { font-size: 9pt; color: #c9542a; background: #fbf6f0; border-left: 3pt solid #c9542a; padding: 2mm 3mm; margin: 4mm 0 0; line-height: 1.5; }
+
+/* Glossary — the three "面" terms */
+.glossary-box { margin: 5mm 0 0; padding: 3mm 4mm; background: #f4f1ea; border: 0.6pt solid #d9cfb8; border-radius: 2mm; }
+.gl-intro { font-size: 9pt; color: #1c2733; margin: 0 0 3mm; line-height: 1.55; }
+.gl-intro b { color: #a17334; }
+.gl-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+.gl-table th { background: #e8e2d4; color: #5e5240; padding: 1.8mm 2.4mm; text-align: left; font-weight: 600; border-bottom: 0.6pt solid #c9bfa8; }
+.gl-table td { padding: 2mm 2.4mm; border-bottom: 0.3pt solid #e0d9c8; vertical-align: top; }
+.gl-cn { font-weight: 700; color: #0c1a2b; width: 18mm; font-size: 9.5pt; }
+.gl-en { font-style: italic; color: #5e5240; width: 34mm; font-family: ${serif}; }
+.gl-clause { font-family: ${mono}; font-size: 8pt; color: #a17334; width: 18mm; }
+.gl-def { color: #3a3a3a; line-height: 1.45; }
+.gl-warn { font-size: 8.5pt; color: #8a6a4a; margin: 3mm 0 0; padding: 2mm 3mm; background: #fdf3df; border-left: 2.5pt solid #a17334; line-height: 1.5; }
+.gl-warn b { color: #6b4f2a; }
 .legend-ok     { background: #f1f5ec; border-color: #b7c8a8; }
 .legend-warn   { background: #fbf6f0; border-color: #e0c8a8; }
 .legend-design { background: #f6f2e7; border-color: #d6cba8; }
