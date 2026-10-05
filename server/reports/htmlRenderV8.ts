@@ -1320,7 +1320,7 @@ function renderTriptych(t: ParsedTable): string {
     <dt>条款</dt><dd>${cellHtml(clause)}</dd>
     <dt>页码</dt><dd>${badge(page)}</dd>
   </dl>
-  <div class="trip-text">${text ? cellHtml(text) : '<span class="impact-empty">本版本无对应原文</span>'}</div>
+  <div class="trip-text">${text ? cellHtml(text) + truncFlag(text) : '<span class="impact-empty">本版本无对应原文</span>'}</div>
 </article>`;
     })
     .join("\n");
@@ -1400,10 +1400,23 @@ function cellHtmlFlagged(s: string): string {
 
   // 3. A real, checked page anchor — green so verified ≠ unverified at a glance.
   if (/✓/.test(trimmed) && /第\s*\d+\s*页|\bp\d+\b/.test(trimmed)) {
-    return `<td class="cell-verified">${cellHtml(s)}</td>`;
+    return `<td class="cell-verified">${cellHtml(s)}${truncFlag(trimmed)}</td>`;
   }
 
-  return `<td>${cellHtml(s)}</td>`;
+  // 4. Truncated excerpt. A cell ending on an ellipsis lost whatever came
+  //    after it — and what comes after is usually a qualifier: 车型类别限定,
+  //    前提条件, 例外放宽. Setting B's 倒车灯高度 excerpt to "不大于1200mm…"
+  //    while A's reads in full makes the two look contradictory when the source
+  //    clauses agree ("不能保证时可增至1500mm"). That is precisely how the
+  //    §11.3.0 false diffs were produced. The page anchor (if any) is still
+  //    trustworthy; the clause text is not complete — flag both, never conflate.
+  return `<td>${cellHtml(s)}${truncFlag(trimmed)}</td>`;
+}
+
+/** Badge for a cell whose text stops at an ellipsis (incomplete excerpt). */
+function truncFlag(trimmed: string): string {
+  if (!/(?:…|\.\.\.)\s*$/.test(trimmed)) return "";
+  return `<span class="trunc-flag" title="本单元格摘录被截断，后续限定条件（车型类别／前提／例外放宽）未包含，不可据此判定两版参数不一致">⚠ 摘录截断</span>`;
 }
 
 function renderPlainTable(rows: string[][]): string {
@@ -1920,6 +1933,16 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 /* Verified vs unverified page anchors — the distinction must be visible
    at a glance, not just readable in the disclaimer. */
 td.cell-verified { background: #f4f9f5 !important; }
+/* Truncated excerpt: amber inline chip, deliberately NOT a full-cell tint so it
+   coexists with the green "page verified" background — the page IS right, the
+   clause text is incomplete, and conflating those is the original bug. */
+.trunc-flag {
+  display: inline-block; margin-left: 4px; padding: 0 4px;
+  border: 1px solid #c9a227; border-radius: 3px;
+  background: #fdf6e3; color: #8a5a12;
+  font-size: 7.5pt; font-weight: 600; white-space: nowrap;
+  cursor: help;
+}
 td.cell-verified:has(✓) { border-left: 2pt solid #3a6b4f; }
 td.cell-uv { background: #fdf3f0 !important; border-left: 2.5pt solid #c9542a; }
 .cell-unverified {
