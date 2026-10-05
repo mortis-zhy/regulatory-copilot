@@ -172,7 +172,7 @@ function groupByDevice(changes: EngineChange[]): Map<string, EngineChange[]> {
 /** Build 11.1 — added chapters + added topics become "新增条款汇总". */
 function build11_1(changes: EngineChange[], chapterAdded: ChapterChange[]): string {
   const addedTopics = changes.filter((c) => c.type === "added");
-  if (chapterAdded.length === 0 && addedTopics.length === 0) return "_(本子节无内容)_";
+  if (chapterAdded.length === 0 && addedTopics.length === 0) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
 
   const parts: string[] = [
     "### 11.1 新增条款汇总",
@@ -237,7 +237,7 @@ function labelFor(level: ChapterChange["level"]): string {
 /** Build 11.2 — removed chapters + removed topics. */
 function build11_2(changes: EngineChange[], chapterRemoved: ChapterChange[]): string {
   const removedTopics = changes.filter((c) => c.type === "removed");
-  if (chapterRemoved.length === 0 && removedTopics.length === 0) return "_(本子节无内容)_";
+  if (chapterRemoved.length === 0 && removedTopics.length === 0) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
 
   const parts: string[] = [
     "### 11.2 删除条款汇总",
@@ -280,7 +280,7 @@ function build11_2(changes: EngineChange[], chapterRemoved: ChapterChange[]): st
 /** Build 11.3 — modifications, ranked by severity. */
 function build11_3(changes: EngineChange[]): string {
   const mods = changes.filter((c) => c.type === "modified");
-  if (mods.length === 0) return "_(本子节无内容)_";
+  if (mods.length === 0) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
 
   // High severity first; within severity keep diffEngine's order (parameter
   // diffs precede text diffs, which is what the reference does).
@@ -363,7 +363,7 @@ function build11_4(
     parts.push(`**小计**：${vRows.length} 条补充数据差异。`);
   }
 
-  if (indRows.length === 0 && vRows.length === 0) return "_(本子节无内容)_";
+  if (indRows.length === 0 && vRows.length === 0) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
 
   return parts.join("\n");
 }
@@ -388,7 +388,7 @@ function build11_5(chapterAdded: ChapterChange[], changes: EngineChange[]): stri
     .filter((c) => c.type === "added" && NEW_CONCEPT_MARKERS.some((m) => c.title.includes(m) || c.newExcerpt.includes(m)));
 
   if (conceptChapters.length === 0 && conceptTopics.length === 0) {
-    return "_(本子节无内容)_";
+    return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
   }
 
   const parts: string[] = [
@@ -479,7 +479,7 @@ function build11_6(changes: EngineChange[], renumbered: ChangeChapterInput["chap
   }
 
   const hasRenumbered = (renumbered && renumbered.length > 0) || deviceRenumbering.length > 0;
-  if (groups.size === 0 && !hasRenumbered) return "_(本子节无内容)_";
+  if (groups.size === 0 && !hasRenumbered) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
   if (groups.size === 0) return out.join("\n");
 
   out.push("#### 11.6.3 高严重度条款修订（按装置族类归并）");
@@ -575,7 +575,7 @@ function build11_7(
  * 数值核验**，请工程师对照原文核实。每行给 topic / name / B 原文 / A 原文。
  */
 function build11_8(wording: Array<{ topic: string; name: string; oldValue: string; newValue: string }>): string {
-  if (!wording.length) return "_(本子节无内容)_";
+  if (!wording.length) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
   const parts: string[] = [
     "### 11.8 表述/术语/格式候选差异（工程师复核清单）",
     "",

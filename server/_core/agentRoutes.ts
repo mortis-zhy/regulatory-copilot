@@ -541,27 +541,43 @@ export function registerAgentRoutes(router: Router) {
   });
 
   /**
-   * POST /api/agent/report/trust/verdict — 人工审阅结论回写。
-   * 前端在"假差异工作台"点确认/驳回后调用,结果落 reports/verdicts.json,
-   * 下次拉取 /trust 时合并(人工确认的勘误从 ⚠ 升级为 ✅)。
+   * POST /api/agent/report/trust/recheck — 让 agent 重跑核验，不依赖人工。
+   *
+   * 之前这里是 /trust/verdict，把人工在"假差异工作台"点击的结论写进
+   * reports/verdicts.json。已废弃，理由有三：
+   *   1. 报告每次重新生成，verdicts.json 却不会跟着更新 → 人工结论会套到
+   *      新报告上，变成数据污染；
+   *   2. 两套真相（报告正文 + 人工标记）会互相打架，且报告重新生成后没人
+   *      知道哪条是陈旧的；
+   *   3. 核验本可以自动做（trustChecks.ts 一次跑完全部条目），人工只是
+   *      把已有结论再点一遍。
+   *
+   * 现在的做法：工作台只读展示 agent 的判定，用户发现疑点时点「重新核验」
+   * → 让 agent 重跑，而不是人逐条裁决。
    */
-  router.post("/api/agent/report/trust/verdict", async (req, res) => {
+  router.post("/api/agent/report/trust/recheck", async (_req, res) => {
+    const startedAt = Date.now();
     try {
       const fs = await import("node:fs");
       const path = await import("node:path");
-      const dir = path.resolve(import.meta.dirname, "../reports");
-      fs.mkdirSync(dir, { recursive: true });
-      const file = path.join(dir, "verdicts.json");
-      const body = req.body as { id?: string; verdict?: "confirmed" | "rejected"; note?: string };
-      if (!body?.id || !body?.verdict) return res.status(400).json({ error: "id and verdict required" });
-
-      let store: Record<string, unknown> = {};
-      if (fs.existsSync(file)) {
-        try { store = JSON.parse(fs.readFileSync(file, "utf-8")); } catch { store = {}; }
-      }
-      store[body.id] = { verdict: body.verdict, note: body.note ?? "", at: new Date().toISOString() };
-      fs.writeFileSync(file, JSON.stringify(store, null, 2), "utf-8");
-      res.type("application/json").send({ ok: true, id: body.id, verdict: body.verdict, total: Object.keys(store).length });
+      const reportFile = path.resolve(import.meta.dirname, "../reports/last-report.json");
+      if (!fs.existsSync(reportFile)) return res.status(404).json({ error: "no report generated yet" });
+      const report = JSON.parse(fs.readFileSync(reportFile, "utf-8"));
+      const chapters = report.chapters ?? [];
+      // Same two analyses /trust already runs — recheck is a re-run, not a
+      // second source of truth.
+      const { buildTrustBundle } = await import("../reports/trustChecks");
+      const { checkConsistency } = await import("../reports/consistency");
+      const bundle = buildTrustBundle(chapters);
+      const md = chapters.map((c: { markdown?: string }) => c?.markdown ?? "").join("\n");
+      const consistency = checkConsistency(md);
+      res.type("application/json").send({
+        ok: true,
+        elapsedMs: Date.now() - startedAt,
+        trust: bundle,
+        consistency,
+        note: "由 agent 重新核验，无需人工逐条确认。",
+      });
     } catch (e) {
       res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
     }

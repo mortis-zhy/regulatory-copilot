@@ -2378,8 +2378,67 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
     // anchor strings are dropped from the text layer entirely.
     // (TOC rows are fixed-height, so pagination does not shift between passes.)
     console.log(`[htmlRenderV8] pass-2 render without anchors (${pages.size}/${anchors.length} anchors found)`);
-    return await render(await buildHtml(report, fonts, { withAnchors: false }));
+    const finalPdf = await render(await buildHtml(report, fonts, { withAnchors: false }));
+    return await addPdfBookmarks(finalPdf, report);
   } finally {
     await browser.close();
+  }
+}
+
+/**
+ * Stamp a PDF outline (bookmarks) onto the rendered report.
+ *
+ * Without this, a 111-page PDF opens with an EMPTY sidebar in every viewer —
+ * the reader's only navigation is the scrollbar or a keyword search.
+ * Chromium does not turn <h2> into outline entries.
+ *
+ * Page numbers are already known here (the anchor pass filled chapter.page /
+ * appendix.page), so this is a pure post-process on the bytes we just built.
+ * We shell out to stamp_bookmarks.py (PyMuPDF, already a dependency for
+ * anchor resolution) rather than hand-rolling an incremental xref update —
+ * a malformed xref silently breaks every conforming reader.
+ */
+async function addPdfBookmarks(pdf: Buffer, report: RenderableReport): Promise<Buffer> {
+  const chapters = Array.isArray(report?.chapters) ? report.chapters : [];
+  const appendices = Array.isArray(report?.appendices) ? report.appendices : [];
+  const items: Array<{ title: string; page: number }> = [];
+  for (const c of chapters) {
+    if (typeof c.page === "number" && c.page > 0) {
+      items.push({ title: `${String(c.id).padStart(2, "0")} ${c.title}`, page: c.page });
+    }
+  }
+  for (const a of appendices) {
+    if (typeof a.page === "number" && a.page > 0) {
+      items.push({ title: `附${a.id} ${a.title}`, page: a.page });
+    }
+  }
+  if (items.length < 2) {
+    console.log(`[htmlRenderV8] bookmarks skipped (${items.length} anchors resolved)`);
+    return pdf;
+  }
+  try {
+    const fs = await import("node:fs");
+    const pathMod = await import("node:path");
+    const os = await import("node:os");
+    const { execFileSync } = await import("node:child_process");
+    const tmpDir = fs.mkdtempSync(pathMod.join(os.tmpdir(), "v8bm-"));
+    const inPath = pathMod.join(tmpDir, "in.pdf");
+    const outPath = pathMod.join(tmpDir, "out.pdf");
+    fs.writeFileSync(inPath, pdf);
+    // stamp_bookmarks.py lives next to dist/ (repo root's dist sibling).
+    const script = pathMod.resolve(process.cwd(), "stamp_bookmarks.py");
+    const stdout = execFileSync("python", [script, inPath, outPath, JSON.stringify(items)], {
+      encoding: "utf8",
+      windowsHide: true,
+      timeout: 60_000,
+    }).trim();
+    console.log(`[htmlRenderV8] ${stdout}`);
+    if (!fs.existsSync(outPath)) throw new Error("no output produced");
+    const stamped = fs.readFileSync(outPath);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return stamped;
+  } catch (e) {
+    console.warn("[htmlRenderV8] bookmarks skipped:", String(e).slice(0, 200));
+    return pdf;
   }
 }

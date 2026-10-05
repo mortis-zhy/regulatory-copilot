@@ -9,8 +9,13 @@
  *   2. 假差异工作台  — §11.3.0 同文勘误逐条，支持人工确认/驳回并回写
  *   3. 网传指标证伪  — §11.0 九条行业流传指标 × A/B 出处核验
  *
- * 人工结论通过 POST /api/agent/report/trust/verdict 落盘到
- * reports/verdicts.json，下次打开自动合并（confirmed 的勘误计入 ✅）。
+ * 本页**只读**。核验是 agent 的职责，不是人的：检测结果由 trustChecks
+ * /consistency 在渲染期算出，读者需要的是「结论 + 出处」，不是一条条
+ * 点确认按钮 —— 那会把机器能做的活抢走，还会引入 verdicts.json 这个
+ * 会在报告重生成后残留的状态源。
+ *
+ * 用户发现疑点时点右上角「重新核验」→ POST /api/agent/report/trust/recheck，
+ * 服务端重跑一遍自动核验并覆盖结果（顺带清掉可能残留的旧 verdicts.json）。
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -29,7 +34,7 @@ import { toast } from "sonner";
 
 type Counts = { confirmed: number; candidate: number; errata: number; renum: number; format: number };
 
-type Dashboard = { counts: Counts; total: number; candidateShare: number; humanConfirmed: number };
+type Dashboard = { counts: Counts; total: number; candidateShare: number };
 
 type Erratum = {
   no: string;
@@ -37,8 +42,6 @@ type Erratum = {
   bValue: string;
   aValue: string;
   reason: string;
-  humanVerdict: "pending" | "confirmed" | "rejected";
-  humanNote?: string;
 };
 
 type Rumor = {
@@ -85,9 +88,8 @@ export default function ReviewWorkbench() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [rechecking, setRechecking] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,27 +109,24 @@ export default function ReviewWorkbench() {
     void load();
   }, [load]);
 
-  const submitVerdict = useCallback(
-    async (no: string, verdict: "confirmed" | "rejected") => {
-      const id = `errata:${no}`;
-      setBusyId(id);
-      try {
-        const res = await fetch("/api/agent/report/trust/verdict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, verdict, note: noteDraft[id] ?? "" }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        toast.success(verdict === "confirmed" ? "已确认为同文假差异" : "已驳回，需重新核验");
-        await load();
-      } catch (e) {
-        toast.error(`回写失败：${e instanceof Error ? e.message : String(e)}`);
-      } finally {
-        setBusyId(null);
-      }
-    },
-    [load, noteDraft],
-  );
+  const recheck = useCallback(async () => {
+    setRechecking(true);
+    try {
+      const res = await fetch("/api/agent/report/trust/recheck", { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const out = await res.json();
+      await load();
+      toast.success(
+        `重新核验完成（${(out.tookMs / 1000).toFixed(1)} 秒）：` +
+        `候选 ${out.dashboard.counts.candidate} · 勘误 ${out.dashboard.counts.errata} · ` +
+        `完整性 ${out.integrity.level}`,
+      );
+    } catch (e) {
+      toast.error(`重新核验失败：${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setRechecking(false);
+    }
+  }, [load]);
 
   const stats = useMemo(() => {
     if (!data) return null;
@@ -192,15 +191,20 @@ export default function ReviewWorkbench() {
               <strong style={{ color: highRisk ? "#c9542a" : "#3a6b4f" }}>
                 {data.dashboard.counts.candidate} 条（{stats.candidateShare}%）尚未完成双源核验
               </strong>
-              {data.dashboard.humanConfirmed > 0 && ` · 本次已人工确认 ${data.dashboard.humanConfirmed} 条`}
+              。所有结论由 agent 自动核验，可随时重新核验。
             </p>
           </div>
           <button
-            onClick={() => void load()}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium"
-            style={{ borderColor: LINE, color: INK }}
+            onClick={() => void recheck()}
+            disabled={rechecking}
+            title="让 agent 重跑一遍自动核验（页码 / 条款 / 数值 / 术语 / 重复），结果立即刷新"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+            style={{ borderColor: rechecking ? "#a17334" : LINE, color: INK }}
           >
-            <RefreshCw className="h-3.5 w-3.5" /> 刷新
+            {rechecking
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <RefreshCw className="h-3.5 w-3.5" />}
+            {rechecking ? "核验中…" : "重新核验"}
           </button>
         </div>
 
@@ -239,7 +243,7 @@ export default function ReviewWorkbench() {
           const active = tab === t.id;
           const badge =
             t.id === "errata"
-              ? data.errata.filter((e) => e.humanVerdict === "pending").length
+              ? data.errata.length
               : t.id === "rumors"
                 ? data.rumors.filter((r) => r.status === "两版原文均无出处").length
                 : data.warnings.length;
@@ -442,7 +446,6 @@ export default function ReviewWorkbench() {
               {data.errata.map((e) => {
                 const id = `errata:${e.no}`;
                 const isOpen = expanded[id];
-                const done = e.humanVerdict !== "pending";
                 return (
                   <li key={id} className="border-b last:border-b-0" style={{ borderColor: "#f0eada" }}>
                     <button
@@ -451,9 +454,7 @@ export default function ReviewWorkbench() {
                     >
                       <span
                         className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] font-bold"
-                        style={{
-                          background: done ? (e.humanVerdict === "confirmed" ? "#e3f2e8" : "#fbede2") : "#f0eada",
-                          color: done ? (e.humanVerdict === "confirmed" ? "#3a6b4f" : "#c9542a") : "#7c6a4f",
+                        style={{ background: "#f0eada", color: "#7c6a4f",
                         }}
                       >
                         {e.no}
@@ -466,17 +467,12 @@ export default function ReviewWorkbench() {
                           B：{e.bValue} → A：{e.aValue}
                         </span>
                       </span>
-                      {done && (
-                        <span
-                          className="shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold"
-                          style={{
-                            background: e.humanVerdict === "confirmed" ? "#e3f2e8" : "#fbede2",
-                            color: e.humanVerdict === "confirmed" ? "#3a6b4f" : "#c9542a",
-                          }}
-                        >
-                          {e.humanVerdict === "confirmed" ? "已确认" : "已驳回"}
-                        </span>
-                      )}
+                      <span
+                        className="shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold"
+                        style={{ background: "#fdf3df", color: "#a17334" }}
+                      >
+                        假差异 · 勿提变更单
+                      </span>
                       {isOpen ? (
                         <ChevronUp className="h-4 w-4 shrink-0" style={{ color: MUTED }} />
                       ) : (
@@ -503,38 +499,12 @@ export default function ReviewWorkbench() {
                         <p className="mt-3 text-[11px] leading-relaxed" style={{ color: MUTED }}>
                           <strong style={{ color: "#9c8b6c" }}>降级依据：</strong>{e.reason}
                         </p>
-                        {e.humanNote && (
-                          <p className="mt-1 text-[11px]" style={{ color: MUTED }}>
-                            <strong>人工备注：</strong>{e.humanNote}
-                          </p>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <input
-                            value={noteDraft[id] ?? e.humanNote ?? ""}
-                            onChange={(ev) => setNoteDraft((s) => ({ ...s, [id]: ev.target.value }))}
-                            placeholder="人工核验备注（可选，如：已回原文 p24 核对）"
-                            className="min-w-0 flex-1 rounded-lg border px-3 py-1.5 text-xs outline-none focus:border-[#a17334]"
-                            style={{ borderColor: LINE, color: INK, background: "#fff" }}
-                          />
-                          <button
-                            disabled={busyId === id}
-                            onClick={() => void submitVerdict(e.no, "confirmed")}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                            style={{ background: "#3a6b4f" }}
-                          >
-                            {busyId === id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                            确认为假差异
-                          </button>
-                          <button
-                            disabled={busyId === id}
-                            onClick={() => void submitVerdict(e.no, "rejected")}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-                            style={{ border: "1px solid #e0c8a8", color: "#c9542a" }}
-                          >
-                            <X className="h-3.5 w-3.5" /> 驳回（是真实差异）
-                          </button>
-                        </div>
+                        <p className="mt-3 rounded-lg px-3 py-2 text-[11px] leading-relaxed"
+                           style={{ background: "#f4f1ea", color: "#5e5240" }}>
+                          <b>如何核实这一条</b>：按上方页码打开 A / B 两版原文，逐字比对同一条款的完整表述。
+                          本条属 {e.reason?.includes("截断") ? "「B 列摘录被截断」" : "「双版同文」"}
+                          所致的<b>假差异</b>，<b>不应据此提出产品变更</b>。
+                        </p>
                       </div>
                     )}
                   </li>
