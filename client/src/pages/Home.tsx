@@ -27,6 +27,7 @@ import {
   FileCheck2,
   FileText,
   FileUp,
+  FolderOpen,
   Loader2,
   MoreHorizontal,
   Paperclip,
@@ -862,7 +863,7 @@ function PageHeader({
 }) {
   return (
     <header
-      className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b px-5 backdrop-blur md:px-10"
+      className="sticky top-0 z-30 flex min-h-[72px] flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-5 py-3 backdrop-blur md:px-10"
       style={{ borderColor: "#e6dfd0", backgroundColor: "rgba(250,246,236,0.85)" }}
     >
       <div className="flex items-center gap-3">
@@ -880,8 +881,8 @@ function PageHeader({
         </div>
       </div>
 
-      <TemplateBar activeId={templateId} onChange={onTemplateChange} />
-      <div className="flex items-center gap-2">
+      <div className="min-w-0 shrink"><TemplateBar activeId={templateId} onChange={onTemplateChange} /></div>
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -1011,8 +1012,10 @@ function DocStrip({
       </button>
       <input
         ref={fileInputRef}
+        aria-label="选择要上传的法规文件"
         type="file"
         multiple
+        aria-label="批量选择要上传的法规文件"
         accept=".pdf,.doc,.docx,application/pdf"
         className="hidden"
         onChange={(e) => {
@@ -1110,6 +1113,7 @@ function EmptyDropZone({ highlight, onFiles }: { highlight: boolean; onFiles: (f
         ref={inputRef}
         type="file"
         multiple
+        aria-label="批量选择要上传的法规文件"
         accept=".pdf,.doc,.docx,application/pdf"
         className="hidden"
         onChange={(e) => {
