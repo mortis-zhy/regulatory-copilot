@@ -552,6 +552,41 @@ function extractMasterParams(chapters: ReportChapter[]): MasterParamRow[] {
   return Array.from(seen.values());
 }
 
+/**
+ * The three optical surfaces are NOT interchangeable across versions.
+ *
+ *   透光面 (A 3.1.8 / B 3.10) — the lens material surface light passes through
+ *   发光面 (A 3.1.9 / B 3.11) — reflector aperture / lens cross-section
+ *   视表面 (B 3.9)               — the apparent area a viewer sees
+ *
+ * B's own text makes cross-mapping unsafe even *within* one version:
+ * "注：对于牌照灯和第5、6类转向信号灯，本定义中的视表面替换为透光面."
+ * So a row comparing A's 发光面 against B's 视表面 is not a like-for-like
+ * measurement — but nothing in the row says so, and the glossary sits 100
+ * pages away. We detect this at render time rather than trusting the model to
+ * annotate every table it writes.
+ *
+ * Scoped to the raw table text because the A/B-column master-param table does
+ * NOT catch this: every table carrying these terms uses the version-in-row
+ * layout (| 版本 | 条款 | 页码 | 原文摘录 |), which extractMasterParams skips.
+ */
+function surfaceTerminologyGuard(tableText: string): string {
+  const terms = new Set<string>();
+  for (const t of ["透光面", "发光面", "视表面"]) if (tableText.includes(t)) terms.add(t);
+  // One surface alone is unambiguous — only warn when two DIFFERENT ones mix,
+  // which is exactly the comparison a reader is about to make in their head.
+  if (terms.size < 2) return "";
+  return `<aside class="term-guard">
+    <strong>⚠ 测量基准提示 — 本表出现 ${[...terms].join(" / ")}。</strong>
+    三者在标准中是<strong>定义不同的物理面</strong>：透光面＝光线穿过的透镜外表面；
+    发光面＝反射镜口径／透镜横截面；视表面＝观察者看到的表观区域。
+    B 版 3.9 原注：<em>「对于牌照灯和第 5、6 类转向信号灯，本定义中的视表面替换为透光面」</em>——
+    该定义<strong>在同一版本内即随装置类型变化</strong>。
+    因此不同版本、不同装置的发光面／视表面数值<strong>不可直接等价对标</strong>，
+    几何可见度与安装位置的差异分析会失真。请按各行标注的条款号分别核对原文基准。
+  </aside>`;
+}
+
 function renderMasterParams(rows: MasterParamRow[]): string {
   if (!rows.length) return "";
   const body = rows
@@ -1527,6 +1562,10 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
       if (parsed) {
         if (parsed.isComparison) out.push(renderTriptych(parsed));
         else out.push(renderPlainTable(parsed.rows));
+        // Caveat goes ABOVE the table: a reader must pass it before reaching
+        // the numbers, not after.
+        const guard = surfaceTerminologyGuard(rowLines.join("\n"));
+        if (guard) out.splice(out.length - 1, 0, guard);
       } else if (rowLines.length) {
         out.push(`<pre>${esc(rowLines.join("\n"))}</pre>`);
       }
@@ -1739,6 +1778,17 @@ body {
 
 /* ====== Front blocks: mapping index / master params ====== */
 .front-block { page-break-after: always; padding-top: 2mm; }
+/* Terminology guard: sits above the table it qualifies, so a reader cannot
+   reach the numbers without passing the caveat. Amber left-rule marks it as a
+   caveat rather than data — it must not be mistaken for a table row. */
+.term-guard {
+  margin: 0 0 4mm; padding: 3mm 3.5mm;
+  border-left: 3px solid #a17334; background: #fdf8ef;
+  font-size: 8.5pt; line-height: 1.6; color: #4a3f2e;
+  break-inside: avoid;
+}
+.term-guard strong { color: #8a5a12; }
+.term-guard em { font-style: normal; color: #6b5b42; border-bottom: 1px dotted #a17334; }
 .mp-head { margin-bottom: 5mm; border-bottom: 1pt solid #0c1a2b; padding-bottom: 3mm; }
 .mp-eyebrow { font-size: 8pt; letter-spacing: 4px; color: #a17334; text-transform: uppercase; font-weight: 600; }
 .mp-head h2 {

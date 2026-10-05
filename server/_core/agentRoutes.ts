@@ -361,6 +361,10 @@ export function registerAgentRoutes(router: Router) {
         if (ev.type === "outline") outline = ev.outline;
         if (ev.type === "chapter_done") {
           chapters.push({ id: ev.id, title: ev.title, markdown: ev.markdown });
+          // The exec summary is generated LAST (it may only cite findings the
+          // body established) but must render FIRST. Restore reading order:
+          // id 0 up front, the rest by ascending id.
+          chapters.sort((a, b) => (a.id === 0 ? -1 : b.id === 0 ? 1 : a.id - b.id));
         }
         if (ev.type === "appendix_done") {
           appendices.push({ id: ev.id, title: ev.title, markdown: ev.markdown });

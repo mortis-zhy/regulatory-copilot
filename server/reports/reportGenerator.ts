@@ -55,6 +55,43 @@ export type DocInput = {
   text: string;
 };
 
+/** The executive summary is mandatory, not optional — see ensureExecSummary. */
+const EXEC_SUMMARY_CHAPTER: ChapterSpec = {
+  id: 0,
+  title: "执行摘要",
+  sections: ["核心结论速览", "统计口径说明", "使用指引"],
+};
+
+/**
+ * Guarantee the report opens with an 执行摘要.
+ *
+ * The exec-summary hard rules in chapterPrompt() key off `chapter.id === 0`,
+ * but ids come from the LLM's outline — and neither the outline prompt nor
+ * FALLBACK_OUTLINE ever asks for id 0. A 2026-10-06 run produced chapters
+ * 1..13 with no summary at all, so the entire body of filtering rules
+ * (no ⚠ 待复核, no 🟡 同文勘误, no 🔢 renumbering, no ✍ rewording; every claim
+ * needs both A and B anchors) silently never applied.
+ *
+ * That matters most because the summary is where readers stop. If it carries
+ * false diffs — the §11.3.0 errata caused by B-column excerpts being cut at a
+ * token boundary, which drops qualifiers like "车型结构不能保证时可增至
+ * 1500mm" — an engineer who reads only the summary proposes changes that the
+ * source PDFs do not support. Downgrading them to §11.3.0 only helps readers
+ * who get that far.
+ *
+ * So we insert it deterministically rather than hoping the model volunteers it.
+ * If the outline already has a summary under any of the usual names, we keep
+ * that one and leave ids alone (isExec also matches on title).
+ */
+function ensureExecSummary(outline: ReportOutline): ReportOutline {
+  if (outline.chapters.some(isExecChapter)) return outline;
+  return { ...outline, chapters: [EXEC_SUMMARY_CHAPTER, ...outline.chapters] };
+}
+
+/** Same predicate as isExec in chapterPrompt() — kept in one place. */
+const isExecChapter = (c: ChapterSpec): boolean =>
+  c.id === 0 || /执行摘要|核心结论速览|结论速览|内容摘要/.test(c.title);
+
 const FALLBACK_OUTLINE: ReportOutline = {
   title: "多版本法规横向对比研究报告",
   chapters: [
@@ -181,13 +218,13 @@ ${docHeads}
         if (!Array.isArray(parsed.appendices) || !parsed.appendices.length) {
           parsed.appendices = FALLBACK_OUTLINE.appendices;
         }
-        return parsed;
+        return ensureExecSummary(parsed);
       }
     }
   } catch (e) {
     console.error("[report] outline generation failed, using fallback:", e);
   }
-  return FALLBACK_OUTLINE;
+  return ensureExecSummary(FALLBACK_OUTLINE);
 }
 
 /**
@@ -351,7 +388,10 @@ function chapterPrompt(
   const trimmedRegex = trimRegexForChapter(chapter, regexJson);
   const sections = chapter.sections.map((s) => `### ${s}`).join("\n");
   const isChangeChapter = /变化|修订|趋势|立法|动向/.test(chapter.title + chapter.sections.join(" "));
-  const isExec = chapter.id === 0;
+  // Match on id OR title: ensureExecSummary() guarantees an id-0 chapter, but
+  // an LLM outline that volunteers its own summary (id 1, 标题「核心结论」)
+  // must get the same filtering rules, not skip them.
+  const isExec = isExecChapter(chapter);
   const example = isChangeChapter ? changeStyleExample() : "";
   console.log(
     `[report] ch${chapter.id}「${chapter.title}」 prompt: docs=${docText.length} regex=${trimmedRegex.length} chars (全量文档=${docs.reduce((s, d) => s + d.text.length, 0)})`,
@@ -439,12 +479,24 @@ export async function* generateReport(
     }
   }
 
-  const total = outline.chapters.length;
+  // The executive summary is generated LAST, not first. Its hard rules demand
+  // "[已双源核验] only" verdicts — which is a judgement we cannot make until the
+  // body chapters have stated what they found and how strongly. Generating it
+  // at id 0 meant it wrote before anything existed to summarise. It still
+  // *renders* first; only the generation order differs (agentRoutes.ts sorts
+  // id 0 to the front when it assembles the report).
+  const execIdx = outline.chapters.findIndex(isExecChapter);
+  const execChapter = execIdx >= 0 ? outline.chapters[execIdx] : null;
+  const bodyChapters = outline.chapters.filter((_, i) => i !== execIdx);
+  const total = bodyChapters.length + (execChapter ? 1 : 0);
   const prevSummaries: string[] = [];
+  // Full-length roll-up, never trimmed — the exec summary needs every chapter,
+  // whereas body chapters only need the last few for local coherence.
+  const allSummaries: string[] = [];
 
   // 2. Chapters, one LLM call each
-  for (let i = 0; i < outline.chapters.length; i++) {
-    const ch = outline.chapters[i];
+  for (let i = 0; i < bodyChapters.length; i++) {
+    const ch = bodyChapters[i];
     const start: ReportEvent = {
       type: "chapter_start",
       id: ch.id,
@@ -582,8 +634,10 @@ export async function* generateReport(
     }
 
     // Keep a short summary for cross-chapter coherence
-    prevSummaries.push(`第${ch.id}章 ${ch.title}: ${md.slice(0, 300).replace(/\n/g, " ")}`);
+    const roll = `第${ch.id}章 ${ch.title}: ${md.slice(0, 300).replace(/\n/g, " ")}`;
+    prevSummaries.push(roll);
     if (prevSummaries.length > 4) prevSummaries.shift();
+    allSummaries.push(roll);
 
     const done: ReportEvent = { type: "chapter_done", id: ch.id, title: ch.title, markdown: md };
     onEvent?.(done);
@@ -591,6 +645,62 @@ export async function* generateReport(
 
     // Gentle pacing between chapters so we stay under the RPM/TPM window.
     if (i + 1 < total) await new Promise((r) => setTimeout(r, 4_000));
+  }
+
+  // 3. Executive summary — last, because it may only cite findings the body
+  //    chapters actually established. Fed every chapter roll-up so it can
+  //    decide what cleared the 双源核验 bar and what must stay out.
+  if (execChapter) {
+    const sStart: ReportEvent = {
+      type: "chapter_start",
+      id: execChapter.id,
+      title: execChapter.title,
+      index: total,
+      total,
+    };
+    onEvent?.(sStart);
+    yield sStart;
+
+    let execMd = "";
+    try {
+      const prompt =
+        chapterPrompt(execChapter, docs, regexJson, allSummaries.join("\n")) +
+        "\n\n【本章只写已核验事实】以下是正文各章的实际结论摘要，请据此撰写执行摘要：\n" +
+        allSummaries.join("\n") +
+        "\n\n正文中标注为 ⚠ 待复核 / 🟡 同文勘误 / 🔢 仅编号重排 / ✍ 等义改写 的条目，" +
+        "一律不得进入执行摘要——只写已在 A、B 两版原文双向定位的实质技术变更。";
+      for await (const chunk of streamMiniMaxChat([{ role: "user", content: prompt }], {
+        temperature: 0.2,
+        maxTokens: 4096,
+      })) {
+        const delta: ReportEvent = { type: "chapter_content", id: execChapter.id, delta: chunk };
+        onEvent?.(delta);
+        yield delta;
+        execMd += chunk;
+      }
+    } catch (e) {
+      const err: ReportEvent = {
+        type: "error",
+        message: `执行摘要生成失败：${e instanceof Error ? e.message : String(e)}`,
+      };
+      onEvent?.(err);
+      yield err;
+    }
+
+    // A failed summary must not silently ship as an empty page.
+    if (execMd.trim().length < 120) {
+      execMd =
+        `> **执行摘要未能生成**（${execMd.trim().length} 字符，疑似生成中断）。\n` +
+        `> 请直接阅读后续各章；正文内容完整，本次仅摘要缺失。`;
+    }
+    const sDone: ReportEvent = {
+      type: "chapter_done",
+      id: execChapter.id,
+      title: execChapter.title,
+      markdown: execMd,
+    };
+    onEvent?.(sDone);
+    yield sDone;
   }
 
   // ---- Appendices (对照表 / 数值汇总 / 术语表 / 溯源索引) ----
