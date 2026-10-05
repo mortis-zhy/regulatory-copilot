@@ -201,6 +201,22 @@ export function registerAgentRoutes(router: Router) {
       }
       // Legacy path: chat-answer export via export.ts (kept for /report/word
       // parity and any external consumer that posts a ReportPayload).
+      // An empty payload used to reach the renderer and surface as 500 with a
+      // stack-trace message; reject it up front as a client error instead.
+      if (!body || typeof body !== "object") {
+        return res.status(400).json({ error: "请求体必须是 JSON 对象" });
+      }
+      const hasContent = typeof (body as { content?: unknown }).content === "string"
+        && (body as { content: string }).content.trim().length > 0;
+      const hasFindings = Array.isArray((body as { changes?: unknown }).changes)
+        || Array.isArray((body as { parameters?: unknown }).parameters)
+        || Array.isArray((body as { evidence?: unknown }).evidence);
+      if (!hasContent && !hasFindings) {
+        return res.status(400).json({
+          error: "请求体缺少可导出内容（需要 content 或 changes/parameters/evidence）",
+          code: "empty_payload",
+        });
+      }
       const bytes = await renderPdf(body as ReportPayload);
       res.status(200).set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.pdf` }).send(Buffer.from(bytes));
     } catch (error) {

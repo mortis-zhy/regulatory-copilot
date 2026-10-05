@@ -400,6 +400,13 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
 
   // Multi-chapter report builder (Regex + streaming LLM + HTML→PDF)
   const [showReportBuilder, setShowReportBuilder] = useState(false);
+  // V8 render is a ~60s Chromium pass. Without this guard, mashing the PDF
+  // button fires N concurrent renders and starves the browser.
+  const [pdfExporting, setPdfExporting] = useState(false);
+  // A ref, not just state: three clicks inside one React batch all read the
+  // same (stale) state value, so the state guard alone lets every one through.
+  // The ref flips synchronously and is the real lock; state only drives the UI.
+  const pdfExportingRef = useRef(false);
 
   // Settings state
   const [settings, setSettings] = useState({ temperature: 0.15, model: "MiniMax-M3", defaultTemplate: DEFAULT_TEMPLATE_ID, maxFileSizeMB: 100 });
@@ -678,6 +685,9 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       // The server reads reports/last-report.json and renders it through
       // htmlRenderV8 — byte-identical to POST /api/agent/report/render.
       if (format === "pdf") {
+        if (pdfExportingRef.current) return; // re-entry guard
+        pdfExportingRef.current = true;
+        setPdfExporting(true);
         try {
           const response = await fetch("/api/agent/report/pdf", {
             method: "POST",
@@ -687,6 +697,11 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           if (response.status === 409) {
             const detail = await response.json().catch(() => null);
             toast.error(detail?.error ?? "尚未生成对比报告，请先生成完整报告");
+            return;
+          }
+          if (response.status === 400) {
+            const detail = await response.json().catch(() => null);
+            toast.error(detail?.error ?? "导出请求无效，请重新生成报告后再试");
             return;
           }
           if (response.status === 422) {
@@ -711,6 +726,9 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           toast.success("对比报告 PDF 已下载（完整多版本横评）");
         } catch (error) {
           toast.error(error instanceof Error ? error.message : "报告生成失败");
+        } finally {
+          pdfExportingRef.current = false;
+          setPdfExporting(false);
         }
         return;
       }
@@ -761,6 +779,11 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
         onExport={exportReport}
         templateId={templateId}
         onTemplateChange={setTemplateId}
+        pdfExporting={pdfExporting}
+        // Word exports the latest chat answer, so it needs one. PDF exports the
+        // full V8 report from reports/last-report.json and must stay enabled
+        // even on a fresh session with no chat history — the server answers
+        // 409 "尚未生成报告" if nothing has been generated yet.
         disabled={!messages.some((m) => m.role === "assistant" && m.text)}
       />
       <main className="mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-5 pb-44 pt-8 md:px-8 md:pt-10">
@@ -855,11 +878,13 @@ function PageHeader({
   templateId,
   onTemplateChange,
   disabled,
+  pdfExporting,
 }: {
   onExport: (f: "word" | "pdf") => void;
   templateId: TemplateId;
   onTemplateChange: (id: TemplateId) => void;
   disabled: boolean;
+  pdfExporting?: boolean;
 }) {
   return (
     <header
@@ -887,6 +912,7 @@ function PageHeader({
           variant="outline"
           size="sm"
           disabled={disabled}
+          title={disabled ? "先让 Copilot 回答一次，才能导出 Word" : undefined}
           onClick={() => onExport("word")}
           className="h-9 rounded-md border-[#d8cfb8] bg-white/70 px-3 text-xs text-[#3a3027] hover:bg-white"
         >
@@ -895,11 +921,17 @@ function PageHeader({
         <Button
           variant="outline"
           size="sm"
-          disabled={disabled}
+          disabled={pdfExporting}
           onClick={() => onExport("pdf")}
+          title={pdfExporting ? "正在渲染，约需 1 分钟" : undefined}
           className="h-9 rounded-md border-[#d8cfb8] bg-white/70 px-3 text-xs text-[#3a3027] hover:bg-white"
         >
-          <Download className="mr-1.5 h-3.5 w-3.5" /> PDF
+          {pdfExporting ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          {pdfExporting ? "渲染中…" : "PDF"}
         </Button>
         <button className="ml-1 rounded-md p-2 text-[#7c6a4f] hover:bg-white" aria-label="更多">
           <MoreHorizontal className="h-4 w-4" />
