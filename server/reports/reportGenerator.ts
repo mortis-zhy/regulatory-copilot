@@ -662,29 +662,51 @@ export async function* generateReport(
     yield sStart;
 
     let execMd = "";
-    try {
-      const prompt =
-        chapterPrompt(execChapter, docs, regexJson, allSummaries.join("\n")) +
-        "\n\n【本章只写已核验事实】以下是正文各章的实际结论摘要，请据此撰写执行摘要：\n" +
-        allSummaries.join("\n") +
-        "\n\n正文中标注为 ⚠ 待复核 / 🟡 同文勘误 / 🔢 仅编号重排 / ✍ 等义改写 的条目，" +
-        "一律不得进入执行摘要——只写已在 A、B 两版原文双向定位的实质技术变更。";
-      for await (const chunk of streamMiniMaxChat([{ role: "user", content: prompt }], {
-        temperature: 0.2,
-        maxTokens: 4096,
-      })) {
-        const delta: ReportEvent = { type: "chapter_content", id: execChapter.id, delta: chunk };
-        onEvent?.(delta);
-        yield delta;
-        execMd += chunk;
+    // Generating last means generating when the rate-limit budget is most
+    // exhausted — a 20-minute run of 14 chapters has just spent it. The body
+    // chapters all retry on 429; without this the summary, the one chapter a
+    // reader is guaranteed to read, was the one most likely to come back empty.
+    // Verified: the first run produced 0 characters here for exactly this reason.
+    const execWaits = [15_000, 45_000, 90_000];
+    const execPrompt =
+      // prevSummaries is deliberately "" — the roll-up is appended below with
+      // explicit filtering instructions, so passing it here too would send it twice.
+      chapterPrompt(execChapter, docs, regexJson, "") +
+      "\n\n【本章只写已核验事实】以下是正文各章的实际结论摘要，请据此撰写执行摘要：\n" +
+      allSummaries.join("\n") +
+      "\n\n正文中标注为 ⚠ 待复核 / 🟡 同文勘误 / 🔢 仅编号重排 / ✍ 等义改写 的条目，" +
+      "一律不得进入执行摘要——只写已在 A、B 两版原文双向定位的实质技术变更。";
+    for (let attempt = 0; attempt <= execWaits.length && !execMd; attempt++) {
+      try {
+        execMd = "";
+        for await (const chunk of streamMiniMaxChat([{ role: "user", content: execPrompt }], {
+          temperature: 0.2,
+          maxTokens: 4096,
+        })) {
+          const delta: ReportEvent = { type: "chapter_content", id: execChapter.id, delta: chunk };
+          onEvent?.(delta);
+          yield delta;
+          execMd += chunk;
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        const isRateLimit = /429|rate_limit/i.test(msg);
+        if (isRateLimit && attempt < execWaits.length) {
+          const warn: ReportEvent = {
+            type: "error",
+            message: `执行摘要被速率限制（429），${execWaits[attempt] / 1000}s 后重试（${attempt + 1}/${execWaits.length}）…`,
+          };
+          onEvent?.(warn);
+          yield warn;
+          execMd = "";
+          await new Promise((r) => setTimeout(r, execWaits[attempt]));
+          continue;
+        }
+        const err: ReportEvent = { type: "error", message: `执行摘要生成失败：${msg}` };
+        onEvent?.(err);
+        yield err;
+        break;
       }
-    } catch (e) {
-      const err: ReportEvent = {
-        type: "error",
-        message: `执行摘要生成失败：${e instanceof Error ? e.message : String(e)}`,
-      };
-      onEvent?.(err);
-      yield err;
     }
 
     // A failed summary must not silently ship as an empty page.
