@@ -266,8 +266,26 @@ function cellHtml(s: string): string {
   if (!s) return "";
   return s
     .split("\n")
-    .map((l) => inlineMd(l))
+    .map((l) => labelChips(inlineMd(l)))
     .join("<br>");
+}
+
+/**
+ * Turn priority tokens into scannable chips.
+ *
+ * P0/P1/P2 are the report's own management advice, not regulatory text — and
+ * nothing else in the pipeline styled them: [新增]/[删除]/[修改]/[保留] and the
+ * 【原文事实】/【模型推断】/【待人工确认】 tags are all already converted to
+ * colour-coded chips by inlineMd(). Priorities were the one token class still
+ * rendered as bare words inside table cells, so a reader could carry a P0 into
+ * a design review mistaking our recommendation for something the standard says.
+ * The chip marks it as 建议 and says so in the glyph itself, so the distinction
+ * survives being quoted out of context.
+ */
+function labelChips(html: string): string {
+  // Run AFTER inlineMd, so we only ever rewrite plain text — never markup, and
+  // never inside a $...$ formula (these are literal, they can't match a tag).
+  return html.replace(/\bP([012])\b/g, '<span class="chip chip-adv">P$1·建议</span>');
 }
 
 // ---------------------------------------------------------------------------
@@ -1933,6 +1951,18 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 /* Verified vs unverified page anchors — the distinction must be visible
    at a glance, not just readable in the disclaimer. */
 td.cell-verified { background: #f4f9f5 !important; }
+/* Priority chip: P0/P1/P2 are the report's recommendation, not clause text.
+   Inverted (dark) so it never reads as a quotation — it is the one chip in the
+   document that is our opinion. */
+.chip {
+  display: inline-block; margin: 0 2px; padding: 0 4px;
+  border-radius: 3px; font-size: 7.5pt; font-weight: 700;
+  line-height: 1.5; white-space: nowrap; vertical-align: baseline;
+}
+.chip-adv {
+  background: #0c1a2b; color: #f0d9a8; border: 1px solid #0c1a2b;
+  cursor: help;
+}
 /* Truncated excerpt: amber inline chip, deliberately NOT a full-cell tint so it
    coexists with the green "page verified" background — the page IS right, the
    clause text is incomplete, and conflating those is the original bug. */
