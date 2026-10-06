@@ -605,6 +605,67 @@ function surfaceTerminologyGuard(tableText: string): string {
   </aside>`;
 }
 
+/**
+ * Banner for tables that introduce device / clause types whose national test
+ * methods are not yet in place. Review finding 七.3: the baseline mentioned
+ * 「部分装置如发光徽标无对应国标试验细则」, but only mid-cell inside a long
+ * impact row — a reader scanning for the fact never finds it. This guard
+ * surfaces it ABOVE the table, counts the affected items from the table itself
+ * (so the banner stays in sync with the data), and names what is missing.
+ *
+ * Detection: a 5+ column table where the last two columns are page / reference
+ * citations AND ≥60% of body rows have "—" in both. The 11.1.2 子条款级新增
+ * table fits this profile exactly (7 rows, all —/—).
+ */
+function surfaceDataGapGuard(tableText: string): string {
+  const rows: string[][] = [];
+  for (const line of tableText.split("\n")) {
+    if (!line.startsWith("|")) continue;
+    const cells = line
+      .replace(/^\||\|$/g, "")
+      .split("|")
+      .map((c) => c.trim());
+    if (!cells.length) continue;
+    // Skip markdown separator rows like |---|---|
+    if (/^[\s:|-]+$/.test(cells.join("|"))) continue;
+    rows.push(cells);
+  }
+  if (rows.length < 4) return ""; // need header + ≥3 body rows to mean anything
+  const header = rows[0];
+  const body = rows.slice(1);
+  if (header.length < 5) return "";
+
+  // Last two columns are the page-cite and cross-ref columns in every table
+  // matching this profile (verified across the 4 sub-tables in ch10).
+  const pageIdx = header.length - 2;
+  const refIdx = header.length - 1;
+  const gapRows = body.filter(
+    (r) => (r[pageIdx] ?? "").replace(/\s/g, "") === "—" && (r[refIdx] ?? "").replace(/\s/g, "") === "—",
+  );
+  if (gapRows.length < 3) return "";
+  if (gapRows.length / body.length < 0.6) return "";
+
+  // Pull the device-type column (col 2: A 草案标题 in our convention).
+  const titleIdx = 2;
+  const sample = gapRows
+    .map((r) => (r[titleIdx] ?? "").replace(/<br>/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, 7);
+
+  const titleList = sample.length
+    ? `<strong>${sample.join("、")}</strong>${gapRows.length > sample.length ? ` 等 ${gapRows.length} 项` : ""}`
+    : `本表 ${gapRows.length} 项`;
+
+  return `<aside class="gap-guard">
+    <strong>⚠ 数据缺口提示 — ${titleList}。</strong>
+    草案 A 引入这些<strong>新装置类型</strong>时，A 页码列与 C 参照列同时标 "—"，意味着
+    国内对应国标体系中<strong>尚无明确的光度试验方法</strong>。落地路径仅有两条：① 参照 UN R48
+    同类条款的测试程序作为过渡依据；② 待配套实施细则发布后补做型式试验。
+    报告其余章节如涉及这些装置的<strong>光强／色度／配光</strong>数值，均<strong>不可直接
+    视作已具备型式试验条件</strong>，请在认证材料中单列"待细则"说明。
+  </aside>`;
+}
+
 function renderMasterParams(rows: MasterParamRow[]): string {
   if (!rows.length) return "";
   const body = rows
@@ -1580,14 +1641,21 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
       closeLists();
       const overrideKey = tableOverrides ? `t${tableCounter}` : undefined;
       tableCounter++;
+      // Collect the underlying markdown table block first — both rendering
+      // paths (override and plain) need it for the data-gap guard, which
+      // inspects row structure regardless of how the table itself is
+      // rendered. ch10's "新增子条款级" table lives in typed-tables and
+      // would otherwise bypass the guard entirely (review finding 七.3).
+      const { rowLines, next } = collectTableRows(lines, i);
+      const tableText = rowLines.join("\n");
+      const gapGuard = surfaceDataGapGuard(tableText);
       if (overrideKey && tableOverrides?.has(overrideKey)) {
         // Use pre-rendered typed HTML from aligned-tables.json
         out.push(tableOverrides.get(overrideKey)!);
-        // skip the markdown table block (consume until next non-pipe line)
-        while (i < lines.length && /\|/.test(lines[i])) i++;
+        if (gapGuard) out.splice(out.length - 1, 0, gapGuard);
+        i = next;
         continue;
       }
-      const { rowLines, next } = collectTableRows(lines, i);
       i = next;
       const parsed = parseTable(rowLines);
       if (parsed) {
@@ -1595,10 +1663,15 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
         else out.push(renderPlainTable(parsed.rows));
         // Caveat goes ABOVE the table: a reader must pass it before reaching
         // the numbers, not after.
-        const guard = surfaceTerminologyGuard(rowLines.join("\n"));
+        const guard = surfaceTerminologyGuard(tableText);
         if (guard) out.splice(out.length - 1, 0, guard);
+        // Data-gap guard: review finding 七.3 — new device types without
+        // corresponding national photometric test methods were buried inside
+        // long impact cells. Lift them to a banner ABOVE the introducing
+        // table so a reader scanning for the fact sees it immediately.
+        if (gapGuard) out.splice(out.length - 1, 0, gapGuard);
       } else if (rowLines.length) {
-        out.push(`<pre>${esc(rowLines.join("\n"))}</pre>`);
+        out.push(`<pre>${esc(tableText)}</pre>`);
       }
       continue;
     }
@@ -1820,6 +1893,18 @@ body {
 }
 .term-guard strong { color: #8a5a12; }
 .term-guard em { font-style: normal; color: #6b5b42; border-bottom: 1px dotted #a17334; }
+/* Data-gap guard: amber+red rule to mark the table it precedes as introducing
+   device types whose national photometric test methods are NOT yet in place.
+   The stronger colour and the explicit "数据缺口" label (vs term-guard's
+   neutral amber) make it scannable for a reviewer looking specifically for
+   items that will block certification. */
+.gap-guard {
+  margin: 0 0 4mm; padding: 3mm 3.5mm;
+  border-left: 3px solid #c9542a; background: #fdf3f0;
+  font-size: 8.5pt; line-height: 1.6; color: #4a2e26;
+  break-inside: avoid;
+}
+.gap-guard strong { color: #a63c22; }
 .mp-head { margin-bottom: 5mm; border-bottom: 1pt solid #0c1a2b; padding-bottom: 3mm; }
 .mp-eyebrow { font-size: 8pt; letter-spacing: 4px; color: #a17334; text-transform: uppercase; font-weight: 600; }
 .mp-head h2 {
