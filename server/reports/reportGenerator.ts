@@ -681,20 +681,31 @@ export async function* generateReport(
         execMd = "";
         for await (const chunk of streamMiniMaxChat([{ role: "user", content: execPrompt }], {
           temperature: 0.2,
-          maxTokens: 4096,
+          maxTokens: 8192,
         })) {
           const delta: ReportEvent = { type: "chapter_content", id: execChapter.id, delta: chunk };
           onEvent?.(delta);
           yield delta;
           execMd += chunk;
         }
+        // An empty stream is NOT a success. streamMiniMaxChat strips <think>
+        // blocks; when the model spends the whole token budget reasoning and
+        // emits no content, the generator yields nothing and throws nothing —
+        // so a naive `if (!execMd)` check would ship the degraded page. This
+        // is the exact failure we hit twice: ch13 reported 无内容 and the
+        // summary came back 0 characters, both late in the same run.
+        if (execMd.trim().length < 120) {
+          throw new Error(`内容过短（${execMd.trim().length} 字符，疑似仅返回思考内容）`);
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         const isRateLimit = /429|rate_limit/i.test(msg);
-        if (isRateLimit && attempt < execWaits.length) {
+        const lastAttempt = attempt >= execWaits.length;
+        if ((isRateLimit || !lastAttempt) && attempt < execWaits.length) {
+          const why = isRateLimit ? "被速率限制（429）" : "返回内容过短";
           const warn: ReportEvent = {
             type: "error",
-            message: `执行摘要被速率限制（429），${execWaits[attempt] / 1000}s 后重试（${attempt + 1}/${execWaits.length}）…`,
+            message: `执行摘要${why}，${execWaits[attempt] / 1000}s 后重试（${attempt + 1}/${execWaits.length}）…`,
           };
           onEvent?.(warn);
           yield warn;
