@@ -427,8 +427,16 @@ export function buildLedger(src: string | Array<{ markdown?: string }>): Ledger 
     /(\d+)\s*条候选的完整去向\s*：([\s\S]{0,320}?)(?:——|—)?\s*合计\s*(\d+)/g,
   )].map((m) => {
     const body = m[2] ?? "";
-    const addends = [...body.matchAll(/([0-9]+)\s*条\s*([^，。+]{2,14}?)(?=\s*[（(，,、+＋]|，|。|$)/g)]
-      .map((a) => ({ n: Number(a[1]), label: a[2].trim() }))
+    // The label runs to the next delimiter. `、` must be excluded from the label
+    // class (not just the lookahead) and the bound raised above 14, otherwise
+    // "1 条引用编号变化单列 11.3.2、" can neither terminate at its own 、 nor fit
+    // in 14 chars, so that addend is dropped and the closure sum goes short by
+    // one bucket — a false "分项相加 44，文中写「合计 45」".
+    const addends = [...body.matchAll(/([0-9]+)\s*条\s*([^，。+、]{2,20}?)(?=\s*[（(，,、+＋]|，|。|$)/g)]
+      // Labels are quoted verbatim into reader-facing discrepancy text, and the
+      // source prose is markdown — "**9 条同文勘误见 11.3.0**" would otherwise
+      // print literal asterisks inside 「」 in the delivered PDF.
+      .map((a) => ({ n: Number(a[1]), label: a[2].replace(/\*\*/g, "").trim() }))
       .filter((a) => a.n > 0 && !/候选/.test(a.label));
     return {
       head: Number(m[1]),

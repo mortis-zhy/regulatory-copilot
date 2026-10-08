@@ -209,7 +209,10 @@ function build11_4_v62(results: IndicatorResult[]): string {
     "",
     "> 说明：GB4785 第 11.4 表 11.6 中部分数值为推算或引用，未经 A/B 原文出现。⚠ 标记 = 本报告实测值与 GB4785 声称不一致，以原文为准。",
     "",
-    "**GB4785 声称值的人工复核结论（fitz 对照三份原文，2026-09-28）**：",
+    // No `**` here on purpose: this line gets absorbed into the preceding
+    // table cell, which is rendered without inlineMd, so the asterisks would
+    // print literally. The bullets below carry the emphasis anyway.
+    "GB4785 声称值的人工复核结论（fitz 对照三份原文，2026-09-28）：",
     "- **侧标志灯间距 \"≤6m→≤4m\" 属误读**：两版原文实为**两相邻侧标志灯间距不大于 3m（车型结构不能保证时可增至 4m）**——A p55 / B p46 逐字一致，\"3m [保留]\"判定正确；GB4785 引用的\"6m\"实际是**车长不大于 6m 车辆的侧回复反射器数量豁免**（A p54 / B p45），与间距无关。",
     "- **DRL 最小光度 400→500 cd、ESS 光度 400→600 cd：A/B 原文均未出现**（A/B 全文检索 0 命中）——[未找到] 判定正确，勿引用。",
     "- **ADB / 矩阵式 LED：A/B 原文 0 命中**；A 的附录 D 实为\"近光光束倾斜度随装载变化的测量\"（非 ADB 测试程序），\"像素\"唯一出处是 3.2.1.3 术语注（灯丝、发光颗粒、像素）。",
@@ -991,6 +994,35 @@ function buildAppendixA(data: Record<string, any>): string {
 /*  11.3 numeric changes — from verify_claims.py (machine-verified)            */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The candidate-flow counts, normalised across the three shapes the pipeline
+ * can hand us. These keys are what decide the executive summary's "N 条候选"
+ * and §11.3's closure sentence, so a miss is not cosmetic — it prints a
+ * confident but wrong total:
+ *
+ *   - `counts` (dist/facts.json)        flat:  { candidates, wordingFiltered, ruleDropped }
+ *   - `flow`  (verified-comparison.json) nested: buckets.{...}, plus flow.candidates
+ *                                          and flow.ruleDropped at the top level
+ *
+ * Reading `verified.flow` as if it were flat (the bug) picked up ruleDropped
+ * but silently lost buckets.wordingFiltered, so the summary summed 3+1+9+0+2=15
+ * and printed "合计 15" beside a claim of 45 candidates.
+ */
+function resolveFlowCounts(verified: any): Record<string, number> {
+  const c = verified?.counts;
+  if (c && typeof c.candidates === "number") return c;
+  const flow = verified?.flow;
+  if (flow) {
+    const b = flow.buckets ?? {};
+    return {
+      ...b,
+      candidates: flow.candidates ?? b.numeric,
+      ruleDropped: flow.ruleDropped ?? b.ruleDropped ?? 0,
+    };
+  }
+  return {};
+}
+
 function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: any[], textChanges?: any[], counts?: any, sameText?: any[]): string {
   const sameT = sameText ?? [];
   if (!vchanges.length && !(renumbered && renumbered.length) && !(textChanges && textChanges.length) && !sameT.length) return "_(本子节无内容)_";
@@ -1207,7 +1239,15 @@ function buildExecSummary(input: {
   // (candidates = numeric + renumbered + wordingFiltered + ruleDropped).
   // Derived from facts.counts, never hardcoded (drifted before, REPORT_ERRORS 三十二).
   const refN = (verified?.renumberedOnly ?? []).length;
-  const counts = verified?.counts ?? {};
+  // See resolveFlowCounts: verified-comparison.json nests the buckets under
+  // flow.buckets, so `verified.counts ?? verified.flow` is not a safe fallback.
+  const counts = resolveFlowCounts(verified);
+  if (counts.candidates === undefined) {
+    console.warn(
+      "[v6] no candidate-flow counts (facts.counts or flow.buckets) — the executive " +
+        "summary total is a guess. Run verify_claims.py to regenerate dist/facts.json.",
+    );
+  }
   const wordingN = counts.wordingFiltered ?? 0;
   const ruleD = counts.ruleDropped ?? 0;
   const sameN = (verified?.sameTextDropped ?? []).length;
@@ -1422,7 +1462,11 @@ export function buildMinerUReport(
   //   2nd → 11.3 numeric changes (machine-verified)
   //   3rd → 11.4 GB4785 9-indicator verification
   let ch11Md = ch11.fullMarkdown;
-  const parts11 = ch11Md.split(/(?=### 11\.)/);
+  // Anchor at the line start. Without `^` the lookahead also matches inside
+  // "#### 11.1.1" (offset 1), so every h4 subsection was split in half and
+  // rejoined as a stray "#" line followed by "### 11.1.1" — a visible orphan
+  // glyph above six subheadings in the delivered PDF.
+  const parts11 = ch11Md.split(/^(?=### 11\.)/m);
   const rebuilt: string[] = [];
   for (const seg of parts11) {
     if (seg.startsWith("### 11.4")) {
@@ -1433,8 +1477,14 @@ export function buildMinerUReport(
   }
   let merged = rebuilt.join("\n");
   if (!merged.includes("### 11.4") || !merged.includes("### 11.3 重大修订条款（数值级")) {
+    // The placeholder that changePointChapter.ts emits when a section has no
+    // data is a blockquote — "> **本子节无内容** — …" — NOT the old
+    // "_(本子节无内容)_" this regex was written for. Matching the wrong shape
+    // meant the replace never fired, so §11.2 / §11.3 / §11.3.0 / §11.4 were
+    // silently dropped from the delivered PDF while the executive summary kept
+    // pointing readers at "11.3 数值变化带页码可直接对照原文". Match both forms.
     let count = 0;
-    merged = merged.replace(/_\(本子节无内容\)_/g, () => {
+    merged = merged.replace(/^(?:>\s*)?\*\*本子节无内容\*\*[^\n]*$/gm, () => {
       count++;
       // 1st placeholder = 11.2 删除条款, 2nd = 11.3, 3rd = 11.4
       if (count === 1) {
@@ -1450,10 +1500,21 @@ export function buildMinerUReport(
           "",
         ].join("\n");
       }
-      if (count === 2) return build11_3numeric(verified.numericChanges, verified.renumberedOnly, verified.manualFindings, verified.textChanges, verified.counts, verified.sameTextDropped);
+      // changePointChapter returns early on empty data so its own "### 11.3 …"
+      // heading never lands; build11_3numeric emits its own heading with the body.
+      if (count === 2) {
+        return build11_3numeric(verified.numericChanges, verified.renumberedOnly, verified.manualFindings, verified.textChanges, resolveFlowCounts(verified), verified.sameTextDropped);
+      }
       if (count === 3) return build11_4_v62(indicatorResults);
       return "_(本子节无内容)_";
     });
+    if (count < 3) {
+      console.warn(
+        `[v6] chapter 11: replaced ${count}/3 empty-section placeholders — ` +
+          "§11.2/11.3/11.4 may be missing from the PDF. Check the placeholder " +
+          "text emitted by changePointChapter.ts.",
+      );
+    }
   }
   ch11Md = merged;
   // 写作改进 4: quick-reference table right after chapter-11 methodology note
