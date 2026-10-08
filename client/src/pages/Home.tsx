@@ -118,6 +118,16 @@ const SUGGESTED_TASKS_FALLBACK = [
   { label: "总结会影响产品设计的全部变化", icon: FileCheck2 },
 ];
 
+/**
+ * Two task briefs. The GB 4785 one is specific (it names the exact三版本 set and
+ * the headlamp clause checklist); the generic one keeps the structural demands
+ * — tables, excerpts, numeric values, page anchors — without asserting the
+ * documents are GB 4785 / UN R48 when they may be anything.
+ */
+const GB4785_BRIEF = `【核心要求——客户需求】对三份法规（GB 4785 草案 V4.3.5 vs GB 4785-2019 现行版 vs UN R48 欧洲标准）进行多版本横向对比，必须输出**至少 20 页**的内容充实的 PDF。最终交付物必须包含：\n\n1. **结构对齐**（三份文档章节体系对比，1-2 页表格）\n2. **内容对比**（逐章节列出新增/修改/删除的条款，每条都有原文摘录 + 章节号 + 页码，必须有 12+ 个章节对比表格，至少 30 条 changes）\n3. **专业参数**（远光/近光/转向/制动/位置/倒车/危险警告/牌照等每种灯具的数值参数对比，至少 25 条 parameters）\n4. **联网证据**（至少 5 条 evidence）\n5. **变化点总结**（最关键的 10 条 change，附原文摘录）\n\n**禁止**：写到一半就停止输出、说"对比完成"等结束语后停止。每个章节必须输出完整原文摘录和具体数值。`;
+
+const GENERIC_BRIEF = `【核心要求】对已上传的法规文件做多版本横向对比，所有结论必须可回查原文：\n\n1. **结构对齐**（各版本章节体系对比表）\n2. **内容对比**（逐条款列出新增/修改/删除，每条附原文摘录 + 章节号 + 页码）\n3. **专业参数**（限值、单位、适用范围与例外条件的量化对比）\n4. **证据**（引用的标准/来源及其出处）\n\n每条结论必须标注来源页码 / 章节号；无法定位的请使用【待人工确认】前缀。不要编造原文。`;
+
 const STAGE_FLOW: Array<{ key: Stage; label: string }> = [
   { key: "reading", label: "读取文件" },
   { key: "identifying", label: "识别章节" },
@@ -272,6 +282,7 @@ async function streamChat(
   history: ChatMessage[],
   docs: Doc[],
   templateId: TemplateId,
+  llm: { model: string; temperature: number },
   callbacks: {
     onReasoning: (delta: string) => void;
     onContent: (delta: string) => void;
@@ -306,6 +317,12 @@ async function streamChat(
       return `[文档 ${i + 1}] 文件名：${d.fileName}；大小：${formatBytes(d.size)}${d.pageCount ? `；共 ${d.pageCount} 页` : ""}${d.parseError ? `；解析错误：${d.parseError}` : ""}${excerpt}`;
     })
     .join("\n\n");
+  // Only claim the GB 4785 / UN R48 framing when the uploads actually look like
+  // that set (a GB 4785 file plus an UN R48 file). Otherwise use the generic
+  // brief, so an unrelated comparison isn't told it is about headlights.
+  const isGb4785Set =
+    docs.some((d) => /GB[\s_-]*4785/i.test(d.fileName)) &&
+    docs.some((d) => /UN[\s_-]*R0?48/i.test(d.fileName));
   const docContext = docs.length
     ? `\n\n[当前已上传 ${docs.length} 份文件]\n${docSummaries}\n\n请严格基于上述真实文本进行分析${docs.length >= 2 ? "——多文件时按上传顺序识别为 A、B、C 等基线" : ""}。\n\n【强制要求——逐章生成详细数据表格】\n\n请按以下顺序逐章生成对比内容，每章给出真实数据表格（不要只做概括）：\n\n## 章节对比模板（每章必填）\n对每份 PDF 的第 N 章，输出一行表格：\n\n| 章节号 | A（草案）具体内容 | B（2019 版）具体内容 | 差异（新增/修改/删除/无变化） |\n|---|---|---|---|\n\n## 必须覆盖的章节\n1. 远光灯条款（找 "远光灯"、"high beam"、"远光"）\n2. 近光灯条款（找 "近光灯"、"dipped beam"、"近光"）\n3. 前雾灯条款（"前雾灯"、"front fog lamp"）\n4. 转向信号灯条款（"转向"、"direction indicator"、"闪烁频率 Hz"）\n5. 倒车灯条款（"倒车灯"、"reversing lamp"）\n6. 位置灯条款（"位置灯"、"position lamp"）\n7. 制动灯条款（"制动灯"、"stop lamp"、"制动信号"）\n8. 牌照灯条款（"牌照灯"、"rear registration plate"）\n9. 危险警告信号（"危险警告"、"hazard"）\n10. 安装尺寸（"安装高度"、"安装角度"、"尺寸要求"）\n11. 试验条件（"试验电压"、"试验方法"、"环境条件"）\n12. 章节体系（"第 X 章"、"主功能/从属功能/扩展"）\n\n每一条要求包含：\n- 原文摘录（A/B/C 各自的原文片段，至少 20 字）\n- 具体数值（强度 cd、频率 Hz、尺寸 mm/°、时间 s、电压 V 等）\n- 章节号 + 页码（例如 "B 第 22 页"）\n\n【重要】你的回答必须包含两个部分：\n第一部分：按"结构对齐 → 内容对比 →专业参数 → 联网证据"四层组织的详细分析（markdown 格式）。内容对比部分必须包含至少 12 个章节对比表格（按上面的章节清单），每个表格至少 3-5 行数据。\n第二部分：在回答末尾必须输出一个 JSON 代码块（三个反引号包 json 开头，三个反引号结束），包含以下三个数组：\n- changes: 每个变化点包含 id、title、type（added/removed/modified/renumbered）、severity、oldExcerpt、newExcerpt、anchor。至少 20 条。\n- parameters: 每个参数包含 name、oldValue、newValue、unit、source。至少 20 条。\n- evidence: 每条证据包含 title、sourceName、sourceUrl、level。\n\n每条结论必须给出来源页码 / 章节号 / 表号等原文锚点；找不到的内容请使用【待人工确认】前缀。]`
     : `\n\n[当前未上传任何文件。请明确告知需要补充的材料，并按照\"结构对齐 → 内容对比 →专业参数 → 联网证据\"四层承诺交付物。]`;
@@ -316,13 +333,20 @@ async function streamChat(
   const messages = [
     { role: "system" as const, content: `[模板：${template.name}] ${template.systemPrompt}` },
     ...trimmedHistory,
-    { role: "user" as const, content: `【核心要求——客户需求】对三份法规（GB 4785 草案 V4.3.5 vs GB 4785-2019 现行版 vs UN R48 欧洲标准）进行多版本横向对比，必须输出**至少 20 页**的内容充实的 PDF。最终交付物必须包含：\n\n1. **结构对齐**（三份文档章节体系对比，1-2 页表格）\n2. **内容对比**（逐章节列出新增/修改/删除的条款，每条都有原文摘录 + 章节号 + 页码，必须有 12+ 个章节对比表格，至少 30 条 changes）\n3. **专业参数**（远光/近光/转向/制动/位置/倒车/危险警告/牌照等每种灯具的数值参数对比，至少 25 条 parameters）\n4. **联网证据**（至少 5 条 evidence）\n5. **变化点总结**（最关键的 10 条 change，附原文摘录）\n\n**禁止**：写到一半就停止输出、说"对比完成"等结束语后停止。每个章节必须输出完整原文摘录和具体数值。${docContext}` },
+    // The project brief is only injected when the uploaded documents actually
+    // are the GB 4785 / UN R48 set. It used to be appended unconditionally, so
+    // a user comparing two unrelated standards was still told to produce a
+    // "GB 4785 vs GB 4785-2019 vs UN R48" 20-page report.
+    { role: "user" as const, content: `${isGb4785Set ? GB4785_BRIEF : GENERIC_BRIEF}${docContext}` },
   ];
   try {
     const response = await fetch("/api/agent/chat/stream", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ messages }),
+      // model/temperature were previously hardcoded server-side while the
+      // Settings panel exposed both controls — they had no effect. The backend
+      // already accepted both; this just forwards the user's choice.
+      body: JSON.stringify({ messages, model: llm.model, temperature: llm.temperature }),
     });
     if (!response.ok || !response.body) throw new Error(await response.text());
     const reader = response.body.getReader();
@@ -391,6 +415,9 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
   const [dragActive, setDragActive] = useState(false);
   const dragCounter = useRef(0);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  // Owned by Home (not DocStrip) so the composer's paperclip can open the same
+  // picker the "添加法规" button uses.
+  const homeFileInputRef = useRef<HTMLInputElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
 
   const activeDoc = useMemo(() => docs.find((d) => d.id === activeDocId) ?? docs[0] ?? null, [docs, activeDocId]);
@@ -483,7 +510,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
             d.id === id
               ? {
                   ...d,
-                  status: "ready",
+                  status: "ready" as DocStatus,
                   pageCount,
                   extractedText,
                   parseError,
@@ -557,7 +584,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       setRunning(true);
       const history = [...messages, userMsg];
       const t0 = Date.now();
-      await streamChat(text, history, docs, templateId, {
+      await streamChat(text, history, docs, templateId, { model: settings.model, temperature: settings.temperature }, {
         onReasoning: (delta) =>
           setMessages((prev) =>
             prev.map((m) => {
@@ -808,7 +835,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           </div>
         ) : (
           <>
-            <DocStrip docs={docs} activeId={activeDocId} onSelect={setActiveDocId} onRemove={removeDoc} onAdd={handleFiles} />
+            <DocStrip docs={docs} activeId={activeDocId} onSelect={setActiveDocId} onRemove={removeDoc} onAdd={handleFiles} fileInputRef={homeFileInputRef} />
 
             {/* Full report builder entry */}
             {!showReportBuilder && (
@@ -855,6 +882,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
                     else toast.error("暂无可导出的分析结果");
                   }}
                   suggestedTasks={template.suggestedTasks}
+                  modelName={settings.model}
                 />
               </div>
             )}
@@ -867,7 +895,12 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
         value={input}
         onChange={setInput}
         onSubmit={() => submit()}
-        onAttach={() => composerRef.current?.focus()}
+        onAttach={() => {
+          // The paperclip used to only move focus to the textarea while showing
+          // an attach icon — it opened no picker and attached nothing. Drive the
+          // real DocStrip file input instead, which lives in the parent scope.
+          homeFileInputRef.current?.click();
+        }}
         running={running}
       />
 
@@ -940,9 +973,8 @@ function PageHeader({
           )}
           {pdfExporting ? "渲染中…" : "PDF"}
         </Button>
-        <button className="ml-1 rounded-md p-2 text-[#7c6a4f] hover:bg-white" aria-label="更多">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        {/* Removed: an overflow "更多" menu with no onClick. Nothing was behind
+            it, so it rendered as a hoverable control that did nothing. */}
       </div>
     </header>
   );
@@ -954,14 +986,18 @@ function DocStrip({
   onSelect,
   onRemove,
   onAdd,
+  fileInputRef,
 }: {
   docs: Doc[];
   activeId: string | null;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: (files: File[]) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const localRef = useRef<HTMLInputElement>(null);
+  // Fall back to a local ref so DocStrip still works if used without one.
+  const ref = fileInputRef ?? localRef;
   return (
     <section className="flex flex-wrap items-center gap-2 rounded-xl border bg-white/60 p-3" style={{ borderColor: "#e6dfd0" }}>
       <span
@@ -1016,20 +1052,10 @@ function DocStrip({
                 <Download className="h-3.5 w-3.5" />
               </button>
             )}
-            {d.status === "error" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(d.id);
-                  toast.info("请重新拖拽文件上传");
-                }}
-                className={`opacity-0 transition group-hover:opacity-100 ${isActive ? "text-[#d8cfb8]" : "text-[#a17334]"}`}
-                aria-label="重试"
-                title="重新上传"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-            )}
+            {/* Removed: a "重试 / 重新上传" button whose only action was
+                onRemove() — it deleted the failed entry and asked you to re-drag.
+                Labelling a delete as a retry is worse than offering none; the
+                移除 (trash) button below already does exactly that. */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -1044,14 +1070,13 @@ function DocStrip({
         );
       })}
       <button
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => ref.current?.click()}
         className="flex items-center gap-1.5 rounded-lg border border-dashed border-[#d8cfb8] bg-white px-3 py-1.5 text-xs text-[#7c6a4f] transition hover:border-[#a17334] hover:bg-[#fdf3df] hover:text-[#0c1a2b]"
       >
         <FileUp className="h-3.5 w-3.5" /> 添加法规
       </button>
       <input
-        ref={fileInputRef}
-        aria-label="选择要上传的法规文件"
+        ref={ref}
         type="file"
         multiple
         aria-label="批量选择要上传的法规文件"
@@ -1184,7 +1209,7 @@ function ExtractionProgress({ stage }: { stage: ExtractionStage }) {
           >
             正在提取 {stage.fileName}
           </p>
-          <p className="mt-0.5 text-xs text-[#7c6a4f]">本地解析 · 全程在你的浏览器内完成</p>
+          <p className="mt-0.5 text-xs text-[#7c6a4f]">服务端优先解析 · 服务不可用时回退到浏览器本地解析</p>
         </div>
       </div>
       <div className="space-y-3">
@@ -1235,6 +1260,7 @@ function Conversation({
   onSuggest,
   onDownloadPdf,
   suggestedTasks,
+  modelName,
 }: {
   messages: ChatMessage[];
   extracting: ExtractionStage | null;
@@ -1242,6 +1268,8 @@ function Conversation({
   onSuggest: (text: string) => void;
   onDownloadPdf?: (message: ChatMessage) => void;
   suggestedTasks: Array<{ label: string; icon: typeof Sparkles }>;
+  /** Show the model actually in use instead of a hardcoded label. */
+  modelName: string;
 }) {
   return (
     <section
@@ -1258,7 +1286,7 @@ function Conversation({
             对话 · Copilot
           </p>
         </div>
-        <p className="text-[10px] text-[#9c8b6c]">MiniMax-M3 · 流式</p>
+        <p className="text-[10px] text-[#9c8b6c]">{modelName} · 流式</p>
       </div>
 
       <div ref={ref} className="min-h-0 flex-1 overflow-y-auto px-7 py-5">
@@ -1876,8 +1904,10 @@ function SettingsPanel({ settings, onSettingsChange }: { settings: { temperature
             onChange={(e) => onSettingsChange({ ...settings, model: e.target.value })}
             className="mt-1 w-full rounded-lg border border-[#d8cfb8] bg-white px-3 py-2 text-sm"
           >
+            {/* DeepSeek-V3 was offered here with no DEEPSEEK_API_KEY configured
+                server-side, so choosing it produced a request the backend could
+                not serve. Only list models that are actually configured. */}
             <option>MiniMax-M3</option>
-            <option>DeepSeek-V3</option>
           </select>
         </div>
         <div>

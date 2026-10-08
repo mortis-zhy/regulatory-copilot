@@ -111,6 +111,15 @@ export function registerAgentRoutes(router: Router) {
   router.post("/api/agent/chat/stream", async (req, res) => {
     const messages = Array.isArray(req.body?.messages) ? req.body.messages as ChatMessage[] : [];
     if (!messages.length) return res.status(400).json({ error: "messages are required" });
+    // The Settings panel exposes 模型 and Temperature, but the values were
+    // dropped on the floor here — the request only ever carried `messages`, so
+    // picking a model or dragging the slider changed nothing. Accept both and
+    // pass them through; streamMiniMaxChat falls back to ENV.minimaxModel when
+    // model is omitted, and a bad temperature is clamped rather than rejected
+    // so a stale client can still get an answer.
+    const model = typeof req.body?.model === "string" && req.body.model.trim() ? req.body.model.trim() : undefined;
+    const rawTemp = Number(req.body?.temperature);
+    const temperature = Number.isFinite(rawTemp) ? Math.min(2, Math.max(0, rawTemp)) : undefined;
     res.status(200).set({
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
@@ -124,7 +133,8 @@ export function registerAgentRoutes(router: Router) {
       for await (const chunk of streamMiniMaxChat(
         [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
         {
-          temperature: 0.15,
+          model,
+          temperature: temperature ?? 0.15,
           // 65K tokens = enough for 15+ detailed changes with old/new excerpts
           // plus the full JSON block (changes + parameters + evidence arrays).
           // MiniMax-M3 endpoint caps at 65K so we use the max.
@@ -284,6 +294,9 @@ export function registerAgentRoutes(router: Router) {
 
       if (req.body?.returnPdf) {
         const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
+        // finalizePdf was referenced here without ever being imported — the
+        // `returnPdf: true` branch would have thrown ReferenceError at runtime.
+        const { finalizePdf } = await import("../reports/reportV6");
         const rawPdf = await renderPdfFromReportV8(report);
         // Shared finalization with the CLI: pass-2 TOC page numbers, audit +
         // render gates, PDF metadata, bookmark outline — the customer gets
