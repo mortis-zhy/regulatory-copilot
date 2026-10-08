@@ -35,22 +35,74 @@ from pydantic import BaseModel
 
 app = FastAPI(title="comparison-agent Python sidecar", version="v6.2")
 
-ALLOWED_DOCS = {
-    "A": r"GB[\s_-]*4785.*草案.*V\d.*\.pdf$",        # A 草案
-    "B": r"GB[\s_-]*4785[\s_-]*2019.*\.pdf$",                  # B 现行
-    "C": r"UN.*R0?48.*\.pdf$",                              # C UN R48-09
+# Order-independent signatures. The old patterns were anchored single regexes
+# ("GB...草案...V\d", "UN...R48"), which rejected legitimately-named files such
+# as "GB4785_V4.3.5_草案.pdf" purely because 草案 came after V\d — and the error
+# told the user nothing about how to fix it.
+#
+# Each signature is a set of token regexes that must ALL appear somewhere in the
+# filename, in any order. `exclude` tokens veto a match, so a draft revision does
+# not get mistaken for the 2019 in-force edition.
+DOC_SIGNATURES = {
+    "A": {
+        "tokens": [r"GB[\s_-]*4785", r"草案|draft|修订"],
+        "exclude": [r"2019"],
+    },
+    "B": {
+        "tokens": [r"GB[\s_-]*4785", r"2019"],
+        "exclude": [r"草案|draft|修订"],
+    },
+    "C": {
+        "tokens": [r"UN[\s_-]*R0?48"],
+        "exclude": [],
+    },
 }
-ALLOWED_LABELS = set(ALLOWED_DOCS.keys())
+ALLOWED_LABELS = set(DOC_SIGNATURES.keys())
 
-def _validate_doc(label: str, file_name: str, file_path: str) -> None:
-    """Reject anything that does not match the three expected GB / UN docs.
-    Prevents feeding unrelated PDFs into a pipeline whose facts.json /
-    extract-cache / diff-result.json were computed for the same three."""
+_ACCEPT_HELP = (
+    "已支持的标准（文件名任意顺序均可）："
+    "A = 含「GB 4785」且含「草案」的修订版；"
+    "B = 含「GB 4785」且含「2019」的现行版；"
+    "C = 含「UN R48」的 UN 法规。"
+    "也可在上传时直接指定版本标签。"
+)
+
+
+def infer_label(file_name: str, file_path: str = "") -> str | None:
+    """Guess A/B/C from a filename, ignoring token order. None if ambiguous."""
+    hay = f"{file_name} {file_path}"
+    hits = []
+    for label, sig in DOC_SIGNATURES.items():
+        if not all(re.search(t, hay, re.I) for t in sig["tokens"]):
+            continue
+        if any(re.search(x, hay, re.I) for x in sig["exclude"]):
+            continue
+        hits.append(label)
+    return hits[0] if len(hits) == 1 else None
+
+
+def _validate_doc(label: str, file_name: str, file_path: str) -> str:
+    """Resolve the doc label, preferring the file's own signature over the
+    caller's positional guess.
+
+    The client assigns labels by upload order (LABELS[i]), so a correctly-named
+    draft uploaded second gets validated against B's pattern and fails there.
+    Returning the label actually used lets /extract report `labelInferred` so the
+    UI can confirm before a document silently changes role.
+
+    Returns the label that was actually used.
+    """
     if label not in ALLOWED_LABELS:
         raise HTTPException(400, f"label must be one of {sorted(ALLOWED_LABELS)}, got {label!r}")
-    pat = ALLOWED_DOCS[label]
-    if not re.search(pat, file_name, re.I) and not re.search(pat, file_path, re.I):
-        raise HTTPException(400, f"{label} file name/path must match {pat} (got {file_name!r})")
+
+    guessed = infer_label(file_name, file_path)
+    if guessed is None:
+        raise HTTPException(400, f"{file_name!r} 未匹配任何已支持的标准。{_ACCEPT_HELP}")
+    if guessed != label:
+        # Filename says one thing, caller says another. Trust the filename — it is
+        # what the human actually named the file — but surface the disagreement.
+        print(f"[sidecar] label override: requested {label!r} but {file_name!r} looks like {guessed!r}")
+    return guessed
 
 
 app.add_middleware(
@@ -91,6 +143,10 @@ class ExtractResponse(BaseModel):
     extractionSeconds: float
     cached: bool
     content_list_summary: dict[str, int] | None = None  # type counts
+    # True when the filename's own signature disagreed with the label the client
+    # sent (the client labels by upload order). The UI should confirm before
+    # treating a document as a different version than the user intended.
+    label_inferred: bool = False
     data: dict  # full MinerU per-doc dict (for downstream consumers)
 
 
@@ -115,12 +171,18 @@ def health() -> dict:
 @app.post("/extract")
 def extract_endpoint(payload: dict) -> ExtractResponse:
     """payload: { "label": "A"|"B"|"C", "fileName": "name.pdf", "filePath": "C:\\...pdf" }"""
-    label = payload.get("label")
+    requested_label = payload.get("label")
     file_name = payload.get("fileName", "doc.pdf")
     file_path = payload.get("filePath")
-    if not label or not file_path or not Path(file_path).exists():
+    if not file_path or not Path(file_path).exists():
         raise HTTPException(400, "label + filePath required, file must exist")
-    _validate_doc(label, file_name, file_path)
+    # Infer from the filename when the caller gave no label; otherwise validate
+    # and let the filename win if the two disagree.
+    label = infer_label(file_name, file_path) if not requested_label \
+        else _validate_doc(requested_label, file_name, file_path)
+    if label is None:
+        raise HTTPException(400, f"{file_name!r} 未匹配任何已支持的标准。{_ACCEPT_HELP}")
+    label_inferred = requested_label != label
 
     file_hash = sha256(Path(file_path))
     cache_file = cache_path(label, file_hash, ".extracted.json")
@@ -142,6 +204,7 @@ def extract_endpoint(payload: dict) -> ExtractResponse:
             extractionSeconds=0.0,
             cached=True,
             content_list_summary=None,
+            label_inferred=label_inferred,
             data=data,
         )
 
@@ -169,6 +232,7 @@ def extract_endpoint(payload: dict) -> ExtractResponse:
         extractionSeconds=round(elapsed, 2),
         cached=False,
         content_list_summary=None,
+        label_inferred=label_inferred,
         data=out,
     )
 

@@ -173,7 +173,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "多版本法规横向对比研究报告.pdf";
+      a.download = "GB 4785 多版本横向对比研究报告.pdf";
       a.click();
       URL.revokeObjectURL(url);
       toast.success("报告 PDF 已下载");
@@ -287,7 +287,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
                 disabled={readyCount < 2}
                 className="flex items-center gap-1.5 rounded-md bg-[#0c1a2b] px-3.5 py-1.5 text-xs font-medium text-[#faf6ec] transition hover:bg-[#1a2f4a] disabled:cursor-not-allowed disabled:bg-[#d8cfb8]"
               >
-                标准报告（{readyCount} 份文档）
+                快速草稿（未经核验 · {readyCount} 份文档）
               </button>
             </>
           )}

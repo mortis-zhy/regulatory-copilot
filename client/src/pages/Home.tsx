@@ -395,8 +395,15 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
 
   const activeDoc = useMemo(() => docs.find((d) => d.id === activeDocId) ?? docs[0] ?? null, [docs, activeDocId]);
 
-  // Navigation view state
+  // Navigation view state.
+  // App.tsx renders <Home defaultView="…" /> for every route, so React sees the
+  // same element type at the same position and does NOT remount — the useState
+  // initializer therefore never re-runs and a route change left the old view on
+  // screen. Sync the prop explicitly.
   const [currentView, setCurrentView] = useState<ViewId>(defaultView ?? "compare");
+  useEffect(() => {
+    setCurrentView(defaultView ?? "compare");
+  }, [defaultView]);
 
   // Multi-chapter report builder (Regex + streaming LLM + HTML→PDF)
   const [showReportBuilder, setShowReportBuilder] = useState(false);

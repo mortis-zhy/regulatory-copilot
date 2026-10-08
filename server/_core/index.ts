@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
+import nodeFs from "node:fs";
+import nodePath from "node:path";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -62,6 +64,26 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Report whether a previous run left a report behind, and which pipeline
+    // produced it. /api/agent/report/last previously just 404'd with no clue
+    // why the UI looked empty.
+    try {
+      const f = nodePath.resolve(import.meta.dirname, "../reports/last-report.json");
+      if (nodeFs.existsSync(f)) {
+        const st = nodeFs.statSync(f);
+        let gen = "unknown";
+        try {
+          gen = JSON.parse(nodeFs.readFileSync(f, "utf-8")).generator ?? "unknown (pre-generator-tag)";
+        } catch {
+          /* unreadable — size is still useful */
+        }
+        console.log(`[reports] last-report.json present: ${st.size} bytes, generator=${gen}`);
+      } else {
+        console.log("[reports] no last-report.json yet — generate one before using /report/last or /report/trust");
+      }
+    } catch (e) {
+      console.warn("[reports] could not probe last-report.json:", e);
+    }
   });
 }
 

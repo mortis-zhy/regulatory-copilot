@@ -16,7 +16,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-ROOT = Path(r"C:\Users\zsndz\Desktop\comparison_agent-main")
+ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent.parent))
 OUT_DIR = ROOT / "comparison_agent-main" / "dist" / "mineru-v4-data.json"
 
 PDFS = {

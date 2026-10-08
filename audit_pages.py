@@ -112,11 +112,18 @@ def parse_structural_rows() -> list[dict]:
 
 
 def parse_manual_pages() -> dict:
-    src = (ROOT / "verify_claims.py").read_text(encoding="utf-8")
-    block = src.split('"manualFindings"')[1].split("],", 1)[0]
+    # manualFindings moved out of verify_claims.py's source into
+    # data/manual-findings.json so it could carry each source PDF's SHA-256.
+    # Reading it back from the .py source would now split() to an empty block
+    # and pass vacuously — worse than failing — so load the JSON and assert the
+    # finding count so an emptied file fails loudly.
+    mf = json.loads((ROOT / "data" / "manual-findings.json").read_text(encoding="utf-8"))
+    findings = mf["findings"]
+    assert len(findings) == 9, f"expected 9 manualFindings, got {len(findings)}"
     out = {}
-    bm = re.search(r'"bPage":\s*"第(\d+)页"', block)
-    am = re.search(r'"aPage":\s*"第(\d+)页"', block)
+    first = findings[0]
+    bm = re.search(r"第(\d+)页", first.get("bPage") or "")
+    am = re.search(r"第(\d+)页", first.get("aPage") or "")
     if bm:
         out["bp"] = int(bm.group(1))
     if am:

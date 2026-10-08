@@ -22,9 +22,11 @@ import { scanIndicators, pairIndicatorHits } from "../ingestion/indicatorScan";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters } from "./chapterStructural";
 
-const ROOT = "C:/Users/zsndz/Desktop/comparison_agent-main/comparison_agent-main";
+const ROOT = process.env.COMPARE_AGENT_ROOT
+  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
+  : path.resolve(import.meta.dirname, "../..");
 const DATA = path.join(ROOT, "dist", "v5-data.json");
-const OUT_PDF = "C:/Users/zsndz/Desktop/comparison_agent-main/GB4785_多版本横向对比研究报告.pdf";
+const OUT_PDF = path.join(ROOT, "..", "GB4785_多版本横向对比研究报告.pdf");
 
 function esc(s: string): string {
   return (s ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");

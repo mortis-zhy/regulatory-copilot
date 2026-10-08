@@ -15,11 +15,13 @@ Outputs:
                           verification status
       stats             : verification pass rates
 """
-import json, re, glob, os, sys, io
+import json, re, glob, os, sys, io, hashlib
 from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-ROOT = Path(r"C:\Users\zsndz\Desktop\comparison_agent-main\comparison_agent-main")
+# Repo root: derive from __file__ so a checkout can live anywhere.
+# COMPARE_AGENT_ROOT overrides for callers that place the corpus elsewhere.
+ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent))
 MINERU = ROOT / "dist" / "mineru-v4-data.json"
 DIFF = ROOT / "diff-result.json"
 CACHE_DIR = ROOT / "dist" / "extract-cache"
@@ -570,19 +572,34 @@ def verify_numeric_changes(real_tuples, texts):
     Voltage special-case: the fuzzy name-matcher mis-pairs 6V/12V/24V rows;
     resolve by presence-checking 6.75V (the genuine B-only 6V clause).
 
-    Returns (verified_rows, same_text_dropped):
+    Returns (verified_rows, same_text_dropped, rule_dropped):
     - same_text_dropped: rows the second evaluation proved NOT to be changes
       (B's displayed value was truncated; B's real clause text already
       contains A's digits, or the digit sequences are identical after
       CN-normalisation, or the row duplicates an earlier kept row).
+    - rule_dropped: rows rejected by the structural rules R1 / R2 / the voltage
+      tier checks, each tagged with which rule fired and why.
     """
     out = []
     same_text: list[dict] = []
+    # Every candidate a structural rule rejects lands here with a machine-readable
+    # `rule` + human-readable `reason`. These five branches used to be bare
+    # `continue`s, so a reviewer saw only the aggregate `ruleDropped` count and
+    # never learned WHICH row vanished or WHY. The demotion rules further down
+    # already recorded reasons into same_text; these did not.
+    rule_dropped: list[dict] = []
     kept_sigs: list[tuple] = []
     for v, old, new in real_tuples:
         name = v.get("name", "")
         b_text = texts.get("B", "")
         a_text = texts.get("A", "")
+
+        def drop(rule: str, reason: str):
+            rule_dropped.append({
+                "topic": v.get("topic", ""), "name": name,
+                "oldValue": old, "newValue": new,
+                "rule": rule, "reason": reason,
+            })
 
         # --- voltage special-case (rewritten) ---
         # Pair by TIER (6V/12V/24V), not by position. The name-matcher has no
@@ -603,9 +620,13 @@ def verify_numeric_changes(real_tuples, texts):
                         "unit": "V", "bPage": find_page(b_text, "6.75"),
                         "aPage": "", "status": "verified",
                     })
+                else:
+                    drop("V-6V-not-asymmetric",
+                         "6.75V 未构成 A/B 不对称（B 含 6.75V 或 A 亦含），不作为变化")
                 continue  # 6V handled (either emitted or not) — never fall through
             if v_new == "6.75":
                 # A has a 6V value? doesn't happen; skip defensively
+                drop("V-6V-new-side", "A 侧出现 6.75V（防御性丢弃，实际不应发生）")
                 continue
             # 12V/24V rows: tier should be unchanged in both — drop unless
             # the same tier truly differs (it doesn't, verified manually).
@@ -614,12 +635,14 @@ def verify_numeric_changes(real_tuples, texts):
             o_in_b, o_in_a = v_old in b_text, v_old in a_text
             n_in_b, n_in_a = v_new in b_text, v_new in a_text
             if (o_in_b and o_in_a) and (n_in_b and n_in_a):
+                drop("V-both-present", "该电压档位在 A/B 两版中均出现，非 A→B 变化")
                 continue  # both tiers present in both docs → NOT a change
             # fall through only if something is genuinely asymmetric
         # --- structural truth rules (R1 format-equivalence, R2 cross-presence) ---
         so, sn = semantic_normalize(old), semantic_normalize(new)
         if so and sn and so == sn:
             # R1: identical after format stripping → paraphrase/format noise
+            drop("R1", "去标点/空白/内联公式后两侧完全相同，属格式或改写噪声")
             continue
         # R2: textual values — if old-text already appears in A AND new-text
         # already appears in B, the "diff" is row-misalignment or granularity
@@ -628,6 +651,7 @@ def verify_numeric_changes(real_tuples, texts):
             a_corpus = semantic_normalize(texts.get("A", ""))
             b_corpus = semantic_normalize(texts.get("B", ""))
             if so and sn and so in a_corpus and sn in b_corpus:
+                drop("R2", "旧值文本在 A 中已存在且新值文本在 B 中已存在，属行错位/粒度噪声")
                 continue  # both texts exist in both docs → not a change
 
         # context tokens: prefer name+topic (most specific); fall back to
@@ -805,7 +829,71 @@ def verify_numeric_changes(real_tuples, texts):
             "status": status,
         })
         kept_sigs.append(sig)
-    return out, same_text
+    return out, same_text, rule_dropped
+
+
+MANUAL_FINDINGS_PATH = ROOT / "data" / "manual-findings.json"
+SOURCE_PDFS = {
+    "A": ROOT.parent / "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
+    "B": ROOT.parent / "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
+    "C": ROOT.parent / "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+}
+
+
+def _sha256_file(p: Path) -> str | None:
+    if not p.exists():
+        return None
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _load_manual_findings() -> list[dict]:
+    """Load the human-audited findings and re-check them against the sources.
+
+    The page numbers in these entries were confirmed by hand against one
+    revision of one PDF. If a source PDF is later replaced, those page numbers
+    are no longer evidence — so every entry is demoted to 待重核 with a
+    `staleReason` instead of being reported as still-verified.
+    """
+    if not MANUAL_FINDINGS_PATH.exists():
+        # Loud, because silently emitting zero findings would make the report
+        # claim "0 条人工补录" and hide that the audit data went missing.
+        raise FileNotFoundError(
+            f"人工核验数据缺失：{MANUAL_FINDINGS_PATH}。该文件记录 manualFindings "
+            "及其对应源 PDF 的 SHA-256；缺失会导致 11.3.1 章节内容消失。"
+        )
+    data = json.loads(MANUAL_FINDINGS_PATH.read_text(encoding="utf-8"))
+    findings = data["findings"]
+    # Guard against a truncated/emptied file: audit_pages.py used to parse these
+    # out of the Python source and would pass vacuously on an empty match.
+    if not findings:
+        raise ValueError(f"{MANUAL_FINDINGS_PATH} 的 findings 为空 —— 人工核验数据疑似损坏")
+
+    stale = []
+    for label, meta in (data.get("sources") or {}).items():
+        actual = _sha256_file(SOURCE_PDFS.get(label, Path("/nonexistent")))
+        if actual is None:
+            stale.append(f"{label}: 源 PDF 缺失")
+        elif actual != meta.get("sha256"):
+            stale.append(f"{label}: {meta.get('sha256', '?')[:8]}→{actual[:8]}")
+
+    if stale:
+        reason = "源 PDF 已变更或缺失（" + "；".join(stale) + "），页码需重新人工核验"
+        for f in findings:
+            f["status"] = "待重核"
+            f["staleReason"] = reason
+        print(f"[verify] manualFindings 已降级为待重核：{reason}")
+    else:
+        print(f"[verify] manualFindings {len(findings)} 条，源 PDF 哈希一致")
+
+    findings = [dict(f) for f in findings]
+    findings_stale = bool(stale)
+    _load_manual_findings.stale = findings_stale  # type: ignore[attr-defined]
+    return findings
+
 
 def load_extract_cache():
     """Load per-topic A/B/C extraction (24 topics each)."""
@@ -832,7 +920,12 @@ def build_topic_columns(cache_docs, texts):
                         topic_names.append(t["topic"])
     # merge lookup: normalised key -> canonical display name
     cols = []
-    stats = {"total": 0, "verified": 0, "partial": 0, "missing": 0}
+    # No "partial" bucket: the per-row status below is only ever
+    # "verified" or "missing", so the key could never leave 0 and would read as
+    # "we found some rows we only half-verified". The source extract schema does
+    # have a presence:"partial", but that means something different (topic
+    # mentioned without a full clause) — reusing the name would be a lie.
+    stats = {"total": 0, "verified": 0, "missing": 0}
     def norm_key(s: str) -> str:
         return s.replace(" ", "")
 
@@ -955,10 +1048,12 @@ def run_verify() -> dict:
     print(f"  {len(vds)} total → {len(real)} real numeric changes + {len(wording)} paraphrase noise (dropped)")
 
     print("[verify] verifying numeric changes against MinerU text...")
-    verified, same_text = verify_numeric_changes(real, texts)
+    verified, same_text, rule_dropped = verify_numeric_changes(real, texts)
     from collections import Counter
     st = Counter(v["status"] for v in verified)
+    rule_counts = Counter(r["rule"] for r in rule_dropped)
     print(f"  status: {dict(st)} | same-text demoted: {len(same_text)}")
+    print(f"  rule-dropped: {len(rule_dropped)} {dict(rule_counts)}")
 
     print("[verify] building A|B|C topic columns...")
     cache_docs = load_extract_cache()
@@ -992,136 +1087,51 @@ def run_verify() -> dict:
         ],
         "topicColumns": cols,
         "stats": {"numeric": dict(st), "excerpts": cstats},
-        # candidate-flow accounting: 45 valueDiffs must fully partition into
-        # numeric + renumbered + wordingFiltered + sameTextDropped + ruleDropped
-        # (exec summary). ruleDropped = ONLY the in-verify R1/R2/voltage drops;
-        # demoted same-text rows live in their own bucket (not double-counted).
-        "flow": {"candidates": len(vds), "ruleDropped": len(real) - len(verified) - len(same_text)},
+        # candidate-flow accounting: every valueDiff must land in exactly one
+        # bucket, so the exec summary's "账目闭环" claim is checkable rather
+        # than asserted. noise_filter_diffs returns three mutually exclusive
+        # exhaustive lists over vds; classify_value_kind splits `verified` into
+        # numeric/text; rule_dropped now carries the named structural rejects
+        # instead of being an anonymous remainder.
+        "flow": {
+            "candidates": len(vds),
+            "buckets": {
+                "numeric": len(numeric_only),
+                "text": len(text_only),
+                "renumbered": len(renumbered),
+                "wordingFiltered": len(wording),
+                "sameTextDropped": len(same_text),
+                "ruleDropped": len(rule_dropped),
+            },
+            # kept for back-compat with reportV6's counts.ruleDropped
+            "ruleDropped": len(rule_dropped),
+            "ruleDroppedByRule": dict(rule_counts),
+            "ruleDroppedDetail": rule_dropped,
+        },
         # Manual-audit findings — verified directly against A/B original PDF
         # text by human audit (v6.8), because the 18-topic diff pipeline
         # never inspects AFS/自适应前照灯 (not one of the 18 fixed topics).
-        "manualFindings": [
-            {
-                "topic": "自适应前照灯(AFS/带自适应模式)",
-                "name": "数量",
-                "oldValue": "B 5.22.2 数量：一套",
-                "newValue": "A 5.3.2 数量：基础模式近光安装单元 2 只 + 远光安装单元 2 只",
-                "unit": "套/只",
-                # Physical PDF pages (viewer page), fitz-verified by audit_pages.py:
-                # B 5.22.2 数量 = physical p49 (TOC printed 45, offset +4);
-                # A 5.3.2 数量 = physical p30 (heading 5.3 is p29, 数量 next page).
-                "bPage": "第49页",
-                "aPage": "第30页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "B(5.22 AFS) 与 A(5.3 带自适应模式的前照灯) 结构对应；18 主题 diff 未覆盖，人工对照原文补录",
-            },
-            {
-                # GB4785 表11.6 第5条印证；fitz-verified this round.
-                "topic": "慢行灯",
-                "name": "倒车灯作慢行灯 / 慢行灯自动点亮速度阈值",
-                "oldValue": "前行速度小于10km/h可作慢行灯（B p30）；慢行灯自动点亮直至10km/h（B p57 5.25.7）",
-                "newValue": "前行速度小于15km/h可作慢行灯（A p58）；慢行灯自动点亮直至15km/h（A p59 5.22.7）",
-                "unit": "km/h",
-                "bPage": "第30页",
-                "aPage": "第58页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "10→15 km/h，两处子句均改（倒车灯 crossover + 慢行灯自动点亮）；GB4785 表11.6 第5条声称已印证；18 主题 diff 未覆盖",
-            },
-            {
-                # fitz-verified: B p25 5.2.6.1.1 表 (h<0.8 / 0.8-1.0 分档) vs A p27 表7 (0.5-0.9 / 0.9-1.2 / 1.2-1.5 分档)
-                "topic": "近光灯",
-                "name": "安装高度-倾斜度限值表分档",
-                "oldValue": "B 5.2.6.1.1：h<0.8m 限值-0.5%~-2.5%、初始照准-1.0%~-1.5%；0.8≤h≤1.0m 分档",
-                "newValue": "A 表7：0.5≤h≤0.9m（上限-0.5、下限0→-(h+1.2)）；0.9<h≤1.2m；1.2<h≤1.5m 分档",
-                "unit": "m / %",
-                "bPage": "第25页",
-                "aPage": "第27页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "分档边界 0.8/1.0 → 0.9/1.2/1.5 结构性改变，限值公式也不同；前照灯调光硬数据，18 主题 diff 未覆盖",
-            },
-            {
-                # fitz full-doc scan: 'A1类'/'A2类' A hits p16/28/44/45/46/56; B = 0 hits
-                "topic": "前位灯",
-                "name": "A1/A2 类位置灯互斥配备分类（B 无）",
-                "oldValue": "（B 全文 0 命中 A1类/A2类——无此分类）",
-                "newValue": "A 5.9.1：A1类位置灯不应与A2类位置灯同时配备；A2类位置灯不应与昼间行驶灯同时配备",
-                "unit": "",
-                "bPage": "",
-                "aPage": "第44页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "A 独有新分类（B 全文 0 命中）；关联附录C 环境光自动控制（A p16 A2类>1000lx）；18 主题 diff 未覆盖",
-            },
-            {
-                # fitz-verified (round 3 evaluation gap #1)
-                "topic": "倒车灯",
-                "name": "垂直几何可见度 α 角",
-                "oldValue": "B 5.4.5.1：α角向上15°、向下5°",
-                "newValue": "A 5.21.5.1：垂直方向角α向上、向下各10°",
-                "unit": "°",
-                "bPage": "第29页",
-                "aPage": "第58页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "15°/5° → 10°/10° 实质数值变化；18 主题 diff 未覆盖，第二轮评估缺口补录",
-            },
-            {
-                # fitz-verified (round 3 evaluation gap #2)
-                "topic": "前雾灯",
-                "name": "明暗截止线倾斜度判定基准",
-                "oldValue": "B 5.3.6.1：按灯等级（B级-1.5%；F3≤2000lm -1.0%，>2000lm 按h分档）",
-                "newValue": "A 5.4.6.1.1：按光通量（单侧≤2000lm 即-1.0%），判定逻辑重构",
-                "unit": "%",
-                "bPage": "第28页",
-                "aPage": "第35页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "判定基准从灯等级改为光通量——结构性变化；18 主题 diff 未覆盖",
-            },
-            {
-                # fitz-verified (round 3 evaluation gap #3)
-                "topic": "示廓灯",
-                "name": "前示廓灯高度基准线",
-                "oldValue": "B 5.13.4.2：不低于与挡风玻璃上边缘相切的水平面",
-                "newValue": "A 5.13.4.2：不低于与挡风玻璃透明区域上边缘相切的水平面",
-                "unit": "",
-                "bPage": "第42页",
-                "aPage": "第51页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "基准从玻璃上边缘收紧为透明区域上边缘——影响最低安装高度计算；18 主题 diff 未覆盖",
-            },
-            {
-                # fitz-verified (round 3 evaluation gap #4)
-                "topic": "慢行灯",
-                "name": "位置要求从无到有",
-                "oldValue": "B 5.25.4：位置无特殊要求",
-                "newValue": "A 5.22.4.2/4.3：新增侧面灯具离地高度≤1500mm、同侧相邻间距≥0.5m",
-                "unit": "mm / m",
-                "bPage": "第56页",
-                "aPage": "第59页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "B 无位置限制 → A 新增两条定位要求；18 主题 diff 未覆盖",
-            },
-            {
-                # 3rd evaluation completeness gap #1: lateral 400→500mm relaxation
-                "topic": "示廓灯",
-                "name": "横向距离放宽至 500mm（A 独有）",
-                "oldValue": "B 5.13.4.1 无 500mm 放宽条款",
-                "newValue": "A 5.13.4.1：若为满足 5.13.4.2 要求，此距离可放宽至 500mm",
-                "unit": "mm",
-                "bPage": "",
-                "aPage": "第50页",
-                "status": "verified",
-                "source": "manual-audit",
-                "note": "B 不大于400mm 即认为满足；A 新增 500mm 放宽——工程间隙直接影响；18 主题 diff 未覆盖",
-            },
-        ],
+        # Manual-audit findings — verified directly against A/B original PDF text
+        # by human audit (v6.8), because the 18-topic diff pipeline never
+        # inspects AFS/自适应前照灯 (not one of the 18 fixed topics).
+        #
+        # These used to be Python literals here, which meant the page numbers
+        # were pinned to one revision of one PDF and nothing re-checked them at
+        # generate time. They now live in data/manual-findings.json alongside
+        # each source PDF's SHA-256; if a source changes, every entry is
+        # demoted to 待重核 rather than presented as still-verified.
+        "manualFindings": _load_manual_findings(),
     }
+    # Partition gate. Every candidate must be accounted for exactly once, or the
+    # report's "合计 N，账目闭环" sentence would be printing a number nobody can
+    # reconcile. Fail loudly rather than render a plausible-looking wrong total.
+    _b = out["flow"]["buckets"]
+    _total = sum(_b.values())
+    if _total != len(vds):
+        raise AssertionError(
+            f"候选分流不闭合：分桶合计 {_total} != 候选数 {len(vds)}；分桶={_b}"
+        )
+    out["flow"]["partitionClosed"] = True
     return out
 
 

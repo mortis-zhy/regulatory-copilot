@@ -1,0 +1,128 @@
+{
+ "_comment": "manualFindings 是人工核验结论（AFS 数量、慢行灯 10→15 km/h 等），18 主题 diff 管线不覆盖这些条款，故需人工补录。每条都带原文页码。run_verify() 会比对下方 sources 的 SHA-256；任一源 PDF 变更后，所有条目自动降级为「待重核」并附 staleReason，避免旧页码被当成已验证事实。",
+ "version": 1,
+ "sources": {
+  "A": {
+   "fileName": "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
+   "sha256": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7"
+  },
+  "B": {
+   "fileName": "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
+   "sha256": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085"
+  },
+  "C": {
+   "fileName": "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+   "sha256": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
+  }
+ },
+ "findings": [
+  {
+   "topic": "自适应前照灯(AFS/带自适应模式)",
+   "name": "数量",
+   "oldValue": "B 5.22.2 数量：一套",
+   "newValue": "A 5.3.2 数量：基础模式近光安装单元 2 只 + 远光安装单元 2 只",
+   "unit": "套/只",
+   "bPage": "第49页",
+   "aPage": "第30页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "B(5.22 AFS) 与 A(5.3 带自适应模式的前照灯) 结构对应；18 主题 diff 未覆盖，人工对照原文补录"
+  },
+  {
+   "topic": "慢行灯",
+   "name": "倒车灯作慢行灯 / 慢行灯自动点亮速度阈值",
+   "oldValue": "前行速度小于10km/h可作慢行灯（B p30）；慢行灯自动点亮直至10km/h（B p57 5.25.7）",
+   "newValue": "前行速度小于15km/h可作慢行灯（A p58）；慢行灯自动点亮直至15km/h（A p59 5.22.7）",
+   "unit": "km/h",
+   "bPage": "第30页",
+   "aPage": "第58页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "10→15 km/h，两处子句均改（倒车灯 crossover + 慢行灯自动点亮）；GB4785 表11.6 第5条声称已印证；18 主题 diff 未覆盖"
+  },
+  {
+   "topic": "近光灯",
+   "name": "安装高度-倾斜度限值表分档",
+   "oldValue": "B 5.2.6.1.1：h<0.8m 限值-0.5%~-2.5%、初始照准-1.0%~-1.5%；0.8≤h≤1.0m 分档",
+   "newValue": "A 表7：0.5≤h≤0.9m（上限-0.5、下限0→-(h+1.2)）；0.9<h≤1.2m；1.2<h≤1.5m 分档",
+   "unit": "m / %",
+   "bPage": "第25页",
+   "aPage": "第27页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "分档边界 0.8/1.0 → 0.9/1.2/1.5 结构性改变，限值公式也不同；前照灯调光硬数据，18 主题 diff 未覆盖"
+  },
+  {
+   "topic": "前位灯",
+   "name": "A1/A2 类位置灯互斥配备分类（B 无）",
+   "oldValue": "（B 全文 0 命中 A1类/A2类——无此分类）",
+   "newValue": "A 5.9.1：A1类位置灯不应与A2类位置灯同时配备；A2类位置灯不应与昼间行驶灯同时配备",
+   "unit": "",
+   "bPage": "",
+   "aPage": "第44页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "A 独有新分类（B 全文 0 命中）；关联附录C 环境光自动控制（A p16 A2类>1000lx）；18 主题 diff 未覆盖"
+  },
+  {
+   "topic": "倒车灯",
+   "name": "垂直几何可见度 α 角",
+   "oldValue": "B 5.4.5.1：α角向上15°、向下5°",
+   "newValue": "A 5.21.5.1：垂直方向角α向上、向下各10°",
+   "unit": "°",
+   "bPage": "第29页",
+   "aPage": "第58页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "15°/5° → 10°/10° 实质数值变化；18 主题 diff 未覆盖，第二轮评估缺口补录"
+  },
+  {
+   "topic": "前雾灯",
+   "name": "明暗截止线倾斜度判定基准",
+   "oldValue": "B 5.3.6.1：按灯等级（B级-1.5%；F3≤2000lm -1.0%，>2000lm 按h分档）",
+   "newValue": "A 5.4.6.1.1：按光通量（单侧≤2000lm 即-1.0%），判定逻辑重构",
+   "unit": "%",
+   "bPage": "第28页",
+   "aPage": "第35页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "判定基准从灯等级改为光通量——结构性变化；18 主题 diff 未覆盖"
+  },
+  {
+   "topic": "示廓灯",
+   "name": "前示廓灯高度基准线",
+   "oldValue": "B 5.13.4.2：不低于与挡风玻璃上边缘相切的水平面",
+   "newValue": "A 5.13.4.2：不低于与挡风玻璃透明区域上边缘相切的水平面",
+   "unit": "",
+   "bPage": "第42页",
+   "aPage": "第51页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "基准从玻璃上边缘收紧为透明区域上边缘——影响最低安装高度计算；18 主题 diff 未覆盖"
+  },
+  {
+   "topic": "慢行灯",
+   "name": "位置要求从无到有",
+   "oldValue": "B 5.25.4：位置无特殊要求",
+   "newValue": "A 5.22.4.2/4.3：新增侧面灯具离地高度≤1500mm、同侧相邻间距≥0.5m",
+   "unit": "mm / m",
+   "bPage": "第56页",
+   "aPage": "第59页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "B 无位置限制 → A 新增两条定位要求；18 主题 diff 未覆盖"
+  },
+  {
+   "topic": "示廓灯",
+   "name": "横向距离放宽至 500mm（A 独有）",
+   "oldValue": "B 5.13.4.1 无 500mm 放宽条款",
+   "newValue": "A 5.13.4.1：若为满足 5.13.4.2 要求，此距离可放宽至 500mm",
+   "unit": "mm",
+   "bPage": "",
+   "aPage": "第50页",
+   "status": "verified",
+   "source": "manual-audit",
+   "note": "B 不大于400mm 即认为满足；A 新增 500mm 放宽——工程间隙直接影响；18 主题 diff 未覆盖"
+  }
+ ]
+}

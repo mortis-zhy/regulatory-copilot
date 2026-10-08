@@ -1,8 +1,11 @@
 import fs from "node:fs";
+import path from "node:path";
 import { extractPdfTextServer } from "./ingestion/pdfExtract";
 import { parseAllTables, extractCanonicalIndicators, pairIndicatorsById } from "./ingestion/tableParser";
 
-const ROOT = "C:/Users/zsndz/Desktop/comparison_agent-main";
+const ROOT = process.env.COMPARE_AGENT_ROOT
+  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
+  : path.resolve(import.meta.dirname, "..", "..");
 const PDF_A = `${ROOT}/2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf`;
 const PDF_B = `${ROOT}/GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf`;
 

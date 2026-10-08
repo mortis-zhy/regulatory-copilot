@@ -676,12 +676,18 @@ export async function* generateReport(
       allSummaries.join("\n") +
       "\n\n正文中标注为 ⚠ 待复核 / 🟡 同文勘误 / 🔢 仅编号重排 / ✍ 等义改写 的条目，" +
       "一律不得进入执行摘要——只写已在 A、B 两版原文双向定位的实质技术变更。";
+    // Exec summary needs a much larger token budget than normal chapters:
+    // MiniMax streams <think> blocks inline, the client strips them, and the
+    // whole maxTokens cap is shared between thinking + content. At 8192 the
+    // model spends ~8k on thinking and yields only ~200 chars of real content
+    // (verified by the v3 regen — EXEC_LEN 180 with the heading cut off).
+    // 16384 leaves room for ~8k thinking + ~8k content.
     for (let attempt = 0; attempt <= execWaits.length && !execMd; attempt++) {
       try {
         execMd = "";
         for await (const chunk of streamMiniMaxChat([{ role: "user", content: execPrompt }], {
           temperature: 0.2,
-          maxTokens: 8192,
+          maxTokens: 16384,
         })) {
           const delta: ReportEvent = { type: "chapter_content", id: execChapter.id, delta: chunk };
           onEvent?.(delta);

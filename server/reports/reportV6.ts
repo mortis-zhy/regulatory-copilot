@@ -23,9 +23,14 @@ import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClas
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
 import { diffRefs, buildRefSection } from "./refDiff";
 
-const ROOT = "C:/Users/zsndz/Desktop/comparison_agent-main/comparison_agent-main";
+// Resolve from this module's location rather than a hardcoded absolute path —
+// the old literal only worked on one machine and broke the moment the checkout
+// moved. From dist/index.js, "../.." lands on the inner repo root.
+const ROOT = process.env.COMPARE_AGENT_ROOT
+  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
+  : path.resolve(import.meta.dirname, "../..");
 const DATA = path.join(ROOT, "dist", "mineru-v4-data.json");
-const OUT_PDF = "C:/Users/zsndz/Desktop/comparison_agent-main/GB4785_多版本横向对比研究报告.pdf";
+const OUT_PDF = path.join(ROOT, "..", "GB4785_多版本横向对比研究报告.pdf");
 
 function esc(s: string): string {
   return (s ?? "").replace(/<[^>]+>/g, "").replace(/\|/g, "\\|").replace(/\n/g, " ");
@@ -989,14 +994,28 @@ function buildAppendixA(data: Record<string, any>): string {
 function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: any[], textChanges?: any[], counts?: any, sameText?: any[]): string {
   const sameT = sameText ?? [];
   if (!vchanges.length && !(renumbered && renumbered.length) && !(textChanges && textChanges.length) && !sameT.length) return "_(本子节无内容)_";
-  const wording = counts?.wordingFiltered ?? 30;
-  const rule = counts?.ruleDropped ?? 2;
+  // Counts come straight from verify_claims.py's flow accounting. The old code
+// hardcoded `?? 30` / `?? 2`, which meant a changed or missing key still rendered
+// a confident-looking total — the partition could silently rot. Default to 0 and
+// shout instead, so a gap is visible rather than plausible.
+  if (counts && (counts.wordingFiltered === undefined || counts.ruleDropped === undefined)) {
+    console.warn("[v6] counts missing wordingFiltered/ruleDropped — rendering 0; verify_claims output shape changed?");
+  }
+  const wording = counts?.wordingFiltered ?? 0;
+  const rule = counts?.ruleDropped ?? 0;
   const cand = counts?.candidates ?? (vchanges.length + (renumbered?.length ?? 0) + wording + rule + sameT.length);
+  const total = vchanges.length + (renumbered?.length ?? 0) + sameT.length + wording + rule;
+  // Only claim "账目闭环" when the buckets actually reconcile against the
+  // candidate total; otherwise state the discrepancy instead of asserting it.
+  const closed = counts?.candidates === undefined || total === counts.candidates;
+  const closureNote = closed
+    ? `——合计 ${total}，账目闭环。`
+    : `——合计 ${total}，与候选数 ${counts?.candidates} 不符，需人工复核。`;
   const parts: string[] = [];
   parts.push(
     "### 11.3 重大修订条款（数值级）",
     "",
-    `下表为 **A/B 同名参数的数值变化**（经证据规则过滤后的幸存者）。${cand} 条候选的完整去向：**${vchanges.length} 条入本表** + ${(renumbered?.length ?? 0)} 条引用编号单列（11.3.2）+ **${sameT.length} 条同文勘误**（11.3.0，曾误列已降级）+ ${wording} 条同义改写（11.8 复核清单）+ ${rule} 条规则判定非变化（表格行错位、电压分层两版同存）——合计 ${vchanges.length + (renumbered?.length ?? 0) + sameT.length + wording + rule}，账目闭环。`,
+    `下表为 **A/B 同名参数的数值变化**（经证据规则过滤后的幸存者）。${cand} 条候选的完整去向：**${vchanges.length} 条入本表** + ${(renumbered?.length ?? 0)} 条引用编号单列（11.3.2）+ **${sameT.length} 条同文勘误**（11.3.0，曾误列已降级）+ ${wording} 条同义改写（11.8 复核清单）+ ${rule} 条规则判定非变化（表格行错位、电压分层两版同存）${closureNote}`,
     "",
   );
   if (vchanges.length) {

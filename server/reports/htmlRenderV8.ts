@@ -42,6 +42,16 @@ export type RenderableReport = {
   generatedAt?: string;
 };
 
+/**
+ * Pipeline version, stamped into the PDF's `creator` field.
+ *
+ * Previously the only version marker was the literal "pipeline v8" in the
+ * page.pdf() creator string, while package.json said 1.0.0 and the "V8" /
+ * "V11.3" names lived purely in filenames and git tags. `npm run verify`
+ * asserts package.json.version stays in step with this constant.
+ */
+export const PIPELINE_VERSION = "1.1.0";
+
 // ---------------------------------------------------------------------------
 // 1. CJK font discovery + base64 embed
 // ---------------------------------------------------------------------------
@@ -1845,7 +1855,9 @@ body {
   height: 0.5pt; background: #0c1a2b;
 }
 .cover-eyebrow {
-  font-size: 9pt; letter-spacing: 6px; color: #a17334;
+  /* 6px split "REGULATORY" into "R E G U L A T O R Y" once glyph extraction
+     added inter-character gaps. Keep this ≤2px — scripts/verify.mjs enforces. */
+  font-size: 9pt; letter-spacing: 1.5px; color: #a17334;
   text-transform: uppercase; margin-bottom: 6mm; font-weight: 600;
 }
 .cover h1 {
@@ -2518,12 +2530,23 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
   try {
     const page = await browser.newPage();
     const render = async (html: string): Promise<Buffer> => {
+      // Switch to print media BEFORE setContent. Chromium only embeds
+      // @font-face fonts into the emitted PDF when print media is active at
+      // layout time; under screen media the CJK glyphs silently fall back to
+      // Type3 "tofu" boxes even though document.fonts reports them as ready.
+      await page.emulateMedia({ media: "print" });
       await page.setContent(html, { waitUntil: "load", timeout: 120_000 });
-      await page.evaluate(() => (document as any).fonts?.ready);
-      await page.waitForTimeout(250);
+      await page.evaluate(async () => {
+        const fonts = (document as any).fonts;
+        if (fonts?.ready) await fonts.ready;
+        // document.fonts.ready resolves for faces already used, but the inline
+        // base64 faces are large and decode lazily — force each one.
+        for (const f of fonts ?? []) await f.load().catch(() => {});
+      });
+      await page.waitForTimeout(800);
       const pdf = await page.pdf({
         title: report.outline.title,
-        creator: "GB 4785 多版本对比报告 pipeline v8",
+        creator: `GB 4785 多版本对比报告 pipeline v${PIPELINE_VERSION}`,
         subject: "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照（三版同框 · 4 维影响卡 · 参数总表 · 条款映射）",
         keywords: "GB 4785, UN R48, AFS, 三版对比, 影响卡, 参数总表, 条款映射, CJK",
         format: "A4",

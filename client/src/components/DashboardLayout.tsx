@@ -5,6 +5,7 @@ import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { Bot, Clock3, FileSearch, FolderOpen, LogOut, Menu, MessageSquare, PanelLeftClose, Search, Settings2, ShieldCheck, SquarePen, WandSparkles, X } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 const DEMO_USER = {
   name: import.meta.env.VITE_DEMO_USER_NAME ?? "Demo 用户",
@@ -22,13 +23,20 @@ export default function DashboardLayout({ children, onNavigate }: { children: Re
   const { loading, user, logout } = useAuth();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
+  const [, setLocation] = useLocation();
 
   const nav = (view: string) => (e: React.MouseEvent) => {
     e.preventDefault();
-    // Prefer a real client-side route when one exists; fall back to onNavigate.
     const path = view === "compare" ? "/" : `/${view}`;
     if (onNavigate) {
       onNavigate(view);
+      return;
+    }
+    // Use wouter's real navigation rather than pushState + a synthetic
+    // popstate: the manual dispatch re-entered the router through the history
+    // event path and was easy to miss when debugging "the sidebar does nothing".
+    if (setLocation) {
+      setLocation(path);
       return;
     }
     window.history.pushState({}, "", path);

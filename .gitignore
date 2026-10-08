@@ -126,3 +126,7 @@ sidecar-cache/
 .env.backup
 .env*
 !.env.example
+
+# Python bytecode — regenerable, was being tracked by accident
+__pycache__/
+*.pyc
