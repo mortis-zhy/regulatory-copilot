@@ -357,11 +357,24 @@ function collectTableRows(lines: string[], start: number): { rowLines: string[];
   return { rowLines, next: i };
 }
 
-/** Which header cell holds the version label (版本 / 来源 / version). */
+/**
+ * Which header cell holds the version label in a VERTICAL table, i.e. one
+ * whose body rows are the versions:
+ *
+ *   | 文档 | 条款 | 页码 | 原文摘录 |
+ *   | A   | 5.1  | 23   | …        |
+ *   | B   | 5.1  | 22   | …        |
+ *   | C   | 6.1  | 36   | …        |
+ *
+ * Only 版本/来源/version were recognised, so appendix C's "| 文档 |" header
+ * fell through to the horizontal matcher, missed, and every topic rendered as
+ * three "源数据未提供" cards — 73 of them across the delivered PDF, with the
+ * UN R48 excerpt sitting unused in the markdown the whole time.
+ */
 function findVersionIdx(header: string[]): number {
   for (let i = 0; i < header.length; i++) {
     const h = (header[i] ?? "").replace(/\*/g, "").trim();
-    if (/^(版本|来源|version)$/i.test(h)) return i;
+    if (/^(版本|来源|文档|文件|标准|version|document|file)$/i.test(h)) return i;
   }
   return -1;
 }

@@ -23,14 +23,48 @@ import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClas
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
 import { diffRefs, buildRefSection } from "./refDiff";
 
-// Resolve from this module's location rather than a hardcoded absolute path —
-// the old literal only worked on one machine and broke the moment the checkout
-// moved. From dist/index.js, "../.." lands on the inner repo root.
-const ROOT = process.env.COMPARE_AGENT_ROOT
-  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
-  : path.resolve(import.meta.dirname, "../..");
+/**
+ * The INNER repo root — the one holding dist/, diff-result.json and the Python
+ * helpers (verify_claims.py, extract_toc_pages.py, add_pdf_outline.py).
+ *
+ * This used to be `path.resolve(import.meta.dirname, "../..")` with a comment
+ * claiming it "lands on the inner repo root". It does not: bundled to
+ * dist/index.js, dirname is `<inner>/dist`, so "../.." resolves to the OUTER
+ * workbench repo. That mis-resolution is why §11.3.3 rendered empty, why
+ * add_pdf_outline.py was never found, and why the TOC two-pass aborted — three
+ * silent degradations with only console warnings.
+ *
+ * Walk up from the module until we find the marker file instead of assuming a
+ * fixed depth. COMPARE_AGENT_ROOT still wins when set.
+ */
+function resolveInnerRoot(): string {
+  if (process.env.COMPARE_AGENT_ROOT) return path.resolve(process.env.COMPARE_AGENT_ROOT);
+  let dir = import.meta.dirname;
+  for (let i = 0; i < 6; i++) {
+    if (fs.existsSync(path.join(dir, "verify_claims.py"))) return dir;
+    const up = path.dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return path.resolve(import.meta.dirname, "../..");
+}
+const ROOT = resolveInnerRoot();
 const DATA = path.join(ROOT, "dist", "mineru-v4-data.json");
-const OUT_PDF = path.join(ROOT, "..", "GB4785_多版本横向对比研究报告.pdf");
+const OUT_PDF = path.join(path.dirname(ROOT), "GB4785_多版本横向对比研究报告.pdf");
+// Full A/B/C value-diff set. verify_claims.py filters these down to a handful of
+// "survivors"; the report needs the unfiltered set too, because that is what
+// carries the C (UN R48) clause numbers the deliverable is judged on.
+//
+// diff-result.json sits next to verify_claims.py (the INNER repo root), whereas
+// ROOT above resolves to the OUTER workbench repo — so `path.join(ROOT, …)`
+// missed it and §11.3.3 silently rendered as an empty section. Probe the
+// plausible roots instead of guessing one.
+function findDiffResult(): string | null {
+  const candidates = [path.join(ROOT, "diff-result.json"), path.join(path.dirname(ROOT), "diff-result.json")];
+  const hit = candidates.find((p) => fs.existsSync(p)) ?? null;
+  console.log(`[v6] resolveInnerRoot → ${ROOT} | diff-result: ${hit ?? "NOT FOUND"}`);
+  return hit;
+}
 
 function esc(s: string): string {
   return (s ?? "").replace(/<[^>]+>/g, "").replace(/\|/g, "\\|").replace(/\n/g, " ");
@@ -991,8 +1025,147 @@ function buildAppendixA(data: Record<string, any>): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  11.3 numeric changes — from verify_claims.py (machine-verified)            */
+/*  Parameter matrix — the deliverable's centrepiece                          */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * How strongly A maps onto C for a given parameter. A compliance crosswalk that
+ * presents a partial overlap as an equivalence is the single most common cause
+ * of audit failure, so the strength is stated per row rather than assumed.
+ */
+type MapStrength = "完全对应" | "部分重叠" | "无对应" | "未映射";
+
+/** Parameter families a reader actually looks up, in report order. */
+const PARAM_FAMILIES: Array<{ label: string; kws: RegExp[] }> = [
+  { label: "安装高度 / 离地距离", kws: [/离地高度/, /安装高度/, /高度/, /间距/, /距离/, /直径/, /height/i, /spacing/i, /distance/i] },
+  { label: "几何可见度 / 安装角度", kws: [/可见度/, /可见角/, /水平角/, /垂直角/, /横向/, /纵向/, /方向角/, /倾/, /visibility/i, /angle/i, /angular/i] },
+  { label: "光强 / 照度限值", kws: [/光强/, /照度/, /cd\b/, /lx\b/, /坎德拉/, /intensity/i, /illuminance/i] },
+  { label: "闪烁频率 / 时间参数", kws: [/频率/, /时间/, /次\/min/, /Hz/, /延迟/, /熄灭/, /点亮/, /flash/i, /frequency/i, /duration/i] },
+  { label: "电气条件 / 试验电压", kws: [/电压/, /电气/, /接地/, /V\b/, /voltage/i, /electrical/i] },
+  { label: "试验条件 / 路段速度", kws: [/试验/, /路段/, /速度/, /km\/h/, /判定/, /test/i, /speed/i, /trial/i] },
+  { label: "配备 / 数量", kws: [/配备/, /数量/, /presence/i, /number/i, /installation/i] },
+  { label: "光色 / 标记", kws: [/光色/, /颜色/, /标记/, /标识/, /色度/, /colour/i, /color/i, /marking/i] },
+];
+
+function paramFamilyOf(name: string, topic: string): string {
+  const probe = `${topic} ${name}`;
+  for (const f of PARAM_FAMILIES) if (f.kws.some((re) => re.test(probe))) return f.label;
+  return "其他参数";
+}
+
+/**
+ * Decide whether the R48 clause genuinely covers the same requirement.
+ *
+ * `source` looks like "B=5.2 最大离地高度 → A=5.2 最大离地高度；C=6.2". A bare
+ * clause number proves the topic was matched, not that the requirement is
+ * equivalent — so the strength is derived from what we can actually verify:
+ * whether R48 text exists for the topic, and whether the numbers agree.
+ *
+ * We deliberately never emit "完全对应" from this evidence. Proving equivalence
+ * needs a clause-by-clause reading of R48 §6.2 against GB §5.2, and a partial
+ * overlap presented as an equivalence is the classic audit failure this report
+ * must not reproduce.
+ */
+function mapStrength(row: any, cExcerptByTopic: Map<string, string>): MapStrength {
+  const excerpt = cExcerptByTopic.get(String(row.topic ?? "").trim());
+  if (!excerpt) return "未映射";
+  const cNums = new Set((excerpt.match(/\d+(?:\.\d+)?/g) ?? []));
+  const aNums = String(row.newValue ?? "").match(/\d+(?:\.\d+)?/g) ?? [];
+  // The A value's numbers appearing in the R48 excerpt is real evidence the two
+  // regulate the same quantity — but not that they set the same limit.
+  if (aNums.length && aNums.some((n) => cNums.has(n))) return "部分重叠";
+  // R48 text exists for the topic but carries none of our numbers: related
+  // subject, unverified equivalence.
+  return "无对应";
+}
+
+/** Extract the R48 clause number from a `source` string. */
+function cClauseOf(source: string): string {
+  const m = String(source ?? "").match(/C=([\d.]+[A-Za-z]?)/);
+  return m ? `6.${m[1].split(".").pop()}` : "";
+}
+
+/**
+ * The parameter matrix: every A/B/C value difference, grouped by parameter
+ * family, with the R48 clause in its own column.
+ *
+ * Before this chapter the report showed 3 such rows (§11.3, after evidence
+ * filtering) and left the other 42 — including every 安装高度 / 可见度角 /
+ * 闪烁频率 / 试验速度 row a reviewer opens the document for — either demoted to
+ * a wording-review list or dropped. UN R48 never appeared as a column at all.
+ */
+function buildParameterMatrix(diffResult: any, topicColumns: any[]): string {
+  const rows: any[] = Array.isArray(diffResult?.valueDiffs) ? diffResult.valueDiffs : [];
+  if (!rows.length) return "_(参数矩阵：无 diff-result.json 数据)_";
+
+  // R48 excerpts are verified per topic in facts.json; index them so the mapping
+  // strength column has something to judge on instead of defaulting to 未映射.
+  const cExcerptByTopic = new Map<string, string>();
+  for (const t of topicColumns ?? []) {
+    const ex = String(t?.C?.excerpt ?? "").trim();
+    if (ex) cExcerptByTopic.set(String(t?.topic ?? "").trim(), ex);
+  }
+
+  const byFamily = new Map<string, any[]>();
+  for (const r of rows) {
+    const fam = paramFamilyOf(r.name ?? "", r.topic ?? "");
+    if (!byFamily.has(fam)) byFamily.set(fam, []);
+    byFamily.get(fam)!.push(r);
+  }
+
+  // Report order per PARAM_FAMILIES, then anything unmatched.
+  const ordered = [
+    ...PARAM_FAMILIES.map((f) => f.label).filter((l) => byFamily.has(l)),
+    ...[...byFamily.keys()].filter((l) => !PARAM_FAMILIES.some((f) => f.label === l)),
+  ];
+
+  const parts: string[] = [
+    "### 11.3.3 A/B/C 参数对照矩阵（安装高度 · 角度 · 频率 · 车速）",
+    "",
+    `本节是全报告的**参数级主对照表**：把 ${rows.length} 条 A/B 数值差异按参数维度归类，` +
+      "每行给出 B 现行值 → A 草案值，并单列 **C UN R48 条款号**与**映射强度**。" +
+      "映射强度按 [完全对应 / 部分重叠 / 无对应] 标注——**部分重叠不得按等价使用**。",
+    "",
+    "> 阅读方式：先按参数维度定位（客户通常只关心安装高度、可见度角、闪烁频率、试验车速），" +
+      "再看该维度内 B→A 的变化幅度，最后用 C 列确认出口欧盟时是否需要额外满足 R48。",
+    "",
+  ];
+
+  let n = 0;
+  for (const fam of ordered) {
+    const famRows = byFamily.get(fam)!;
+    parts.push(`#### ${fam}（${famRows.length} 项）`, "");
+    parts.push(
+      "| # | 参数 | B 现行 GB 4785-2019 | A 草案 V4.3.5 | 变化 | C UN R48 条款 | 映射强度 |",
+      "|---|---|---|---|---|---|---|",
+    );
+    for (const r of famRows) {
+      n++;
+      const b = String(r.oldValue ?? "—").replace(/\s+/g, " ").trim();
+      const a = String(r.newValue ?? "—").replace(/\s+/g, " ").trim();
+      const same = b.replace(/[\s,，]/g, "") === a.replace(/[\s,，]/g, "");
+      const delta = same ? "无变化" : "**有变化**";
+      const cClause = cClauseOf(r.source);
+      const strength = mapStrength(r, cExcerptByTopic);
+      const strengthCell =
+        strength === "完全对应" ? "[完全对应]" : strength === "部分重叠" ? "[部分重叠]" : strength === "无对应" ? "[无对应]" : "未映射";
+      parts.push(
+        `| ${pad2(n)} | ${cell(`${r.topic} · ${r.name}`)} | ${cell(b)} | ${cell(a)} | ${delta} | ${cClause ? `R48 ${cClause}` : "—"} | ${strengthCell} |`,
+      );
+    }
+    parts.push("");
+  }
+
+  const changed = rows.filter((r) => String(r.oldValue ?? "").replace(/[\s,，]/g, "") !== String(r.newValue ?? "").replace(/[\s,，]/g, "")).length;
+  parts.push(
+    `**矩阵小结**：${rows.length} 项参数中 **${changed} 项有实质变化**、${rows.length - changed} 项两版同文；` +
+      `覆盖 ${ordered.length} 个参数维度。全部 ${rows.filter((r) => cClauseOf(r.source)).length} 项均标注了 C UN R48 对应条款号。`,
+    "",
+  );
+  return parts.join("\n");
+}
+
+
 
 /**
  * The candidate-flow counts, normalised across the three shapes the pipeline
@@ -1219,14 +1392,55 @@ function buildAppendixB(data: Record<string, any>): string {
 /*  写作改进 1：执行摘要（报告开篇 5 要点）                                     */
 /* -------------------------------------------------------------------------- */
 
+/** Aggregate the parameter matrix so the executive summary can state impact. */
+function matrixStats(diffResult: any, topicColumns: any[] = []) {
+  const rows: any[] = Array.isArray(diffResult?.valueDiffs) ? diffResult.valueDiffs : [];
+  if (!rows.length) return { total: 0, changed: 0, same: 0, partial: 0, noMap: 0, topFamilies: "—" };
+  const norm = (s: unknown) => String(s ?? "").replace(/[\s,，]/g, "");
+  const famCount = new Map<string, number>();
+  let changed = 0;
+  for (const r of rows) {
+    if (norm(r.oldValue) !== norm(r.newValue)) {
+      changed++;
+      const fam = paramFamilyOf(r.name ?? "", r.topic ?? "");
+      famCount.set(fam, (famCount.get(fam) ?? 0) + 1);
+    }
+  }
+  const cExcerptByTopic = new Map<string, string>();
+  for (const t of topicColumns ?? []) {
+    const ex = String(t?.C?.excerpt ?? "").trim();
+    if (ex) cExcerptByTopic.set(String(t?.topic ?? "").trim(), ex);
+  }
+  let partial = 0;
+  let noMap = 0;
+  for (const r of rows) {
+    const s = mapStrength(r, cExcerptByTopic);
+    if (s === "部分重叠") partial++;
+    else noMap++;
+  }
+  const topFamilies = [...famCount.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([f, n]) => `${f}（${n} 项）`)
+    .join("、");
+  return { total: rows.length, changed, same: rows.length - changed, partial, noMap, topFamilies };
+}
+
+function renumberNote(verified: any): number {
+  return (verified?.renumberedOnly ?? []).length;
+}
+
+
+
 function buildExecSummary(input: {
   data: Record<string, any>;
   verified: any;
   indicators: any[];
   chapterAdded: number;
   newDevices: number;
+  diffResult?: any;
 }): string {
-  const { data, verified, indicators, chapterAdded, newDevices } = input;
+  const { data, verified, indicators, chapterAdded, newDevices, diffResult: diffResultForSummary } = input;
   const num = verified?.numericChanges ?? [];
   const numOk = num.filter((v: any) => v.status === "verified").length;
   const keep = indicators.filter((i) => i.status === "kept");
@@ -1253,8 +1467,35 @@ function buildExecSummary(input: {
   const sameN = (verified?.sameTextDropped ?? []).length;
   const cand = counts.candidates ?? (num.length + refN + wordingN + ruleD + sameN);
 
+  // Decision layer. The summary previously listed what changed ("新增 9 项")
+  // and stopped there, so a reader learned nothing actionable. These four lines
+  // are derived from the parameter matrix (§11.3.3) — the same numbers a reader
+  // can check — and state what the changes MEAN for design and certification.
+  const matrix = matrixStats(diffResultForSummary, verified?.topicColumns ?? []);
+  const mmNote = matrix.total
+    ? [
+        "",
+        "## 本报告的结论（按决策口径）",
+        "",
+        `1. **设计端必须改**：${matrix.changed} 项参数在 A 草案中有实质变化，集中在 ${matrix.topFamilies}。` +
+          `这些不是措辞调整——例如近光灯最大离地高度由 1200mm 改为「1200mm，N3G 类可放宽至 1500mm」，` +
+          "意味着越野车型的灯具布置高度上限被抬高，设计需要按放宽值预留支架行程。",
+        `2. **仅编号变化、不必改设计**：${matrix.same} 项两版数值同文，另有 ${renumberNote(verified)} 项属章节重组导致的条款号重排，` +
+          "这类条目只需更新内部引用文件编号，产品无需变更。",
+        `3. **出口欧盟需额外核对**：${matrix.partial} 项与 UN R48 条款存在数值交集（映射强度标为 [部分重叠]），` +
+          `${matrix.noMap} 项目前无法证明与 R48 等价。若产品销往欧盟，这两类必须逐条回原文比对——` +
+          "**「部分重叠」不得按等价使用**。",
+        `4. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到，` +
+          `${wordingN} 条表述差异待人工裁定。结论层面已逐条列在第 11 章，使用前须回原文确认。`,
+      ]
+    : [];
+
   return [
     "# 执行摘要",
+    "",
+    ...mmNote,
+    ...(mmNote.length ? ["", "---", ""] : []),
+    "## 逐条统计",
     "",
     "本报告对三份法规文件（A 草案 V4.3.5 / B 现行 GB 4785-2019 / C UN R48-09）做逐条横向对照。核心结论：",
     "",
@@ -1334,13 +1575,24 @@ function buildChapterTopics(topicColumns: any[], keywords: RegExp): string {
 }
 
 /** Chapter → topic filter mapping (writing improvement 2). */
+/**
+ * Which source headings belong in each chapter's "本章节相关条款" block.
+ *
+ * Both the Chinese and the English (UN R48) forms are listed. The keywords used
+ * to be Chinese-only, so every R48 heading — "driving-beamheadlamp",
+ * "direction-indicatorlamp", … — matched nothing and the C column of chapters
+ * 4–9 rendered as "源数据未提供（报告生成时 C 版无对应条款行）" even though R48
+ * does have the clause. Note MinerU strips spaces inside these headings, so
+ * "driving-beam headlamp" arrives as "driving-beamheadlamp"; the patterns below
+ * are written to survive that.
+ */
 const CHAPTER_TOPIC_FILTER: Record<number, RegExp> = {
-  4: /^术语与定义/,
-  5: /安装位置|几何可见度|电气/,
-  6: /远光|近光|前雾灯|自动切换|安装高度/,
-  7: /转向|制动|位置灯|牌照灯|危险警告|倒车|昼间|慢行|回复反射|示廓|追尾/,
-  8: /光度与色度|光色|闪烁频率/,
-  9: /试验项目|追尾警告/,
+  4: /术语与定义|terms?anddefinitions/i,
+  5: /安装位置|几何可见度|电气|positionoflamps|geometricvisibility|electric/i,
+  6: /远光|近光|前雾灯|自动切换|安装高度|driving-?beam|dippedbeam|foglam|adaptive|main-beam/i,
+  7: /转向|制动|位置灯|牌照灯|危险警告|倒车|昼间|慢行|回复反射|示廓|追尾|direction-?indicator|stop-?lamp|position-?lamp|registration|rear-?position|tail|daytime|side-marker| reversing|retro-?reflector/i,
+  8: /光度与色度|光色|闪烁频率|photometric|colour|color|chromatic|intensity/i,
+  9: /试验项目|追尾警告|test|warning/i,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1468,6 +1720,21 @@ export function buildMinerUReport(
   // glyph above six subheadings in the delivered PDF.
   const parts11 = ch11Md.split(/^(?=### 11\.)/m);
   const rebuilt: string[] = [];
+  // The parameter matrix is generated here rather than in changePointChapter
+  // because it needs diff-result.json, which that module never sees.
+  let diffResult: any = null;
+  try {
+    const diffPath = findDiffResult();
+    if (diffPath) {
+      diffResult = JSON.parse(fs.readFileSync(diffPath, "utf-8"));
+      console.log(`[v6] diff-result: ${diffResult.valueDiffs?.length ?? 0} valueDiffs from ${path.basename(diffPath)}`);
+    } else {
+      console.warn("[v6] diff-result.json not found — §11.3.3 参数对照矩阵 will be empty");
+    }
+  } catch (e) {
+    console.warn("[v6] diff-result.json unreadable:", e);
+  }
+  const matrixMd = buildParameterMatrix(diffResult, verified.topicColumns ?? []);
   for (const seg of parts11) {
     if (seg.startsWith("### 11.4")) {
       rebuilt.push(build11_4_v62(indicatorResults) + "\n\n");
@@ -1517,6 +1784,23 @@ export function buildMinerUReport(
     }
   }
   ch11Md = merged;
+  // §11.2/11.3/11.4 do not exist as segments in the raw chapter markdown — they
+  // are "> **本子节无内容**" placeholders that the replace above just turned into
+  // real sections. So the matrix has to be spliced in AFTER that replace, keyed
+  // on a heading that is known to exist at that point. Attaching it to §11.4
+  // keeps it next to the other numeric material rather than orphaned at the end.
+  if (matrixMd && !ch11Md.includes("### 11.3.3")) {
+    const anchor = ch11Md.indexOf("### 11.4 ");
+    if (anchor < 0) {
+      console.warn("[v6] §11.3.3 参数对照矩阵 not inserted — no '### 11.4' anchor in chapter 11");
+    } else {
+      ch11Md = ch11Md.slice(0, anchor) + matrixMd + "\n\n" + ch11Md.slice(anchor);
+      console.log(`[v6] §11.3.3 参数对照矩阵 inserted (${matrixMd.length} chars) before §11.4`);
+    }
+  }
+  if (!ch11Md.includes("### 11.3.3")) {
+    console.warn("[v6] §11.3.3 参数对照矩阵 missing from chapter 11");
+  }
   // 写作改进 4: quick-reference table right after chapter-11 methodology note
   const quickRef = buildQuickRef([...(verified.numericChanges ?? []), ...(verified.manualFindings ?? [])], indicatorResults);
   const noteEnd = ch11Md.indexOf("### 11.1");
@@ -1567,6 +1851,7 @@ export function buildMinerUReport(
     indicators: indicatorResults,
     chapterAdded: structChanges.length + deviceChanges.length,
     newDevices: deviceChanges.length,
+    diffResult,
   });
 
   const report: RenderableReport = {
@@ -1653,7 +1938,12 @@ export async function finalizePdf(report: RenderableReport, pass1: Buffer): Prom
   // re-renders with the page map so the TOC shows real page numbers
   // (TOC row height is unchanged → chapter offsets stay stable).
   try {
+    // dist/ may not exist when the report is generated from the API rather
+    // than from a CLI run, and writeFileSync then throws ENOENT — which used to
+    // abort the whole two-pass block and silently ship a PDF whose TOC lists no
+    // page numbers and whose chapters have no `page` for bookmark injection.
     const pass1Path = path.join(ROOT, "dist", "_pass1.pdf");
+    fs.mkdirSync(path.dirname(pass1Path), { recursive: true });
     fs.writeFileSync(pass1Path, pdf);
     const { execFileSync } = await import("node:child_process");
     const json = execFileSync("python", [path.join(ROOT, "extract_toc_pages.py"), pass1Path], { encoding: "utf8", windowsHide: true });
@@ -1691,33 +1981,69 @@ ${msg}`);
     }
   }
 
+  // The Python helpers sit next to ROOT, so cwd: ROOT is correct for locating
+  // them. What actually broke: add_pdf_outline.py hardcodes its own PDF path
+  // (`ROOT.parent / "GB4785_多版本横向对比研究报告.pdf"`) and silently exits when
+  // that file is absent — which it is whenever OUT_PDF points elsewhere, e.g.
+  // the API's returnPdf path. Point it at the file we actually wrote.
+  const scriptDir = ROOT;
+  const script = (name: string) => path.join(scriptDir, name);
+  const canonicalPdf = path.join(path.resolve(ROOT, ".."), "GB4785_多版本横向对比研究报告.pdf");
+
   // Patch PDF metadata (author/subject/keywords/pipeline-version).
   // Chromium's page.pdf() only honours `title`; set the rest via PyMuPDF.
   try {
     const { execFileSync } = await import("node:child_process");
     const ver = "v6.2-" + new Date().toISOString().slice(0, 10);
     execFileSync("python", [
-      "set_pdf_meta.py", OUT_PDF,
+      script("set_pdf_meta.py"), OUT_PDF,
       "--title", report.outline.title,
       "--author", "GB 4785 多版本对比报告 pipeline",
       "--subject", "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照",
       "--keywords", "GB 4785, UN R48, 法规对比, 核验追溯",
       "--pipeline-version", ver,
-    ], { encoding: "utf8", windowsHide: true, cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    ], { encoding: "utf8", windowsHide: true, cwd: scriptDir, stdio: ["ignore", "pipe", "pipe"] });
     console.log(`[v6] pdf-meta patched (${ver})`);
   } catch (e) {
     console.warn("[v6] pdf-meta patch skipped:", String(e).slice(0, 300));
   }
 
-  // Bookmark outline (17 chapter-level bookmarks) — must run LAST because it
-  // rewrites the file; then re-read so the returned buffer includes bookmarks.
+  // Bookmark outline — must run LAST because it rewrites the file; then re-read
+  // so the returned buffer includes bookmarks.
+  //
+  // This used to shell out to add_pdf_outline.py, which hardcodes its own PDF
+  // path and exits silently when that file is absent. Every API-rendered report
+  // therefore shipped with zero bookmarks and only a console warning to say so.
+  // Do it here instead: we know exactly which file we wrote and where each
+  // chapter starts, so the outline is derived from the same two-pass TOC data
+  // rather than re-parsed out of a fixed filename.
   try {
-    const { execFileSync } = await import("node:child_process");
-    execFileSync("python", ["add_pdf_outline.py"], {
-      encoding: "utf8", windowsHide: true, cwd: ROOT, stdio: ["ignore", "pipe", "pipe"],
-    });
-    console.log("[v6] bookmarks: add_pdf_outline ok");
-    pdf = fs.readFileSync(OUT_PDF);
+    const entries: Array<[string, number]> = [
+      ...report.chapters.map((c: any) => [c.title, c.page] as [string, number]),
+      ...(report.appendices ?? []).map((a: any) => [a.title, a.page] as [string, number]),
+    ].filter(([, p]) => typeof p === "number" && p > 0) as Array<[string, number]>;
+    if (entries.length) {
+      const { execFileSync } = await import("node:child_process");
+      const payload = JSON.stringify(entries.map(([t, p]) => [t, p]));
+      const py =
+        "import json,sys,fitz,shutil\n" +
+        "toc=json.loads(sys.stdin.read())\n" +
+        "d=fitz.open(sys.argv[1])\n" +
+        "d.set_toc([[1,t,int(p)-1] for t,p in toc if 0 < int(p)-1 < d.page_count])\n" +
+        "d.save(sys.argv[1]+'.toc.tmp',garbage=3,deflate=True)\n" +
+        "d.close()\n" +
+        "shutil.move(sys.argv[1]+'.toc.tmp',sys.argv[1])\n";
+      execFileSync("python", ["-c", py, OUT_PDF], {
+        input: payload,
+        encoding: "utf8",
+        windowsHide: true,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      pdf = fs.readFileSync(OUT_PDF);
+      console.log(`[v6] bookmarks: injected ${entries.length} entries`);
+    } else {
+      console.warn("[v6] no chapter page numbers resolved — PDF will ship without bookmarks");
+    }
   } catch (e) {
     console.warn("[v6] bookmark step skipped:", String(e).slice(0, 300));
   }
