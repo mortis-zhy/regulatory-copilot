@@ -66,6 +66,11 @@ for (const [entry, outfile] of ENTRIES) {
 // not silently drift away from the module list again.
 sources["vite.config.ts"] = sha256("vite.config.ts");
 
+// deliveryGate is bundled into dist/index.js and decides whether a PDF is
+// allowed to reach a client. Editing it without rebuilding would ship stale
+// gating, so track it here — the manifest check in verify.mjs compares hashes.
+sources["server/_core/deliveryGate.ts"] = sha256("server/_core/deliveryGate.ts");
+
 writeFileSync(
   resolve(ROOT, "dist/.build-manifest.json"),
   JSON.stringify({ builtAt: new Date().toISOString(), sources }, null, 2) + "\n",

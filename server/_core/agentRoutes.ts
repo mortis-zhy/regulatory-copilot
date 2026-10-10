@@ -5,6 +5,7 @@ import { parseWithRagAnything } from "../integrations/ragAnything";
 import { renderPdf, renderWordHtml, type ReportPayload } from "../reports/export";
 import { extractPdfTextServer } from "../ingestion/pdfExtract";
 import { sidecarHealth, sidecarExtractDocs, sidecarVerify, buildSidecarReport, SIDECAR_URL } from "./sidecarClient";
+import { runDeliveryGate } from "./deliveryGate";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -302,6 +303,22 @@ export function registerAgentRoutes(router: Router) {
         // render gates, PDF metadata, bookmark outline — the customer gets
         // exactly the same artifact quality as the locally-generated report.
         const pdf = await finalizePdf(report, rawPdf);
+
+        // Delivery gate. Without this the endpoint hands over whatever it just
+        // built: a report missing its whole parameter matrix, or with the
+        // appendix-C table rendered as 73 placeholder cards, was downloadable —
+        // and `npm run verify` is only ever run by someone who remembers.
+        // A failed gate returns 422 with the reasons instead of the PDF.
+        const gate = await runDeliveryGate(report);        if (!gate.ok) {
+          console.error("[mineru-report] delivery gate FAILED:", gate.failures);
+          return res.status(422).json({
+            error: "交付前自检未通过，报告未生成",
+            failures: gate.failures,
+            hint: "运行 `npm run verify` 查看完整诊断；这些问题会让客户拿到缺内容的报告。",
+          });
+        }
+        console.log(`[mineru-report] delivery gate ok (${gate.checks} checks)`);
+
         return res.status(200).set({
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.pdf`,
