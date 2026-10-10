@@ -44,6 +44,80 @@ export async function sidecarHealth(timeoutMs = 5000): Promise<boolean> {
 }
 
 /**
+ * Best-effort sidecar supervisor.
+ *
+ * The sidecar kept dying between requests — three 503s in one session, each
+ * with an empty log and no traceback, i.e. the process was terminated rather
+ * than crashing. Every occurrence meant a human had to notice the failure and
+ * start `python python_service/main.py` by hand before the site worked again.
+ *
+ * So: if the health check fails, try to spawn it, wait for it to come up, and
+ * report whether that worked. Never throws — the caller still gets a boolean
+ * and can produce the same actionable 503 message if the restart fails.
+ */
+let sidecarSpawnInFlight: Promise<boolean> | null = null;
+
+export async function ensureSidecar(timeoutMs = 60000): Promise<boolean> {
+  if (await sidecarHealth(3000)) return true;
+  if (sidecarSpawnInFlight) return sidecarSpawnInFlight;
+
+  sidecarSpawnInFlight = (async () => {
+    const { spawn } = await import("node:child_process");
+    const path = await import("node:path");
+    const fs = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    // Walk up until python_service/main.py appears. `import.meta.dirname`
+    // points inside dist/ after bundling, and resolving "../.." from there
+    // lands on the OUTER workbench repo — where python_service does not exist,
+    // so the spawn silently produced a dead PID.
+    let root = path.dirname(fileURLToPath(import.meta.url));
+    for (let i = 0; i < 6 && root; i++) {
+      if (fs.existsSync(path.join(root, "python_service", "main.py"))) break;
+      const up = path.dirname(root);
+      if (up === root) break;
+      root = up;
+    }
+    const entry = path.join(root, "python_service", "main.py");
+    if (!fs.existsSync(entry)) {
+      console.error("[sidecar] auto-start skipped — main.py not found under", root);
+      sidecarSpawnInFlight = null;
+      return false;
+    }
+    try {
+      const child = spawn("python", [entry], {
+        cwd: root,
+        detached: true, // survive the parent process
+        stdio: "ignore",
+        windowsHide: true,
+      });
+      child.unref();
+      console.log("[sidecar] not reachable — spawned", entry, `(pid ${child.pid})`);
+    } catch (e) {
+      console.error("[sidecar] auto-start failed:", e);
+      sidecarSpawnInFlight = null;
+      return false;
+    }
+
+    // Poll until /health answers. MinerU imports torch on boot, so the first
+    // start takes well over ten seconds.
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (await sidecarHealth(3000)) {
+        console.log("[sidecar] back up");
+        sidecarSpawnInFlight = null;
+        return true;
+      }
+    }
+    console.error(`[sidecar] still unreachable after ${Math.round(timeoutMs / 1000)}s`);
+    sidecarSpawnInFlight = null;
+    return false;
+  })();
+
+  return sidecarSpawnInFlight;
+}
+
+/**
  * Extract all three documents through the sidecar. Returns a dict keyed by
  * label with the full MinerU per-doc object (markdown/fullText/tables/figures/
  * equations/headings/blockTypes).

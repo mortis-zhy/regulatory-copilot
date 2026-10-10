@@ -2548,7 +2548,26 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
       // layout time; under screen media the CJK glyphs silently fall back to
       // Type3 "tofu" boxes even though document.fonts reports them as ready.
       await page.emulateMedia({ media: "print" });
-      await page.setContent(html, { waitUntil: "load", timeout: 120_000 });
+      // 120s was enough for a 125-page report but not a 219-page one: Chromium
+      // lays out every page before firing "load", and the report grew once the
+      // parameter matrix and the restored R48 content landed. Scale the budget
+      // with the payload so a bigger report doesn't fail on a fixed ceiling.
+      const loadTimeout = Math.max(120_000, Math.min(600_000, Math.ceil(html.length / 900) * 1000));
+      const t0 = Date.now();
+      try {
+        await page.setContent(html, { waitUntil: "load", timeout: loadTimeout });
+      } catch (e) {
+        // "load" fires only after the whole document lays out. If it times out
+        // the DOM is nonetheless populated, and everything below (fonts.ready,
+        // page.pdf) works off the DOM rather than the load event — so log the
+        // budget that was hit and carry on rather than losing the whole render.
+        console.warn(
+          `[v8] setContent "load" timed out after ${Math.round((Date.now() - t0) / 1000)}s ` +
+            `(budget ${Math.round(loadTimeout / 1000)}s, ${(html.length / 1024).toFixed(0)} KB) — ` +
+            "continuing with the DOM as laid out so far",
+        );
+      }
+      console.log(`[v8] setContent ${Math.round((Date.now() - t0) / 1000)}s for ${(html.length / 1024).toFixed(0)} KB`);
       await page.evaluate(async () => {
         const fonts = (document as any).fonts;
         if (fonts?.ready) await fonts.ready;

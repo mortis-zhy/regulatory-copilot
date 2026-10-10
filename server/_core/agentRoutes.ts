@@ -4,7 +4,7 @@ import { streamMiniMaxChat, type ChatMessage } from "../integrations/minimax";
 import { parseWithRagAnything } from "../integrations/ragAnything";
 import { renderPdf, renderWordHtml, type ReportPayload } from "../reports/export";
 import { extractPdfTextServer } from "../ingestion/pdfExtract";
-import { sidecarHealth, sidecarExtractDocs, sidecarVerify, buildSidecarReport, SIDECAR_URL } from "./sidecarClient";
+import { sidecarHealth, ensureSidecar, sidecarExtractDocs, sidecarVerify, buildSidecarReport, SIDECAR_URL } from "./sidecarClient";
 import { runDeliveryGate } from "./deliveryGate";
 import multer from "multer";
 
@@ -254,7 +254,11 @@ export function registerAgentRoutes(router: Router) {
       if (docs.length < 2) {
         return res.status(400).json({ error: "documents[] (with label/fileName/filePath) required, >= 2" });
       }
-      const healthy = await sidecarHealth();
+      // The sidecar is a separate Python process and has died between requests
+      // several times in one session (empty log, no traceback). Try to bring it
+      // back before failing, so a transient crash doesn't surface as a 503 the
+      // user has to fix by hand.
+      const healthy = (await sidecarHealth()) || (await ensureSidecar());
       if (!healthy) {
         return res.status(503).json({
           error: `Python sidecar not reachable at ${SIDECAR_URL}. Start it: python python_service/main.py`,
