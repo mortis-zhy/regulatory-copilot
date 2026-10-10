@@ -252,8 +252,129 @@ check("chapter 11 candidate buckets sum to the candidate total", () => {
   return addends.join("+") + ` = ${sum}`;
 });
 
-check("no markdown artefacts in the assembled report", () => {
-  const md = loadReport()
+/*
+ * Coverage checks.
+ *
+ * These exist because the gate was green through an entire broken delivery:
+ * §11.3.3 parameter matrix deleted outright, appendix C's header renamed so the
+ * triptych renderer no longer recognised it — both passed 23/23. Everything
+ * above asserts internal consistency; nothing asserted that the source data
+ * actually REACHES the reader. These do.
+ */
+
+function reportText() {
+  return loadReport()
+    .chapters.concat(loadReport().appendices ?? [])
+    .map((c) => c.markdown ?? "")
+    .join("\n");
+}
+
+check("§11.3.3 parameter matrix carries every valueDiff", () => {
+  const md = reportText();
+  const diffPath = resolve(ROOT, "diff-result.json");
+  assert(existsSync(diffPath), "diff-result.json missing — matrix cannot be verified");
+  const total = JSON.parse(readFileSync(diffPath, "utf-8")).valueDiffs?.length ?? 0;
+  assert(total > 0, "diff-result.json has no valueDiffs");
+  const i = md.indexOf("### 11.3.3");
+  assert(i >= 0, "§11.3.3 参数对照矩阵 missing — the deliverable's main table is gone");
+  const section = md.slice(i, md.indexOf("\n### ", i + 5) < 0 ? undefined : md.indexOf("\n### ", i + 5));
+  const rows = (section.match(/^\| \d\d \| /gm) ?? []).length;
+  assert(
+    rows >= total,
+    `matrix lists ${rows} of ${total} valueDiffs — a parameter family went missing`,
+  );
+  return `${rows}/${total} 参数行`;
+});
+
+check("every valueDiff family reaches the report with a C clause", () => {
+  const md = reportText();
+  const diff = JSON.parse(read("diff-result.json"));
+  // Count rows whose own C reference appears in the report. Counting raw "R48 "
+  // occurrences would be wrong twice over: clause numbers are multi-level
+  // (6.5.9), and several rows legitimately share one clause. The C side is not
+  // always clause §6 either — five rows point at R48 Annexes (Annex 12/13), so
+  // accept both shapes or the check reports a false regression.
+  const cRef = (source) => {
+    const m = String(source ?? "").match(/C=((?:\d+(?:\.\d+)+)|Annex\s*\d+[A-Za-z]?)/i);
+    return m ? m[1].replace(/\s+/g, " ") : null;
+  };
+  const rowsWithC = diff.valueDiffs.filter((v) => {
+    const ref = cRef(v.source);
+    return ref && (md.includes(`R48 ${ref}`) || md.includes(`R48 ${ref.replace(/^Annex\s*/i, "Annex ")}`));
+  }).length;
+  const expectC = diff.valueDiffs.filter((v) => cRef(v.source)).length;
+  assert(
+    rowsWithC === expectC,
+    `only ${rowsWithC}/${expectC} rows with a C source cite their R48 clause — ` +
+      "the C column regressed to empty or truncated the reference",
+  );
+  const unique = new Set([...md.matchAll(/R48 ((?:\d+(?:\.\d+)*)|Annex\s*\d+)/gi)].map((m) => m[1]));
+  return `${rowsWithC}/${expectC} 行带 C 引用（${unique.size} 个唯一引用）`;
+});
+
+check("executive summary states conclusions, not just counts", () => {
+  const md = reportText();
+  assert(md.includes("本报告的结论"), "执行摘要缺少「本报告的结论（按决策口径）」段");
+  const i = md.indexOf("本报告的结论");
+  const block = md.slice(i, i + 1600);
+  const numbered = (block.match(/^\d\. \*\*/gm) ?? []).length;
+  assert(numbered >= 3, `决策结论只有 ${numbered} 条，应至少 3 条（设计/编号/出口/不可用）`);
+  return `${numbered} 条决策口径`;
+});
+
+check("appendix C is rendered as a three-version table", () => {
+  // The regression that shipped: the triptych renderer recognises version
+  // columns only by header name, so renaming that column silently turned 24
+  // topics into 73 "源数据未提供" placeholders while the data sat unused in the
+  // markdown. Assert the SAME predicate the renderer uses, so renaming the
+  // header fails here instead of reaching the client.
+  const md = reportText();
+  const RENDERER_HEADER = /^(版本|来源|文档|文件|标准|version|document|file)$/i;
+  // Locate appendix C's own table (it is the one whose body rows are A/B/C),
+  // not just the first pipe-table in the document.
+  const appendixC = md.slice(md.search(/附录 C A\|B|C/) >= 0 ? md.search(/附录 C A\|B\|C/) : md.search(/# 附录 C/));
+  assert(appendixC.length > 0, "附录 C 内容缺失");
+  const cells = [...appendixC.matchAll(/^\| *([^|]+?) *\|/gm)].map((m) => m[1].replace(/\*/g, "").trim());
+  const headerCell = cells.find((c) => RENDERER_HEADER.test(c));
+  assert(
+    headerCell,
+    `附录 C 表头 [${cells.slice(0, 4).join(" / ")}] 不在渲染器版本列白名单内 — ` +
+      "三栏卡片会全部退回「源数据未提供」",
+  );
+  const aRows = (md.match(/^\| A \| \d/gm) ?? []).length;
+  const cRows = (md.match(/^\| C \| \d/gm) ?? []).length;
+  assert(aRows > 0 && cRows > 0, `附录C 三版本行缺失 (A=${aRows}, C=${cRows}) — C 列会渲染成空`);
+  return `表头「${headerCell}」· A 行 ${aRows} / C 行 ${cRows}`;
+});
+
+check("delivered PDF has no placeholder cells claiming missing data", () => {
+  const pdfPath = process.env.VERIFY_PDF || resolve(ROOT, "reports/last-report.pdf");
+  if (!existsSync(pdfPath)) return "skipped — set VERIFY_PDF=<path>";
+  // Pass the path base64-encoded: on Windows a non-ASCII argv reaches Python as
+  // mojibake ("GB 4785 ��汾...") and stdin is truncated mid-multibyte-char, so
+  // fitz cannot open the file — silently turning this check into a no-op on
+  // exactly the deliverable filename we care about.
+  const py =
+    "import sys,io,json,base64,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path); t='\\n'.join(p.get_text() for p in d)\n" +
+    "print(json.dumps({'n':t.count('源数据未提供')}))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
+  const { n } = JSON.parse(r.stdout.trim().split("\n").pop());
+  // A handful is legitimate (a table genuinely absent in one version); dozens
+  // means the triptych renderer stopped recognising a table shape.
+  assert(n <= 8, `${n} "源数据未提供" placeholders — a table stopped rendering (was 73)`);
+  return `${n} placeholder cells (limit 8)`;
+});
+
+check("no markdown artefacts in the assembled report", () => {  const md = loadReport()
     .chapters.map((c) => c.markdown ?? "")
     .join("\n");
   // A bare "#" line means an h4 was split mid-heading by a non-line-anchored
@@ -275,21 +396,24 @@ check("no markdown artefacts in the assembled report", () => {
 check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
   const pdfPath = process.env.VERIFY_PDF || resolve(ROOT, "reports/last-report.pdf");
   if (!existsSync(pdfPath)) return "skipped — set VERIFY_PDF=<path> to check a built PDF";
-  const py = `
-import re, sys, io, json
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-import fitz
-d = fitz.open(sys.argv[1])
-t = "\\n".join(p.get_text() for p in d)
-tofu = sum(1 for p in d for b in p.get_text("rawdict")["blocks"]
-           for l in b.get("lines", []) for s in l.get("spans", [])
-           for c in s.get("chars", []) if c["c"] in ("\\ufffd", "\\u25a1") or ord(c["c"]) == 0)
-print(json.dumps({"pages": d.page_count, "bookmarks": len(d.get_toc()),
-                  "bold": len(re.findall(r"\\*\\*", t)), "tofu": tofu,
-                  "empty": [i + 1 for i, p in enumerate(d) if not p.get_text().strip()]}))
-`;
-  const r = spawnSync("python", ["-c", py, pdfPath], { cwd: ROOT, encoding: "utf-8" });
-  if (r.status !== 0) return `skipped — PyMuPDF unavailable (${(r.stderr || "").trim().split("\n").pop()})`;
+  const py2 =
+    "import sys,io,json,base64,fitz,re\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path); t='\\n'.join(p.get_text() for p in d)\n" +
+    "print(json.dumps({'pages':d.page_count,'bookmarks':len(d.get_toc()),\n" +
+    "'bold':len(re.findall(r'\\*\\*',t)),\n" +
+    "'tofu':sum(1 for pg in d for b in pg.get_text('rawdict')['blocks']\n" +
+    "          for l in b.get('lines',[]) for s in l.get('spans',[])\n" +
+    "          for c in s.get('chars',[]) if c['c'] in ('\\ufffd','\\u25a1') or ord(c['c'])==0),\n" +
+    "'empty':[i+1 for i,pg in enumerate(d) if not pg.get_text().strip()]}))\n";
+  const r = spawnSync("python", ["-c", py2], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
   const m = JSON.parse(r.stdout.trim().split("\n").pop());
   assert(m.bold === 0, `${m.bold / 2} unrendered markdown bold marker(s) in the PDF text`);
   assert(m.tofu === 0, `${m.tofu} tofu/replacement glyph(s) — CJK font embedding regressed`);

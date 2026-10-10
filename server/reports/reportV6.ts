@@ -1079,10 +1079,18 @@ function mapStrength(row: any, cExcerptByTopic: Map<string, string>): MapStrengt
   return "无对应";
 }
 
-/** Extract the R48 clause number from a `source` string. */
+/**
+ * Extract the R48 reference from a `source` string.
+ *
+ * Two shapes occur. Most rows cite a clause in §6, and those numbers are
+ * multi-level (6.5.9, 2.4.17.3, 5.28) — taking only the last segment collapsed
+ * them all onto 6.x. Five rows instead cite an Annex ("C=Annex 13", "C=Annex
+ * 12"), which a digits-only pattern dropped entirely, leaving those parameters
+ * with an empty C cell.
+ */
 function cClauseOf(source: string): string {
-  const m = String(source ?? "").match(/C=([\d.]+[A-Za-z]?)/);
-  return m ? `6.${m[1].split(".").pop()}` : "";
+  const m = String(source ?? "").match(/C=((?:\d+(?:\.\d+)+)|Annex\s*\d+[A-Za-z]?)/i);
+  return m ? m[1].replace(/\s+/g, " ") : "";
 }
 
 /**
