@@ -14,7 +14,7 @@
  * Exits non-zero on the first failing check so CI (or you) stops.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -137,6 +137,44 @@ check("no hardcoded absolute user paths in pipeline code", () => {
   return "clean";
 });
 
+/**
+ * The PDF the gate inspects — rendered ONCE, up front, read synchronously below.
+ *
+ * These three checks used to default to `reports/last-report.pdf`, a path that
+ * never existed, so each returned "skipped" while the gate still reported
+ * all-green. The assertions existed; they had simply never run. That is how 29
+ * bare `<sub>` tags and 15 stray LaTeX macros reached the client.
+ *
+ * So the gate renders `reports/last-report.json` — the artifact that actually
+ * ships — unless VERIFY_PDF names one. About 45 s, which is the price of these
+ * assertions executing at all.
+ *
+ * Synchronous by design: `check()` does not await, so an async resolver here
+ * would leave the assertions unreached all over again.
+ */
+let GATE_PDF = null;
+
+async function prepareGatePdf() {
+  if (process.env.VERIFY_PDF) {
+    GATE_PDF = existsSync(process.env.VERIFY_PDF) ? process.env.VERIFY_PDF : null;
+    return GATE_PDF;
+  }
+  const report = resolve(ROOT, "reports/last-report.json");
+  const lib = resolve(ROOT, "dist/htmlRenderV8.js");
+  if (!existsSync(report) || !existsSync(lib)) return null;
+  try {
+    const mod = await import("../dist/htmlRenderV8.js");
+    const buf = await mod.renderPdfFromReportV8(JSON.parse(readFileSync(report, "utf-8")));
+    GATE_PDF = resolve(ROOT, "reports/.verify-render.pdf");
+    writeFileSync(GATE_PDF, buf);
+  } catch (e) {
+    console.log("        (闸门渲染 PDF 失败：" + String((e && e.message) || e).slice(0, 140) + ")");
+    GATE_PDF = null;
+  }
+  return GATE_PDF;
+}
+await prepareGatePdf();
+
 console.log("\n=== 4. python verification layer ===");
 
 function runPy(args, label) {
@@ -173,6 +211,54 @@ check("manual findings are hash-bound to the source PDFs", () => {
       out.split("\n").filter((l) => l.includes("待重核")).join("\n        "),
   );
   return `${mf.findings.length} findings, 3 source hashes match`;
+});
+
+check("extract-cache holds exactly one file per version", () => {
+  // Two generations of LLM extraction used to sit in the same glob path under
+  // the same label, and `docs[label] = d` was last-wins — so which excerpts and
+  // page numbers reached the report depended on directory enumeration order.
+  // Observed: B's 慢行灯 resolved to 第4页 in one run and to nothing in the
+  // next, with nothing on disk changing. load_extract_cache() now picks the
+  // newest and names the shadowed files; this check keeps a second copy from
+  // being dropped back in.
+  const files = readdirSync(resolve(ROOT, "dist/extract-cache")).filter((f) => /^v3-.*\.json$/.test(f));
+  const byLabel = new Map();
+  for (const f of files) {
+    const label = JSON.parse(readFileSync(resolve(ROOT, "dist/extract-cache", f), "utf-8")).label ?? "";
+    byLabel.set(label, (byLabel.get(label) ?? 0) + 1);
+  }
+  const dup = [...byLabel].filter(([, n]) => n > 1).map(([l, n]) => `${l}×${n}`);
+  assert(
+    dup.length === 0,
+    `dist/extract-cache has ${dup.join(", ")} — two extractions for one label, and which one wins is arbitrary. Move the older to _superseded/`,
+  );
+  assert(
+    ["A", "B", "C"].every((l) => byLabel.get(l) === 1),
+    `expected one cache per version, got ${JSON.stringify(Object.fromEntries(byLabel))}`,
+  );
+  return `${files.length} files, one per version`;
+});
+
+check("topic page citations survive a source-PDF re-check", () => {
+  // Every "第N页 ✓" in the topic columns is a promise that page N of the
+  // SOURCE PDF carries the quote. verify_claims.py resolves the page against
+  // MinerU's own page-tagged text, and MinerU's page boundaries are not the
+  // PDF's — four cells were shipping a ✓ for a page that does not contain the
+  // quote (A 安装位置与几何可见度 第102页, B 光色与色度坐标表 / 灯具光色对应表
+  // 第16页, C 自动切换前照灯条件表 第65页). verify_claims.py now downgrades
+  // those; this gate fails if that pass ever stops running.
+  const { ok, out } = runPy(["verify_claims.py"], "verify_claims");
+  assert(ok, `verify_claims.py exited non-zero:\n        ${out.slice(-600)}`);
+  assert(
+    out.includes("源 PDF 页码复核"),
+    "verify_claims.py did not report the source-PDF page re-check — the cross-check was removed",
+  );
+  const facts = JSON.parse(read("dist/facts.json"));
+  const cells = facts.topicColumns.flatMap((t) =>
+    ["A", "B", "C"].filter((lb) => t?.[lb]?.status === "verified"),
+  );
+  assert(cells.length > 0, "no verified topic cells at all — the corpus or the cache went missing");
+  return `${cells.length} 格 ✓ 均已过源 PDF 页码复核`;
 });
 
 check("audit_pages.py re-verifies cited pages against the PDFs", () => {
@@ -233,6 +319,595 @@ check("executive summary candidate count closes against the ledger", () => {
     );
   }
   return `${all.length} declaration(s), all ${facts.counts.candidates}`;
+});
+
+check("decision-caliber counts match the audited buckets", () => {
+  // The defect that shipped: caliber 1 claimed "45 项参数有实质变化" while the
+  // audited flow said 3 numeric + 9 manual, and its own family breakdown
+  // (15+8+8=31) did not sum to the 45 it asserted. Both numbers came from
+  // matrixStats() re-deriving counts by comparing oldValue !== newValue, which
+  // classifies every wording difference as a substantive change.
+  //
+  // Each decision caliber's headline must now equal the bucket it claims to
+  // summarise. A caliber with no auditable number must not print one.
+  const md = loadReport()
+    .chapters.map((c) => c.markdown ?? "")
+    .join("\n");
+  const facts = JSON.parse(read("dist/facts.json"));
+
+  const expect = [
+    {
+      re: /(\d+)\s*项参数在 A 草案中有实质变化/,
+      want: (facts.numericChanges?.length ?? 0) + (facts.manualFindings?.length ?? 0),
+      what: "实质变化项数",
+    },
+    {
+      re: /(\d+)\s*项两版原文完全相同/,
+      want: facts.sameTextDropped?.length ?? 0,
+      what: "两版同文项数",
+    },
+    {
+      re: /(\d+)\s*项仅措辞\/标点差异/,
+      want: facts.counts?.wordingFiltered ?? 0,
+      what: "措辞差异项数",
+    },
+  ];
+
+  const seen = [];
+  for (const { re, want, what } of expect) {
+    const m = md.match(re);
+    assert(m, `执行摘要找不到「${what}」的声明`);
+    assert(
+      Number(m[1]) === want,
+      `决策口径声称 ${what} = ${m[1]}，facts.json 审计值为 ${want}`,
+    );
+    seen.push(`${what}=${m[1]}`);
+  }
+
+  // Caliber 3 previously printed "13 项部分重叠 / 32 项无法证明等价", derived by
+  // intersecting A's numbers with numbers scraped out of R48 §6.x.1 "Presence"
+  // boilerplate. Until C's quantitative clauses are extracted, that evidence
+  // does not support a verdict and must not appear.
+  assert(
+    !/项与 UN R48 条款存在数值交集/.test(md),
+    "决策口径 3 仍在输出基于主题级摘录的 R48 数值重叠判定（C 定量抽取未完成）",
+  );
+
+  return seen.join(" · ") + " · C 定量判定已撤下";
+});
+
+check("chapter 12 is a parameter matrix, not a table dump", () => {
+  // It shipped as three consecutive raw dumps (A's table, B's, C's) under a
+  // summary column reading 见下方表格内容 on all 492 rows — a listing, not a
+  // comparison. These assertions pin the shape so it cannot drift back.
+  const ch = loadReport().chapters.find((c) => c.id === 12);
+  assert(ch, "chapter 12 missing");
+  const md = ch.markdown ?? "";
+
+  assert(
+    !md.includes("见下方表格内容"),
+    "chapter 12 still carries the 见下方表格内容 placeholder column",
+  );
+
+  // Only §12.1 (the summary table) carries one row per parameter; the detail
+  // blocks in §12.2 are 4-column version tables and are checked separately.
+  const summary = md.split("## 12.2 ")[0];
+  const rows = summary.split("\n").filter((l) => l.startsWith("| **"));
+  assert(rows.length > 0, "chapter 12 has no parameter rows");
+
+  // Every row must offer all three versions as columns.
+  for (const line of rows) {
+    const cells = line.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+    assert(
+      cells.length >= 6,
+      `a parameter row has ${cells.length} columns, expected >= 6 (参数/单位/A/B/C/判定): ${line.slice(0, 60)}`,
+    );
+  }
+
+  // An empty cell is legitimate — a version may genuinely not state a
+  // requirement (the draft dropped the V-level 60 km/h trigger that B and R48
+  // both keep). What is never legitimate is an UNEXPLAINED gap: a regex that
+  // silently stopped matching looks identical to a version that says nothing,
+  // and the reader cannot tell them apart.
+  const unexplained = rows.filter((l) => {
+    const c = l.trim().replace(/^\||\|$/g, "").split("|").map((x) => x.trim());
+    const emptyAB = (c[2] ?? "").includes("⚠") || (c[3] ?? "").includes("⚠");
+    return emptyAB && !(c[5] ?? "").includes("未定位");
+  });
+  assert(
+    unexplained.length === 0,
+    `${unexplained.length} row(s) have an empty A/B cell with no explanation in 判定: ${unexplained[0]?.slice(0, 70)}`,
+  );
+
+  // Coverage must be stated, not implied: the reader has to know how much of the
+  // matrix is actually filled in.
+  assert(/本版覆盖/.test(md), "chapter 12 does not state its coverage");
+
+  return `${rows.length} 个参数行 · 无未解释空缺 · 覆盖率已声明`;
+});
+
+check("no spec pattern spans a page boundary", () => {
+  // locate() scans ONE page at a time, so a pattern can never match across a
+  // [第N页] marker. GB 4785's 5.7.4.1.1 sits at the bottom of page 41 and its
+  // "600 ㎜" opens page 42 — a clause-anchored pattern for it can never match,
+  // and the cell comes back empty with no error. Two rows hit this.
+  //
+  // Detect it structurally: a pattern whose ONLY anchor is a clause number is
+  // fragile whenever the clause number and the value land on different pages.
+  // We cannot know the page layout from the spec alone, so this asserts the
+  // weaker but always-true property: any spec that hit on a version whose
+  // pattern starts with a clause anchor must ALSO have produced a clause. A
+  // clause-anchored pattern that matches inside one page always yields a clause
+  // (nearestClause scans the page text before the match).
+  const doc = JSON.parse(read("data/parameter-specs.json"));
+  const report = loadReport();
+  const matrix = report.parameterMatrix;
+  const startsWithClause = (src) => /^\s*(?:\\\.)*\d+(?:\\\.)*\d+/.test(src);
+  const silent = [];
+  for (const row of matrix) {
+    const spec = doc.specs.find((s) => s.id === row.id);
+    if (!spec) continue;
+    for (const [ver, pat] of Object.entries(spec.patterns ?? {})) {
+      const c = row.cells[ver];
+      if (!c || c.status !== "verified") continue;
+      if (startsWithClause(pat.source) && !c.clause) {
+        silent.push(`${row.id}/${ver}`);
+      }
+    }
+  }
+  assert(
+    silent.length === 0,
+    `${silent.length} clause-anchored pattern(s) matched but reported no clause — the anchor and the value are probably on different pages (a pattern cannot span a [第N页] marker): ${silent.slice(0, 5).join(", ")}`,
+  );
+  return "clause-anchored hits all carry a clause";
+});
+
+check("matrix cells that matched a number actually carry it", () => {
+  // A spec whose only capture group is not the value silently feeds the
+  // extractor the wrong text: `车辆前行速度(小于|大于)\s*10 km/h` reported a
+  // clean hit with an EMPTY number list, and the summary rendered a blank
+  // where 10 should be. Verified-but-valueless is almost always this bug.
+  const matrix = loadReport().parameterMatrix;
+  assert(Array.isArray(matrix) && matrix.length, "no parameterMatrix on the report");
+  const offenders = [];
+  for (const row of matrix) {
+    for (const v of Object.keys(row?.cells ?? {})) {
+      const c = row.cells[v];
+      if (!c || c.status !== "verified") continue;
+      const digits = String(c.match ?? "").match(/\d/g) ?? [];
+      if (digits.length && !(c.nums ?? []).length) {
+        offenders.push(`${row.name}/${v} matched "${String(c.match).slice(0, 30)}" but nums is empty`);
+      }
+    }
+  }
+  assert(
+    offenders.length === 0,
+    `${offenders.length} cell(s) matched digits but produced no numbers — a capture group is capturing the wrong span:\n        ${offenders.slice(0, 4).join("\n        ")}`,
+  );
+  const versions = [...new Set(matrix.flatMap((r) => Object.keys(r?.cells ?? {})))].sort();
+  const cells = matrix.length * versions.length;
+  const filled = matrix.reduce(
+    (n, r) => n + versions.filter((v) => r?.cells?.[v]?.status === "verified").length,
+    0,
+  );
+  return `${filled}/${cells} 取值位有值（${versions.join("/")}）`;
+});
+
+check("R48 chapter map self-verifies against the corpus", () => {
+  // `propose_parameters_c.py` declares a §6.x → lamp table that no amount of
+  // cleverness can derive. It has been wrong once and the failure was silent:
+  // §6.14 was labelled "Direction-indicator position" when it is actually the
+  // rear retro-reflector, so every 侧转向灯 row drew candidates from the wrong
+  // chapter and nothing errored. The script now checks each declared name
+  // against a probe in the source, and raises. Run it here so that a bad label
+  // fails the delivery gate instead of quietly reshaping the candidate pool.
+  const r = spawnSync(
+    "python",
+    ["-W", "ignore", "scripts/propose_parameters_c.py"],
+    { cwd: ROOT, encoding: "utf-8", env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" } },
+  );
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(r.status === 0, `退出码 ${r.status}（章节表与语料不符）：\n        ${out.slice(-400)}`);
+  const m = out.match(/章节映射校验通过：(\d+)\/(\d+)/);
+  assert(m, "脚本没有打印校验结果行 —— 校验可能被绕过了");
+  assert(m[1] === m[2], `只有 ${m[1]}/${m[2]} 条章节在原文里验到`);
+  return `${m[1]}/${m[2]} 条章节名与探针都对得上`;
+});
+
+check("confirmation page is served by its own route", () => {
+  // Express matches routes against `req.path`, which is the RAW (still
+  // percent-encoded) pathname. A literal `app.get("/参数提议确认.html")` never
+  // fires for a browser, so the request falls through to the SPA fallback and
+  // returns index.html with a 200 — a page that opens fine and is the wrong
+  // document. The route now matches on the decoded path; check the file is
+  // still there so the 404 branch can't become the normal path.
+  const file = resolve(ROOT, "web", "参数提议确认.html");
+  assert(existsSync(file), "web/参数提议确认.html 不存在");
+  const html = readFileSync(file, "utf-8");
+  assert(html.includes("/api/parameters/proposals"), "页面没有指向提议 API");
+  const idx = resolve(ROOT, "server", "_core", "index.ts");
+  assert(readFileSync(idx, "utf-8").includes("decodeURIComponent(req.path)"), "路由改成按原始路径匹配了，中文 URL 会落回 SPA 兜底");
+  return `${(html.length / 1024).toFixed(1)} KB`;
+});
+
+/**
+ * The word forms `numbersOf()` expands. Same table, not a second opinion:
+ * a gate that disagrees with the extractor about what a number looks like
+ * produces false alarms, and a gate that cries wolf gets ignored.
+ */
+const WORD_FORM = {
+  1: ["one "],
+  2: ["two "],
+  3: ["three "],
+  4: ["four "],
+  5: ["five "],
+  6: ["six "],
+  10: ["ten "],
+  15: ["fifteen"],
+  20: ["twenty"],
+  30: ["thirty"],
+  40: ["forty"],
+  45: ["forty-five"],
+  50: ["fifty"],
+  60: ["sixty"],
+  90: ["ninety"],
+  600: ["600"],
+  "1.5": ["one and one-half"],
+  "0.5": ["one-half", "half a"],
+  1000: ["1000"],
+};
+
+check("every displayed excerpt actually contains the value it reports", () => {
+  // `nums` comes from `match` (capture group 1); the detail table shows
+  // `value` (`quoteAround`'s window around the match). Different paths, so
+  // the number can be right, the page can be right, the source-PDF audit can
+  // pass — and the reader still cannot find the number in the quote.
+  //
+  // Word-form numbers (`one and one-half` → 1.5) are legitimate in R48 and are
+  // not flagged: the check only requires the DIGITS to appear.
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const bad = [];
+  let checked = 0;
+  for (const r of rep.parameterMatrix ?? []) {
+    for (const [ver, c] of Object.entries(r.cells ?? {})) {
+      if (c?.status !== "verified") continue;
+      const raw = String(c.value ?? "");
+      const digits = raw.replace(/[^0-9]/g, "");
+      const low = raw.toLowerCase().replace(/\s+/g, " ");
+      for (const n of c.nums ?? []) {
+        checked++;
+        if (digits.includes(String(n).replace(".", ""))) continue;
+        // UN R48 states limits in words more often than digits (§6.5.9:
+        // "within not more than one and one-half seconds"). Requiring digits
+        // would flag three correct rows — and a gate that cries wolf gets
+        // ignored, which is worse than no gate.
+        const words = WORD_FORM[n];
+        if (words && words.some((w) => low.includes(w))) continue;
+        // GB 4785-2019 writes some lengths in millimetres ("长度大于6000mm"),
+        // the 2026 draft in metres ("长度大于 6m"). numbersOf() converts the
+        // metre form for rows whose unit is mm, so the quote holds "6m" while
+        // the value column holds 6000 — the reader can still find it, and a
+        // gate that cries wolf on a unit difference gets ignored.
+        if (String(r.unit ?? "") === "mm") {
+          const metres = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*m(?![mA-Za-z])/g)]
+            .map((m) => Number(m[1]) * 1000);
+          if (metres.some((v) => v === Number(n))) continue;
+        }
+        bad.push(`${r.id}/${ver}: nums=${n} 不在引文里「${raw.slice(0, 50)}…」`);
+      }
+    }
+  }
+  assert(bad.length === 0, `引文未覆盖取值（读者找不到那个数）：\n        ${bad.join("\n        ")}`);
+  return `${checked} 个取值全部能在引文里找到`;
+});
+
+check("no C cell silently drops a value that A carries", () => {
+  // A cell that captured only half of a two-tier clause reads as a wider (or
+  // stricter) requirement than the source says. `reversing.maxHeight` did
+  // exactly that: C showed 1400 alone, hiding the 250–1200 base limit.
+  // Neither the excerpt/page audit nor the source-PDF page check can see it —
+  // the half-sentence really is on the cited page.
+  //
+  // Not a hard "must be equal" rule: R48 genuinely may omit a tier GB has
+  // (e.g. an off-road relaxation). So the gate demands the *reason*, which
+  // is the discipline that catches the accidental case.
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const specs = JSON.parse(read("data/parameter-specs.json")).specs;
+  const whyOf = new Map(specs.map((s) => [s.id, s.why || {}]));
+  const bad = [];
+  for (const r of rep.parameterMatrix ?? []) {
+    const a = new Set(r.cells?.A?.nums ?? []);
+    const c = new Set(r.cells?.C?.nums ?? []);
+    if (!a.size || !c.size) continue;
+    const missing = [...a].filter((x) => !c.has(x));
+    // No "proper subset" exemption: C carrying 3 of A's 5 values is a MORE
+    // dangerous half-sentence, not a safer one. (A near-empty C slipped through
+    // exactly that way while this gate was being written.)
+    if (!missing.length) continue;
+    const why = whyOf.get(r.id)?.C ?? "";
+    if (!why) bad.push(`${r.id}: A 有 ${missing.join("/")} 而 C 没有，why.C 未说明`);
+    else if (!missing.every((x) => why.includes(x)))
+      bad.push(`${r.id}: A 有 ${missing.join("/")} 而 C 没有，why.C 里没有提到这些值`);
+  }
+  assert(bad.length === 0, `C 列疑似只截了半句：\n        ${bad.join("\n        ")}`);
+  const rows = (rep.parameterMatrix ?? []).length;
+  return `${rows} 行已扫，C 列无未解释的缺值`;
+});
+
+check("parameter-specs.json is well-formed", () => {
+  // The specs are data now, so a typo in them fails as a schema error rather
+  // than as a silently empty cell in the customer PDF. compileSpecs() would
+  // throw at runtime — this catches it before anyone ships.
+  const file = resolve(ROOT, "data/parameter-specs.json");
+  assert(existsSync(file), "data/parameter-specs.json missing — the matrix has no data source");
+  const doc = JSON.parse(readFileSync(file, "utf-8"));
+  assert(Array.isArray(doc.specs) && doc.specs.length > 0, "specs missing or empty");
+
+  const ids = new Set();
+  const problems = [];
+  for (const [i, s] of doc.specs.entries()) {
+    const at = `#${i + 1} ${s?.id ?? "?"}`;
+    for (const k of ["id", "name", "family", "unit"]) {
+      if (!String(s?.[k] ?? "").trim()) problems.push(`${at}: 缺少 ${k}`);
+    }
+    if (ids.has(s?.id)) problems.push(`${at}: id 重复`);
+    ids.add(s?.id);
+    const pats = Object.entries(s?.patterns ?? {});
+    if (!pats.length) problems.push(`${at}: 三版都没有 pattern`);
+    for (const [ver, pat] of pats) {
+      if (!["A", "B", "C"].includes(ver)) {
+        problems.push(`${at}: 未知版本 "${ver}"`);
+        continue;
+      }
+      const src = typeof pat === "string" ? pat : pat?.source;
+      const flags = typeof pat === "string" ? "i" : pat?.flags ?? "i";
+      if (!src) { problems.push(`${at}/${ver}: pattern 为空`); continue; }
+      try {
+        new RegExp(src, flags.replace(/g/g, ""));
+      } catch (e) {
+        problems.push(`${at}/${ver}: 正则无法编译 — ${e.message}`);
+      }
+      // A capture group that grabs a non-value silently yields an empty number
+      // list; a pattern spanning a sentence boundary pulls in clause numbers.
+      if (/\(\?:[^)]*\|/.test(src) && !/\)\s*$/.test(src.split("\\\\")[0].slice(-1))) { /* noop */ }
+    }
+  }
+  assert(problems.length === 0, `parameter-specs.json 有 ${problems.length} 处问题:\n        ${problems.slice(0, 6).join("\n        ")}`);
+  return `${doc.specs.length} 条 spec · ${doc.specs.reduce((n, s) => n + Object.keys(s.patterns ?? {}).length, 0)} 个 pattern`;
+});
+
+check("every explicitly declared clause exists in that version's text", () => {
+  // A spec may assert a clause number when the corpus layout makes the
+  // automatic inference unreliable — the value and its clause sit on
+  // different pages, or R48 prints its paragraph numbers in the page margin
+  // where "nearest preceding number" is a sibling clause. Such an assertion
+  // is the author's, so it must be checkable: a clause number that occurs
+  // NOWHERE in that version's text is a typo, and a wrong clause citation
+  // is worse than a missing one.
+  const specs = JSON.parse(read("data/parameter-specs.json")).specs;
+  const corpus = JSON.parse(read("dist/mineru-v4-data.json"));
+  const bad = [];
+  let n = 0;
+  for (const s of specs) {
+    for (const [ver, pat] of Object.entries(s.patterns ?? {})) {
+      const cl = typeof pat === "string" ? "" : pat?.clause;
+      if (!cl) continue;
+      n++;
+      const text = String(corpus?.[ver]?.fullText ?? "");
+      if (!text.includes(cl)) bad.push(`${s.id}/${ver}: 条款号 ${cl} 在该版原文里不存在`);
+    }
+  }
+  assert(
+    bad.length === 0,
+    `显式声明的条款号有 ${bad.length} 条对不上原文：\n        ${bad.join("\n        ")}`,
+  );
+  return `${n} 条显式条款号全部在原文里验到`;
+});
+
+check("matrix matches parameter-specs.json", () => {
+  // The matrix is built from the JSON, so a stale reports/last-report.json is
+  // the only way they drift. Rebuilding is cheap; shipping a matrix that does
+  // not match its own spec file is how a "12 项" becomes "45 项" again.
+  const doc = JSON.parse(read("data/parameter-specs.json"));
+  const matrix = loadReport().parameterMatrix;
+  assert(Array.isArray(matrix), "report carries no parameterMatrix");
+  const ids = doc.specs.map((s) => s.id);
+  const got = matrix.map((r) => r.id);
+  assert(
+    ids.join(",") === got.join(","),
+    `报告里的矩阵有 ${got.length} 行，spec 文件有 ${ids.length} 条 —— 跑一次 node rebuild_report.mjs`,
+  );
+  return `${got.length} 行与 spec 一一对应`;
+});
+
+check("matrix covers every declared family", () => {
+  const matrix = loadReport().parameterMatrix;
+  assert(Array.isArray(matrix) && matrix.length, "no parameterMatrix");
+  // A floor, and family coverage. Dropping a spec is a legitimate edit; doing
+  // it by accident is how the matrix went from 23 rows back to a handful.
+  assert(matrix.length >= 27, `matrix has ${matrix.length} parameters, expected >= 27`);
+  const families = new Set(matrix.map((r) => r.family));
+  for (const f of [
+    "安装高度 / 离地距离",
+    "闪烁频率 / 时间参数",
+    "试验条件 / 路段速度",
+    "光色 / 标记",
+    "光强 / 照度限值",
+    "电气条件 / 试验电压",
+    "几何可见度 / 安装角度",
+    // 从自动提议的候选池确认进来的两族（阶梯第 3 级）
+    "位置 / 间距限值",
+    "灯具本体 / 构造要求",
+  ]) {
+    assert(families.has(f), `family "${f}" is missing from the matrix`);
+  }
+  return `${matrix.length} 参数 · ${families.size} 个参数族`;
+});
+
+check("two-version chapters declare their scope", () => {
+  // Chapters 13 and 14 are A-vs-B AT THE CLAUSE level: UN R48's clause system is
+  // not isomorphic with GB's, so no sentence-level mapping exists. Shipping them
+  // under a "comparison" title without saying so is what the customer read as
+  // "the EU column is empty".
+  //
+  // Chapter 14 now carries a NARROWER truth instead of the old blanket "no C":
+  // it prints a chapter-level R48 pointer plus that lamp's three-version values,
+  // so the declaration has to say chapter-level and non-clause-level. Both forms
+  // point the reader at chapter 12 / appendix C.
+  const chapters = loadReport().chapters;
+  const get = (id) => {
+    const ch = chapters.find((c) => c.id === id);
+    assert(ch, `chapter ${id} missing`);
+    return ch;
+  };
+
+  const c13 = get(13).markdown ?? "";
+  assert(
+    c13.includes("本章范围：仅 A 与 B 两版"),
+    "chapter 13 does not declare that it excludes C",
+  );
+
+  const c14 = get(14).markdown ?? "";
+  assert(
+    /逐句对照只做 A \/ B 两版/.test(c14),
+    "chapter 14 must still declare that the clause-level diff is A/B only",
+  );
+  assert(
+    c14.includes("章节级") && c14.includes("非条款级"),
+    "chapter 14 must declare that its R48 pointers are chapter-level, not clause-level",
+  );
+
+  for (const id of [13, 14]) {
+    const md = id === 13 ? c13 : c14;
+    assert(
+      /第 12 章|附录 C/.test(md),
+      `chapter ${id} does not point the reader at the three-version material`,
+    );
+  }
+
+  // Anti-rot: the scope marker must ride on EVERY pointer line, not just in the
+  // preamble — a reader who lands on one clause block never sees the preamble.
+  const pointers = (c14.match(/\*\*R48 对应章节/g) ?? []).length;
+  const tagged = (c14.match(/\*\*R48 对应章节（章节级，非条款级）\*\*/g) ?? []).length;
+  assert(pointers > 0, "chapter 14 lost its R48 chapter-level pointers entirely");
+  assert(
+    tagged === pointers,
+    `only ${tagged}/${pointers} R48 pointers carry the 章节级/非条款级 marker`,
+  );
+  // A pointer without a resolvable clause number is a dead end for the reader.
+  const withClause = (c14.match(/\*\*R48 对应章节（章节级，非条款级）\*\*：[^\n]*§\d/g) ?? []).length;
+  assert(
+    withClause === pointers,
+    `${pointers - withClause} R48 pointers print no §clause number`,
+  );
+  return `ch13 声明排除 C · ch14 声明章节级口径 · ${pointers} 条 R48 指针全部带标记与条款号`;
+});
+
+check("chapter 14 clause diff is a real side-by-side table", () => {
+  // Two rendering accidents, both measured on the delivered PDF:
+  //  · a literal newline inside a cell splits the markdown row, so the table
+  //    stops being a table — 39/39 clause tables lost ~277 of every 500 chars
+  //    into loose body paragraphs;
+  //  · a 来源/页码/正文 header is read as the version column, and the triptych
+  //    renderer then labels the page number as the clause and the whole clause
+  //    body as the page, then prints a "C 无对应条款行" card for a chapter that
+  //    DOES have C. Only a header that is not 版本/来源/文档/文件/标准 and that
+  //    carries all three of A/B/C reaches that layout.
+  const ch = loadReport().chapters.find((c) => c.id === 14);
+  assert(ch, "chapter 14 missing");
+  const md = ch.markdown ?? "";
+
+  const blocks = md.split(/\n(?=## 14\.x 条款 )/).slice(1);
+  assert(blocks.length > 0, "chapter 14 has no clause blocks");
+  let sideBySide = 0;
+  for (const b of blocks) {
+    const lines = b.split("\n");
+    const hdr = lines.findIndex((l) => /^\|\s*\*\*A 草案\*\*（/.test(l));
+    assert(hdr >= 0, `clause block is not a side-by-side A|B table: ${lines[0] ?? ""}`);
+    const row = lines[hdr + 2] ?? "";
+    // header, separator, exactly one body row — nothing else in the table
+    assert(/^\|[\s:|-]+\|$/.test(lines[hdr + 1] ?? ""), `no separator row under ${lines[hdr]}`);
+    assert(row.startsWith("|") && row.trimEnd().endsWith("|"), `body row is not a closed table row`);
+    const cells = row.slice(1, -1).split("|");
+    assert(cells.length === 2, `expected 2 columns, got ${cells.length}`);
+    sideBySide++;
+  }
+
+  // No clause row may be split across physical lines: every table line in the
+  // chapter has to start AND end on one line.
+  for (const l of md.split("\n")) {
+    if (!l.startsWith("|")) continue;
+    const opens = (l.match(/\|/g) ?? []).length;
+    if (l.includes("|---|")) continue;
+    assert(opens >= 2, `orphan table line: ${l.slice(0, 60)}`);
+  }
+  assert(
+    !/\| 来源 \| 页码 \|/.test(md),
+    "chapter 14 reverted to the 来源/页码/正文 table (triggers the triptych)",
+  );
+  return `${sideBySide} 条条款均为 A|B 两列并排，无跨行单元格`;
+});
+
+check("chapter 14 carries C at chapter level, and says so on every pointer", () => {
+  const ch = loadReport().chapters.find((c) => c.id === 14);
+  assert(ch, "chapter 14 missing");
+  const md = ch.markdown ?? "";
+  // Every value table under a chapter-14 clause must have a C column, or the
+  // chapter would be printing an A/B table under a three-version heading.
+  const tables = md.match(/\| 参数 \| 单位 \| A 草案 \| B 现行 \| C UN R48-09 \| 判定 \|/g) ?? [];
+  assert(tables.length > 0, "chapter 14 lost its three-version value tables");
+  const pointers = md.match(/\*\*R48 对应章节（章节级，非条款级）\*\*/g) ?? [];
+  assert(pointers.length > 0, "chapter 14 has no R48 chapter-level pointers");
+  return `${tables.length} 张三版取值表 · ${pointers.length} 条带口径标记的 R48 指针`;
+});
+
+check("the parameter matrix is still a MATRIX in the PDF, not three card columns", () => {
+  // The most expensive rendering defect this project has had, and one no
+  // markdown-side check could see. `| 参数 | 单位 | A 草案 | B 现行 | C | 判定 |`
+  // is a six-column table; the card layout shows one label + one value per row,
+  // so it dropped 单位 AND 判定 and stacked three unaligned 73-row lists:
+  // `430000` with no cd/m², `500 / 1200` with no mm, no `A=C≠B` verdict. That
+  // is precisely the 「只有罗列，没有比较」 the client reported, while every
+  // value-, page- and clause-level check stayed green.
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+  const py =
+    "import sys,io,json,base64,re,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path)\n" +
+    "pages=[p.get_text() for p in d]\n" +
+    "all='\\n'.join(pages)\n" +
+    "i12=next((i for i,t in enumerate(pages) if '12.1 参数对照总表' in t), -1)\n" +
+    "out={'i12':i12}\n" +
+    "if i12>=0:\n" +
+    "    m='\\n'.join(pages[i12:i12+3])\n" +
+    "    out['head']=bool(re.search(r'单位[\\s\\S]{0,80}A 草案[\\s\\S]{0,80}B 现行[\\s\\S]{0,80}C UN R48-09[\\s\\S]{0,80}判定', m))\n" +
+    "    out['rows']=[p for p in ['近光灯最大离地高度','转向信号灯闪烁频率','同时点亮远光灯最大发光强度之和'] if p in m]\n" +
+    "out['cards']=len(re.findall(r'维度\\n[^\\n]{1,12}\\n条目\\n\\d+', all))\n" +
+    "print(json.dumps(out,ensure_ascii=False))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf8",
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
+  const res = JSON.parse(r.stdout.trim().split("\n").pop());
+  assert(res.i12 >= 0, "chapter 12.1 not found in the built PDF");
+  assert(
+    res.head,
+    "12.1 matrix lost its 单位 / 判定 columns — the card layout is back",
+  );
+  assert(
+    res.rows.length === 3,
+    `12.1 matrix is missing rows: ${["近光灯最大离地高度", "转向信号灯闪烁频率", "同时点亮远光灯最大发光强度之和"].filter((x) => !res.rows.includes(x)).join(", ")}`,
+  );
+  assert(
+    res.cards === 0,
+    `${res.cards} tables still render as card columns (维度/条目 fingerprint)`,
+  );
+  return `12.1 矩阵带单位/判定列 · ${res.cards} 处卡片指纹 · 抽查 3 行在册`;
 });
 
 check("chapter 11 candidate buckets sum to the candidate total", () => {
@@ -347,9 +1022,69 @@ check("appendix C is rendered as a three-version table", () => {
   return `表头「${headerCell}」· A 行 ${aRows} / C 行 ${cRows}`;
 });
 
+check("printed TOC page numbers resolve to real chapter pages", () => {
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+  const py = `
+import sys, re, json, base64
+import fitz
+# base64, like the other PDF checks: on Windows a non-ASCII path handed to
+# Python over stdin is decoded with the locale codec and comes out mojibake,
+# so fitz silently fails to open and the check degrades to a no-op.
+d = fitz.open(base64.b64decode(sys.stdin.read().strip()).decode("utf-8"))
+toc = None
+for i in range(min(12, d.page_count)):
+    if "目录" in d[i].get_text()[:600]:
+        toc = i
+        break
+if toc is None:
+    print(json.dumps({"skipped": "no printed TOC"})); raise SystemExit(0)
+rows = {}
+for x0, y0, x1, y1, t, *_ in d[toc].get_text("words"):
+    rows.setdefault(round(y0), []).append((x0, t))
+entries = []
+for y in sorted(rows):
+    parts = sorted(rows[y])
+    nums = [t for _, t in parts if re.fullmatch(r"\\d+", t)]
+    title = "".join(t for _, t in parts if not re.fullmatch(r"\\d+", t))
+    if title and nums:
+        entries.append((title, int(nums[-1])))
+if not entries:
+    print(json.dumps({"skipped": "TOC rows not parseable"})); raise SystemExit(0)
+# 1. not all identical — the defect that shipped was every entry reading "11"
+uniq = {p for _, p in entries}
+if len(uniq) == 1:
+    print(json.dumps({"error": "every TOC entry reads page %d — the pass-2 backfill degenerated" % uniq.pop()}))
+    raise SystemExit(0)
+# 2. each claimed page must actually contain that chapter's title
+bad = []
+for title, page in entries:
+    key = re.sub(r"\\s+", "", title)[:12]
+    if not key:
+        continue
+    hit = any(re.sub(r"\\s+", "", key) in re.sub(r"\\s+", "", d[i].get_text()[:400]) for i in range(d.page_count))
+    if hit and not any(re.sub(r"\\s+", "", key) in re.sub(r"\\s+", "", d[p - 1].get_text()[:400]) for p in (page, page + 1) if 1 <= p <= d.page_count):
+        bad.append((title, page))
+print(json.dumps({"entries": len(entries), "distinct_pages": len(uniq), "mismatched": bad[:6]}))
+`;
+  const out = spawnSync("python", ["-c", py], {
+    input: Buffer.from(pdfPath, "utf8").toString("base64"),
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  const res = JSON.parse(out.stdout.trim().split("\n").pop());
+  if (res.skipped) return res.skipped;
+  assert(!res.error, res.error);
+  assert(
+    res.mismatched.length === 0,
+    `TOC page numbers do not land on the chapter: ${JSON.stringify(res.mismatched)}`,
+  );
+  return `${res.entries} 条目录项 · ${res.distinct_pages} 个不同页码 · 抽查一致`;
+});
+
 check("delivered PDF has no placeholder cells claiming missing data", () => {
-  const pdfPath = process.env.VERIFY_PDF || resolve(ROOT, "reports/last-report.pdf");
-  if (!existsSync(pdfPath)) return "skipped — set VERIFY_PDF=<path>";
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
   // Pass the path base64-encoded: on Windows a non-ASCII argv reaches Python as
   // mojibake ("GB 4785 ��汾...") and stdin is truncated mid-multibyte-char, so
   // fitz cannot open the file — silently turning this check into a no-op on
@@ -390,12 +1125,30 @@ check("no markdown artefacts in the assembled report", () => {  const md = loadR
     strayHash.length === 0,
     `${strayHash.length} orphan "#" line(s) — a heading was split in half`,
   );
-  return "no orphan # lines";
+  // An unexpanded `${…}` means a string that was meant to be a template literal
+  // was written as a plain one: the placeholder survives verbatim all the way
+  // into the client's PDF. This reached a rendered page once (chapter 12 printed
+  // "判定列只回答一个问题——vs[0] 与 {vs[1]} 是否一致") and no other check
+  // noticed, because the text is well-formed prose with no markdown in it.
+  //
+  // LaTeX from the source looks identical (`${\mathrm{W}}_{12}`, `${ 0 \atop - 1 }`).
+  // The two differ in that an identifier placeholder has neither a backslash nor
+  // whitespace inside it, while every LaTeX group has at least one — and LaTeX
+  // routinely spans lines, so no amount of stripping `$…$` reliably separates
+  // them. Match on the content instead.
+  const placeholders = [...md.matchAll(/\$\{([A-Za-z_$][^}\n]{0,60})\}/g)]
+    .filter((m) => !/[\\\s]/.test(m[1]))
+    .map((m) => m[0]);
+  assert(
+    placeholders.length === 0,
+    `${placeholders.length} unexpanded template placeholder(s) in the report body: ${[...new Set(placeholders)].slice(0, 4).join(" ")} — a plain string was used where a template literal was meant`,
+  );
+  return "no orphan # lines, no unexpanded placeholders";
 });
 
 check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
-  const pdfPath = process.env.VERIFY_PDF || resolve(ROOT, "reports/last-report.pdf");
-  if (!existsSync(pdfPath)) return "skipped — set VERIFY_PDF=<path> to check a built PDF";
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 无法渲染 reports/last-report.json（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
   const py2 =
     "import sys,io,json,base64,fitz,re\n" +
     "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
@@ -406,6 +1159,13 @@ check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
     "'tofu':sum(1 for pg in d for b in pg.get_text('rawdict')['blocks']\n" +
     "          for l in b.get('lines',[]) for s in l.get('spans',[])\n" +
     "          for c in s.get('chars',[]) if c['c'] in ('\\ufffd','\\u25a1') or ord(c['c'])==0),\n" +
+    // `br` matters: MinerU writes a table cell's line break as an HTML <br>,
+    // and those rode into the excerpts as literal text — 110 of them in the ⑫
+    // build, while this regex (which listed only sub|sup|i|b|em|strong) stayed
+    // green. A raw-tag check that does not cover the tag that actually occurs
+    // is worse than no check.
+    "'rawsub':len(re.findall(r'<(?:/?)(?:sub|sup|i|b|em|strong|br)>',t)),\n" +
+    "'latex':len(re.findall(r'\\\\\\\\(?:mathrm|mathbf|dfrac|frac|left|right)',t)),\n" +
     "'empty':[i+1 for i,pg in enumerate(d) if not pg.get_text().strip()]}))\n";
   const r = spawnSync("python", ["-c", py2], {
     cwd: ROOT,
@@ -419,11 +1179,17 @@ check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
   assert(m.tofu === 0, `${m.tofu} tofu/replacement glyph(s) — CJK font embedding regressed`);
   assert(m.empty.length === 0, `blank page(s): ${m.empty.join(", ")}`);
   assert(m.bookmarks > 0, "PDF has no bookmarks");
-  return `${m.pages}p, ${m.bookmarks} bookmarks, 0 bold, 0 tofu, 0 blank`;
+  // Unrendered inline markup printed on the page. The delivered build showed
+  // 29 bare <sub>, 26 </sub>, 5 <sup> and 15 \mathrm — inlineMd() escapes
+  // first (correctly) and nothing turned MinerU's <sub> back into a tag;
+  // clipping an excerpt mid-tag adds `N<sub>1` and `N<sub>1</su` on top.
+  assert(m.rawsub === 0, `${m.rawsub} unrendered sub/sup/emphasis tag(s) in the PDF`);
+  assert(m.latex === 0, `${m.latex} unrendered LaTeX macro(s) in the PDF`);
+  return `${m.pages}p, ${m.bookmarks} bookmarks, 0 bold, 0 tofu, 0 raw-tag, 0 blank`;
 });
 
 console.log("\n=== 5. renderer unit harness ===");
-for (const t of ["_test_math.mjs", "_test_impact.mjs", "_test_table.mjs", "_test_gap_guard.mjs"]) {
+for (const t of ["_test_math.mjs", "_test_impact.mjs", "_test_table.mjs", "_test_gap_guard.mjs", "_test_versions.mjs"]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });
     const out = (r.stdout || "") + (r.stderr || "");

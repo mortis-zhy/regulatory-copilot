@@ -1,0 +1,1391 @@
+{
+  "generated": "scripts/propose_parameters_c.py",
+  "note": "C 列候选清单，未确认。**每条都要回 R48 原文核对条款号后再写进 data/parameter-specs.json**；★ 只表示取值与 A/B 有重合，不表示抓对了条款 —— 那正是 SKILL 坑 1。打开 web/参数提议确认.html 逐条裁定。",
+  "r48SectionsVerified": 25,
+  "sections": [
+    {
+      "no": "6.2",
+      "name": "Dipped-beam headlamp"
+    },
+    {
+      "no": "6.3",
+      "name": "Front fog lamp"
+    },
+    {
+      "no": "6.4",
+      "name": "Reversing lamp"
+    },
+    {
+      "no": "6.5",
+      "name": "Direction-indicator lamp"
+    },
+    {
+      "no": "6.6",
+      "name": "Hazard warning signal"
+    },
+    {
+      "no": "6.7",
+      "name": "Stop lamp"
+    },
+    {
+      "no": "6.8",
+      "name": "Rear registration plate lamp"
+    },
+    {
+      "no": "6.9",
+      "name": "Front position lamp"
+    },
+    {
+      "no": "6.10",
+      "name": "Rear position lamp"
+    },
+    {
+      "no": "6.11",
+      "name": "Rear fog lamp"
+    },
+    {
+      "no": "6.12",
+      "name": "Parking lamp"
+    },
+    {
+      "no": "6.13",
+      "name": "End-outline marker lamp"
+    },
+    {
+      "no": "6.14",
+      "name": "Rear retro-reflector, non-triangular"
+    },
+    {
+      "no": "6.15",
+      "name": "Rear retro-reflector, triangular"
+    },
+    {
+      "no": "6.16",
+      "name": "Front retro-reflector, non-triangular"
+    },
+    {
+      "no": "6.17",
+      "name": "Side retro-reflector, non-triangular"
+    },
+    {
+      "no": "6.18",
+      "name": "Side-marker lamps"
+    },
+    {
+      "no": "6.19",
+      "name": "Daytime running lamp"
+    },
+    {
+      "no": "6.20",
+      "name": "Cornering lamp"
+    },
+    {
+      "no": "6.21",
+      "name": "Conspicuity markings"
+    },
+    {
+      "no": "6.22",
+      "name": "Adaptive front lighting system"
+    },
+    {
+      "no": "6.23",
+      "name": "Emergency stop signal"
+    },
+    {
+      "no": "6.24",
+      "name": "Exterior courtesy lamp"
+    },
+    {
+      "no": "6.25",
+      "name": "Rear-end collision alert signal"
+    },
+    {
+      "no": "6.26",
+      "name": "Manoeuvring lamps"
+    }
+  ],
+  "statusCounts": {
+    "已有 C": 174,
+    "needs-placement": 6,
+    "candidates": 2,
+    "no-hit": 1
+  },
+  "rows": [
+    {
+      "id": "aperture.minCircleDiameter",
+      "name": "非圆形透光面最小容纳圆直径",
+      "family": "灯具本体 / 构造要求",
+      "abValues": [
+        "40"
+      ],
+      "section": null,
+      "sectionName": null,
+      "kind": null,
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [],
+      "status": "needs-placement",
+      "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
+    },
+    {
+      "id": "endOutlineMarker.minGapToPositionLamp",
+      "name": "示廓灯与位置灯最小间距",
+      "family": "位置 / 间距限值",
+      "abValues": [
+        "200"
+      ],
+      "section": "6.13",
+      "sectionName": "End-outline marker lamp",
+      "kind": "间距",
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [
+        {
+          "clause": "6.13.4.3",
+          "sentence": "this requirement shall be deemed to be satisfied if the distance between the additional lamps and the rear of the vehicle does not exceed 400 mm",
+          "values": [
+            "400"
+          ],
+          "overlap": [],
+          "keywords": [
+            "distance between"
+          ],
+          "page": 66
+        }
+      ],
+      "status": "candidates",
+      "reason": "6.13 章里找到 1 条含间距关键词的数值句"
+    },
+    {
+      "id": "farBeam.totalIntensity",
+      "name": "同时点亮远光灯最大发光强度之和",
+      "family": "光强 / 照度限值",
+      "abValues": [
+        "430000"
+      ],
+      "section": null,
+      "sectionName": null,
+      "kind": "光强",
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [
+        {
+          "clause": "6.22.7.4",
+          "sentence": "(c) A road surface luminance of 1 cd/m<sup>2</sup> and/or a horizontal road illumination of 10 lx being exceeded continuously",
+          "values": [
+            "1",
+            "10"
+          ],
+          "overlap": [],
+          "keywords": [
+            "cd"
+          ],
+          "page": 86
+        },
+        {
+          "clause": "6.19.9",
+          "sentence": "more than 140 cd within the angles of geometric visibility",
+          "values": [
+            "140"
+          ],
+          "overlap": [],
+          "keywords": [
+            "cd"
+          ],
+          "page": 75
+        },
+        {
+          "clause": "6.19.9",
+          "sentence": "ace not in common is reduced during the entire period (both ON and OFF cycle) of operation of the front direction-indicator lamp, to attain not more than 140 cd within the angles of geometric visibility",
+          "values": [
+            "140"
+          ],
+          "overlap": [],
+          "keywords": [
+            "cd"
+          ],
+          "page": 75
+        },
+        {
+          "clause": "6.27",
+          "sentence": "| Other requirements The answer-back signal shall be provided by approved lighting and light-signalling devices and exterior courtesy lamps where in all these cases, the maximum luminous intensity per lamp does not exceed 700 cd on or above the HH line",
+          "values": [
+            "700"
+          ],
+          "overlap": [],
+          "keywords": [
+            "cd",
+            "maximum luminous intensity"
+          ],
+          "page": 96
+        }
+      ],
+      "status": "needs-placement",
+      "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
+    },
+    {
+      "id": "frontFogLamp.aimDownAccuracy",
+      "name": "前雾灯初始下倾度标注准确度",
+      "family": "几何可见度 / 安装角度",
+      "abValues": [
+        "0.1"
+      ],
+      "section": "6.3",
+      "sectionName": "Front fog lamp",
+      "kind": "角度",
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [
+        {
+          "clause": "6.3.5",
+          "sentence": ": α = 5° upwards and downwards, ß = 45° outwards and 10° inwards",
+          "values": [
+            "5",
+            "45",
+            "10"
+          ],
+          "overlap": [],
+          "keywords": [
+            "downward",
+            "upward"
+          ],
+          "page": 46
+        }
+      ],
+      "status": "candidates",
+      "reason": "6.3 章里找到 1 条含角度关键词的数值句"
+    },
+    {
+      "id": "heavyVehicle.apertureMinArea",
+      "name": "总质量≥4500kg车辆灯具透光面最小面积",
+      "family": "灯具本体 / 构造要求",
+      "abValues": [
+        "80"
+      ],
+      "section": null,
+      "sectionName": null,
+      "kind": null,
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [],
+      "status": "needs-placement",
+      "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
+    },
+    {
+      "id": "illuminatedEmblem.apertureMaxArea",
+      "name": "发光徽标透光面外接最小凸多边形面积上限",
+      "family": "灯具本体 / 构造要求",
+      "abValues": [
+        "400"
+      ],
+      "section": null,
+      "sectionName": null,
+      "kind": null,
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [],
+      "status": "needs-placement",
+      "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
+    },
+    {
+      "id": "illuminatedEmblem.maxIntensitySum",
+      "name": "发光徽标最大光强与前位灯光强之和",
+      "family": "光强 / 照度限值",
+      "abValues": [
+        "280"
+      ],
+      "section": "6.9",
+      "sectionName": "Front position lamp",
+      "kind": "光强",
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [],
+      "status": "no-hit",
+      "reason": "6.9 章里没有含光强关键词的数值句"
+    },
+    {
+      "id": "trailerMarkerLamp.heightRange",
+      "name": "牵引杆挂车标志灯高出前挡板高度区间",
+      "family": "安装高度 / 离地距离",
+      "abValues": [
+        "300",
+        "400"
+      ],
+      "section": null,
+      "sectionName": null,
+      "kind": "安装高度",
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [
+        {
+          "clause": "6.11.4.2",
+          "sentence": "For categories N<sub>2</sub>G, N<sub>3</sub>G, M<sub>2</sub>G, M<sub>3</sub>G (off-road) vehicles, the maximum height may be increased to 1,400 mm",
+          "values": [
+            "400"
+          ],
+          "overlap": [
+            "400"
+          ],
+          "keywords": [
+            "height"
+          ],
+          "page": 63
+        },
+        {
+          "clause": "6.4.4.2",
+          "sentence": "For category N2G, N3G, M2G, M3G (off-road) vehicles the maximum height may be increased to 1,400 mm",
+          "values": [
+            "400"
+          ],
+          "overlap": [
+            "400"
+          ],
+          "keywords": [
+            "height"
+          ],
+          "page": 48
+        },
+        {
+          "clause": "6.21.5.1.1",
+          "sentence": "0 m respectively above the ground",
+          "values": [
+            "0"
+          ],
+          "overlap": [],
+          "keywords": [
+            "above the ground"
+          ],
+          "page": 80
+        },
+        {
+          "clause": "6.21.5.1.1",
+          "sentence": "In height, by two horizontal planes 1 m and 3",
+          "values": [
+            "1"
+          ],
+          "overlap": [],
+          "keywords": [
+            "height"
+          ],
+          "page": 80
+        },
+        {
+          "clause": "6.21.4.3.1",
+          "sentence": "Minimum: not less than 250 mm above the ground",
+          "values": [
+            "250"
+          ],
+          "overlap": [],
+          "keywords": [
+            "above the ground"
+          ],
+          "page": 79
+        },
+        {
+          "clause": "6.21.4.3.1",
+          "sentence": "Maximum: not more than 1,500 mm above the ground",
+          "values": [
+            "500"
+          ],
+          "overlap": [],
+          "keywords": [
+            "above the ground"
+          ],
+          "page": 79
+        }
+      ],
+      "status": "needs-placement",
+      "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
+    },
+    {
+      "id": "trailerMarkerLamp.lateralMax",
+      "name": "牵引杆挂车标志灯横向距离上限",
+      "family": "位置 / 间距限值",
+      "abValues": [
+        "150"
+      ],
+      "section": null,
+      "sectionName": null,
+      "kind": "间距",
+      "sectionOptions": [
+        {
+          "no": "6.2",
+          "name": "Dipped-beam headlamp"
+        },
+        {
+          "no": "6.3",
+          "name": "Front fog lamp"
+        },
+        {
+          "no": "6.4",
+          "name": "Reversing lamp"
+        },
+        {
+          "no": "6.5",
+          "name": "Direction-indicator lamp"
+        },
+        {
+          "no": "6.6",
+          "name": "Hazard warning signal"
+        },
+        {
+          "no": "6.7",
+          "name": "Stop lamp"
+        },
+        {
+          "no": "6.8",
+          "name": "Rear registration plate lamp"
+        },
+        {
+          "no": "6.9",
+          "name": "Front position lamp"
+        },
+        {
+          "no": "6.10",
+          "name": "Rear position lamp"
+        },
+        {
+          "no": "6.11",
+          "name": "Rear fog lamp"
+        },
+        {
+          "no": "6.12",
+          "name": "Parking lamp"
+        },
+        {
+          "no": "6.13",
+          "name": "End-outline marker lamp"
+        },
+        {
+          "no": "6.14",
+          "name": "Rear retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.15",
+          "name": "Rear retro-reflector, triangular"
+        },
+        {
+          "no": "6.16",
+          "name": "Front retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.17",
+          "name": "Side retro-reflector, non-triangular"
+        },
+        {
+          "no": "6.18",
+          "name": "Side-marker lamps"
+        },
+        {
+          "no": "6.19",
+          "name": "Daytime running lamp"
+        },
+        {
+          "no": "6.20",
+          "name": "Cornering lamp"
+        },
+        {
+          "no": "6.21",
+          "name": "Conspicuity markings"
+        },
+        {
+          "no": "6.22",
+          "name": "Adaptive front lighting system"
+        },
+        {
+          "no": "6.23",
+          "name": "Emergency stop signal"
+        },
+        {
+          "no": "6.24",
+          "name": "Exterior courtesy lamp"
+        },
+        {
+          "no": "6.25",
+          "name": "Rear-end collision alert signal"
+        },
+        {
+          "no": "6.26",
+          "name": "Manoeuvring lamps"
+        }
+      ],
+      "candidates": [
+        {
+          "clause": "6.21.4.3.1",
+          "sentence": "Minimum: not less than 250 mm above the ground",
+          "values": [
+            "250"
+          ],
+          "overlap": [],
+          "keywords": [
+            "not less than"
+          ],
+          "page": 79
+        },
+        {
+          "clause": "6.21.4.2.1",
+          "sentence": "(c) Additional retro-reflectors spaced not more than 600 mm apart",
+          "values": [
+            "600"
+          ],
+          "overlap": [],
+          "keywords": [
+            "apart"
+          ],
+          "page": 79
+        },
+        {
+          "clause": "6.21.4.2.1",
+          "sentence": "(d) The distance between the last retro-reflector and the start of the conspicuity marking shall not exceed 600 mm",
+          "values": [
+            "600"
+          ],
+          "overlap": [],
+          "keywords": [
+            "distance between"
+          ],
+          "page": 79
+        },
+        {
+          "clause": "6.22.4.1.4",
+          "sentence": "The inner edges of the apparent surfaces in the direction of the reference axes shall be not less than 600 mm apart",
+          "values": [
+            "600"
+          ],
+          "overlap": [],
+          "keywords": [
+            "apart",
+            "not less than"
+          ],
+          "page": 82
+        },
+        {
+          "clause": "6.5.4.2.4",
+          "sentence": ", the symmetry of the lamps, and at a vertical distance as large as the shape of the bodywork makes it possible, but not less than 600 mm above the mandatory lamps",
+          "values": [
+            "600"
+          ],
+          "overlap": [],
+          "keywords": [
+            "not less than"
+          ],
+          "page": 51
+        },
+        {
+          "clause": "6.5.4.2.4",
+          "sentence": "The distance between the light-emitting surface of the side direction-indicator lamp (categories 5 and 6) and the transverse plane which marks the forward boundary of the vehicle's overall length, shall not exceed 1,800 mm",
+          "values": [
+            "800"
+          ],
+          "overlap": [],
+          "keywords": [
+            "distance between"
+          ],
+          "page": 51
+        }
+      ],
+      "status": "needs-placement",
+      "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
+    }
+  ]
+}

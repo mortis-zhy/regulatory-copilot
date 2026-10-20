@@ -166,6 +166,46 @@ export function checkDelivery(report: any, rootOverride?: string): GateResult {
     return "11.2 / 11.3 / 11.3.0 / 11.4";
   });
 
+  // The parameter matrix is what the customer actually buys, and it is the one
+  // artefact that can silently collapse: a regex that stops matching after a
+  // wording tweak leaves an empty column that still looks like a rendered
+  // table. Refuse the PDF rather than ship it.
+  //
+  // The thresholds are per-role, not per-letter: the national pair must be
+  // mostly extracted, and every remaining version (the international reference)
+  // must be non-empty. Naming "C" here is what made this check mean "GB 4785
+  // plus R48" and nothing else.
+  check("参数矩阵多版覆盖", () => {
+    const rows = report?.parameterMatrix;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new Error("报告未携带 parameterMatrix —— 第 12 章矩阵缺失，无法做多版对照");
+    }
+    const keys = [...new Set(rows.flatMap((r: any) => Object.keys(r?.cells ?? {})))].sort();
+    if (keys.length < 3) {
+      throw new Error(`矩阵只有 ${keys.length} 版（${keys.join("/")}）—— 多版对照至少需要 3 版`);
+    }
+    const hit = (k: string) => rows.filter((r: any) => r?.cells?.[k]?.status === "verified").length;
+    // The two national versions are the ones the customer compares against each
+    // other, so they get the strict floors (the newest draft is the one being
+    // calibrated, and it degrades first); every reference version must at least
+    // exist. Legacy flat rows (pre-`cells` reports) are read via A/B/C.
+    const at = (r: any, k: string) => r?.cells?.[k] ?? r?.[k];
+    const FLOORS = [0.8, 0.6];
+    keys.slice(0, 2).forEach((k, i) => {
+      const n = rows.filter((r: any) => at(r, k)?.status === "verified").length;
+      if (n < rows.length * FLOORS[i]) {
+        throw new Error(`${k} 列仅 ${n}/${rows.length} 有取值，抽取已退化`);
+      }
+    });
+    const reference = keys.slice(2);
+    const emptyRef = reference.filter((k) => hit(k) === 0);
+    if (emptyRef.length) {
+      throw new Error(`${emptyRef.join("/")} 列全空 —— 出口对照无从谈起`);
+    }
+    const full = rows.filter((r: any) => keys.every((k) => at(r, k)?.status === "verified")).length;
+    return `${rows.length} 参数 · ${keys.map((k) => `${k} ${hit(k)}`).join(" / ")} · 三版齐全 ${full}`;
+  });
+
   return { ok: failures.length === 0, checks, failures };
 }
 

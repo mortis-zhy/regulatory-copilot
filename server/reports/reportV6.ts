@@ -18,6 +18,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
+// Aliased: reportV6.ts already has a local buildParameterMatrix() that builds
+// the §11.3.3 A-vs-B matrix. Same name, different job — the import below is the
+// three-version matrix and would be shadowed by the local declaration.
+import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, loadSourceCorpus, verdictLabel } from "./parameterMatrix";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
@@ -436,6 +440,11 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   const out: string[] = [
     "# 第 13 章 灯具光色分配逐行 A vs B 对比",
     "",
+    "> **本章范围：仅 A 与 B 两版，不含 C（UN R48-09）。**",
+    ">",
+    "> UN R48 对光色的规定体例是「每类灯具 §6.x.x Colour 条款」，与 GB 的「灯具名称 - 光色」表格不同构，",
+    "> 无法逐行对齐；本章因此只做 A vs B。**需要三版对照请看第 12 章参数矩阵与附录 C 主题对照。**",
+    ">",
     "> **说明**：从 A/B 原文的「灯具名称 - 光色」表格逐行对照，供工程师做光色合规差距分析。",
     "",
     `> A 共 ${aRows.length} 行 · B 共 ${bRows.length} 行`,
@@ -576,7 +585,120 @@ function mainClause(title: string): string {
 
 interface ClauseBlock { clause: string; title: string; aText: string; aPage: number; bText: string; bPage: number }
 
-function build14_clauseTextDiff(data: Record<string, any>): string {
+/**
+ * A GB clause number → the `topicColumns` row that covers it, if any.
+ *
+ * Three things this has to get right, all of them measured against the real
+ * corpus rather than assumed:
+ *
+ * 1. **Compound clause numbers.** `位置灯` is `5.9/5.10`, `回复反射器` is
+ *    `5.14/5.15/5.16/5.17`. Prefix-matching the whole string
+ *    (`"5.9/5.10".startsWith("5.9.")`) drops all seven of those clauses. Split
+ *    on `/` first, then match each number on its own.
+ * 2. **B side only.** A/B numbering is NOT isomorphic — 前雾灯 B=5.3 ↔ A=5.4,
+ *    倒车灯 B=5.4 ↔ A=5.21, 危险警告信号 B=5.6 ↔ A=7.1. Chapter 14 is driven
+ *    from B, and the B→C correspondence is the side `topicColumns` verifies;
+ *    matching on A too would file AFS (`5.22 ↔ A 5.3`) under 前雾灯.
+ * 3. **Anchor the number at the start.** A-only blocks read `— ↔ A 7（A 独有）`;
+ *    an unanchored search finds `7` there and then goes looking for an R48
+ *    counterpart to a clause that has no B side at all. Returns null.
+ *
+ * 4. **Name confirmation for prefix matches.** `5.23 紧急制动信号` shares a
+ *    prefix with 闪烁频率与时间要求 (B includes `5.23.7.1`), but R48 §5.35.11 —
+ *    not the blink-frequency clauses — is what governs it. So a non-exact
+ *    clause match also has to share a device word with the chapter title,
+ *    otherwise nothing is printed.
+ *
+ * This invents no correspondence of its own — a miss leaves the clause exactly
+ * as it was (A/B only), which is the intended behaviour, not a gap.
+ */
+function findTopicForClause(
+  topicColumns: any[] | undefined,
+  gbClause: string,
+  chapterTitle: string,
+): any {
+  // `5.4 ↔ A 5.4` → `5.4`. The B side is the skeleton, so take what precedes ↔.
+  const bSide = String(gbClause ?? "").split("↔")[0].trim();
+  const m = bSide.match(/^(\d+(?:\.\d+)*)$/);
+  const want = m ? m[1] : "";
+  if (!want || !Array.isArray(topicColumns) || !topicColumns.length) return null;
+  const atBoundary = (longer: string, shorter: string) =>
+    longer === shorter || longer.startsWith(shorter + ".");
+  const titleName = String(chapterTitle ?? "")
+    .replace(/^\s*[\d.]+\s*/, "")
+    .replace(/[（(][^）)]*[）)]/g, "");
+  const scored: Array<{ t: any; cl: string; score: number }> = [];
+  for (const t of topicColumns) {
+    const tok = topicDeviceToken(String(t?.topic ?? ""));
+    // A name match alone is too weak — "特殊规定" shares no device word with
+    // anything — so require at least two characters of overlap.
+    const nameHit = !!tok && tok.length >= 2 && titleName.includes(tok);
+    for (const part of String(t?.B?.clause ?? "").split("/")) {
+      const cl = part.trim();
+      if (!cl || (!atBoundary(cl, want) && !atBoundary(want, cl))) continue;
+      const exact = cl === want;
+      // No exact clause AND no name agreement = one sub-clause standing in for a
+      // whole chapter. Print nothing rather than imply a correspondence.
+      if (!exact && !nameHit) continue;
+      scored.push({ t, cl, score: (exact ? 1000 : 0) + (nameHit ? 500 : 0) + cl.length });
+    }
+  }
+  if (!scored.length) return null;
+  scored.sort((x, y) => y.score - x.score);
+  return scored[0].t;
+}
+
+/**
+ * GB chapter name / topic name → the matrix rows for the same device.
+ *
+ * Chapter 14 titles look like `5.20 角灯(符合 GB/T30511要求的灯具)` — the
+ * parenthetical is a standard reference, not part of the device name. And GB's
+ * own wording differs from the matrix's in a couple of places, so a small
+ * alias table maps the chapter name onto the wording the parameters use. It is
+ * a display lookup over rows that are already verified in chapter 12; it states
+ * nothing about the regulations.
+ */
+const MATRIX_NAME_ALIAS: Record<string, string> = {
+  前位灯: "位置灯", // GB 5.9 前位灯 = 位置灯 in the parameter names
+  后位灯: "位置灯", // GB 5.10 后位灯 = 位置灯
+  后牌照板照明装置: "牌照", // GB 5.8 wording; matrix rows would say 牌照灯
+};
+
+function matrixRowsForTopic(matrixRows: any[] | undefined, topic: string): any[] {
+  if (!Array.isArray(matrixRows) || !matrixRows.length) return [];
+  // Drop a leading clause number and any trailing `(符合 …)` standard reference.
+  const name = String(topic ?? "")
+    .replace(/^\s*[\d.]+\s*/, "")
+    .replace(/[（(][^）)]*[）)]/g, "")
+    .trim();
+  let tok = topicDeviceToken(name);
+  if (!tok) return [];
+  const aliased = MATRIX_NAME_ALIAS[tok];
+  return matrixRows
+    .filter((m: any) => {
+      const n = String(m.name ?? "");
+      return n.includes(tok) || (!!aliased && n.includes(aliased));
+    })
+    .slice(0, 6);
+}
+
+/** One markdown table cell of clause prose: no newlines, no raw pipes. */
+function clauseCell(text: string, empty: string): string {
+  const t = String(text ?? "")
+    // A newline inside a cell ends the markdown row early and dumps the rest of
+    // the clause into the body as loose paragraphs.
+    .replace(/\s*\n+\s*/g, " ")
+    .replace(/\|/g, "｜")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cell(t ? t.slice(0, 500) : empty);
+}
+
+function build14_clauseTextDiff(
+  data: Record<string, any>,
+  topicColumns?: any[],
+  matrixRows?: any[],
+): string {
   const aFull: string = data.A?.fullText ?? "";
   const bFull: string = data.B?.fullText ?? "";
   const aPages = pageTextOf(aFull);
@@ -776,8 +898,18 @@ function build14_clauseTextDiff(data: Record<string, any>): string {
 
   // Render
   const out: string[] = [
-    "# 第 14 章 条款正文逐句 A vs B 对比",
+    "# 第 14 章 条款正文逐句 A vs B 对照（附 C 章节级对应与三版取值）",
     "",
+    "> **本章逐句对照只做 A / B 两版。** UN R48 与 GB 的条款编号体系（§2 定义 / §5 通用 /",
+    "> §6 各灯具 / Annex）完全不同构，逐号对读会造出假对应 —— 例如 GB 5.4.5.1 与 R48",
+    "> 6.4.5.1 编号相似却不是同一条款。**逐参数的条款级对照以第 12 章为准。**",
+    ">",
+    "> 但**章节级是能对应的**，而且这份对应不是新写的：`topicColumns` 里的 B 条款 → C 条款",
+    "> 已经过源 PDF 逐句核验（第 3.2 章那张表就是它的直接产物）。所以每条下面给出",
+    "> ① R48 对应章节与页码 ② 该灯具的三版取值表（取自第 12 章已核验矩阵）。",
+    ">",
+    "> ① 标注为「章节级对应」：**同一盏灯，不是同一条款**，按它去 R48 里找量化条款仍须逐条核对。",
+    ">",
     "> **说明**：以 B 现行的完整章节结构为骨架，逐条映射到 A 对应条款（章节映射：B6→A8、B6.1→A9、B7→A10；装置节映射见 11.6.2），并排对照 A/B 条款正文（每条截断 600 字）。A 独有的第 6/7 章追加在末尾。",
     "",
     `> 对比条目：${clauses.length}（B 驱动 ${clauses.length - aOnly.length} + A 独有 ${aOnly.length}）· A 侧定位成功 ${clauses.filter((c) => c.aPage).length} / ${clauses.length}`,
@@ -788,10 +920,55 @@ function build14_clauseTextDiff(data: Record<string, any>): string {
   for (const c of clauses) {
     out.push(`## 14.x 条款 ${c.clause} — ${c.title}`);
     out.push("");
-    out.push(`| 来源 | 页码 | 条款正文（截断） |`, "|---|---|---|");
-    out.push(`| **A 草案** | ${c.aPage ? "第 " + c.aPage + " 页" : "—（未定位到 A 对应条款）"} | ${(c.aText || "（A 无对应条款）").slice(0, 500).replace(/\|/g, "｜")} |`);
-    out.push(`| **B 现行** | ${c.bPage ? "第 " + c.bPage + " 页" : "—"} | ${(c.bText || "（A 草案独有，B 无对应条款）").slice(0, 500).replace(/\|/g, "｜")} |`);
+    const aHead = `**A 草案**（${c.aPage ? "第 " + c.aPage + " 页" : "未定位到 A 对应条款"}）`;
+    const bHead = `**B 现行**（${c.bPage ? "第 " + c.bPage + " 页" : "B 无对应条款"}）`;
+    // Side by side, not a 来源/页码/正文 table. Two reasons, both measured:
+    //   · a literal newline inside a cell splits the markdown row into several
+    //     physical lines, so the table stops being a table (the old form lost
+    //     ~277 of every 500 chars to orphan paragraphs);
+    //   · a 来源/来源-style header is read as the version column, and the
+    //     triptych renderer then treats the 500-char body as a PAGE NUMBER.
+    //     Only a header that is not 版本/来源/文档/文件/标准 AND that has A, B
+    //     and C columns reaches that layout, so A|B stays a plain table.
+    out.push(`| ${cell(aHead)} | ${cell(bHead)} |`, "|---|---|");
+    out.push(`| ${clauseCell(c.aText, "（A 无对应条款）")} | ${clauseCell(c.bText, "（A 草案独有，B 无对应条款）")} |`);
     out.push("");
+    // --- C 侧：章节级对应指针 + 该灯具的三版取值 ---
+    // 章节级，不做条款级推导 —— 见本章抬头。数据来源是已核验的 topicColumns，
+    // 不是这里新写的映射。
+    const hit = findTopicForClause(topicColumns, c.clause, c.title);
+    if (hit) {
+      const cc = hit.C;
+      // `actualPage` is already `第5页`; wrapping it again printed 第 第5页 页.
+      const cp = cc?.actualPage ? String(cc.actualPage) : "页码未核验";
+      const cq = cc?.clause ? `§${cc.clause}` : "§—";
+      out.push(`**R48 对应章节（章节级，非条款级）**：${cell(hit.topic)} → ${cell(cq)}（${cell(cp)}）`);
+      if (cc && cc.status !== "verified") {
+        out.push("");
+        out.push(`> ⚠ 该 C 单元格未在源 PDF 核验通过（${cell(String(cc.status ?? "未知"))}），页码仅作查找线索。`);
+      }
+      out.push("");
+    }
+    // The value table comes from chapter 12 either way: by topic when a verified
+    // topic row exists, otherwise by this clause's own chapter name. The rows
+    // carry their own clause + page, so this adds no new assertion — it only
+    // puts the numbers next to the A/B prose instead of 15 pages away.
+    const related = matrixRowsForTopic(matrixRows, hit?.topic ?? c.title);
+    if (related.length) {
+      out.push("**该灯具的三版取值（取自第 12 章参数矩阵）**", "");
+      out.push("| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |", "|---|---|---|---|---|---|");
+      for (const mr of related) {
+        const cs = mr.cells ?? {};
+        const v = (x: string) => {
+          const cv = cs[x];
+          return cv && cv.nums && cv.nums.length ? cell(cv.nums.join(" / ")) : "—";
+        };
+        out.push(
+          `| ${cell(mr.name)} | ${cell(mr.unit || "—")} | ${v("A")} | ${v("B")} | ${v("C")} | ${cell(verdictLabel(mr, ["A", "B", "C"]))} |`,
+        );
+      }
+      out.push("");
+    }
     const aa = c.aText.replace(/\s+/g, "");
     const bb = c.bText.replace(/\s+/g, "");
     if (!c.bText) out.push(`**变化判定**：🆕 A 新增，B 无对应条款。`);
@@ -877,6 +1054,7 @@ function buildNarrativeFromHeadings(
   title: string,
   topicColumns?: any[],
   refDiff?: any,
+  matrixRows?: any[],
 ): string {
   const a = data.A?.headings ?? [];
   const b = data.B?.headings ?? [];
@@ -886,7 +1064,7 @@ function buildNarrativeFromHeadings(
   // 写作改进 2: topic-level three-column comparison first (the real content)
   const topicFilter = CHAPTER_TOPIC_FILTER[chapterId];
   if (topicColumns && topicFilter) {
-    const topicBlock = buildChapterTopics(topicColumns, topicFilter);
+    const topicBlock = buildChapterTopics(topicColumns, topicFilter, matrixRows);
     if (topicBlock) parts.push(topicBlock, "");
   }
 
@@ -903,7 +1081,7 @@ function buildNarrativeFromHeadings(
     parts.push(buildRefSection(refDiff), "");
     parts.push("> 本章数据均来自三份原文，可回查对应页码。");
   } else if (chapterId === 3) {
-    parts.push("## 3.1 章节层级对比", "");
+    parts.push("## 3.1 规模对比", "");
     parts.push("| 文档 | 一级标题 | 段落级标题 | 页码标注 |", "|---|---|---|---|");
     for (const k of ["A", "B", "C"]) {
       const hs = data[k]?.headings ?? [];
@@ -911,15 +1089,37 @@ function buildNarrativeFromHeadings(
       const pt = hs.filter((h: any) => h.level >= 2).length;
       parts.push(`| ${k} | ${l1} | ${pt} | ${data[k]?.pageCount ?? "-"} |`);
     }
-    parts.push("", "## 3.2 A 草案一级标题（原文）", "");
-    parts.push("| 页 | 标题 |", "|---|---|");
-    for (const h of a.filter((x: any) => x.level === 1).slice(0, 25)) {
-      parts.push(`| p${h.page} | ${esc(h.title)} |`);
+    // 3.2 replaces what used to be two separate A-only and B-only heading
+    // dumps. Those listed 25 headings each and said nothing — and C appeared
+    // nowhere in the chapter at all, which is why the structure chapter read
+    // as a two-standard document. The clause correspondence below is built
+    // from `topicColumns`, which is already verified against the source PDFs,
+    // so no new mapping has to be hand-written or trusted.
+    const corr = (topicColumns ?? []).filter((r: any) => r.A || r.B || r.C);
+    if (corr.length) {
+      parts.push(
+        "",
+        "## 3.2 条款对应关系（A | B | C 三版逐主题）",
+        "",
+        "GB 4785 按 `5.x` 组织、UN R48 按 `6.x` 组织，两套编号不同构，**不能逐号对读**。",
+        "下表按主题给出三版各自的条款号与页码，是本报告里唯一可核对的章节映射；",
+        "带 ✓ 的页码已回源 PDF 逐句核对。",
+        "",
+        "| 主题 | A 草案条款 | B 现行条款 | C UN R48 条款 | A 页 | B 页 | C 页 |",
+        "|---|---|---|---|---|---|---|",
+      );
+      for (const r of corr) {
+        const cl = (x: string) => cell(r[x]?.clause || "—");
+        const pg = (x: string) => cell(r[x]?.actualPage ? `${r[x].actualPage} ✓` : "—");
+        parts.push(`| ${cell(r.topic)} | ${cl("A")} | ${cl("B")} | ${cl("C")} | ${pg("A")} | ${pg("B")} | ${pg("C")} |`);
+      }
     }
-    parts.push("", "## 3.3 B 现行一级标题", "");
-    parts.push("| 页 | 标题 |", "|---|---|");
-    for (const h of b.filter((x: any) => x.level === 1).slice(0, 25)) {
-      parts.push(`| p${h.page} | ${esc(h.title)} |`);
+    parts.push("", "## 3.3 A / B 一级标题（原文，仅供回查）", "");
+    parts.push("| 文档 | 页 | 一级标题 |", "|---|---|---|");
+    for (const [k, hs] of [["A", a], ["B", b], ["C", c]] as const) {
+      for (const h of (hs as any[]).filter((x: any) => x.level === 1).slice(0, 14)) {
+        parts.push(`| ${k} | p${h.page} | ${esc(h.title)} |`);
+      }
     }
   } else if (chapterId === 4) {
     parts.push("## 4.1 术语定义章节（原文标题）", "");
@@ -946,28 +1146,62 @@ function buildNarrativeFromHeadings(
     }
     parts.push("", "> 逐条变化与数据核验见第 11 章。");
   } else if (chapterId === 10) {
-    // ch10: 附录与实施 — 按主题分组（同一型式判定 / 实施日期 / 附录 / 过渡条款），
-    // 每个主题下并排展示 A/B/C 的对应标题（而非按文档顺序罗列）。
-    const themes: Array<{ label: string; re: RegExp }> = [
-      { label: "同一型式判定",        re: /同一型式/ },
-      { label: "实施日期",            re: /实施/ },
-      { label: "规范性附录",          re: /规范性附录|附录/ },
-      { label: "过渡条款 / 放宽判定", re: /过渡|车型结构|放宽/ },
+    // ch10: 附录与实施 — 按主题分组，每个主题下并排展示 A/B/C 的对应条款。
+    //
+    // 每个主题都需要**中英两套关键词**：R48 的标题是英文，只用中文正则时
+    // C 永远匹配不上，于是这一章看上去只有新旧 GB 两版。之前正是如此。
+    const themes: Array<{ label: string; cn: RegExp; en: RegExp; note: string }> = [
+      {
+        label: "同一型式判定",
+        cn: /同一型式/,
+        en: /same type|identical type/i,
+        note: "决定一族产品的型式试验覆盖范围。GB 按「同一型式」判定；R48 以 UN R10（整车型式认证）承载，判定口径不同，不可直接对读。",
+      },
+      {
+        label: "实施日期 / 过渡期",
+        cn: /实施/,
+        en: /entry into force|date of entry|transitional/i,
+        note: "A 草案的生效日期决定企业切换时间表；R48 的过渡条款按修正案序列给出，两者时点独立。",
+      },
+      {
+        label: "规范性附录",
+        cn: /规范性附录|附录/,
+        en: /annex/i,
+        note: "附录是测量方法的载体。近光倾斜度随装载变化的测量、自动切换条件、AFS 试验路段都在附录里，条款正文只给限值。",
+      },
+      {
+        label: "过渡条款 / 放宽判定",
+        cn: /过渡|车型结构|放宽/,
+        en: /shape of the bodywork|impossible to satisfy|may be increased/i,
+        note: "**这是出口欧盟最容易踩的一档**：GB 用「车型结构不能保证」放宽高度/位置限值，R48 用「the shape of the bodywork makes it impossible」放宽同类限值，触发条件与放宽幅度都要逐条比对。",
+      },
     ];
+    parts.push(
+      "> 本章按主题分组，三份文档并排；**R48 侧的匹配用英文关键词**（`the shape of the bodywork`、`same type`、`annex`），",
+      "> 否则中文正则永远匹配不到英文标题，这一章会看起来只有新旧 GB 两版。",
+      "",
+    );
     for (const th of themes) {
-      parts.push(`### 主题：${th.label}`, "");
-      parts.push("| 文档 | 页 | 标题 |", "|---|---|---|");
-      let any = false;
-      for (const k of ["A", "B", "C"]) {
-        const hs = (data[k]?.headings ?? []).filter((h: any) => th.re.test(h.title));
-        if (hs.length) any = true;
-        for (const h of hs.slice(0, 10)) parts.push(`| ${k} | p${h.page} | ${esc(h.title)} |`);
+      const hs = (k: string) =>
+        (data[k]?.headings ?? []).filter((h: any) =>
+          k === "C" ? th.en.test(h.title) : th.cn.test(h.title),
+        );
+      const A = hs("A"), B = hs("B"), C = hs("C");
+      parts.push(`### ${th.label}`, "");
+      parts.push(`> ${th.note}`, "");
+      parts.push("| 文档 | 匹配条款数 | 页码 | 标题（最多 4 条） |", "|---|---|---|---|");
+      for (const [k, list] of [["A 草案", A], ["B 现行", B], ["C UN R48-09", C]] as const) {
+        if (!list.length) {
+          parts.push(`| ${k} | 0 | — | 未检索到对应标题 |`);
+          continue;
+        }
+        const pages = [...new Set(list.map((h: any) => `p${h.page}`))].slice(0, 6).join(" ");
+        const titles = list.slice(0, 4).map((h: any) => esc(h.title)).join("；");
+        parts.push(`| ${k} | ${list.length} | ${pages} | ${titles}${list.length > 4 ? " …" : ""} |`);
       }
-      if (!any) parts.push("| — | — | 三份文档均无匹配条款 |");
       parts.push("");
     }
-    parts.push("> 逐条变化与数据核验见第 11 章。");
-    parts.push("> 注：本章按主题分组而非按文档分组，便于工程师快速对位每条主题在三份文档中的对应位置。");
+    parts.push("> 逐条变化与数据核验见第 11 章；逐参数三版取值见第 12 章。");
   }
 
   return parts.join("\n");
@@ -1397,41 +1631,213 @@ function buildAppendixB(data: Record<string, any>): string {
 }
 
 /* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------- source corpus */
+
+let CORPUS_CACHE: any = null;
+
+/**
+ * Source-PDF text, loaded once per process. MinerU's table extraction garbles
+ * GB 4785-2019's chromaticity table; the uploaded PDFs read directly through
+ * PyMuPDF (fragments concatenated) recover it. Cached because the caller runs it
+ * on every generation and the dump shells out to Python.
+ */
+async function getSourceCorpus(data: Record<string, any>) {
+  if (CORPUS_CACHE) return CORPUS_CACHE;
+  try {
+    CORPUS_CACHE = await loadSourceCorpus(ROOT, data);
+    // Report what actually loaded, not what was hoped for: a version missing
+    // from `pages` is exactly the condition the matrix cells fall back from, so
+    // printing 0p for it here is how you spot it. (Keying the log on a literal
+    // A/B/C list is what turned a missing corpus into a TypeError here.)
+    console.log(
+      `[v6] source-PDF corpus: ${Object.entries(CORPUS_CACHE.pages)
+        .map(([v, p]) => `${v}=${p.length}p`)
+        .join(" ")}`,
+    );
+  } catch (e) {
+    console.warn("[v6] source-PDF corpus unavailable, MinerU only:", String(e).slice(0, 160));
+    CORPUS_CACHE = { pages: {}, origin: {} };
+  }
+  return CORPUS_CACHE;
+}
+
 /*  写作改进 1：执行摘要（报告开篇 5 要点）                                     */
 /* -------------------------------------------------------------------------- */
 
-/** Aggregate the parameter matrix so the executive summary can state impact. */
-function matrixStats(diffResult: any, topicColumns: any[] = []) {
-  const rows: any[] = Array.isArray(diffResult?.valueDiffs) ? diffResult.valueDiffs : [];
-  if (!rows.length) return { total: 0, changed: 0, same: 0, partial: 0, noMap: 0, topFamilies: "—" };
-  const norm = (s: unknown) => String(s ?? "").replace(/[\s,，]/g, "");
+/**
+ * Chapter 12 — the parameter matrix the customer actually asked for.
+ *
+ * Replaces build12_quantitativeTables, which shipped three consecutive raw
+ * table dumps (A's, then B's, then C's) under a summary column that read
+ * 见下方表格内容 on all 492 rows. That was a listing, not a comparison, and
+ * its 1:1:1 grouping was impossible anyway: C has 43 tables to A/B's 17.
+ *
+ * The matrix is one row per parameter with a value from each version, plus
+ * clause and page so every cell can be checked against the source. Coverage
+ * is stated up front — including which families are still missing — because a
+ * reader who trusts an unlocated cell is worse off than one told it is absent.
+ */
+function buildChapter12Matrix(
+  rows: ReturnType<typeof buildParamMatrix>["rows"],
+  stats: ReturnType<typeof buildParamMatrix>["stats"],
+): string {
+  const vs = stats.versions;
+  const bv = stats.byVersion;
+  const n = vs.length;
+  const all = (r: (typeof rows)[number]) => vs.every((v) => r.cells[v].status === "verified");
+  const full = rows.filter(all);
+  const families = [...new Set(rows.map((r) => r.family))];
+  const hitLine = vs.map((v) => `${v} ${bv[v].hit}/${bv[v].total}`).join(" · ");
+  const cols = vs.join("/");
+  const colsSpaced = vs.join(" / ");
+  const way = n === 3 ? "三版" : `${n} 版`;
+
+  const head = [
+    `# 第 12 章 关键参数 ${cols} ${way}本对照`,
+    "",
+    `> 本章是**逐参数对照**：一行一个参数，${colsSpaced} 各列给出该版本的原文取值、`,
+    `> 条款号与页码，可直接回原文核对。判定列只回答一个问题——${vs[0]} 与 ${vs[1]} 是否一致。`,
+    "",
+    `**本版覆盖**：${rows.length} 个参数 × ${n} 版本 = ${stats.cells} 个取值位，` +
+      `已定位 ${stats.verified} 个` +
+      `（${hitLine}）；` +
+      `其中 ${full.length} 个参数${way}取值齐全，可做完整${n > 2 ? "三方" : ""}对照。`,
+    "",
+    `**覆盖的参数族**：${families.join(" · ")}。`,
+    "",
+    "**未定位到的取值一律显式标注「⚠ 未在原文定位到」，不做推测填充。**",
+    "定位不到与定位到错误的区别是：前者读者知道要自己去翻，后者读者会当真。",
+    `**取值来源**：MinerU 抽取 ${stats.cells - stats.fromSourcePdf} 处；` +
+      `${stats.fromSourcePdf} 处 MinerU 未能读出，改由上传的源 PDF 直读补齐` +
+      "（明细表页码后标注「· 源 PDF」）。GB 4785-2019 的色度表文本层会把三列串成一行" +
+      "（WWWW34564561黄紫紫蓝色红色色边…），" +
+      "直读源 PDF 并把碎片拼接后可完整还原。",
+    "",
+    "---",
+    "",
+  ].join("\n");
+
+  const gaps = rows.filter((r) => vs.some((v) => r.cells[v].status === "not-found"));
+
+  /**
+   * The question an export engineer actually asks: where A changed, does R48
+   * already say the same thing, or does A now diverge from it? This is only
+   * answerable with all three columns present, which is why the matrix exists.
+   */
+  const divergence = rows.filter(
+    (r) => r.verdict === "changed" && vs.slice(2).every((v) => r.cells[v].status === "verified") &&
+      vs.slice(2).every((v) => r.cells[v].nums.length) && r.cells[vs[0]].nums.length,
+  );
+  const divergenceMd = divergence.length
+    ? [
+        "",
+        "---",
+        "",
+        `## 12.4 三方取值分歧（出口欧盟重点看这一节）`,
+        "",
+        `下列参数 ${vs[0]} 与 ${vs[1]} 不一致，且 ${vs[2]} 也有取值 —— 据此可判断 ${vs[0]} 是在向 R48 对齐，还是背离 R48。`,
+        "",
+        ...divergence.map((r) => {
+          const a = r.cells[vs[0]].nums.join(" / ");
+          const b = r.cells[vs[1]].nums.join(" / ");
+          const ref = vs[2];
+          const c = r.cells[ref].nums.join(" / ");
+          // Containment, not equality: A's clause usually states the same limit
+          // plus extra conditions, so the test is whether the reference
+          // version's values are already covered by the national pair's.
+          const cIn = (set: string[]) => r.cells[ref].nums.every((n) => set.includes(n));
+          const align = cIn(r.cells[vs[0]].nums)
+            ? `**${vs[0]} 已覆盖 ${ref} 的取值 —— ${vs[0]} 在向 R48 对齐**`
+            : cIn(r.cells[vs[1]].nums)
+              ? `${vs[1]} 已覆盖 ${ref} 的取值、${vs[0]} 未覆盖 —— **${vs[0]} 在此条上背离 R48**`
+              : "三版取值互不相同，需逐条回原文核对";
+          return `- **${r.name}**（${r.unit}）：${vs[0]} ${a} ／ ${vs[1]} ${b} ／ ${ref} ${c} —— ${align}`;
+        }),
+      ].join("\n")
+    : "";
+  const tail = gaps.length
+    ? [
+        "",
+        "---",
+        "",
+        "## 12.3 定位失败的参数（本版不判定）",
+        "",
+        `下列参数在本版未能把${way}取值全部定位到原文，因此不做判定，也不填入推测值：`,
+        "",
+        ...gaps.map((r) => {
+          const miss = vs.filter((v) => r.cells[v].status === "not-found").join(" / ");
+          return `- **${r.name}**（${r.family}）—— 缺 ${miss}`;
+        }),
+      ].join("\n")
+    : "";
+
+  return head + renderMatrixTable(rows, vs) + tail + divergenceMd;
+}
+
+/**
+ * Aggregate the parameter matrix so the executive summary can state impact.
+ *
+ * Every number here MUST come from the audited candidate flow (facts.counts /
+ * verified.flow.buckets) or from the explicit change lists. The previous
+ * version re-derived them by comparing valueDiff.oldValue !== newValue, which
+ * counted every *wording* difference as a substantive parameter change: it
+ * reported 45 "实质变化" while the audited flow said 3 numeric + 9 manual, and
+ * its own family breakdown (15+8+8=31) didn't even sum to the 45 it claimed.
+ * Two numbers in the same bullet then contradicted the summary's own body.
+ *
+ * A number that can be counted has exactly one source. See HANDOVER §7.1.
+ */
+function matrixStats(verified: any) {
+  const counts = resolveFlowCounts(verified);
+  const numeric: any[] = Array.isArray(verified?.numericChanges) ? verified.numericChanges : [];
+  const manual: any[] = Array.isArray(verified?.manualFindings) ? verified.manualFindings : [];
+  const sameText: any[] = Array.isArray(verified?.sameTextDropped) ? verified.sameTextDropped : [];
+
+  // The two kinds of real A→B change, and nothing else. Wording differences and
+  // same-text rows are NOT design-impacting, so they must not be counted here.
+  const real = [...numeric, ...manual];
+  const changed = real.length;
+
   const famCount = new Map<string, number>();
-  let changed = 0;
-  for (const r of rows) {
-    if (norm(r.oldValue) !== norm(r.newValue)) {
-      changed++;
-      const fam = paramFamilyOf(r.name ?? "", r.topic ?? "");
-      famCount.set(fam, (famCount.get(fam) ?? 0) + 1);
-    }
+  for (const r of real) {
+    const fam = paramFamilyOf(r.name ?? "", r.topic ?? "");
+    famCount.set(fam, (famCount.get(fam) ?? 0) + 1);
   }
-  const cExcerptByTopic = new Map<string, string>();
-  for (const t of topicColumns ?? []) {
-    const ex = String(t?.C?.excerpt ?? "").trim();
-    if (ex) cExcerptByTopic.set(String(t?.topic ?? "").trim(), ex);
-  }
-  let partial = 0;
-  let noMap = 0;
-  for (const r of rows) {
-    const s = mapStrength(r, cExcerptByTopic);
-    if (s === "部分重叠") partial++;
-    else noMap++;
-  }
-  const topFamilies = [...famCount.entries()]
+  const topFamilies = Array.from(famCount.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([f, n]) => `${f}（${n} 项）`)
     .join("、");
-  return { total: rows.length, changed, same: rows.length - changed, partial, noMap, topFamilies };
+
+  const wordingOnly = counts.wordingFiltered ?? 0;
+  return {
+    total: counts.candidates ?? (changed + sameText.length + wordingOnly + counts.ruleDropped),
+    changed,
+    numericOnly: numeric.length,
+    manualOnly: manual.length,
+    same: sameText.length,
+    wordingOnly,
+    topFamilies: famCount.size ? topFamilies : "—",
+    // The illustrative example must come from a real row. It used to be a
+    // hardcoded literal — "近光灯最大离地高度由 1200mm 改为「1200mm，N3G 类可
+    // 放宽至 1500mm」" — but GB 4785-2019 §5.2.4.2 already carries that exact
+    // wording (B p24), so the summary's single concrete illustration of a
+    // "substantive change" was not a change at all.
+    example: realChangeExample(real),
+  };
+}
+
+/** First genuine A→B change, quoted verbatim with its pages, or "" if none. */
+function realChangeExample(real: any[]): string {
+  for (const r of real) {
+    const o = String(r.oldValue ?? "").trim();
+    const n = String(r.newValue ?? "").trim();
+    if (!o || !n || o === n) continue;
+    if (o.length > 70 || n.length > 70) continue;
+    const pages = [r.bPage, r.aPage].filter(Boolean).join(" → ");
+    return `例如「${r.topic ?? ""}·${r.name ?? ""}」由「${o}」改为「${n}」${pages ? `（${pages}）` : ""}。`;
+  }
+  return "";
 }
 
 function renumberNote(verified: any): number {
@@ -1479,21 +1885,31 @@ function buildExecSummary(input: {
   // and stopped there, so a reader learned nothing actionable. These four lines
   // are derived from the parameter matrix (§11.3.3) — the same numbers a reader
   // can check — and state what the changes MEAN for design and certification.
-  const matrix = matrixStats(diffResultForSummary, verified?.topicColumns ?? []);
+  const matrix = matrixStats(verified);
   const mmNote = matrix.total
     ? [
         "",
         "## 本报告的结论（按决策口径）",
         "",
-        `1. **设计端必须改**：${matrix.changed} 项参数在 A 草案中有实质变化，集中在 ${matrix.topFamilies}。` +
-          `这些不是措辞调整——例如近光灯最大离地高度由 1200mm 改为「1200mm，N3G 类可放宽至 1500mm」，` +
-          "意味着越野车型的灯具布置高度上限被抬高，设计需要按放宽值预留支架行程。",
-        `2. **仅编号变化、不必改设计**：${matrix.same} 项两版数值同文，另有 ${renumberNote(verified)} 项属章节重组导致的条款号重排，` +
-          "这类条目只需更新内部引用文件编号，产品无需变更。",
-        `3. **出口欧盟需额外核对**：${matrix.partial} 项与 UN R48 条款存在数值交集（映射强度标为 [部分重叠]），` +
-          `${matrix.noMap} 项目前无法证明与 R48 等价。若产品销往欧盟，这两类必须逐条回原文比对——` +
-          "**「部分重叠」不得按等价使用**。",
-        `4. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到，` +
+        `1. **设计端必须改**：${matrix.changed} 项参数在 A 草案中有实质变化` +
+          `（自动核验 ${matrix.numericOnly} 项 + 人工补录 ${matrix.manualOnly} 项），集中在 ${matrix.topFamilies}。` +
+          (matrix.example ? `这些不是措辞调整——${matrix.example}` : "") +
+          "每条的条款号与页码见第 11.3 节，可回原文逐条核对。",
+        `2. **不需要改设计**：${matrix.same} 项两版原文完全相同（非变化），` +
+          `${matrix.wordingOnly} 项仅措辞/标点差异（无工程含义），` +
+          `另有 ${renumberNote(verified)} 项属章节重组导致的条款号重排——` +
+          "这三类只需更新内部引用文件编号，产品无需变更。",
+        `3. **出口欧盟：请以第 12 章的参数矩阵为准**。该章逐参数给出 A/B/C 三版取值与条款页码，` +
+          `是本版唯一可支撑 C 定量判断的部分；但**覆盖尚不完整**（见第 12 章开头的覆盖率与` +
+          `「定位失败的参数」一节）。未定位到的参数一律标注为「⚠ 未在原文定位到」，` +
+          `**不填推测值**。附录 C 另提供 24 个主题的原文摘录与条款号，可回查原文。` +
+          `**出口认证前请勿以本报告替代 R48 原文逐条比对。**`,
+        `4. **数值相同 ≠ 口径相同 —— 本版已发现 1 处方向相反**。` +
+          "驾驶员辅助投射的开启/保持车速：GB A 为「开启车速上限 65 km/h、保持开启下限 40 km/h」，" +
+          "而 R48 §5.35.10 写的是「**低于 65 km/h 不得开启**」「**高于 40 km/h 方可保持开启**」——" +
+          "**数字相同，条件方向相反**。矩阵里两列都显示 65 / 40，只看数值会判成「三版一致」。" +
+          "这类差异无法从数值矩阵自动检出（要读条件句而非读数字），全表需人工过一遍条件方向。",
+        `5. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到，` +
           `${wordingN} 条表述差异待人工裁定。结论层面已逐条列在第 11 章，使用前须回原文确认。`,
       ]
     : [];
@@ -1529,40 +1945,64 @@ function buildExecSummary(input: {
 /* -------------------------------------------------------------------------- */
 
 /** Filter topic columns for one chapter and render compact three-column table. */
-function buildChapterTopics(topicColumns: any[], keywords: RegExp): string {
+/** 摘录按子句边界截断，并明确标出被截掉。
+ *
+ * 之前是 `slice(0,130) + "…"`，中文侧句子会断在「若发射光不应直接」这种
+ * 半截词上，读者看不出是截断还是原文如此。改为：尽量切到最近的子句边界
+ * （。；. 之后），确实切不到才退回硬截，且两种情况都带 …。
+ */
+function clipExcerpt(s: string, limit = 150): string {
+  const t = (s || "").replace(/\s+/g, " ").trim();
+  if (t.length <= limit) return t;
+  const head = t.slice(0, limit);
+  const cut = Math.max(head.lastIndexOf("。"), head.lastIndexOf("；"), head.lastIndexOf(". "));
+  let out = (cut > limit * 0.5 ? head.slice(0, cut + 1) : head).trim();
+  // Never cut through a tag. `N<sub>3</sub>G` sliced at 120 characters left a
+  // bare `N<sub>` on the page — three of them in the delivered PDF. The tag is
+  // dropped and the sentence ends there; a half-open tag is worse than a short
+  // excerpt because the reader sees markup instead of the requirement.
+  const opens = [...out.matchAll(/<([a-zA-Z][a-zA-Z0-9]*)[\s>]/g)];
+  const lastTag = opens[opens.length - 1];
+  if (lastTag && !out.slice(lastTag.index).includes(`</${lastTag[1]}>`)) {
+    out = out.slice(0, lastTag.index).trimEnd();
+  }
+  return out + " …";
+}
+
+/** 主题名里代表「哪种灯」的中文词，用来回第 12 章矩阵里找同族参数。 */
+function topicDeviceToken(topic: string): string {
+  const runs = String(topic).match(/[一-鿿]{2,5}/g) ?? [];
+  return runs[0] ?? "";
+}
+
+function buildChapterTopics(topicColumns: any[], keywords: RegExp, matrixRows?: any[]): string {
   const rows = topicColumns.filter((r: any) => keywords.test(r.topic));
   if (!rows.length) return "";
-  const norm = (s: string) => (s || "").replace(/[\s,，。.;；:：、（）()【】\[\]]/g, "");
   const parts: string[] = [
     `## 本章三列原文对照（A | B | C）`,
     "",
     "下表为三份文档**同一主题**的原文摘录对照；页码带 ✓ 者已回原文核验。",
-    "**变化标签**列：A↔B 经空白与标点规范化后比对——`三方一致` / `格式差异` / `实质差异` / `A 新增独有` / `仅 B 现行` / `未比对`。",
+    "C 列已剔除 `§6.x.1 Presence / §6.x.2 Number` 这类配备样板，改用**同章的定量条款**；",
+    "R48 该主题确实没有量化条款时，明写「只有配备/数量的规定」而不是拿样板充数。",
+    "",
+    "**本节不再给「实质差异 / 格式差异」标签** —— 那是把两版不同条款号的摘录做文本比对，",
+    "25 条里 25 条都判成「实质差异」，零信息量。真正的取值对照在每个主题下的**三版取值表**",
+    "（取自第 12 章参数矩阵）与「变化判定」行。",
     "",
   ];
-  // Per-topic summary
-  const labels: string[] = [];
-  for (const row of rows) {
-    const a = row.A?.excerpt ?? "";
-    const b = row.B?.excerpt ?? "";
-    const c = row.C?.excerpt ?? "";
-    const an = norm(a), bn = norm(b), cn = norm(c);
-    let label: string;
-    if (!a && !b) label = "未比对";
-    else if (!b) label = "A 新增独有";
-    else if (!a) label = "仅 B 现行";
-    else if (an === bn && bn === cn) label = "三方一致";
-    else if (an === bn) label = "A↔B 一致 / C 不同";
-    else if (an.replace(/\d/g, "") === bn.replace(/\d/g, "")) label = "格式差异";
-    else if (Math.abs(a.length - b.length) < 5 && an.includes(bn.slice(0, 30))) label = "微调";
-    else label = "实质差异";
-    labels.push(label);
-  }
-  const allLabels = labels.join(" / ");
-  parts.push(`**本章主题：${rows.length} 个**｜变化分布：${allLabels}`, "", "");
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  const hasMatrix = Array.isArray(matrixRows) && matrixRows.length > 0;
+  const withParams = rows.filter((r: any) =>
+    hasMatrix && matrixRows.some((m: any) => topicDeviceToken(r.topic) && String(m.name).includes(topicDeviceToken(r.topic))),
+  ).length;
+
+  parts.push(
+    `**本章主题：${rows.length} 个**｜其中 ${withParams} 个在第 12 章矩阵中有对应参数`,
+    "",
+    "",
+  );
+
+  for (const row of rows) {
     parts.push(`### ${row.topic}`, "");
     parts.push("| 版本 | 条款 | 页码 | 原文摘录 |", "|---|---|---|---|");
     for (const lb of ["A", "B", "C"]) {
@@ -1571,12 +2011,46 @@ function buildChapterTopics(topicColumns: any[], keywords: RegExp): string {
         parts.push(`| ${lb} | — | — | （本文档无此主题） |`);
         continue;
       }
-      const pg = c.status === "verified" ? `${c.actualPage} ✓` : `未核验 ⚠`;
-      const ex = c.excerpt.length > 130 ? c.excerpt.slice(0, 130) + "…" : c.excerpt;
-      parts.push(`| **${lb}** | ${cell(c.clause || "—")} | ${cell(pg)} | ${cell(ex)} |`);
+      const pg = c.status === "verified" ? `${c.actualPage} ✓` : `未核验`;
+      const upg = c.upgradedFromBoilerplate && lb === "C" ? " ·定量条款" : "";
+      parts.push(`| **${lb}** | ${cell(c.clause || "—")}${upg} | ${cell(pg)} | ${cell(clipExcerpt(c.excerpt))} |`);
     }
     parts.push("");
-    parts.push(`**变化判定**：\`${labels[i]}\`｜工程师核验任务：${labels[i] === "实质差异" || labels[i] === "格式差异" || labels[i] === "微调" ? "请逐字比对差异 → 决定是否需要更新产品/测试" : labels[i] === "三方一致" ? "无需变更" : "如该主题不适用请记录原因"}。`);
+
+    // The comparison the client actually needs, taken from the verified matrix
+    // rather than from prose similarity.
+    const tok = topicDeviceToken(row.topic);
+    const related = hasMatrix && tok
+      ? matrixRows.filter((m: any) => String(m.name).includes(tok)).slice(0, 6)
+      : [];
+    if (related.length) {
+      parts.push("**该主题的三版取值（取自第 12 章参数矩阵）**", "");
+      parts.push("| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |", "|---|---|---|---|---|---|");
+      for (const m of related) {
+        const cs = m.cells ?? {};
+        const v = (x: string) => {
+          const cell = cs[x];
+          if (!cell || !cell.nums || !cell.nums.length) return "—";
+          return cell.nums.join(" / ");
+        };
+        parts.push(
+          `| ${cell(m.name)} | ${cell(m.unit || "—")} | ${v("A")} | ${v("B")} | ${v("C")} | ${cell(verdictLabel(m, ["A", "B", "C"]))} |`,
+        );
+      }
+      parts.push("");
+    }
+
+    // Verdict: say what R48 does and does not require, which is the question a
+    // reader of this table actually has.
+    const c = row.C;
+    const cNote = !c
+      ? "R48 未见对应章节"
+      : c.upgradedFromBoilerplate
+        ? `R48 定量要求见 ${c.clause}`
+        : /Presence|Mandatory|Optional/.test(c.excerpt || "")
+          ? `R48 ${c.clause} 只规定配备/数量`
+          : `R48 ${c.clause}`;
+    parts.push(`**变化判定**：${cNote}｜${related.length ? "取值是否变化以上表为准" : "本主题暂无对应量化参数，请回原文逐条比对"}。`);
     parts.push("");
   }
   return parts.join("\n");
@@ -1636,6 +2110,216 @@ function buildQuickRef(numChanges: any[], indicators: any[]): string {
   return parts.join("\n");
 }
 
+/**
+ * 附录 D：UN R48-09 §6 的量化条款全量清单。
+ *
+ * 客户说「少了很多数据」。这句话可能是对的，也可能是报告没写清覆盖到哪 ——
+ * 两种情况在 PDF 上长得一模一样。唯一能区分的办法是**把 R48 的量化内容
+ * 全量摊开，并标出哪些进了矩阵、哪些没进、为什么没进**。
+ *
+ * 全部现算：每次出报告都从语料重扫，不落盘，所以它跟矩阵同步。
+ */
+function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
+  const full = String(data?.C?.fullText ?? "");
+  if (!full) return "";
+
+  // ── 逐行扫，按 R48 的条款号与页码归属 ──────────────────────────────
+  const lines = full.split("\n");
+  const UNIT = "(?:cd/m2|cd/m²|cd/m|cd|mm2|mm²|mm|cm2|cm²|cm|km/h|m/s|mrad|deg|°|%|V|W|Hz|s|min)";
+  // Thousands separators FIRST. `(?<![\w.])` does not exclude a comma, so
+  // `1,200 mm` used to match as "200 mm" — the inventory then printed a number
+  // that does not exist in the source, and every 1,200 / 1,400 / 1,500 row
+  // failed to match the matrix (which stores 1200 / 1400 / 1500), silently
+  // understating the coverage rate.
+  const NUM = "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?)";
+  const q = new RegExp("(?<![\\w.])" + NUM + "\\s*[-–]?\\s*(" + UNIT + ")\\b", "gi");
+  const clauseRe = /^\s*(\d+(?:\.\d+)*)\.?\s+\S/;
+  const secRe = /^\s*6\.(\d{1,2})\.?\s+[A-Za-z][A-Za-z ,\-/()']{2,70}\s*$/;
+
+  /** `1,200` → `1200`: the inventory stores the number the way the matrix does. */
+  const bareNum = (s: string): string => s.replace(/,/g, "");
+
+  let page = 0;
+  let curClause = "";
+  let inSec6 = false;
+  const raw: Array<{ clause: string; page: number; value: string; unit: string; text: string }> = [];
+  for (const line of lines) {
+    const st = line.trim();
+    const pm = st.match(/^\[第(\d+)页\]$/);
+    if (pm) {
+      page = Number(pm[1]);
+      continue;
+    }
+    if (secRe.test(line)) {
+      inSec6 = true;
+      curClause = "";
+      continue;
+    }
+    const mc = st.match(clauseRe);
+    if (mc) curClause = mc[1];
+    if (!inSec6) continue;
+    q.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = q.exec(st)) !== null) {
+      raw.push({ clause: curClause, page, value: bareNum(m[1]), unit: m[2], text: st });
+    }
+  }
+
+  // ── 与矩阵对账：值与条款都对得上才算「已入矩阵」 ─────────────────────
+  const matC: Array<{ name: string; clause: string; nums: string[] }> = [];
+  for (const r of matrixRows ?? []) {
+    const c = (r as any)?.cells?.C;
+    if (!c?.nums?.length) continue;
+    matC.push({ name: String((r as any).name ?? ""), clause: String(c.clause ?? ""), nums: c.nums.map(String) });
+  }
+  const numEq = (a: string, b: string): boolean => {
+    const x = parseFloat(a.replace(/,/g, ""));
+    const y = parseFloat(b.replace(/,/g, ""));
+    if (!Number.isNaN(x) && !Number.isNaN(y)) return Math.abs(x - y) < 1e-9;
+    return a.trim() === b.trim();
+  };
+  // Chapter + value (+ unit). The clause NUMBERS of the two sides do not
+  // agree — MinerU puts `6.3.4.2.` *after* the height sentence it belongs to,
+  // so a line-anchored clause (6.3.4.2) and a nearest-preceding one (6.3.4.1)
+  // both describe the same paragraph. §6.x is one lamp in R48, so chapter +
+  // value + unit identifies the parameter without relying on either numbering.
+  const chapterOf = (c: string): string => {
+    const m = String(c ?? "").match(/^(6\.\d{1,2})/);
+    return m ? m[1] : "";
+  };
+  const matchMatrix = (r: { clause: string; value: string; unit: string }): string => {
+    const ch = chapterOf(r.clause);
+    for (const m of matC) {
+      if (chapterOf(m.clause) !== ch) continue;
+      if (m.unit && r.unit && m.unit.replace(/\s/g, "") !== r.unit.replace(/\s/g, "")) continue;
+      if (m.nums.some((n) => numEq(r.value, n))) return m.name;
+    }
+    return "";
+  };
+
+  // 去重：同一条款里的同一个数值只列一次（「1,400 mm」在一句里出现 4 次不算 4 条）
+  const seen = new Set<string>();
+  const items = raw
+    .filter((r) => {
+      const k = `${r.clause}|${r.value}|${r.unit}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .map((r) => ({ ...r, matrix: matchMatrix(r) }));
+
+  // ── 未入矩阵的分类 ──────────────────────────────────────────────────
+  const kindOf = (r: { clause: string; text: string }): string => {
+    if (!r.clause) return "非条款行";
+    if (/No (individual specifications|special requirement)/.test(r.text)) return "转引他标 / 无独立数值";
+    // a quantified value that is only a vehicle-class or a cross-reference
+    // is not a limit the client can act on
+    if (/\b(class|category|type)\b/i.test(r.text) && !/\b(mm|cd|km\/h|°|mrad)\b/i.test(r.text)) {
+      return "定性条款";
+    }
+    return "未展开的参数";
+  };
+  for (const it of items) if (!it.matrix) it.kind = kindOf(it as any);
+
+  const covered = items.filter((i) => i.matrix).length;
+
+  // ── D.1 覆盖统计 ───────────────────────────────────────────────────
+  const bySec = new Map<string, typeof items>();
+  for (const it of items) {
+    const m = it.clause.match(/^(6\.\d{1,2})/);
+    const key = m ? m[1] : "—";
+    if (!bySec.has(key)) bySec.set(key, []);
+    bySec.get(key)!.push(it);
+  }
+  const secRows = [...bySec.entries()]
+    .sort((a, b) => (a[0] === "—" ? 1 : b[0] === "—" ? -1 : a[0].localeCompare(b[0])))
+    .map(([sec, xs]) => {
+      const cv = xs.filter((x) => x.matrix).length;
+      const kinds = new Map<string, number>();
+      for (const x of xs) {
+        if (x.matrix) continue;
+        kinds.set(x.kind!, (kinds.get(x.kind!) ?? 0) + 1);
+      }
+      const detail = [...kinds.entries()].map(([k, n]) => `${k} ${n}`).join(" · ");
+      return `| **§${sec}** | ${xs.length} | ${cv} | ${xs.length - cv} | ${esc(detail || "—")} |`;
+    });
+
+  // ── D.2 未入矩阵的分类清单 ──────────────────────────────────────────
+  const notIn = items.filter((i) => !i.matrix);
+  const kindCounts = new Map<string, number>();
+  for (const i of notIn) kindCounts.set(i.kind!, (kindCounts.get(i.kind!) ?? 0) + 1);
+  const kindRows = [...kindCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => {
+      const note =
+        k === "未展开的参数"
+          ? "**需要留意**：R48 有这个限值，但本报告没有把它做成矩阵行（多为其余灯具的位置/可见度档位）"
+          : k === "转引他标 / 无独立数值"
+            ? "R48 自己不含数值（光度值在 UN R112 / R149 等型式试验法规里）"
+            : k === "定性条款"
+              ? "条款本身不带可量化限值（配备 / 数量 / 方向 / 布局）"
+              : "非条款行（表头或续行）";
+      return `| ${esc(k)} | ${n} | ${esc(note)} |`;
+    });
+
+  // ── D.3 逐条全量清单 ───────────────────────────────────────────────
+  const itemRows = items.map((it) => {
+    const inM = it.matrix ? `✅ ${esc(it.matrix)}` : `— （${esc(it.kind!)}）`;
+    return `| ${esc(it.clause || "—")} | 第 ${it.page} 页 | ${esc(it.value)} | ${esc(it.unit)} | ${esc(
+      it.text.replace(/\|/g, "｜").replace(/\s+/g, " ").slice(0, 150),
+    )} | ${inM} |`;
+  });
+
+  const pct = items.length ? Math.round((100 * covered) / items.length) : 0;
+  return [
+    "# 附录 D UN R48-09 §6 量化条款全量清单",
+    "",
+    "> **这一节是为了让「有没有漏」可以被核对，而不是让读者相信报告作者没漏。**",
+    "> 下表把 UN R48-09 §6 里**每一条带数字的法规陈述**都列出来：条款号、页码、",
+    "> 数值、单位、原文，以及它有没有进第 12 章参数矩阵。",
+    "",
+    `> 实测：R48 §6 共 **${items.length}** 条唯一量化陈述（同一句里重复出现的同一数值只算一条），`,
+    `> 其中 **${covered}** 条进了参数矩阵（**${pct}%**），其余 ${notIn.length} 条在 D.2 逐类说明。`,
+    "> 清单是**每次出报告时从语料现算**的，与第 12 章同步 —— 参数加了，清单不会忘记更新。",
+    ">",
+    "> **「已入矩阵」的判定口径**：同一 R48 章（§6.x，一章一盏灯）+ 同一数值 + 同一单位。",
+    "> 不用条款号逐字比对 —— MinerU 里 `6.3.4.2.` 这个编号排在它所属的句子**之后**，",
+    "> 所以「行首条款号」与「最近前置条款号」会指向同一段却写成两个号。",
+    "",
+    "---",
+    "",
+    "## D.1 按章覆盖统计",
+    "",
+    "| R48 章 | 唯一量化陈述 | 已入矩阵 | 未入矩阵 | 未入矩阵分类 |",
+    "|---|---|---|---|---|",
+    ...secRows,
+    "",
+    `**合计**：${items.length} 条 · 已入矩阵 ${covered} 条（${pct}%）· 未入 ${notIn.length} 条。`,
+    "",
+    "---",
+    "",
+    "## D.2 未入矩阵的分类",
+    "",
+    "| 分类 | 条数 | 说明 |",
+    "|---|---|---|",
+    ...kindRows,
+    "",
+    "> **「未展开的参数」是唯一一类需要读者自己留意的**：",
+    "> R48 确实有那个限值，但本报告没有把它做成矩阵行 —— 绝大多数是其余灯具",
+    "> 的位置/可见度档位（横向距外缘 400mm、内缘间距 600mm、最小离地高度 250mm 之类），",
+    "> 它们与已收录的参数在法规上同型，只是装置不同。",
+    "> 需要逐条查这些的话，D.3 给了条款号与页码，可直接回原文。",
+    "",
+    "---",
+    "",
+    "## D.3 逐条全量清单",
+    "",
+    "| R48 条款 | 页码 | 数值 | 单位 | 原文 | 第 12 章 |",
+    "|---|---|---|---|---|---|",
+    ...itemRows,
+  ].join("\n");
+}
+
 function buildAppendixC(topicColumns: any[]): string {
   if (!topicColumns.length) return "_(待生成：请先运行 verify_claims.py)_";
   const parts: string[] = [
@@ -1656,7 +2340,7 @@ function buildAppendixC(topicColumns: any[]): string {
         continue;
       }
       const pageCell = c.status === "verified" ? `${c.actualPage} ✓` : `未核验 ⚠`;
-      const excerpt = c.excerpt.length > 160 ? c.excerpt.slice(0, 160) + "…" : c.excerpt;
+      const excerpt = clipExcerpt(c.excerpt, 160);
       parts.push(`| ${lb} | ${cell(c.clause || "—")} | ${cell(pageCell)} | ${cell(excerpt)} |`);
     }
     parts.push("");
@@ -1681,10 +2365,10 @@ function buildAppendixC(topicColumns: any[]): string {
  * comparison data. Web-service entry point: reportGenerator can call this
  * directly after fetching extraction/verification from the Python sidecar.
  */
-export function buildMinerUReport(
+export async function buildMinerUReport(
   data: Record<string, any>,
   verified: any,
-): { report: RenderableReport; indicatorResults: any[] } {
+): Promise<{ report: RenderableReport; indicatorResults: any[] }> {
   console.log("[v6] building report...");
   console.log(`[v6] docs: ${Object.keys(data).join(", ")}`);
 
@@ -1802,7 +2486,22 @@ export function buildMinerUReport(
     if (anchor < 0) {
       console.warn("[v6] §11.3.3 参数对照矩阵 not inserted — no '### 11.4' anchor in chapter 11");
     } else {
-      ch11Md = ch11Md.slice(0, anchor) + matrixMd + "\n\n" + ch11Md.slice(anchor);
+      // Cross-link, not a fourth copy. §11.3.3 is the exhaustive A-vs-B diff
+      // (45 rows, every valueDiff); chapter 12 is the three-version matrix.
+      // Putting them side by side without saying which is which is how a reader
+      // ends up treating the 45-row list as a three-way comparison. The note goes
+      // directly under the heading, not before it.
+      const nl = matrixMd.indexOf("\n");
+      const withNote =
+        nl > 0
+          ? matrixMd.slice(0, nl + 1) +
+            "\n> **本节范围：仅 A 与 B 两版的逐条差异**，不含 C（UN R48-09）。" +
+            "需要三版取值对照请看**第 12 章 参数矩阵** —— 那里按参数给出 A/B/C 各自的取值、条款与页码。\n" +
+            ">\n> ⚠ 本表的「映射强度」列由主题级原文摘录推得，**不能作为 R48 等价性判据**；" +
+            "C 的定量条款请以第 12 章矩阵为准。\n" +
+            matrixMd.slice(nl + 1)
+          : matrixMd;
+      ch11Md = ch11Md.slice(0, anchor) + withNote + "\n\n" + ch11Md.slice(anchor);
       console.log(`[v6] §11.3.3 参数对照矩阵 inserted (${matrixMd.length} chars) before §11.4`);
     }
   }
@@ -1841,16 +2540,22 @@ export function buildMinerUReport(
   // Chapters 2-10 from MinerU headings
   const chapterTitles = ["三份法规基本信息", "章节体系总览", "术语与定义", "一般要求", "前照灯规定", "信号灯与反射器", "光度与色度要求", "测试与检验方法", "附录与实施"];
   const refDiff = { added: [], removed: [], kept: [] }; // filled below if textA/textB ready
+  // The matrix is built BEFORE the narrative chapters on purpose: chapters 4–9
+  // now quote their three-way values from it instead of judging A vs B by
+  // prose similarity, which graded all 25 topics "实质差异" and told the
+  // reader nothing.
+  const corpus = await getSourceCorpus(data);
+  const { rows: matrixRows, stats: matrixStatsOut } = buildParamMatrix(data, corpus);
   const narrativeChapters = chapterTitles.map((t, i) => ({
     id: i + 2,
     title: t,
-    markdown: buildNarrativeFromHeadings(data, i + 2, t, verified.topicColumns, diffRefs(textA, textB)),
+    markdown: buildNarrativeFromHeadings(data, i + 2, t, verified.topicColumns, diffRefs(textA, textB), matrixRows),
   }));
 
   // 方法学章节已整体移除（客户报告只保留三个 PDF 的内容）
-  const ch12 = build12_quantitativeTables(data);
+  const ch12 = buildChapter12Matrix(matrixRows, matrixStatsOut);
   const ch13 = build13_lampColorDiff(data);
-  const ch14 = build14_clauseTextDiff(data);
+  const ch14 = build14_clauseTextDiff(data, verified?.topicColumns, matrixRows);
 
   // 写作改进 1: executive summary as chapter 0 (rendered before ch1)
   const execSummary = buildExecSummary({
@@ -1873,7 +2578,7 @@ export function buildMinerUReport(
         { id: 11, title: "关键变化点总结", sections: ["速查表", "新增条款", "删除条款", "重大修订(数值级·机器核验)", "数据指标变化(GB4785 表11.6 核验)", "新概念", "修订重点", "影响分析", "表述/术语候选差异（工程师复核清单）"] },
         { id: 12, title: "A/B/C 量化参数表横向对比", sections: TABLE_CATEGORIES.map((c) => c.label) },
         { id: 13, title: "灯具光色分配逐行 A vs B 对比", sections: ["A 新增灯具", "B 独有灯具", "光色发生变化", "完整对照表"] },
-        { id: 14, title: "条款正文逐句 A vs B 对比", sections: [] },
+        { id: 14, title: "条款正文逐句 A vs B 对照（附 C 章节级对应与三版取值）", sections: [] },
       ],
       appendices: [
         { id: "A", title: "A/B/C 原始表格汇编" },
@@ -1887,13 +2592,21 @@ export function buildMinerUReport(
       { id: 11, title: "关键变化点总结", markdown: ch11Md },
       { id: 12, title: "A/B/C 量化参数表横向对比", markdown: ch12 },
       { id: 13, title: "灯具光色分配逐行 A vs B 对比", markdown: ch13 },
-      { id: 14, title: "条款正文逐句 A vs B 对比", markdown: ch14 },
+      { id: 14, title: "条款正文逐句 A vs B 对照（附 C 章节级对应与三版取值）", markdown: ch14 },
     ],
     appendices: [
       { id: "A", title: "A/B/C 原始表格汇编", markdown: buildAppendixA(data) },
       { id: "B", title: "图片、公式与标题索引", markdown: buildAppendixB(data) },
       { id: "C", title: "A|B|C 三版本主题对照（逐条核验）", markdown: buildAppendixC(verified.topicColumns) },
+      { id: "D", title: "UN R48 §6 量化条款全量清单", markdown: buildAppendixD(data, matrixRows) },
     ],
+    // Structured twin of chapter 12. The chapter's markdown is a rendering;
+    // this is the data. The web client, the delivery gate and any future
+    // exporter read this, so there is exactly one matrix — no second parser
+    // scraping markdown back out of the chapter (which is how the old
+    // "核心参数总表" ended up with 49 源数据未提供 cards).
+    parameterMatrix: matrixRows,
+    parameterMatrixStats: matrixStatsOut,
     sourceDocuments: [
       { label: "A", name: "GB 4785 草案 V4.3.5（103 页）", meta: "原文 PDF" },
       { label: "B", name: "GB 4785-2019（81 页）", meta: "原文 PDF" },
@@ -1927,7 +2640,7 @@ async function main() {
     console.log("[v6] WARNING: facts.json missing — run verify_claims.py first");
   }
 
-  const { report } = buildMinerUReport(data, verified);
+  const { report } = await buildMinerUReport(data, verified);
 
   console.log("[v6] rendering PDF via Chromium (pass 1 — TOC page discovery)...");
   const pass1Pdf = await renderPdfFromReport(report);
@@ -1946,27 +2659,18 @@ export async function finalizePdf(report: RenderableReport, pass1: Buffer): Prom
   // re-renders with the page map so the TOC shows real page numbers
   // (TOC row height is unchanged → chapter offsets stay stable).
   try {
-    // dist/ may not exist when the report is generated from the API rather
-    // than from a CLI run, and writeFileSync then throws ENOENT — which used to
-    // abort the whole two-pass block and silently ship a PDF whose TOC lists no
-    // page numbers and whose chapters have no `page` for bookmark injection.
-    const pass1Path = path.join(ROOT, "dist", "_pass1.pdf");
-    fs.mkdirSync(path.dirname(pass1Path), { recursive: true });
-    fs.writeFileSync(pass1Path, pdf);
-    const { execFileSync } = await import("node:child_process");
-    const json = execFileSync("python", [path.join(ROOT, "extract_toc_pages.py"), pass1Path], { encoding: "utf8", windowsHide: true });
-    const pageMap = JSON.parse(json) as Record<string, number>;
-    const match = (t: string): number | undefined =>
-      pageMap[t] ?? Object.entries(pageMap).find(([k]) => t.includes(k) || k.includes(t))?.[1];
-    let hits = 0;
-    for (const c of report.chapters) { const pg = match(c.title); if (pg) { c.page = pg; hits++; } }
-    for (const a of report.appendices ?? []) { const pg = match(a.title); if (pg) { a.page = pg; hits++; } }
-    fs.rmSync(pass1Path, { force: true });
-    console.log(`[v6] TOC pages resolved: ${hits} entries`);
-    console.log("[v6] rendering PDF via Chromium (pass 2 — with TOC page numbers)...");
-    pdf = await renderPdfFromReport(report);
+    // NOTE: the incoming buffer is already the final artifact. Both callers
+    // pass a renderPdfFromReportV8() result, which resolves chapter pages from
+    // injected anchors and stamps its own bookmark outline. This block used to
+    // re-render with the OLD renderPdfFromReport(), which is how the
+    // API-generated PDF ended up with the v6.2 printed TOC whose 17 entries all
+    // read "11" while a locally-rendered PDF of the same report had a correct
+    // one — two renderers for one document, disagreeing. `npm run verify`'s
+    // "printed TOC page numbers resolve to real chapter pages" gate now covers
+    // whichever buffer actually ships.
+    console.log("[v6] keeping the V8 render as-is (TOC pages + bookmarks already resolved)");
   } catch (e) {
-    console.warn("[v6] TOC two-pass skipped, keeping pass-1 PDF:", String(e).slice(0, 300));
+    console.warn("[v6] finalize step skipped, keeping incoming PDF:", String(e).slice(0, 300));
   }
   fs.writeFileSync(OUT_PDF, pdf);
   console.log(`[v6] wrote ${OUT_PDF} (${(pdf.length / 1024).toFixed(1)} KB)`);

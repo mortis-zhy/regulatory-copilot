@@ -39,6 +39,12 @@ const ENTRIES = [
   ["server/reports/typedTables.ts", "dist/typedTables.js"],
   ["server/reports/reportGenerator.ts", "dist/reportGenerator.js"],
   ["server/reports/closureLedger.ts", "dist/closureLedger.js"],
+  // reportV6 owns the chapter builders and the executive summary. It is
+  // bundled into dist/index.js, but index.js does not re-export it, so the
+  // offline rebuild path (rebuild_report.mjs) could not reach buildMinerUReport.
+  ["server/reports/reportV6.ts", "dist/reportV6.js"],
+  ["server/reports/parameterMatrix.ts", "dist/parameterMatrix.js"],
+  ["server/_core/deliveryGate.ts", "dist/deliveryGate.js"],
 ];
 
 const SHARED = {

@@ -213,6 +213,17 @@ function findHorizontalVersionCols(header: string[]): { A: number; B: number; C:
   const C = idx("C");
   if (A < 0 || B < 0 || C < 0) return null;
   if (new Set([A, B, C]).size !== 3) return null;
+  // The card layout shows ONE label and ONE value per row, so it can only carry
+  // a topic column plus A/B/C. Every extra column is silently dropped — and for
+  // `| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |` the two dropped
+  // columns are the unit and the verdict, i.e. the whole point of the table.
+  // Chapter 12.1 was printing 73 parameters as three unaligned number lists with
+  // no units and no A=C≠B call-out, which is what 「只有罗列，没有比较」 meant.
+  //
+  // Measured on this report: every table that reached the card layout had 6 or 7
+  // columns; the only 4-column horizontal tables carry no A/B/C at all and were
+  // already rejected above. Anything wider belongs in a plain table.
+  if (header.length !== 4) return null;
   return { A, B, C };
 }
 

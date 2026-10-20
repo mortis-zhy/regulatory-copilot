@@ -11,6 +11,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerAgentRoutes } from "./agentRoutes";
+import { registerParameterProposalRoutes, PROJECT_ROOT } from "./parameterProposals";
+import path from "node:path";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +42,34 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerAgentRoutes(app);
+  registerParameterProposalRoutes(app);
+  // The confirmation page is a single static file under `web/`. It is served
+  // ahead of the SPA fallback so it does not silently resolve to index.html.
+  //
+  // Matched by DECODED path, not by a route literal: express compares routes
+  // against `req.path`, which is the raw — still percent-encoded — pathname.
+  // So `app.get("/参数提议确认.html")` never fires for a browser or curl,
+  // both of which send `/%E5%8F%82%E6%95%B0…`. The symptom was a 200 carrying
+  // the SPA shell, i.e. a page that looks fine and is the wrong document.
+  const CONFIRM_PAGE = path.resolve(PROJECT_ROOT, "web", "参数提议确认.html");
+  const sendConfirmPage = (_req: unknown, res: any) => {
+    // Explicit 404 rather than letting sendFile fall through to the SPA
+    // fallback — otherwise a moved file reads as a working page.
+    if (!nodeFs.existsSync(CONFIRM_PAGE)) {
+      return res.status(404).send(`web/参数提议确认.html 不存在于 ${PROJECT_ROOT}`);
+    }
+    res.sendFile(CONFIRM_PAGE);
+  };
+  app.use((req, res, next) => {
+    let decoded = req.path;
+    try {
+      decoded = decodeURIComponent(req.path);
+    } catch {
+      /* 非法百分号编码：按原样比 */
+    }
+    if (decoded === "/参数提议确认.html" || req.path === "/proposals") return sendConfirmPage(req, res);
+    next();
+  });
   // tRPC API
   app.use(
     "/api/trpc",

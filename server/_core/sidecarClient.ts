@@ -175,5 +175,5 @@ export async function buildSidecarReport(
   const vd = verified ?? {
     numericChanges: [], topicColumns: [], stats: {}, renumberedOnly: [],
   };
-  return buildMinerUReport(extracted, vd);
+  return await buildMinerUReport(extracted, vd);
 }

@@ -895,19 +895,230 @@ def _load_manual_findings() -> list[dict]:
     return findings
 
 
+def _pdf_page_disagrees(label: str, page_label: str, excerpt: str) -> str:
+    """Return a reason string when the SOURCE PDF does not carry this excerpt on this page.
+
+    `find_page` works on MinerU's own page-tagged text. MinerU's page boundaries
+    and the source PDF's are not the same thing, so a page resolved against
+    MinerU can name a page in the PDF that never contains the quote — and the
+    report prints a ✓ next to it. The reader's only way to check is to open
+    that page, so a page that fails the check must not be presented as verified.
+
+    Multi-probe: a single prefix is too strict (MinerU drops and reorders
+    fragments, and excerpts are normalised), but the quote cannot be nowhere on
+    the page either.
+    """
+    m = re.search(r"(\d+)", page_label or "")
+    if not m:
+        return "页码无法解析"
+    n = int(m.group(1))
+    pages = _source_pdf_pages(label)
+    if pages is None:
+        return ""  # no source PDF available — do not punish what we cannot check
+    if not (1 <= n <= len(pages)):
+        return f"页码 {n} 越界（源 PDF 共 {len(pages)} 页）"
+    e = _flat_cn_alnum(excerpt or "")
+    if not e:
+        return ""
+    for L in (20, 14, 10, 8):
+        for s in (0, len(e) // 2, max(0, len(e) - L)):
+            if len(e) >= L and e[s : s + L] in pages[n - 1]:
+                return ""
+    return f"第{n}页在源 PDF 中找不到该摘录"
+
+
+_PDF_PAGE_CACHE: dict = {}
+
+
+def _source_pdf_pages(label: str) -> list[str] | None:
+    """Flattened per-page text of the uploaded PDF for `label`, or None."""
+    if label in _PDF_PAGE_CACHE:
+        return _PDF_PAGE_CACHE[label]
+    out = None
+    try:
+        import fitz  # PyMuPDF
+
+        def _fp(s: str, take: int = 2000) -> set:
+            c = _flat_cn_alnum(s)[:take]
+            return {c[i : i + 2] for i in range(len(c) - 1)}
+
+        # Identify by content, not by page count — see parameterMatrix.ts, where
+        # counting pages is what made two documents resolve to the same file.
+        # Sampling only page 1 scores A and B 0.234 vs 0.233 — indistinguishable,
+        # because GB 4785's draft and its 2019 predecessor share a cover. Taking
+        # five pages across the document separates them (0.445 vs 0.346).
+        want = _fp(_mineru_text(label))
+        best, best_score, samples = None, 0.0, []
+        for f in sorted((ROOT / "uploaded-docs").glob("*.pdf")):
+            try:
+                d = fitz.open(f)
+                n = d.page_count
+                pick = sorted({0, 2, n // 3, n - 2, n - 1})
+                samples.append((_fp("".join(d[i].get_text() for i in pick)), d))
+            except Exception:
+                continue
+        for grams, d in samples:
+            score = (2 * len(want & grams) / (len(want) + len(grams))) if want and grams else 0.0
+            if score > best_score:
+                if best is not None:
+                    best.close()
+                best, best_score = d, score
+            else:
+                d.close()
+        if best is not None and best_score >= 0.2:
+            out = [_flat_cn_alnum(best[i].get_text()) for i in range(best.page_count)]
+            best.close()
+    except Exception:
+        out = None
+    _PDF_PAGE_CACHE[label] = out
+    return out
+
+
+def _mineru_text(label: str) -> str:
+    try:
+        return json.load(open(MINERU, encoding="utf-8")).get(label, {}).get("fullText", "")
+    except Exception:
+        return ""
+
+
+def _flat_cn_alnum(s: str) -> str:
+    return re.sub(r"[^0-9A-Za-z一-鿿]", "", s or "")
+
+
 def load_extract_cache():
-    """Load per-topic A/B/C extraction (24 topics each)."""
+    """Load per-topic A/B/C extraction (24 topics each).
+
+    Two cache files can carry the same label — they are separate LLM extraction
+    runs over the same PDF, and they disagree: for B's 慢行灯/限速灯 one says
+    第56页 with a 配备/数量 excerpt, the other 第52页 with a 电路连接 excerpt.
+    `docs[label] = d` used to be last-wins, so WHICH one landed in the report
+    depended on the order the filesystem enumerated the directory. The symptom
+    was a topic whose page and status flipped between two runs of this script
+    with nothing on disk changing: "第4页 / verified" one time, "/ missing" the
+    next, for a clause that is on neither page.
+
+    Selection is therefore explicit — newest file wins — and every shadowed
+    file is named on stdout. A silently-arbitrary pick is the same defect as a
+    silently-arbitrary page number, one layer further up.
+    """
     docs = {}
+    by_label: dict[str, list[tuple[float, str]]] = {}
     for f in glob.glob(str(CACHE_DIR / "v3-*.json")):
-        d = json.load(open(f, encoding="utf-8"))
-        docs[d.get("label", "")] = d
+        try:
+            d = json.load(open(f, encoding="utf-8"))
+        except Exception as e:
+            print(f"  extract-cache: 跳过 {Path(f).name}（解析失败: {e}）")
+            continue
+        by_label.setdefault(d.get("label", ""), []).append((os.path.getmtime(f), f))
+
+    for label, entries in sorted(by_label.items()):
+        entries.sort()
+        chosen = entries[-1][1]
+        docs[label] = json.load(open(chosen, encoding="utf-8"))
+        if len(entries) > 1:
+            shadowed = [Path(f).name for _, f in entries[:-1]]
+            print(
+                f"  ⚠ extract-cache: label={label} 有 {len(entries)} 份缓存，"
+                f"采用最新的 {Path(chosen).name}；被覆盖（内容不一致，需人工确认哪份对）: "
+                + ", ".join(shadowed)
+            )
     return docs
+
+def _collapse_doubled_clause(num: str) -> str:
+    """`6.14.4.6.14.4.1` → `6.14.4.1`.
+
+    MinerU merged some section headings into the first clause, so the text
+    carries the clause, then the section heading, then the real clause again.
+    Longest-match extraction yields a number that does not exist in R48; the
+    reader would look it up and find nothing.
+    """
+    parts = (num or "").split(".")
+    for cut in range(1, len(parts)):
+        head, tail = parts[:cut], parts[cut:]
+        if len(head) >= 2 and head[:2] == tail[:2]:
+            return ".".join(tail)
+    return num
+
+
+def _c_boilerplate(clause: str, excerpt: str) -> bool:
+    """True when C's excerpt is the Presence/Number/Arrangement样板.
+
+    Both halves matter. The clause number alone (`6.5.1`) is decisive when the
+    excerpt is empty, but the extractor sometimes reports the *section* (`6.5`)
+    while quoting `6.5.1. Presence: …` — so the excerpt text is checked too.
+    """
+    c = clause or ""
+    if re.match(r"^6\.\d+\.[123]\b", c):
+        return True
+    return bool(re.match(r"^\s*6\.\d+\.\d*\.?\s*(Presence|Number|Arrangement)\b", excerpt or "", re.I))
+
+
+# R48 value units. Deliberately explicit: `.5` in a clause number is not a
+# measurement, and `m` alone would match "5 m" inside prose that is not a limit.
+_C_VALUE = re.compile(
+    r"\d+(?:[.,]\d+)?\s*(?:mm|cd|cd/mm2|cd/m2|°|lx|Hz|km/h|km/s|mrad|nm)\b", re.I)
+
+
+def _c_quantitative_clause(ctext: str, clause: str):
+    """First quantitative clause in the SAME §6.x section as `clause`.
+
+    Returns (excerpt, clause, page) or None. Preference order is the order an
+    engineer reads them: .4 Position (where it goes), then .7 other
+    requirements (how it behaves), then anything else above .3. Falls back
+    to None rather than guessing — 宁可空着，不可错着.
+    """
+    m = re.match(r"^6\.(\d+)\b", clause or "")
+    if not m:
+        return None
+    sec = "6." + m.group(1)
+    if not ctext:
+        return None
+    # Bound the search to this section so 6.5's answer can't come from 6.6.
+    # `[| \t]*`, NOT `[|\s]*`: `\s` includes the newline, so `^[|\s]*` can
+    # slide down several lines and land on a different section's heading.
+    # That made 6.13 resolve to a clause in 6.14 and made 6.6/6.7/6.8 return
+    # None — the boundaries were matching, just in the wrong places.
+    head_re = r"(?m)^[| \t]*%s(?!\d)(?:\.\s|\.(?=%s)|\s|$)"
+    start = re.search(head_re % (re.escape(sec), re.escape(sec)), ctext)
+    if not start:
+        return None
+    rest = ctext[start.start():]
+    later = "|".join(str(int(m.group(1)) + k) for k in range(1, 12))
+    nxt = re.search(head_re % (r"6\.(?:%s)" % later, r"6\.(?:%s)" % later), rest)
+    body = rest[: nxt.start()] if nxt else rest
+
+    best = None
+    for cm in re.finditer(r"(?m)^[| \t]*(6\.\d+\.\d+(?:\.\d+)*)\.?\s*([^\n]{0,200})", body):
+        num = cm.group(1)
+        if re.match(r"^%s\.[123]\b" % re.escape(sec), num):
+            continue  # Presence / Number / Arrangement — the boilerplate
+        # MinerU renders R48 as a table: the clause number sits in one column
+        # and its text — including the value — on the FOLLOWING lines. Testing
+        # only the same line found 0 candidates in 6.6/6.7/6.8/6.13.
+        window = body[cm.start(): cm.start() + 320]
+        if not _C_VALUE.search(window):
+            continue
+        num = _collapse_doubled_clause(num)
+        depth = num.count(".")
+        rank = 0 if num.startswith(sec + ".4") else 1 if num.startswith(sec + ".7") else 2
+        cand = (rank, -depth, num, cm.start())
+        if best is None or cand < best[0]:
+            best = (cand, num, window)
+    if not best:
+        return None
+    _key, num, excerpt = best
+    pg = find_page(ctext, excerpt)
+    if not pg:
+        return None
+    return re.sub(r"\s+", " ", excerpt).strip()[:220], num, pg
+
 
 def build_topic_columns(cache_docs, texts):
     """A|B|C three-column comparison per topic with excerpt verification.
     Topic names are normalised (spaces stripped) so variants like
     '追尾警告信号 Vr 表' / '追尾警告信号Vr表' merge into one row."""
     labels = ["A", "B", "C"]
+    page_rejected: list[str] = []
     topic_names = []
     seen_keys = set()
     for lb in labels:
@@ -951,6 +1162,7 @@ def build_topic_columns(cache_docs, texts):
             excerpt = re.sub(r"<[^>]+>", "", t.get("excerpt") or "")[:200]  # inline tags leak as literal text
             clause = t.get("clause", "")
             claimed_page = t.get("page", "")
+            upgraded = False
             # --- C definition-style excerpt upgrade ---
             # If A/B carry an installation/fitting requirement ("配备") but C's
             # excerpt is a terminology definition ("X means ..."), swap C's
@@ -972,6 +1184,35 @@ def build_topic_columns(cache_docs, texts):
                         if cand_page:
                             excerpt = cand
                             claimed_page = claimed_page or cand_page
+            # --- C boilerplate upgrade (SKILL 坑 1 at the topic layer) ---
+            # R48 orders every lamp section as §6.x.1 Presence / §6.x.2 Number /
+            # §6.x.3 Arrangement, so a topic-name match lands on that boilerplate
+            # by construction. Measured on the delivered PDF: 12 of 25 C excerpts
+            # (48%) were §6.x.1 Presence, and chapter 7 had 9 of 11. The client
+            # was reading "转向信号灯 · R48 要求：必须配备" — true, and useless.
+            #
+            # Fix: skip .1/.2/.3 and take the first QUANTITATIVE clause in the
+            # same section (§6.x.4 Position / §6.x.7 other requirements), i.e.
+            # one that carries a value with a unit. Deterministic, and the
+            # excerpt still has to survive the source-PDF check below, so a
+            # wrong pick degrades to 未核验 rather than shipping.
+            if lb == "C" and _c_boilerplate(clause, excerpt):
+                up = _c_quantitative_clause(stripped.get("C", ""), clause)
+                if up:
+                    excerpt, clause, claimed_page = up
+                    upgraded = True
+                else:
+                    # No quantitative clause in that section — say so. §6.6
+                    # (hazard) and §6.8 (plate lamp) genuinely carry only
+                    # Presence/Number, and §6.1 is R48's "no individual
+                    # specifications" chapter. Printing "Presence: Mandatory"
+                    # reads as though that were the whole requirement; an
+                    # explicit statement is the honest and more useful cell.
+                    sec = re.match(r"^(6\.\d+)", clause or "")
+                    sec = sec.group(1) if sec else "该章"
+                    excerpt = ("R48 %s 对本主题只有配备/数量的规定，没有量化限值条款。"
+                               "原文摘录为：%s" % (sec, re.sub(r"\s+", " ", excerpt).strip()[:150]))
+                    upgraded = True
             # verify excerpt against MinerU text (tag-stripped corpus)
             actual_page = find_page(stripped.get(lb, ""), excerpt)
             if not actual_page and clause:
@@ -994,8 +1235,14 @@ def build_topic_columns(cache_docs, texts):
             cnums = re.findall(r"\d+(?:\.\d+)+", clause or "")
 
             def _page_ok(seg: str) -> bool:
-                if re.search(r"目\s*次|目录|\.{3,}", seg):
-                    return False  # TOC echo carries every topic + clause
+                # The table of contents is not the only page that enumerates
+                # every clause number. GB 4785-2019's 起草说明 on PDF page 4
+                # lists "…增加了慢行灯…(见3.9.29、5.25,3.9.24、5.20…)" — which
+                # satisfied every gate below and made B's 慢行灯 resolve to
+                # page 4, a foreword mention that is not the clause at all.
+                # Front matter has to be rejected the same way the TOC is.
+                if re.search(r"目\s*次|目录|\.{3,}|起草说明|前\s*言|引\s*言|修\s*订|foreword|introduction", seg):
+                    return False
                 ch = _topic_chunk(topic)
                 # Long paraphrase topics ("灯具光色对应表") never appear verbatim
                 # on the page (the table header says "灯具名称") — skip the
@@ -1018,19 +1265,40 @@ def build_topic_columns(cache_docs, texts):
                         actual_page = cand
                         break
             status = "verified" if actual_page else "missing"
+            if status == "verified":
+                why = _pdf_page_disagrees(lb, actual_page, excerpt)
+                if why:
+                    # The page number was located in MINERU's text, but the
+                    # reader opens the source PDF. When the two disagree the
+                    # ✓ is a citation to a page that does not contain the
+                    # quote — four such cells existed (A 安装位置与几何可见度
+                    # 第102页, B 光色与色度坐标表 / 灯具光色对应表 第16页,
+                    # C 自动切换前照灯条件表 第65页). A wrong page number is
+                    # worse than an admitted gap: it looks checkable and is not.
+                    status = "missing"
+                    actual_page = ""
+                    page_rejected.append(f"{lb}/{topic} ({why})")
             row[lb] = {
                 "clause": clause,
                 "claimedPage": claimed_page,
                 "actualPage": actual_page,
                 "excerpt": excerpt,
                 "status": status,
+                # True when the LLM excerpt was Presence/Number boilerplate and
+                # was swapped for a quantitative clause. The report labels it,
+                # so the reader knows C's quote is the installing/behaviour
+                # requirement rather than the lamp merely existing.
+                "upgradedFromBoilerplate": upgraded,
             }
-            stats["total"] += 1
             if status == "verified":
                 stats["verified"] += 1
             else:
                 stats["missing"] += 1
         cols.append(row)
+    if page_rejected:
+        print(f"  ⚠ 源 PDF 页码复核：{len(page_rejected)} 个 ✓ 被证伪并降级为未核验（页码指向的源 PDF 页面找不到该摘录）")
+        for r in page_rejected:
+            print(f"     - {r}")
     return cols, stats
 
 def run_verify() -> dict:

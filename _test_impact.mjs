@@ -35,7 +35,11 @@ const checks = {
   "test text": html.includes("4° 对称性"),
   "cert text": html.includes("1 道工序"),
   "risk chip": html.includes("风险等级") && html.includes("中（GB 4785"),
-  "C placeholder card": html.includes("源数据未提供"),
+  // Was: html.includes("源数据未提供"). The third triptych card used to shout
+  // that phrase whenever C had no matching clause row — 48 times in the
+  // delivered PDF, which reads as a broken table rather than an honest gap.
+  // It now states the absence quietly.
+  "C absent-clause note": html.includes("无对应条款行"),
   "verdict strip red": html.includes('verdict-strip v-red') && html.includes("实质差异"),
   "triptych present": html.includes('class="triptych"'),
 };

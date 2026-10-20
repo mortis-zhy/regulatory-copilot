@@ -20,6 +20,14 @@ export type RenderableReport = {
   appendices?: ReportAppendix[];
   sourceDocuments?: Array<{ label: string; name: string; meta: string }>;
   generatedAt?: string;
+  /**
+   * Structured parameter matrix (parameterMatrix.ts). Present when the report
+   * was built by buildMinerUReport; absent for a client-POSTed report. The
+   * renderer prefers it over scraping chapter markdown, so the cover-page
+   * parameter index and chapter 12 cannot disagree.
+   */
+  parameterMatrix?: unknown[];
+  parameterMatrixStats?: unknown;
 };
 
 /** Escape HTML special characters. */

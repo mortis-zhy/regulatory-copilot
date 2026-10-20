@@ -156,6 +156,14 @@ function fixRadicals(s: string): string {
 
 function esc(s: string): string {
   return fixRadicals(s ?? "")
+    // MinerU writes a table cell's line break as an HTML `<br>`. Those strings
+    // ride along inside the excerpts and used to print as a literal `<br>` on
+    // the page — 110 of them in the ⑫ build, and the gate's raw-tag regex
+    // (`sub|sup|i|b|em|strong`) did not cover `br`, so it stayed green.
+    // Turn them into real newlines: the cell renderer already splits
+    // multi-line cells into `<br>`-separated lines, so a newline is the
+    // right shape here (and `cellHtml` re-escapes nothing it should not).
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -255,9 +263,35 @@ function renderMath(input: string): string {
   return out;
 }
 
+/**
+ * 把 MinerU 产生的 `<sub>` / `<sup>` 还原成真标签。
+ *
+ * `esc()` 先把 `<` 转义了，所以 `N<sub>3</sub>G` 一路以 `&lt;sub&gt;` 的形式
+ * 走到纸上 —— 客户 PDF 里数得出来 29 个裸 `<sub>`、5 个 `<sup>`，
+ * 还有 15 个 `\mathrm`（LaTeX 定界符没配对时 `renderMath` ��会漏掉）。
+ *
+ * 内容限定为字母数字与少量符号：这些标签全部来自 MinerU 的下标/上标输出，
+ * 白名单保证即使上游混进别的东西也不会变成可执行标记。
+ */
+function restoreMineruScripts(html: string): string {
+  const safe = "[A-Za-z0-9+\\-./\\s]*";
+  return html
+    .replace(new RegExp(`&lt;sub&gt;(${safe})&lt;/sub&gt;`, "g"), "<sub>$1</sub>")
+    .replace(new RegExp(`&lt;sup&gt;(${safe})&lt;/sup&gt;`, "g"), "<sup>$1</sup>")
+    // Unpaired `$` leaves the macro text outside any .math span; strip the
+    // macro names but keep their argument, so `${\mathrm{W}}_{12}$` reads `W12`.
+    // Deliberately NOT a blanket strip of `\` or `$`: those characters also
+    // occur legitimately (regex samples in backticks, currency), and a global
+    // delete would eat them. Only sequences that are unambiguously LaTeX go.
+    .replace(/\\(?:mathrm|mathbf|mathit|text|dfrac|frac|left|right|times|cdot|quad|qquad|ge|le)\s*/g, "")
+    .replace(/[$^_]\s*\{([^{}]{0,40})\}/g, "$1")
+    .replace(/[$^_]\{([^{}]{0,40})\}/g, "$1");
+}
+
 function inlineMd(s: string): string {
   let t = esc(s ?? "");
   t = renderMath(t);
+  t = restoreMineruScripts(t);
   t = t.replace(/`([^`\n]+)`/g, "<code>$1</code>");
   t = t.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
   t = t.replace(/\[新增\]/g, '<span class="mk mk-add">新增</span>');
@@ -506,7 +540,7 @@ function renderVerdict(text: string): string {
 // 6. Master Parameter Index (header-driven, numeric-guarded)
 // ---------------------------------------------------------------------------
 
-type MasterParamRow = { param: string; aValue: string; bValue: string; cValue: string; note: string; src: string };
+type MasterParamRow = { param: string; values: Record<string, string>; note: string; src: string };
 
 const PARAM_PATTERNS = [/主题·参数/, /参数/, /项目/, /指标/, /^主题$/, /^装置$/, /^类别$/, /新概念/];
 
@@ -514,7 +548,72 @@ function findCol(header: string[], re: RegExp): number {
   return header.findIndex((h) => re.test((h ?? "").replace(/\*/g, "").trim()));
 }
 
-function extractMasterParams(chapters: ReportChapter[]): MasterParamRow[] {
+/**
+ * Prefer the structured matrix carried on the report; fall back to scraping
+ * chapter markdown only when it is absent (a client-POSTed report).
+ *
+ * The scraper existed before parameterMatrix.ts and could only find tables
+ * whose header happened to say "A 草案" / "B 现行" / "C 参照" — so rows whose
+ * C column was an em-dash rendered as 源数据未提供, 49 times across the
+ * delivered PDF, while the real three-version values sat unused in chapter 12.
+ * Two parsers for one dataset is how they drift apart.
+ */
+/** Column headers for the master-param table, in a stable order. */
+const MP_COLORS = ["#a17334", "#0c1a2b", "#3a6b4f", "#7a4b8f", "#8f5b2e", "#2f6f7a"];
+
+/**
+ * Which version columns a matrix row carries. The union across rows, ordered
+ * A, B, C first and any extra alphabetically — the display order of the spec
+ * metadata, so a fourth document lands after C rather than being sorted in.
+ */
+function cellsKeys(cells: Record<string, any>, row?: any): string[] {
+  const present = new Set(Object.keys(cells ?? {}));
+  if (row) for (const k of ["A", "B", "C"]) if (row[k]) present.add(k);
+  const known = ["A", "B", "C"].filter((k) => present.has(k));
+  const extra = [...present].filter((k) => !known.includes(k)).sort();
+  return [...known, ...extra];
+}
+
+function extractMasterParams(
+  chapters: ReportChapter[],
+  matrix?: unknown[],
+): MasterParamRow[] {
+  if (Array.isArray(matrix) && matrix.length) {
+    const rows: MasterParamRow[] = [];
+    // The version list is the union across rows rather than being assumed to
+    // be A/B/C: a report carrying a fourth document must render a fourth
+    // column, and `cells` is the only shape that can carry one. `r?.[k]` is
+    // kept as a fallback so a report persisted by the pre-`cells` build still
+    // renders.
+    const keys = cellsKeys(
+      matrix.reduce<Record<string, any>>((acc, r) => Object.assign(acc, (r as any)?.cells ?? {}), {}),
+      matrix[0] as any,
+    );
+    for (const raw of matrix) {
+      const r = raw as any;
+      const cells: Record<string, any> = r?.cells ?? {};
+      const fmt = (c: any): string => {
+        if (!c || c.status !== "verified") return "";
+        const nums = Array.isArray(c.nums) && c.nums.length ? c.nums.join(" / ") : "";
+        const src = [c.clause, c.page].filter(Boolean).join(" · ");
+        return [nums, src].filter(Boolean).join("（") + (src ? "）" : "");
+      };
+      const values: Record<string, string> = {};
+      for (const k of keys) values[k] = fmt(cells[k] ?? r?.[k]) || "—";
+      if (Object.values(values).every((v) => v === "—")) continue;
+      rows.push({
+        param: String(r?.name ?? ""),
+        values,
+        note: String(r?.note ?? ""),
+        src: `第 12 章 · ${r?.family ?? ""}`,
+      });
+    }
+    if (rows.length) return rows;
+  }
+  return extractMasterParamsFromMarkdown(chapters);
+}
+
+function extractMasterParamsFromMarkdown(chapters: ReportChapter[]): MasterParamRow[] {
   const seen = new Map<string, MasterParamRow>();
   // Quantitative guard: digit next to a unit, or a decimal number.
   const quantitative = /(\d+(\.\d+)?\s*(mm|cm|km\/h|m\b|cd|Hz|%|°|lx|s\b|ms|min|V\b|mA\b|W\b|nm|只|条|个|级|档|类|种|km\b))|(\d+\.\d+)/i;
@@ -557,7 +656,8 @@ function extractMasterParams(chapters: ReportChapter[]): MasterParamRow[] {
       const clean = (s: string): string => {
         const t = (s ?? "").replace(/\*\*/g, " ").replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
         if (!t) return "—";
-        return t.length > 44 ? t.slice(0, 44) + "…" : t;
+      if (process.env.PROBE_CLEAN && t.includes("<sup")) console.log("PROBE clean(", JSON.stringify(s), ") ->", JSON.stringify(t.length > 44 ? t.slice(0, 44) + "…" : t));
+      return t.length > 44 ? t.slice(0, 44) + "…" : t;
       };
       const joinCols = (row: string[], ...idxs: number[]): string => {
         const parts: string[] = [];
@@ -579,9 +679,7 @@ function extractMasterParams(chapters: ReportChapter[]): MasterParamRow[] {
         if (!quantitative.test(`${aC} ${bC} ${cC}`)) continue;
         seen.set(param, {
           param,
-          aValue: aC,
-          bValue: bC,
-          cValue: cC,
+          values: { A: aC, B: bC, C: cC },
           note: noteIdx >= 0 ? clean(row[noteIdx] ?? "") : "",
           src: `${ch.id} ${ch.title}`,
         });
@@ -691,32 +789,37 @@ function surfaceDataGapGuard(tableText: string): string {
 
 function renderMasterParams(rows: MasterParamRow[]): string {
   if (!rows.length) return "";
+  const keys = [...new Set(rows.flatMap((r) => Object.keys(r.values ?? {})))];
+  const heads = keys.map(
+    (k, i) => `<th style="--c:${MP_COLORS[i % MP_COLORS.length]}">${esc(
+      k === "A" ? "A 草案" : k === "B" ? "B 现行" : k === "C" ? "C UN R48" : k,
+    )}</th>`,
+  );
   const body = rows
     .map(
       (r) => `<tr>
+      ${(() => { if (process.env.PROBE_MP && String(r.values?.B ?? "").includes("sup")) console.log("PROBE_MP", JSON.stringify(r.values?.B)); return ""; })()}
       <td class="mp-name">${cellHtml(r.param)}</td>
-      <td>${cellHtml(r.aValue)}</td>
-      <td>${cellHtml(r.bValue)}</td>
-      <td>${cellHtml(r.cValue)}</td>
+      ${keys.map((k) => `<td>${cellHtml(r.values?.[k] ?? "—")}</td>`).join("\n      ")}
       <td class="mp-note">${cellHtml(r.note || "—")}</td>
       <td class="mp-src">${esc(r.src)}</td>
     </tr>`,
     )
     .join("");
+  const cols = keys.join("/");
+  const way = keys.length === 3 ? "三版" : `${keys.length} 版`;
   return `
 <section class="front-block">
   <header class="mp-head">
     <span class="mp-eyebrow">Master Parameter Index</span>
-    <h2>核心参数 A/B/C 同框总表</h2>
-    <p class="mp-sub">从全报告扫描并按表头对齐的关键量化参数（A/B/C 三版并排）· 共 ${rows.length} 项 · “—” = 源数据未提供该版本数值</p>
+    <h2>核心参数 ${cols} 同框总表</h2>
+    <p class="mp-sub">从全报告扫描并按表头对齐的关键量化参数（${cols} ${way}并排）· 共 ${rows.length} 项 · “—” = 该版未在原文定位到（未规定 / OCR 不可读，需人工确认）</p>
   </header>
   <table class="mp-table">
     <thead>
       <tr>
         <th>参数</th>
-        <th style="--c:#a17334">A 草案</th>
-        <th style="--c:#0c1a2b">B 现行</th>
-        <th style="--c:#3a6b4f">C UN R48</th>
+        ${heads.join("\n        ")}
         <th>差异 / 状态</th>
         <th>来源</th>
       </tr>
@@ -734,6 +837,36 @@ type ClauseMapRow = { topic: string; a: string; b: string; c: string; src: strin
 
 function looksLikePage(s: string): boolean {
   return /第\s*\d+\s*页|^p\s*\d+$/i.test((s ?? "").trim());
+}
+
+/** GB `5.21.4.2` · R48 `6.5.4.2.1` · tabular `表7` / `表C.1` · `§6.5` */
+const CLAUSE_ID = /^(?:\d+(?:\.\d+)+|表\s*[A-Z]?\d+(?:\.\d+)?|§\s*\d[\d.]*)$/;
+
+/**
+ * Clip to `max` chars without cutting through a tag or a half-written entity.
+ *
+ * `<sup>`/`<sub>` arrive as literal text in the excerpts (MinerU's markup), and
+ * a fixed `slice()` lands inside them often enough to matter — a bare `N<sub`
+ * on the page is worse than a short sentence.
+ */
+function clipTagSafe(s: string, max: number): string {
+  let out = s ?? "";
+  if (out.length > max) out = out.slice(0, max) + "…";
+  // A tag cut before its `>` (`N<sub`) matches no `<name>` pattern, so it used
+  // to print as a bare tag. And a tag cut inside its own closing tag
+  // (`…</su`) must be dropped too — but the opening-tag check has to run
+  // AFTER that, because cutting `</su` off `M<sub>1</su` leaves `M<sub>1`,
+  // an opening tag with no partner.
+  const dangling = out.match(/<\/?[a-zA-Z][a-zA-Z0-9]*$/);
+  if (dangling) out = out.slice(0, dangling.index).trimEnd();
+  const opens = [...out.matchAll(/<([a-zA-Z][a-zA-Z0-9]*)[\s>]/g)];
+  const last = opens[opens.length - 1];
+  if (last && !out.slice(last.index).includes(`</${last[1]}>`)) {
+    out = out.slice(0, last.index).trimEnd();
+  }
+  const ent = out.match(/&[a-z]*$/);
+  if (ent) out = out.slice(0, ent.index).trimEnd();
+  return out;
 }
 
 function extractClauseMapping(chapters: ReportChapter[]): ClauseMapRow[] {
@@ -772,11 +905,17 @@ function extractClauseMapping(chapters: ReportChapter[]): ClauseMapRow[] {
           const POINTER = /^(见下方|见下表|见上面|见上表|见表|见下|见上|同上|同左|同前|略|无|N\/?A|（略）)/;
           const HEADER_NAME = /^(表头摘要|完整内容|页码|来源|条款|页|编号|版本|状态|说明|备注)$/;
           const clause = cells.find((c) => {
-            const s = (c ?? "").replace(/[*\s]/g, "");
-            return s && !looksLikePage(c) && !/[$\\{}]/.test(c) && !POINTER.test(s) && !HEADER_NAME.test(s) && s.length <= 30;
+            const t = (c ?? "").replace(/[*\s]/g, "");
+            // A clause identifier has a SHAPE: `5.21.4.2` (GB),
+            // `6.5.4.2.1` (R48), `表7` / `表C.1` (tabular). Testing "short
+            // and not a page" instead let a 25-character Chinese EXCERPT be
+            // picked as the clause — the mapping index then told the reader to
+            // look up a quotation — and the `.slice(0, 24)` cut that excerpt
+            // inside `</sup>`, printing a half-open tag on the page.
+            return t && !looksLikePage(c) && CLAUSE_ID.test(t) && !POINTER.test(t) && !HEADER_NAME.test(t);
           });
           const parts: string[] = [];
-          if (clause) parts.push(clause.replace(/\*\*/g, "").replace(/\n/g, " ").slice(0, 24));
+          if (clause) parts.push(clipTagSafe(clause.replace(/\*\*/g, "").replace(/\n/g, " "), 24));
           if (page) parts.push(page.replace(/\*\*/g, "").trim());
           return parts.join(" · ") || "—";
         };
@@ -1274,6 +1413,17 @@ function findHorizontalVersionCols(header: string[]): { A: number; B: number; C:
   // (the topic column). Column 0 being "项目" is fine.
   if (A < 0 || B < 0 || C < 0) return null;
   if (new Set([A, B, C]).size !== 3) return null;
+  // The card layout shows ONE label and ONE value per row, so it can only carry
+  // a topic column plus A/B/C. Every extra column is silently dropped — and for
+  // `| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |` the two dropped
+  // columns are the unit and the verdict, which is the whole point of the
+  // table. Chapter 12.1 was printing 73 parameters as three unaligned number
+  // lists with no units and no A=C≠B call-out.
+  //
+  // Measured on this report: every table that reached the card layout had 6 or
+  // 7 columns; the only 4-column horizontal tables carry no A/B/C at all and so
+  // were already rejected above. Anything wider belongs in a plain table.
+  if (header.length !== 4) return null;
   return { A, B, C };
 }
 
@@ -1368,10 +1518,27 @@ function renderTriptych(t: ParsedTable): string {
   const pageCol = header.findIndex((h, i) => i > t.versionIdx && /^(页码|页)$/.test(normH(h)));
   let cCol = clauseCol;
   let pCol = pageCol;
+  // Labels for the two metadata slots. When the header does not name them,
+  // keep the header's OWN words. The positional fallback used to hard-code
+  // "条款"/"页码", and on `| 文档 | 一级标题 | 段落级标题 | 页码标注 |` that
+  // printed "A 草案 · 条款 14 · 页码 564" — two counts of headings presented
+  // as a regulation citation. Inventing a citation is worse than showing none.
+  let cLabel = clauseCol >= 0 ? "条款" : header[clauseCol] ?? "条款";
+  let pLabel = pageCol >= 0 ? "页码" : header[pageCol] ?? "页码";
   if (cCol < 0 && pCol < 0) {
-    // completely unknown header — fall back to positional convention
     cCol = t.versionIdx + 1;
     pCol = t.versionIdx + 2;
+    cLabel = header[cCol] ?? "条款";
+    pLabel = header[pCol] ?? "页码";
+  } else {
+    if (cCol < 0) {
+      cCol = t.versionIdx + 1;
+      cLabel = header[cCol] ?? "条款";
+    }
+    if (pCol < 0) {
+      pCol = t.versionIdx + 2;
+      pLabel = header[pCol] ?? "页码";
+    }
   }
   const textCols = header.map((_, i) => i).filter((i) => i > t.versionIdx && i !== cCol && i !== pCol);
 
@@ -1380,17 +1547,19 @@ function renderTriptych(t: ParsedTable): string {
       const meta = DOC_META[v];
       const row = byVersion.get(v);
       if (!row) {
+        // A full "源数据未提供" card reads as a broken table, and this fired 48
+        // times across the PDF for C topics that simply have no matching R48
+        // clause row. State the absence once, quietly — the card grid keeps its
+        // three-column alignment without the reader seeing 48 alarms.
         return `
-<article class="trip-card trip-card-missing" style="--accent:#b9a27a;--accent-bg:#f0eada">
+<article class="trip-card trip-card-missing" style="--accent:#d8d0c0;--accent-bg:#f7f4ee">
   <header class="trip-head">
     <span class="trip-label">${meta.label}</span>
     <span class="trip-tag">${esc(meta.short)}</span>
-    <span class="trip-doc">${esc(meta.name)}</span>
   </header>
   <div class="trip-missing">
     <div class="missing-mark">—</div>
-    <div class="missing-text">源数据未提供</div>
-    <div class="missing-hint">（报告生成时 ${meta.label} 版无对应条款行；<br>渲染器补位以保持三栏对齐）</div>
+    <div class="missing-hint">本条 ${meta.label} 版无对应条款行</div>
   </div>
 </article>`;
       }
@@ -1419,8 +1588,8 @@ function renderTriptych(t: ParsedTable): string {
     <span class="trip-doc">${esc(meta.name)}</span>
   </header>
   <dl class="trip-meta">
-    <dt>条款</dt><dd>${cellHtml(clause)}</dd>
-    <dt>页码</dt><dd>${badge(page)}</dd>
+    <dt>${esc(cLabel)}</dt><dd>${cellHtml(clause)}</dd>
+    <dt>${esc(pLabel)}</dt><dd>${badge(page)}</dd>
   </dl>
   <div class="trip-text">${text ? cellHtml(text) + truncFlag(text) : '<span class="impact-empty">本版本无对应原文</span>'}</div>
 </article>`;
@@ -2420,7 +2589,7 @@ export async function buildHtml(
 
   // Front blocks (skip when empty to avoid blank pages)
   const mappingHtml = renderMappingIndex(extractClauseMapping(chapters));
-  const masterParamsHtml = renderMasterParams(extractMasterParams(chapters));
+  const masterParamsHtml = renderMasterParams(extractMasterParams(chapters, (report as any).parameterMatrix));
 
   const chapterSections = chapters
     .map((c, ci) => {
@@ -2552,6 +2721,12 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
       // lays out every page before firing "load", and the report grew once the
       // parameter matrix and the restored R48 content landed. Scale the budget
       // with the payload so a bigger report doesn't fail on a fixed ceiling.
+      if (process.env.DUMP_HTML) {
+        // Temporary probe: the triptych card for one cell printed <sup>
+        // literally. Guessing at which of three render paths did it was
+        // costing more than looking.
+        (await import("node:fs")).writeFileSync(process.env.DUMP_HTML, html, "utf-8");
+      }
       const loadTimeout = Math.max(120_000, Math.min(600_000, Math.ceil(html.length / 900) * 1000));
       const t0 = Date.now();
       try {
