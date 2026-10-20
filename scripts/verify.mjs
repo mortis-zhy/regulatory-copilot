@@ -879,9 +879,12 @@ check("the parameter matrix is still a MATRIX in the PDF, not three card columns
     "pages=[p.get_text() for p in d]\n" +
     "all='\\n'.join(pages)\n" +
     "i12=next((i for i,t in enumerate(pages) if '12.1 参数对照总表' in t), -1)\n" +
+    "i122=next((i for i,t in enumerate(pages) if '12.2 逐参数原文明细' in t), len(pages))\n" +
     "out={'i12':i12}\n" +
     "if i12>=0:\n" +
-    "    m='\\n'.join(pages[i12:i12+3])\n" +
+    "    # 矩阵有 199 行，总表横跨多页 —— 抽查必须覆盖**整张表**，\n" +
+    "    # 否则表格中段的行落在窗口外，闸门会误报「缺行」。\n" +
+    "    m='\\n'.join(pages[i12:(i122 if i122>i12 else i12+3)])\n" +
     "    out['head']=bool(re.search(r'单位[\\s\\S]{0,80}A 草案[\\s\\S]{0,80}B 现行[\\s\\S]{0,80}C UN R48-09[\\s\\S]{0,80}判定', m))\n" +
     "    out['rows']=[p for p in ['近光灯最大离地高度','转向信号灯闪烁频率','同时点亮远光灯最大发光强度之和'] if p in m]\n" +
     "out['cards']=len(re.findall(r'维度\\n[^\\n]{1,12}\\n条目\\n\\d+', all))\n" +

@@ -2133,7 +2133,11 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   // understating the coverage rate.
   const NUM = "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?)";
   const q = new RegExp("(?<![\\w.])" + NUM + "\\s*[-–]?\\s*(" + UNIT + ")\\b", "gi");
-  const clauseRe = /^\s*(\d+(?:\.\d+)*)\.?\s+\S/;
+  // R48 的条款表是 markdown 表格行：`| 6.14.2. | Number Two,…`。
+  // 原来的正则要求条款号在**行首**，于是**整张 R48 表格的数值都落到上一行的条款上**
+  // —— §6.14 那一批（400 / 600 / 1300 / 250 / 900 / 1200 / 1500）被算到 §6.13 头上，
+  // 覆盖率因此被系统性低估。行首的竖线要放过。
+  const clauseRe = /^\s*\|?\s*(\d+(?:\.\d+)*)\.?\s*\|?\s+\S/;
   const secRe = /^\s*6\.(\d{1,2})\.?\s+[A-Za-z][A-Za-z ,\-/()']{2,70}\s*$/;
 
   /** `1,200` → `1200`: the inventory stores the number the way the matrix does. */

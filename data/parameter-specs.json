@@ -280,6 +280,56 @@
       }
     },
     {
+      "id": "brakeLamp.lowMountHeightThreshold",
+      "name": "制动灯低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.7\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.7\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.7\\.5[\\s\\S]{0,700}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.7.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.7.5：同一条。",
+        "C": "R48 6.7.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
+      }
+    },
+    {
+      "id": "brakeLamp.narrowWidthThreshold",
+      "name": "制动灯内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "车\\s*宽\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)[\\s\\S]{0,80}?5\\.7\\.4\\.1\\.2",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.7\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.7\\.4\\.1[\\s\\S]{0,900}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.7.4.1 标题在 p41、「若车宽小于 1300 ㎜，可减至 400 ㎜」在 p42 —— 跨页。这里用**下一条款号 5.7.4.2 反向锚定**（那一行只有侧标志灯/制动灯的横向条款后面才有），条款号显式写明 5.7.4.1。",
+        "B": "B 的 5.7.4.1：同一条（用 mm）。",
+        "C": "R48 6.7.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
+      }
+    },
+    {
       "id": "brakeLamp.s3s4LowerEdgeHeight",
       "name": "S3/S4 制动灯视表面下缘高度",
       "family": "安装高度 / 离地距离",
@@ -883,6 +933,31 @@
       }
     },
     {
+      "id": "dippedBeam.narrowWidthThreshold",
+      "name": "近光灯内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.2\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.2\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.2\\.4\\.1[\\s\\S]{0,700}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.2.4.1：「若车宽小于 1300 ㎜，可减至 400 ㎜」—— 这是**内缘间距可减至 400mm 的适用条件**，不知道这个门槛就不知道自己的车能不能用减小的间距。",
+        "B": "B 的 5.2.4.1：同一条（用 mm）。",
+        "C": "R48 6.2.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
+      }
+    },
+    {
       "id": "dippedBeam.offRoadHeight",
       "name": "近光灯越野车型放宽高度",
       "family": "安装高度 / 离地距离",
@@ -1385,6 +1460,31 @@
       }
     },
     {
+      "id": "drl.narrowWidthThreshold",
+      "name": "昼间行驶灯内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.19\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.19\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.19\\.4\\.1[\\s\\S]{0,700}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.19.4.1：「若车宽小于 1300 ㎜，可减至 400 ㎜」—— 这是**内缘间距可减至 400mm 的适用条件**，不知道这个门槛就不知道自己的车能不能用减小的间距。",
+        "B": "B 的 5.19.4.1：同一条（用 mm）。",
+        "C": "R48 6.19.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
+      }
+    },
+    {
       "id": "drl.reducedIntensity",
       "name": "昼间行驶灯减光后最大光强",
       "family": "光强 / 照度限值",
@@ -1529,13 +1629,15 @@
         "B": {
           "source": "5\\.13\\.9[\\s\\S]{0,240}?视表面上最相邻的点[^。]{0,80}?应不小于\\s*(200\\s*mm)",
           "flags": "i"
+        },
+        "C": {
+          "source": "end-outline marker lamp in relation to corresponding position lamp[\\s\\S]{0,340}?not less than\\s*(200\\s*mm)",
+          "flags": "i",
+          "clause": "6.13.9"
         }
       },
       "why": {
-        "C": "R48 §6.13.9 全文没有这条 200mm 要求（实测 R48 6.13.9 只有「可复合为一种装置」一句）。本行是 A/B 独有，判 `b-only` —— 是「GB 有、R48 没有」，不是抽取失败。"
-      },
-      "absent": {
-        "C": "R48 §6.13.9 全文只有一句：「the mandatory or optional lamps … may be combined into one device」。**没有** GB 4785 草案 §5.13.9 的「示廓灯与位置灯视表面间距不小于 200mm」这一条。"
+        "C": "R48 §6.13.9（p67，**表格行**）：「The position of an end-outline marker lamp in relation to corresponding position lamp shall be such that the distance between the projections on a transverse vertical plane of the points nearest to one another … is not less than 200 mm.」—— 上一轮曾把这一格写成「R48 无此规定（已核）」，**那是假的**：MinerU 把这段排成表格行、行首标签还是乱的（`| 6.14.6.14.1. |`），所以按条款号检索没搜到。**把抽取失败写成法规结论，比留空更糟。**"
       }
     },
     {
@@ -1644,7 +1746,7 @@
         }
       },
       "absent": {
-        "C": "R48 §6.1 远光灯的 Arrangements / Position 全是 「No individual specifications」，**光度限值不在 R48 里**（在 UN R112 / R149 型式试验中规定）。所以 430000 cd 这个「同时点亮之和」在 R48 中找不到对应条款。"
+        "C": "**R48 有对应条款，但量值不可比**：§6.1.9.1（p38）「The reference value corresponding to an aggregate maximum intensity of the main-beam headlamps which can be switched ON simultaneously shall not exceed 100.」—— 它规定的是**参考值（reference value）**，而 GB 4785 规定的是「同时点亮远光灯**最大发光强度之和**不超过 430 000 cd」，两者不是同一量值，不能直接对比。R48 的光度限值本身在 UN R112 / R149 型式试验法规里。本行不填推测值。"
       }
     },
     {
@@ -1900,6 +2002,31 @@
       "why": {}
     },
     {
+      "id": "frontPositionLamp.lowMountHeightThreshold",
+      "name": "前位灯低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.9\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.9\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.9\\.5[\\s\\S]{0,700}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.9.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.9.5：同一条。",
+        "C": "R48 6.9.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
+      }
+    },
+    {
       "id": "frontPositionLamp.maxHeight",
       "name": "前位灯最大离地高度",
       "family": "安装高度 / 离地距离",
@@ -1961,6 +2088,31 @@
         }
       },
       "why": {}
+    },
+    {
+      "id": "frontPositionLamp.narrowWidthThreshold",
+      "name": "前位灯内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.9\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.9\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.9\\.4\\.1[\\s\\S]{0,950}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.9.4.1：「若车宽小于 1300 ㎜，可减至 400 ㎜」—— 这是**内缘间距可减至 400mm 的适用条件**，不知道这个门槛就不知道自己的车能不能用减小的间距。",
+        "B": "B 的 5.9.4.1：同一条（用 mm）。",
+        "C": "R48 6.9.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
+      }
     },
     {
       "id": "frontPositionLamp.structureExemptMax",
@@ -2052,11 +2204,13 @@
           "flags": "i"
         },
         "C": {
-          "source": "6\\.9\\.5\\.1[\\s\\S]{0,420}?Vertical angle:\\s*(\\d+)\\s*°",
+          "source": "6\\.9\\.5\\.2[\\s\\S]{0,300}?Vertical angle:\\s*(\\d+)\\s*°",
           "flags": "i"
         }
       },
-      "why": {}
+      "why": {
+        "C": "R48 6.9.5.2（p60）：「Vertical angle: 15° above and below the horizontal. … the downward angle of 15° may be reduced to 5°.」—— 此前锚 6.9.5.1（水平方向角那条），差一级。"
+      }
     },
     {
       "id": "frontReflexReflector.horizontalAngle",
@@ -2130,6 +2284,32 @@
       "why": {}
     },
     {
+      "id": "frontReflexReflector.lowMountHeightThreshold",
+      "name": "前回复反射器低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.16\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "离\\s*地\\s*高\\s*度\\s*小\\s*于\\s*(750)\\s*mm[\\s\\S]{0,140}?5\\.16\\.6",
+          "flags": "i"
+        },
+        "C": {
+          "source": "mounted below\\s*(750)\\s*mm[\\s\\S]{0,260}?6\\.16\\.6",
+          "flags": "i",
+          "clause": "6.16.5"
+        }
+      },
+      "why": {
+        "A": "A 的 5.16.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.16.5 标题与水平方向角在 p45、垂直方向角正文在 p46 —— 跨页。用**下一条款号 5.16.6 反向锚定**，条款号显式写明 5.16.5。",
+        "C": "R48 6.16.5 的水平方向角在 p69、垂直方向角正文在 p70 —— 跨页。用**下一条款号 6.16.6 反向锚定**，条款号显式写明 6.16.5。"
+      }
+    },
+    {
       "id": "frontReflexReflector.maxHeight",
       "name": "非三角形前回复反射器最大离地高度",
       "family": "安装高度 / 离地距离",
@@ -2173,6 +2353,31 @@
       },
       "why": {
         "C": "同上：6.16.4.1 的 In height 一段。"
+      }
+    },
+    {
+      "id": "frontReflexReflector.narrowWidthThreshold",
+      "name": "前回复反射器内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.16\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.16\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.16\\.4\\.1[\\s\\S]{0,900}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.16.4.1：「若车宽小于 1300 ㎜，可减至 400 ㎜」—— 这是**内缘间距可减至 400mm 的适用条件**，不知道这个门槛就不知道自己的车能不能用减小的间距。",
+        "B": "B 的 5.16.4.1：同一条（用 mm）。",
+        "C": "R48 6.16.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
       }
     },
     {
@@ -2594,6 +2799,31 @@
         "A": "A 的 5.12.4.1（p49）：「…到车辆外缘端面的距离应不大于 400mm。对于只安装 2 只驻车灯的情况，其应安装在车辆两侧」。",
         "B": "B 的 5.12.4.1（p41）：「…到车辆外缘端面的距离应不大于400mm。」",
         "C": "R48 6.12.4.1（p64）：「…shall not be more than 400 mm from the extreme outer edge of the vehicle. Furthermore, if there are two lamps, they shall be on the sides of the vehicle」。"
+      }
+    },
+    {
+      "id": "parkingLamp.lowMountHeightThreshold",
+      "name": "驻车灯低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.12\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.12\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.12\\.5[\\s\\S]{0,700}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.12.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.12.5：同一条。",
+        "C": "R48 6.12.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
       }
     },
     {
@@ -3056,6 +3286,31 @@
       }
     },
     {
+      "id": "rearPositionLamp.lowMountHeightThreshold",
+      "name": "后位灯低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.10\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.10\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.10\\.5[\\s\\S]{0,700}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.10.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.10.5：同一条。",
+        "C": "R48 6.10.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
+      }
+    },
+    {
       "id": "rearPositionLamp.maxHeight",
       "name": "后位灯最大离地高度",
       "family": "安装高度 / 离地距离",
@@ -3104,6 +3359,31 @@
       }
     },
     {
+      "id": "rearPositionLamp.narrowWidthThreshold",
+      "name": "后位灯内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.10\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.10\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.10\\.4\\.1[\\s\\S]{0,700}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.10.4.1：「若车宽小于 1300 ㎜，可减至 400 ㎜」—— 这是**内缘间距可减至 400mm 的适用条件**，不知道这个门槛就不知道自己的车能不能用减小的间距。",
+        "B": "B 的 5.10.4.1：同一条（用 mm）。",
+        "C": "R48 6.10.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
+      }
+    },
+    {
       "id": "rearPositionLamp.structureExemptMax",
       "name": "后位灯高度上限（车型结构受限）",
       "family": "安装高度 / 离地距离",
@@ -3124,6 +3404,31 @@
       },
       "why": {
         "C": "R48 括号里带千分位：`2,100 mm`，与 `2100 mm` 是两串，必须写进正则。括号后的 `if the shape of the bodywork` 是必需的锚 —— 单独锚 2,100 会抓到 §6.7 制动灯那条。"
+      }
+    },
+    {
+      "id": "rearPositionLamp.verticalAngle",
+      "name": "后位灯垂直方向角",
+      "family": "几何可见度 / 安装角度",
+      "unit": "°",
+      "patterns": {
+        "A": {
+          "source": "5\\.10\\.5\\.1[\\s\\S]{0,200}?垂直方向角α\\s*[:：]\\s*水平面上、下各\\s*(15)\\s*°",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.10\\.5\\.1[\\s\\S]{0,200}?垂直方向角\\s*[:：]\\s*水平面上、下各\\s*(15)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.10\\.5\\.2[\\s\\S]{0,300}?Vertical angle:\\s*(\\d+)\\s*° above and below",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.10.5.1（p47）：「垂直方向角α:水平面上、下各15°，以下情况除外…」（离地高度小于 750 ㎜ 时可减至 5°）。矩阵里原先只有后位灯的**水平**方向角一行，垂直角整行缺失。",
+        "B": "B 的 5.10.5.1（p39）：「垂直方向角:水平面上、下各15,以下情况除外…」。",
+        "C": "R48 6.10.5.2（p61）：「Vertical angle: 15° above and below the horizontal.」。"
       }
     },
     {
@@ -3386,6 +3691,31 @@
       }
     },
     {
+      "id": "rearTriangularReflector.lowMountHeightThreshold",
+      "name": "三角形后回复反射器低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "离\\s*地\\s*高\\s*度\\s*小\\s*于\\s*(750)\\s*(?:mm|㎜)[\\s\\S]{0,120}?5\\.15\\.6",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.15\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.15\\.5[\\s\\S]{0,700}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.15.5 标题在 p52、垂直方向角正文在 p53 —— 跨页。用**下一条款号 5.15.6 反向锚定**，条款号显式写明 5.15.5。",
+        "B": "B 的 5.15.5：同一条。",
+        "C": "R48 6.15.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
+      }
+    },
+    {
       "id": "rearTriangularReflector.maxHeight",
       "name": "三角形后回复反射器最大离地高度",
       "family": "安装高度 / 离地距离",
@@ -3428,6 +3758,31 @@
         }
       },
       "why": {}
+    },
+    {
+      "id": "rearTriangularReflector.narrowWidthThreshold",
+      "name": "三角形后回复反射器内缘间距可减小的车宽门槛",
+      "family": "位置 / 间距限值",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.15\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.15\\.4\\.1[\\s\\S]{0,700}?(?:车|车辆)\\s*宽(?:度)?\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.15\\.4\\.1[\\s\\S]{0,700}?less than (1[ ,]300)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.15.4.1：「若车宽小于 1300 ㎜，可减至 400 ㎜」—— 这是**内缘间距可减至 400mm 的适用条件**，不知道这个门槛就不知道自己的车能不能用减小的间距。",
+        "B": "B 的 5.15.4.1：同一条（用 mm）。",
+        "C": "R48 6.15.4.1：「This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm」。"
+      }
     },
     {
       "id": "rearTriangularReflector.structureExemptMax",
@@ -3738,6 +4093,31 @@
       }
     },
     {
+      "id": "sideMarkerLamp.lowMountHeightThreshold",
+      "name": "侧标志灯低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.18\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "离地高度小\\s*于\\s*(750)\\s*mm[\\s\\S]{0,120}?5\\.18\\.6",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.18\\.5[\\s\\S]{0,1800}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.18.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.18.5 标题与水平方向角在 p46、垂直方向角正文在 p47 —— 跨页。用**下一条款号 5.18.6 反向锚定**（侧标志灯的「方向」条款），条款号显式写明 5.18.5。",
+        "C": "R48 6.18.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
+      }
+    },
+    {
       "id": "sideMarkerLamp.maxHeight",
       "name": "侧标志灯最大离地高度",
       "family": "安装高度 / 离地距离",
@@ -3874,6 +4254,31 @@
         }
       },
       "why": {}
+    },
+    {
+      "id": "sideReflexReflector.lowMountHeightThreshold",
+      "name": "非三角形侧回复反射器低安装高度门槛（可见度角可减小的条件）",
+      "family": "几何可见度 / 安装角度",
+      "unit": "mm",
+      "patterns": {
+        "A": {
+          "source": "5\\.17\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.17\\.5[\\s\\S]{0,700}?离\\s*地\\s*高\\s*度\\s*(?:小\\s*于|不\\s*大\\s*于)\\s*(750)\\s*(?:mm|㎜)",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.17\\.5[\\s\\S]{0,700}?mounted below\\s*(750)\\s*mm",
+          "flags": "i"
+        }
+      },
+      "why": {
+        "A": "A 的 5.17.5：灯具装得比这个高度低时，向下的可见度角可以减小（15°→5° 之类）。**这是安装高度的下限判据**，不是灯的高度限值。",
+        "B": "B 的 5.17.5：同一条。",
+        "C": "R48 6.17.5：「However, where a lamp is mounted below 750 mm … the downward angle … may be reduced」。"
+      }
     },
     {
       "id": "sideReflexReflector.maxHeight",
