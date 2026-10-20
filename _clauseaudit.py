@@ -41,7 +41,7 @@ def pages(d, v):
 d = json.load(io.open(CORP, encoding="utf-8"))
 specs = json.load(io.open(SPEC, encoding="utf-8"))["specs"]
 
-bad, noanchor, nomatch = [], [], []
+bad, noanchor, nomatch, declared = [], [], [], []
 for s in specs:
     for v in ("A", "B", "C"):
         p = s.get("patterns", {}).get(v)
@@ -49,6 +49,9 @@ for s in specs:
             continue
         src = p["source"]
         exp = expected_clause(src)
+        # 显式声明的条款号（patterns[v].clause）也是一种「锚」——
+        # 它不是自动推断出来的，抽取器会直接用它，所以不算「靠措辞匹配」。
+        explicit = p.get("clause") if isinstance(p, dict) else None
         rx = re.compile(src, re.I)
         hit = None
         for pg, t in pages(d, v):
@@ -61,6 +64,9 @@ for s in specs:
             continue
         pg, t, m = hit
         got = nearest_clause(t, m.start())
+        if explicit:
+            declared.append((s["id"], v, explicit, got, pg))
+            continue
         if exp and got and exp != got:
             bad.append((s["id"], v, exp, got, pg))
         elif not exp:
@@ -77,6 +83,13 @@ print("② 无条款锚（靠措辞匹配）—— 需人工确认没撞别的�
 for sid, v, got, pg in noanchor:
     print("  %-46s %s  推断 %-10s p%d" % (sid, v, got or "—", pg))
 print("  共 %d 条" % len(noanchor))
+
+print("=" * 78)
+print("②b 显式声明的条款号（抽取器直接采用，不再推断）")
+for sid, v, explicit, got, pg in declared:
+    flag = "" if explicit == got else "   （就近条款号不同 —— 显式声明覆盖了推断值，理由在 why 里）"
+    print("  %-46s %s  声明 %-10s 就近 %-10s p%d%s" % (sid, v, explicit, got or "—", pg, flag))
+print("  共 %d 条" % len(declared))
 
 print("=" * 78)
 print("③ MinerU 未命中（需走源 PDF 兜底）")
