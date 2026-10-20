@@ -1,0 +1,241 @@
+{
+  "generatedAt": null,
+  "versions": {
+    "A": {
+      "label": "GB 4785 草案 V4.3.5",
+      "clauses": 99,
+      "limits": 250,
+      "same": 199,
+      "otherChapter": 34,
+      "general": 17,
+      "otherDevice": 0,
+      "missing": 0,
+      "missingItems": [],
+      "tableShaped": [
+        {
+          "clause": "5.1.9.2.1.1",
+          "device": "远光灯",
+          "page": 25,
+          "note": "远光自动控制传感器的垂直最小探测范围（表6）：向上 5°，向下按传感器安装高度分三档（2° / 2°~5° / 5°）。",
+          "values": [
+            "15 °",
+            "2 °",
+            "5 °"
+          ]
+        },
+        {
+          "clause": "5.2.6.1.2",
+          "device": "近光灯",
+          "page": 26,
+          "note": "近光灯明暗截止线下倾度限值表（表7）：限值与初始照准按安装高度 h 分三档，档内是 h 的线性公式，不是标量。",
+          "values": []
+        },
+        {
+          "clause": "5.4.6.1.1",
+          "device": "前雾灯",
+          "page": 35,
+          "note": "前雾灯下倾度（单侧总光通量 ≤2000lm 一档）。",
+          "values": [
+            "1 %"
+          ]
+        },
+        {
+          "clause": "5.4.6.1.2",
+          "device": "前雾灯",
+          "page": 36,
+          "note": "前雾灯下倾度限值表：限值与初始照准按安装高度 h 分两档。",
+          "values": [
+            "0.1 %",
+            "1 %",
+            "1.5 %",
+            "2 %",
+            "2.5 %",
+            "3 %",
+            "3.5 %"
+          ]
+        },
+        {
+          "clause": "5.19.9",
+          "device": "昼间行驶灯",
+          "page": 57,
+          "note": "昼间行驶灯配光表（测试点网格），不是标量限值。",
+          "values": [
+            "10 °",
+            "1200 mm",
+            "1400 mm",
+            "15 km/h",
+            "15 °",
+            "150 mm",
+            "1500 mm",
+            "20 mm",
+            "250 mm",
+            "30 °",
+            "300 mm",
+            "3000 mm",
+            "400 mm",
+            "45 °",
+            "5 °",
+            "60 °",
+            "750 mm",
+            "80 °"
+          ]
+        }
+      ],
+      "outOfScope": [
+        {
+          "clause": "8.3.2",
+          "note": "型式检验管理与试验条件条款，不是安装要求。"
+        }
+      ]
+    },
+    "B": {
+      "label": "GB 4785-2019",
+      "clauses": 92,
+      "limits": 244,
+      "same": 188,
+      "otherChapter": 40,
+      "general": 16,
+      "otherDevice": 0,
+      "missing": 0,
+      "missingItems": [],
+      "tableShaped": [
+        {
+          "clause": "5.1.9.3.1",
+          "device": "远光灯",
+          "page": 23,
+          "note": "远光自动控制传感器的垂直最小探测范围（表6）：向上 5°，向下按传感器安装高度分三档。",
+          "values": [
+            "15 °",
+            "2 °",
+            "5 °"
+          ]
+        },
+        {
+          "clause": "5.2.6.1.1",
+          "device": "近光灯",
+          "page": 25,
+          "note": "近光灯明暗截止线下倾度限值表 —— GB 2019 的条款号被拆成「5.2.6.1.2」的碎片，正文落在本条里。",
+          "values": [
+            "0.1 %",
+            "0.5 %",
+            "1 %",
+            "1.5 %",
+            "1200 mm",
+            "2 %",
+            "2.5 %",
+            "3 %",
+            "3.5 %"
+          ]
+        },
+        {
+          "clause": "5.3.6.1.1",
+          "device": "前雾灯",
+          "page": 28,
+          "note": "前雾灯（B 级）下倾度限值。",
+          "values": [
+            "1.5 %"
+          ]
+        },
+        {
+          "clause": "5.3.6.1.2",
+          "device": "前雾灯",
+          "page": 28,
+          "note": "前雾灯（F3 级）下倾度限值表：限值与初始照准按安装高度 h 分两档。",
+          "values": [
+            "0.1 %",
+            "1 %",
+            "1.5 %",
+            "2 %",
+            "2.5 %",
+            "3 %",
+            "3.5 %"
+          ]
+        }
+      ],
+      "outOfScope": [
+        {
+          "clause": "4.9",
+          "note": "其他要求/电气条件条款，不是安装要求。"
+        },
+        {
+          "clause": "7.3",
+          "note": "实施日期/过渡条款，不是安装要求。"
+        }
+      ]
+    },
+    "C": {
+      "label": "UN R48-09",
+      "clauses": 121,
+      "limits": 279,
+      "same": 218,
+      "otherChapter": 45,
+      "general": 16,
+      "otherDevice": 0,
+      "missing": 0,
+      "missingItems": [],
+      "tableShaped": [
+        {
+          "clause": "6.1.9.3.1.1.1",
+          "device": "远光灯",
+          "page": 38,
+          "note": "远光自动控制传感器的垂直最小探测范围表（Upward angle / Downward angle by sensor mounting height）。",
+          "values": [
+            "15 °",
+            "2 °",
+            "5 °"
+          ]
+        },
+        {
+          "clause": "6.2.6.1.2",
+          "device": "近光灯",
+          "page": 41,
+          "note": "近光灯明暗截止线的垂直倾角限值表（Upper/Lower inclination limit by mounting height h），档内是 h 的线性公式。",
+          "values": []
+        },
+        {
+          "clause": "6.3.6.1.1",
+          "device": "前雾灯",
+          "page": 46,
+          "note": "前雾灯下倾度：单侧总光通量 **不超过 2000 lumens** 的一档（表头条款，档内限值见 6.3.6.1.1.1）。",
+          "values": [
+            "2000 lm"
+          ]
+        },
+        {
+          "clause": "6.3.6.1.2",
+          "device": "前雾灯",
+          "page": 46,
+          "note": "前雾灯下倾度：单侧总光通量 **超过 2000 lumens** 的一档（表头条款，档内限值见 6.3.6.1.2.1）。",
+          "values": [
+            "2000 lm"
+          ]
+        },
+        {
+          "clause": "6.3.6.1.2.1",
+          "device": "前雾灯",
+          "page": 46,
+          "note": "前雾灯明暗截止线的垂直倾角限值表（Limits / Initial aiming by mounting height h）。",
+          "values": []
+        }
+      ],
+      "outOfScope": [
+        {
+          "clause": "2.10.5",
+          "note": "定义条款（α/β 角的量法），不是限值。"
+        },
+        {
+          "clause": "12.8.7",
+          "note": "过渡条款（Transitional provisions），不是安装要求。"
+        }
+      ]
+    }
+  },
+  "totals": {
+    "same": 605,
+    "otherChapter": 119,
+    "general": 49,
+    "otherDevice": 0,
+    "missing": 0,
+    "limits": 773
+  }
+}

@@ -169,18 +169,31 @@ def same_chapter(a, b):
 
 
 def split_clauses(path):
+    """切成 {条款号: {page, head, body}}。
+
+    **正文跨页时要接上** —— 条款号在页尾、正文在次页的情况很常见
+    （R48 6.14.5 标题在 p67、正文在 p68；C 6.21.4.3.1 标题在 p79、正文在 p80）。
+    早期版本按页切，跨页条款的正文只到本页为止，于是：
+    - 覆盖审计看不见那一段的量值 → 报「真漏」；
+    - 取值核对报「条款里没有这个值」→ 假阳性。
+    所以这里用**全局行流**（页码只是附带信息），条款边界按下一个条款号切。
+    """
     out = {}
     last = None
+    flat = []
     for pg, lines in doc_lines(path):
-        starts, last = clause_starts(lines, last)
-        for k, (i, num, head) in enumerate(starts):
-            end = starts[k + 1][0] if k + 1 < len(starts) else len(lines)
-            body = "\n".join(l.strip() for l in lines[i:end] if l.strip())
-            body = re.sub(r"\n{2,}", "\n", body)
-            if num in out:
-                out[num]["body"] += "\n" + body
-            else:
-                out[num] = {"page": pg, "head": head, "body": body}
+        for ln in lines:
+            flat.append((pg, ln))
+    starts, last = clause_starts([ln for _, ln in flat], last)
+    for k, (i, num, head) in enumerate(starts):
+        end = starts[k + 1][0] if k + 1 < len(starts) else len(flat)
+        body = "\n".join(l.strip() for _, l in flat[i:end] if l.strip())
+        body = re.sub(r"\n{2,}", "\n", body)
+        pg = flat[i][0]
+        if num in out:
+            out[num]["body"] += "\n" + body
+        else:
+            out[num] = {"page": pg, "head": head, "body": body}
     return out
 
 

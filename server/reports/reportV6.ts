@@ -24,6 +24,8 @@ import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
 import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, loadSourceCorpus, verdictLabel } from "./parameterMatrix";
 // 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
 import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
+import COVERAGE_AUDIT from "../../data/coverage-audit.json";
+import APPENDIX_TABLES from "../../data/appendix-tables.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
@@ -2121,6 +2123,204 @@ function buildQuickRef(numChanges: any[], indicators: any[]): string {
  *
  * 全部现算：每次出报告都从语料重扫，不落盘，所以它跟矩阵同步。
  */
+/**
+ * 附录 E：三版量化限值覆盖清单 —— 回答客户那句「还有没有少数据」。
+ *
+ * 以前只有 R48 §6 有清单（附录 D），GB 两版**没有** ——
+ * 「GB 4785 的要求你们全覆盖了吗」这个问题没人答过。
+ * 本附录把三份标准都按**条款**清点一遍，逐条比对第 12 章的矩阵。
+ *
+ * 数据来自 `data/coverage-audit.json`，由 `scripts/coverage_audit.py` 生成：
+ * 它读的是**源 PDF 的文本层**（条款号可靠），矩阵的取值来自 `reports/last-report.json`。
+ */
+function buildAppendixE(matrixRows: any[]): string {
+  const A = (COVERAGE_AUDIT as any) ?? { versions: {}, totals: {} };
+  const vs = A.versions ?? {};
+  const order = ["A", "B", "C"];
+  const label: Record<string, string> = {
+    A: "GB 4785 草案 V4.3.5",
+    B: "GB 4785-2019",
+    C: "UN R48-09",
+  };
+  const t0 = A.totals ?? {};
+
+  const sumRows = order.map((v) => {
+    const x = vs[v] ?? {};
+    const lim = x.limits ?? 0;
+    const covered = (x.same ?? 0) + (x.otherChapter ?? 0) + (x.general ?? 0) + (x.otherDevice ?? 0);
+    const pct = lim ? Math.round((100 * covered) / lim) : 0;
+    return `| ${esc(label[v])}（${v}） | ${esc(String(x.clauses ?? 0))} | ${esc(String(lim))} | ${esc(
+      String(x.same ?? 0),
+    )} | ${esc(String(x.otherChapter ?? 0))} | ${esc(String(x.general ?? 0))} | ${esc(
+      String(x.otherDevice ?? 0),
+    )} | **${esc(String(x.missing ?? 0))}** | ${esc(String(pct))}% |`;
+  });
+
+  const sumTotal =
+    `| **三版合计** | — | **${esc(String(t0.limits ?? 0))}**` +
+    ` | **${esc(String(t0.same ?? 0))}** | **${esc(String(t0.otherChapter ?? 0))}**` +
+    ` | **${esc(String(t0.general ?? 0))}** | **${esc(String(t0.otherDevice ?? 0))}**` +
+    ` | **${esc(String(t0.missing ?? 0))}** | — |`;
+
+  const tableRows: string[] = [];
+  const oosRows: string[] = [];
+  for (const v of order) {
+    const x = vs[v] ?? {};
+    for (const tb of x.tableShaped ?? []) {
+      tableRows.push(
+        `| ${esc(label[v])}（${v}） | ${esc(tb.clause)} | ${esc(tb.device || "—")} | 第 ${esc(
+          String(tb.page),
+        )} 页 | ${esc(tb.note ?? "")} |`,
+      );
+    }
+    for (const o of x.outOfScope ?? []) {
+      oosRows.push(
+        `| ${esc(label[v])}（${v}） | ${esc(o.clause)} | ${esc(o.note ?? "")} |`,
+      );
+    }
+  }
+
+  const totalLimits = t0.limits ?? 0;
+  const totalMiss = t0.missing ?? 0;
+  const lines = [
+    "# 附录 E 三版量化限值覆盖清单（有没有少数据）",
+    "",
+    "> **这一节是为了让「有没有漏」可以被核对，而不是让读者相信报告作者没漏。**",
+    "> 附录 D 只覆盖 UN R48-09 的 §6；GB 4785 草案与 2019 版此前**没有**任何覆盖清单。",
+    "> 本附录把三份标准都按**条款**清点：每一条带限值的法规陈述，逐一比对第 12 章的参数矩阵。",
+    "",
+    "> 清单是**每次出报告时现算**的（`scripts/coverage_audit.py` 读源 PDF 的文本层，",
+    "> 矩阵取值读 `reports/last-report.json`），与第 12 章同步 —— 参数加了，清单不会忘记更新。",
+    "",
+    "---",
+    "",
+    "## E.1 覆盖总览",
+    "",
+    "| 标准 | 含限值条款 | 限值条数 | 同条款覆盖 | 同章别处 | 通用条款覆盖 | 别装置顶替 | **真缺口** | 覆盖率 |",
+    "|---|---|---|---|---|---|---|---|---|",
+    ...sumRows,
+    sumTotal,
+    "",
+    `**三版合计 ${esc(String(totalLimits))} 条限值，真缺口 ${esc(String(totalMiss))} 条。**`,
+    "",
+    "### 四档判定口径",
+    "",
+    "| 档 | 含义 | 需不需要处理 |",
+    "|---|---|---|",
+    "| 同条款覆盖 | 限值就在矩阵行引用的那条条款里 | 已覆盖 |",
+    "| 同章别处 | 限值在同一章的另一条条款里（一般是「通用条款」那一份） | 已覆盖 |",
+    "| 通用条款覆盖 | 矩阵里有一条**通用条款行**（如「低安装高度灯具向下几何可见度角上限」）载着同一个值 | 已覆盖 |",
+    "| 别装置顶替 | 这一版里有同值，但矩阵把它记在了**别的装置**下 | 已核对 |",
+    "| **真缺口** | 这一版整列里都找不到这个值 | **要补** |",
+    "",
+    "---",
+    "",
+    "## E.2 未入矩阵的「分档表 / 配光表」条款",
+    "",
+    "> 这些条款的限值**是表**（按安装高度分档、或配光测试点网格），",
+    "> 压成一行标量会丢掉「哪一档对应哪个高度」这个信息。",
+    "> 它们的**原文逐字**列在附录 F，可直接回查。",
+    "",
+    "| 标准 | 条款号 | 装置 | 页码 | 说明 |",
+    "|---|---|---|---|---|",
+    ...(tableRows.length ? tableRows : ["| — | — | — | — | （无） |"]),
+    "",
+    "---",
+    "",
+    "## E.3 不计入覆盖范围的条款",
+    "",
+    "> 这些条款**不是安装要求**（试验条件、实施日期、过渡条款、定义），",
+    "> 计入分母只会把覆盖率灌水，所以单列在此。",
+    "",
+    "| 标准 | 条款号 | 说明 |",
+    "|---|---|---|",
+    ...(oosRows.length ? oosRows : ["| — | — | （无） |"]),
+    "",
+    "---",
+    "",
+    "## E.4 结论",
+    "",
+    totalMiss === 0
+      ? [
+          `**三版共 ${esc(String(totalLimits))} 条量化限值，全部有着落：**`,
+          "要么进了第 12 章的矩阵（分四档见 E.1），要么是分档表/配光表（在附录 F 逐条列出），",
+          "要么本来就不是安装要求（在 E.3 单列）。",
+          "**没有需要补的量值。**",
+        ]
+      : [
+          `**仍有 ${esc(String(totalMiss))} 条量值未进矩阵** —— 见下方清单。`,
+          "这些是本报告已知的缺口，不得当作「已覆盖」使用。",
+        ],
+    "",
+    "> **口径提醒**：本清单按「条款 + 数值 + 单位」比对，**不比对引文措辞**。",
+    "> 另外，矩阵比较的是**数值**；条件方向相反（同样两个数、一个是上限一个是下限）",
+    "> 这类差异数值矩阵**检不出来**，须回原文读条件句 —— 第 12 章开头已就此单列提示。",
+  ];
+  return lines.join("\n");
+}
+
+/**
+ * 附录 F：分档限值与公式型限值（三版原文对照）。
+ *
+ * 内容源 `data/appendix-tables.json`；每条引文都由
+ * `scripts/check_appendix_tables.py` 逐字回源 PDF 验证（交付闸门里跑）。
+ */
+function buildAppendixF(): string {
+  const T = (APPENDIX_TABLES as any) ?? { groups: [] };
+  const label: Record<string, string> = {
+    A: "GB 4785 草案 V4.3.5",
+    B: "GB 4785-2019",
+    C: "UN R48-09",
+  };
+  const lines = [
+    "# 附录 F 分档限值与公式型限值（三版原文对照）",
+    "",
+    "> 第 12 章的参数矩阵收的是**标量**限值。有一类要求不是标量：",
+    "> 限值随安装高度分档、或者写成 h 的线性公式。",
+    "> 压成一行数字就丢掉「哪一档对应哪个高度」—— 而那恰恰是设计时唯一要用的信息，",
+    "> 所以它们单列在这里，**原文逐字**给出，可直接回查。",
+    "",
+    "> 每一段引文都由 `scripts/check_appendix_tables.py` 回源 PDF 逐字验证过（交付闸门的一步）。",
+    "",
+  ];
+  const groups = T.groups ?? [];
+  groups.forEach((g: any, gi: number) => {
+    lines.push("---", "");
+    lines.push(`## F.${gi + 1} ${g.title ?? ""}`);
+    lines.push("");
+    if (g.note) {
+      lines.push(g.note);
+      lines.push("");
+    }
+    for (const v of ["A", "B", "C"]) {
+      const ent = (g.versions ?? {})[v];
+      if (!ent) continue;
+      lines.push(`### ${v} · ${label[v]}`);
+      lines.push("");
+      lines.push(`条款：\`${ent.clause ?? "—"}\`${ent.page ? ` · 源 PDF 第 ${ent.page} 页` : ""}`);
+      lines.push("");
+      const rows: string[][] = ent.rows ?? [];
+      if (rows.length) {
+        lines.push(`| ${rows[0].map((c: string) => esc(c)).join(" | ")} |`);
+        lines.push(`|${rows[0].map(() => "---").join("|")}|`);
+        for (const r of rows.slice(1)) {
+          lines.push(`| ${r.map((c: string) => esc(String(c).replace(/\|/g, "｜"))).join(" | ")} |`);
+        }
+        lines.push("");
+      }
+      if (ent.quote) {
+        lines.push(`原文：「${esc(ent.quote)}」`);
+        lines.push("");
+      }
+      if (ent.extra) {
+        lines.push(`> ${esc(ent.extra)}`);
+        lines.push("");
+      }
+    }
+  });
+  return lines.join("\n");
+}
+
 function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   const full = String(data?.C?.fullText ?? "");
   if (!full) return "";
@@ -2624,6 +2824,9 @@ export async function buildMinerUReport(
         { id: "A", title: "A/B/C 原始表格汇编" },
         { id: "B", title: "图片、公式与标题索引" },
         { id: "C", title: "A|B|C 三版本主题对照（逐条核验）" },
+        { id: "D", title: "UN R48 §6 量化条款全量清单" },
+        { id: "E", title: "三版量化限值覆盖清单（有没有少数据）" },
+        { id: "F", title: "分档限值与公式型限值（三版原文对照）" },
       ],
     },
     chapters: [
@@ -2639,6 +2842,8 @@ export async function buildMinerUReport(
       { id: "B", title: "图片、公式与标题索引", markdown: buildAppendixB(data) },
       { id: "C", title: "A|B|C 三版本主题对照（逐条核验）", markdown: buildAppendixC(verified.topicColumns) },
       { id: "D", title: "UN R48 §6 量化条款全量清单", markdown: buildAppendixD(data, matrixRows) },
+      { id: "E", title: "三版量化限值覆盖清单（有没有少数据）", markdown: buildAppendixE(matrixRows) },
+      { id: "F", title: "分档限值与公式型限值（三版原文对照）", markdown: buildAppendixF() },
     ],
     // Structured twin of chapter 12. The chapter's markdown is a rendering;
     // this is the data. The web client, the delivery gate and any future

@@ -178,7 +178,13 @@ await prepareGatePdf();
 console.log("\n=== 4. python verification layer ===");
 
 function runPy(args, label) {
-  const r = spawnSync("python", args, { cwd: ROOT, encoding: "utf-8" });
+  // Windows 上 python 的 stdout 默认是 GBK —— 脚本里只要有一个 ✓ 或中文，
+  // 就会 UnicodeEncodeError 崩掉，闸门报「引文对不上」而真相是编码问题。
+  const r = spawnSync("python", args, {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+  });
   return { ok: r.status === 0, out: (r.stdout || "") + (r.stderr || ""), r };
 }
 
@@ -686,22 +692,38 @@ check("every explicitly declared clause exists in that version's text", () => {
   // is worse than a missing one.
   const specs = JSON.parse(read("data/parameter-specs.json")).specs;
   const corpus = JSON.parse(read("dist/mineru-v4-data.json"));
+  // 有些条款号印在 PDF 的左边距里，是**位图**（GB 4785 草案第 4 章就是）——
+  // 文本层里根本没有这些数字。这张表把「确实存在、但只在位图里」的条款号
+  // 登记下来，附上人读得懂的依据；登记表之外的条款号仍然必须在正文里验到。
+  const bitmap = (() => {
+    try {
+      return JSON.parse(read("data/clause-bitmap-fixes.json"));
+    } catch {
+      return {};
+    }
+  })();
   const bad = [];
   let n = 0;
+  let nBitmap = 0;
   for (const s of specs) {
     for (const [ver, pat] of Object.entries(s.patterns ?? {})) {
       const cl = typeof pat === "string" ? "" : pat?.clause;
       if (!cl) continue;
       n++;
       const text = String(corpus?.[ver]?.fullText ?? "");
-      if (!text.includes(cl)) bad.push(`${s.id}/${ver}: 条款号 ${cl} 在该版原文里不存在`);
+      if (text.includes(cl)) continue;
+      if (Object.prototype.hasOwnProperty.call(bitmap?.[ver] ?? {}, cl)) {
+        nBitmap++;
+        continue;
+      }
+      bad.push(`${s.id}/${ver}: 条款号 ${cl} 在该版原文里不存在`);
     }
   }
   assert(
     bad.length === 0,
     `显式声明的条款号有 ${bad.length} 条对不上原文：\n        ${bad.join("\n        ")}`,
   );
-  return `${n} 条显式条款号全部在原文里验到`;
+  return `${n} 条显式条款号全部在原文里验到（其中 ${nBitmap} 条印在 PDF 位图里，登记在 data/clause-bitmap-fixes.json）`;
 });
 
 check("matrix matches parameter-specs.json", () => {
@@ -1023,6 +1045,53 @@ check("appendix C is rendered as a three-version table", () => {
   const cRows = (md.match(/^\| C \| \d/gm) ?? []).length;
   assert(aRows > 0 && cRows > 0, `附录C 三版本行缺失 (A=${aRows}, C=${cRows}) — C 列会渲染成空`);
   return `表头「${headerCell}」· A 行 ${aRows} / C 行 ${cRows}`;
+});
+
+check("appendix E — the coverage checklist is present and says zero gaps", () => {
+  // 客户真正会问的那句「有没有少数据」在附录 E 里回答。
+  // 断言它在报告里、且表格里的数字与 data/coverage-audit.json 一致 ——
+  // 否则附录就是一张好看的旧表。
+  const md = reportText();
+  const i = md.search(/# 附录 E/);
+  assert(i >= 0, "附录 E 缺失 —— 客户问「有没有少数据」时无处可答");
+  const ap = md.slice(i);
+  const audit = JSON.parse(read("data/coverage-audit.json"));
+  const t = audit.totals ?? {};
+  assert(
+    ap.includes(String(t.limits)) && ap.includes(String(t.same)),
+    `附录 E 的数字与 data/coverage-audit.json 不一致（限值 ${t.limits} / 同条款 ${t.same}）`,
+  );
+  for (const v of ["A", "B", "C"]) {
+    const x = audit.versions?.[v] ?? {};
+    assert(
+      ap.includes(`| ${v} `) || ap.includes(`（${v}）`),
+      `附录 E 里没有 ${v} 版那一行`,
+    );
+    assert(
+      (x.missing ?? -1) === 0,
+      `${v} 版还有 ${x.missing} 条真缺口 —— 附录 E 不能说「没有需要补的量值」`,
+    );
+  }
+  return `${t.limits} 条限值 · 真缺口 ${t.missing}`;
+});
+
+check("appendix F — every quoted passage is in the source PDF", () => {
+  // 附录 F 是客户唯一能直接读到「表格型限值」的地方，它引的每一句都必须
+  // 逐字来自源 PDF。转述、错字、记错的数字 —— 一律在这里挡住。
+  const { ok, out } = runPy(["scripts/check_appendix_tables.py"], "appendix_tables");
+  assert(ok, `附录 F 的引文有对不上的:
+        ${out.slice(-600)}`);
+  const m = out.match(/附录 F 原文片段：(\d+) 条，命中 (\d+) 条/);
+  return m ? `${m[2]}/${m[1]} 条引文回源验到` : "已验";
+});
+
+check("the coverage checklist is not stale", () => {
+  // 参数矩阵加了行、条款索引变了，覆盖清单必须跟着变。
+  // 否则报告里印的是**旧**覆盖率 —— 比没有覆盖率更坏。
+  const { ok, out } = runPy(["scripts/coverage_audit.py", "--check"], "coverage_audit");
+  assert(ok, `覆盖清单已过期:
+        ${out.slice(-600)}`);
+  return (out.match(/覆盖清单与现算一致：.*/) ?? ["一致"])[0].trim();
 });
 
 check("printed TOC page numbers resolve to real chapter pages", () => {

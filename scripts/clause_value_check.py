@@ -15,47 +15,25 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 spec = importlib.util.spec_from_file_location("cs", os.path.join(ROOT, "scripts", "clause_split.py"))
 cs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cs)
+# 解析规则与覆盖审计共用一份 —— 两边口径不一致时，会出现
+# 「审计说漏了、核对说没错」这种没法判的场面。
+spec2 = importlib.util.spec_from_file_location("ca", os.path.join(ROOT, "scripts", "coverage_audit.py"))
+ca = importlib.util.module_from_spec(spec2)
+spec2.loader.exec_module(ca)
 
-# ── 单位与数值 ───────────────────────────────────────────────────────────
-UNIT_ALIAS = {
-    "mm": "mm", "㎜": "mm", "cm": "cm", "cd": "cd", "hz": "Hz",
-    "km/h": "km/h", "°": "°", "%": "%", "v": "V", "w": "W",
-    "lx": "lx", "cd/m²": "cd/m²", "cd/m2": "cd/m²", "nm": "Nm",
-    "min": "min", "s": "s", "m": "m", "km": "km", "cm²": "cm²", "cm2": "cm²",
-    "mm²": "mm²", "mm2": "mm²", "mrad": "mrad", "n": "N",
-}
-# 值 + 单位。千分位「1,500」与小数「0,1」在正则里分不开，
-# 统一按「逗号后 3 位 = 千分位，否则是小数」在 parse_num 里还原。
-VAL = re.compile(
-    r"(?<![\d.])(\d+(?:[ ,]\d+)*(?:\.\d+)?)\s*"
-    r"(mm|㎜|cm|cd|Hz|km\s*/\s*h|kmh|°|%|V|W|lx|Nm|cd\s*/\s*m\s*(?:2|²)|cm\s*2|mm\s*2|min|mrad)?",
-    re.I,
-)
-
-
-def parse_num(raw):
-    """「1,500」→ 1500.0；「0,1」→ 0.1；「1 500」→ 1500.0。"""
-    s = raw.replace(" ", "")
-    if "," in s:
-        a, _, b = s.partition(",")
-        s = ("%s.%s" % (a, b)) if len(b) != 3 else a + b
-    return float(s)
-
-
-def unit_of(u):
-    if not u:
-        return ""
-    k = re.sub(r"\s+", "", u).lower()
-    k = k.replace("kmh", "km/h").replace("cd/m2", "cd/m²").replace("cm2", "cm²").replace("mm2", "mm²")
-    return UNIT_ALIAS.get(k, k)
+parse_num = ca.parse_num
+unit_of = ca.unit_of
+VAL = ca.VAL
+UNIT_ALIAS = ca.UNIT_ALIAS
 
 
 def values_in(body):
     """条款正文里的 (数值, 单位) 列表。"""
-    clean = re.sub(r"\s+", " ", body)
+    clean = ca.BROKEN_NUM.sub(".", re.sub(r"\s+", " ", body))
     out = []
     for m in VAL.finditer(clean):
-        raw, unit = m.group(1), unit_of(m.group(2))
+        raw = m.group(1)
+        unit = unit_of(m.group(2), clean[m.end(2):m.end(2) + 12])
         try:
             v = parse_num(raw)
         except ValueError:
