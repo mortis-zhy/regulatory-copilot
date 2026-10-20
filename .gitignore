@@ -130,3 +130,8 @@ sidecar-cache/
 # Python bytecode — regenerable, was being tracked by accident
 __pycache__/
 *.pyc
+
+# ── 构建/渲染产物(可重新生成)──
+reports/.verify-render.pdf
+reports/final.pdf
+reports/last-report.BAK.json

@@ -22,6 +22,8 @@ import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
 // the §11.3.3 A-vs-B matrix. Same name, different job — the import below is the
 // three-version matrix and would be shadowed by the local declaration.
 import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, loadSourceCorpus, verdictLabel } from "./parameterMatrix";
+// 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
+import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
@@ -2138,6 +2140,14 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   // —— §6.14 那一批（400 / 600 / 1300 / 250 / 900 / 1200 / 1500）被算到 §6.13 头上，
   // 覆盖率因此被系统性低估。行首的竖线要放过。
   const clauseRe = /^\s*\|?\s*(\d+(?:\.\d+)*)\.?\s*\|?\s+\S/;
+  // MinerU 把 R48 §6 条款表的**下一行标签并进了上一行**：
+  //   `| 6.14.4.6.14.4.1. |`（真条款 6.14.4.1）、`| 6.27.9.6.27.9.1. |`（真条款 6.27.9.1）。
+  // 印着这样的标签，客户在 R48 里**根本找不到这个条款号**；
+  // 而且按章匹配时它会落到**错误的章**（§6.14 而不是 §6.13），
+  // 把已经覆盖的 200mm 误判成「未入矩阵」。
+  // 修复表由 scripts/fix_clause_labels.py 生成（拿值 + 原文片段回查源 PDF 的干净条款索引），
+  // 每一条都在那里写了理由。
+  const clauseFix = (FIXED_CLAUSES as Record<string, string>) ?? {};
   const secRe = /^\s*6\.(\d{1,2})\.?\s+[A-Za-z][A-Za-z ,\-/()']{2,70}\s*$/;
 
   /** `1,200` → `1200`: the inventory stores the number the way the matrix does. */
@@ -2159,8 +2169,17 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
       curClause = "";
       continue;
     }
+    // 附录（道路试验、测量方法、型式试验）**不属于安装要求**，
+    // 它们的条款号自成一套（「1.2」「2.2」「12.8.7」…），混进来会：
+    // ① 把覆盖率的分母灌水；② 让「未入矩阵」里出现根本不是灯具要求的条目。
+    // 到附录为止即止。
+    if (/^\s*Annex\s+\d+/i.test(st)) {
+      inSec6 = false;
+      curClause = "";
+      continue;
+    }
     const mc = st.match(clauseRe);
-    if (mc) curClause = mc[1];
+    if (mc) curClause = clauseFix[mc[1]] ?? mc[1];
     if (!inSec6) continue;
     q.lastIndex = 0;
     let m: RegExpExecArray | null;
@@ -2215,6 +2234,9 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   // ── 未入矩阵的分类 ──────────────────────────────────────────────────
   const kindOf = (r: { clause: string; text: string }): string => {
     if (!r.clause) return "非条款行";
+    // 脚注号 / 图注里的编号（「1」「13」「12.2」）不是条款号 ——
+    // 它们没有第 6 章的前缀，多半是表格的脚注或图的标注。
+    if (!/^6\./.test(r.clause)) return "非条款行（脚注/图注）";
     if (/No (individual specifications|special requirement)/.test(r.text)) return "转引他标 / 无独立数值";
     // a quantified value that is only a vehicle-class or a cross-reference
     // is not a limit the client can act on
@@ -2290,6 +2312,12 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
     "> 不用条款号逐字比对 —— MinerU 里 `6.3.4.2.` 这个编号排在它所属的句子**之后**，",
     "> 所以「行首条款号」与「最近前置条款号」会指向同一段却写成两个号。",
     "",
+    "> **条款号说明**：MinerU 把 R48 §6 条款表的**下一行标签并进了上一行**",
+    "> （`6.14.4.6.14.4.1.` / `6.27.9.6.27.9.1.` 这样的粘连标签），",
+    "> 这样的条款号在 R48 原文里**根本不存在**，客户翻不到。",
+    "> 本表的**条款列已按源 PDF 的文本层还原**（逐条查证，见 `scripts/fix_clause_labels.py`）；",
+    "> **原文列保持抽取原样**，所以引文里仍可能看得到粘连的标签 —— 那是抽取的样子，不是法规的样子。",
+    "",
     "---",
     "",
     "## D.1 按章覆盖统计",
@@ -2308,11 +2336,19 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
     "|---|---|---|",
     ...kindRows,
     "",
-    "> **「未展开的参数」是唯一一类需要读者自己留意的**：",
-    "> R48 确实有那个限值，但本报告没有把它做成矩阵行 —— 绝大多数是其余灯具",
-    "> 的位置/可见度档位（横向距外缘 400mm、内缘间距 600mm、最小离地高度 250mm 之类），",
-    "> 它们与已收录的参数在法规上同型，只是装置不同。",
-    "> 需要逐条查这些的话，D.3 给了条款号与页码，可直接回原文。",
+    ...(kindCounts.get("未展开的参数")
+      ? [
+          "> **「未展开的参数」是唯一一类需要读者自己留意的**：",
+          "> R48 确实有那个限值，但本报告没有把它做成矩阵行 —— 绝大多数是其余灯具",
+          "> 的位置/可见度档位（横向距外缘 400mm、内缘间距 600mm、最小离地高度 250mm 之类），",
+          "> 它们与已收录的参数在法规上同型，只是装置不同。",
+          "> 需要逐条查这些的话，D.3 给了条款号与页码，可直接回原文。",
+        ]
+      : [
+          "> **没有「未展开的参数」了** —— R48 §6 每一条带数字的安装要求都进了第 12 章矩阵。",
+          "> 下面列的都不是要求：脚注号、图注、表格续行（它们没有第 6 章的条款号前缀）。",
+          "> D.3 仍逐条列出，供核对。",
+        ]),
     "",
     "---",
     "",

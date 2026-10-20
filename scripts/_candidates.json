@@ -1,32 +1,57 @@
 {
-  "brakeLamp.s1s2MinHeight": {
-    "A": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,120}?离地高度应不小于\\s*(350\\s*(?:mm|㎜))",
-    "B": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,120}?离地高\\s*度\\s*应\\s*不\\s*小\\s*于\\s*(350\\s*mm)",
-    "C": "6\\.7\\.4\\.2\\.1[\\s\\S]{0,120}?not less than\\s*(350\\s*mm)"
+  "rearReflexReflector.narrowWidthThreshold": {
+    "A": "5\\.14\\.4\\.1[\\s\\S]{0,300}?车\\s*宽\\s*小\\s*于\\s*(1300)\\s*(?:mm|㎜)",
+    "B": "5\\.14\\.4\\.1[\\s\\S]{0,300}?车\\s*宽\\s*小\\s*于\\s*(1300)\\s*mm",
+    "C": "6\\.14\\.4\\.1[\\s\\S]{0,700}?less than\\s*(1[ ,]300)\\s*mm"
   },
-  "brakeLamp.s1s2MaxHeight": {
-    "A": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,120}?不大于\\s*(1500\\s*(?:mm|㎜))",
-    "B": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,120}?不\\s*大\\s*于\\s*(1500\\s*mm)",
-    "C": "6\\.7\\.4\\.2\\.1[\\s\\S]{0,120}?nor more than\\s*(1[ ,]500\\s*mm)"
+  "rearReflexReflector.innerEdgeGapNarrow": {
+    "A": "5\\.14\\.4\\.1[\\s\\S]{0,300}?可\\s*为\\s*不\\s*小\\s*于\\s*(400\\s*(?:mm|㎜))",
+    "B": "5\\.14\\.4\\.1[\\s\\S]{0,300}?可\\s*为\\s*不\\s*小\\s*于\\s*(400\\s*mm)",
+    "C": "6\\.14\\.4\\.1[\\s\\S]{0,700}?may be reduced to\\s*(400\\s*mm)"
   },
-  "drl.innerEdgeGapNarrow": {
-    "A": "5\\.19\\.4\\.1[\\s\\S]{0,300}?则该距离可减至为不小于\\s*(400\\s*(?:mm|㎜))",
-    "B": "5\\.19\\.4\\.1[\\s\\S]{0,300}?则该距离可减至为不小于\\s*(400\\s*mm)",
-    "C": "6\\.19\\.4\\.1[\\s\\S]{0,300}?may be reduced to\\s*(400\\s*mm)"
+  "rearReflexReflector.lowMountHeightThreshold": {
+    "A": "5\\.14\\.5[\\s\\S]{0,300}?离\\s*地\\s*高\\s*度\\s*小\\s*于\\s*(750)\\s*(?:mm|㎜)",
+    "B": "5\\.14\\.5[\\s\\S]{0,300}?离\\s*地\\s*高\\s*度\\s*小\\s*于\\s*(750)\\s*mm",
+    "C": "Vertical angle:\\s*10° above and below horizontal[\\s\\S]{0,200}?mounted below\\s*(750)\\s*mm"
   },
-  "courtesyLamp.maxIntensity": {
-    "A": "礼貌灯",
-    "B": "礼貌灯",
-    "C": "6\\.24\\.9\\.4[\\s\\S]{0,400}?not more less than\\s*(0\\.5\\s*cd)"
+  "conspicuityMarking.minDistanceToStopLamp": {
+    "A": "与强制安装的制动灯",
+    "B": "与强制安装的制动灯",
+    "C": "6\\.21\\.7\\.3[\\s\\S]{0,200}?greater than\\s*(200\\s*mm)"
   },
-  "answerBackSignal.maxFlashFrequency": {
-    "A": "应答信号",
-    "B": "应答信号",
-    "C": "6\\.27\\.7[\\s\\S]{0,200}?frequency shall not exceed\\s*(2\\.0\\s*Hz)"
+  "conspicuityMarking.minMarkingWidth": {
+    "A": "标记的宽度",
+    "B": "标记的宽度",
+    "C": "6\\.21\\.7\\.5[\\s\\S]{0,200}?at least\\s*(60\\s*mm)\\s*in width"
   },
-  "answerBackSignal.maxIntensity": {
-    "A": "应答信号",
-    "B": "应答信号",
-    "C": "6\\.27\\.9[\\s\\S]{0,300}?does not exceed\\s*(700\\s*cd)"
+  "afs.narrowWidthThreshold": {
+    "A": "5\\.3\\.4\\.[\\s\\S]{0,400}?车\\s*宽\\s*小\\s*于\\s*(1300)",
+    "B": "5\\.22\\.4\\.[\\s\\S]{0,400}?车\\s*宽\\s*小\\s*于\\s*(1300)",
+    "C": "6\\.22\\.4\\.1\\.4[\\s\\S]{0,700}?less than\\s*(1[ ,]300)\\s*mm"
+  },
+  "afs.emodeMotorwaySpeed": {
+    "A": "数据集\\s*E1",
+    "B": "5\\.22\\.7\\.4\\.3[\\s\\S]{0,300}?车速超过\\s*(110\\s*km\\s*/\\s*h)",
+    "C": "road characteristics correspond to motorway[\\s\\S]{0,150}?exceeds\\s*(110\\s*km\\s*/\\s*h)"
+  },
+  "afs.emodeE1Speed": {
+    "A": "数据集\\s*E1",
+    "B": "5\\.22\\.7\\.4\\.3[\\s\\S]{0,400}?数据集\\s*E1[:：]\\s*车速超过\\s*(100\\s*km\\s*/\\s*h)",
+    "C": "Data set E1[:：]\\s*the vehicle's speed exceeds\\s*(100\\s*km\\s*/\\s*h)"
+  },
+  "afs.emodeE2Speed": {
+    "A": "数据集\\s*E2",
+    "B": "5\\.22\\.7\\.4\\.3[\\s\\S]{0,500}?数据集\\s*E2[:：]\\s*车速超过\\s*(90\\s*km\\s*/\\s*h)",
+    "C": "Data set E2[:：]\\s*the vehicle's speed exceeds\\s*(90\\s*km\\s*/\\s*h)"
+  },
+  "afs.emodeE3Speed": {
+    "A": "数据集\\s*E3",
+    "B": "5\\.22\\.7\\.4\\.3[\\s\\S]{0,600}?数据集\\s*E3[:：]\\s*车速超过\\s*(80\\s*km\\s*/\\s*h)",
+    "C": "Data set E3[:：]\\s*the vehicle's speed exceeds\\s*(80\\s*km\\s*/\\s*h)"
+  },
+  "conspicuityMarking.alternativeMaxHeight": {
+    "A": "醒目标志的最大安装高度",
+    "B": "醒目标志的最大安装高度",
+    "C": "maximum mounting height of\\s*(2[ ,]500\\s*mm)"
   }
 }
