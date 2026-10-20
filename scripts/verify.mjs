@@ -1094,6 +1094,42 @@ check("the coverage checklist is not stale", () => {
   return (out.match(/覆盖清单与现算一致：.*/) ?? ["一致"])[0].trim();
 });
 
+check("every reported value is in the clause it cites", () => {
+  // 不变式：矩阵报出的取值必须就在**它引用的那条条款**里（含祖先/后代条款）。
+  // 这是「值对、条款错」那一类错的克星 —— 引用 4.25 却报 5°、引用 6.14.4.1
+  // 却报 1500mm，都会被这里挡住。
+  //
+  // 命中分两档：**强命中**（带单位、按基准量纲换算后相等）与**弱命中**
+  // （原文里只有裸数字，单位在表头或用「参考值」定义）。弱命中不算失败，
+  // 但数量会报出来，人可以看一眼。
+  const { ok, out } = runPy(["scripts/clause_value_check.py"], "clause_value_check");
+  assert(ok, `有取值不在它引用的条款里:
+        ${out.slice(-900)}`);
+  const m = out.match(/检查了 (\d+) 个取值格（强命中 (\d+) · 弱命中 (\d+)）/);
+  assert(m, `clause_value_check 没有给出统计行:\n        ${out.slice(-400)}`);
+  return `${m[1]} 个取值格逐条回条款验到（强 ${m[2]} · 弱 ${m[3]}）`;
+});
+
+check("the chapters whose clause numbers are bitmaps are still scanned", () => {
+  // GB 4785 草案第 4 章的条款号印在 PDF 左边距、是位图，文本层取不到 ——
+  // 按条款扫描会**整章扫不到**，等于这一章隐形（电压、前视红光、可变光强、
+  // 可藏灯、光色…）。这张登记表把这类章节列出来，覆盖审计按页区间扫它们。
+  const bc = JSON.parse(read("data/bitmap-chapters.json"));
+  const entries = [];
+  for (const [ver, chs] of Object.entries(bc)) {
+    if (ver.startsWith("_")) continue;
+    for (const [ch, meta] of Object.entries(chs)) {
+      entries.push(`${ver} 第${ch}章（第 ${meta.pages?.[0]}–${meta.pages?.[meta.pages.length - 1]} 页）`);
+    }
+  }
+  assert(entries.length > 0, "data/bitmap-chapters.json 是空的 —— 位图章节没人扫");
+  // 每一章都必须真的被审计到：覆盖清单里 limits 不能比登记表少
+  const audit = JSON.parse(read("data/coverage-audit.json"));
+  const limits = Object.values(audit.versions ?? {}).reduce((n, v) => n + (v.limits ?? 0), 0);
+  assert(limits > 0, "覆盖清单里一条限值都没有");
+  return `${entries.length} 个位图章节在扫：${entries.join("、")}`;
+});
+
 check("printed TOC page numbers resolve to real chapter pages", () => {
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";

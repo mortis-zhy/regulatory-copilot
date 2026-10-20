@@ -5,6 +5,21 @@
 - 引用 4.25（供电电压）却报 5° → 4.25 里没有 5° → 报错；
 - 引用 6.14.4.1 却报 1500mm → 该条款里没有这个数 → 报错。
 
+**范围**：条款本身 + 它的**祖先条款** + **后代条款**。
+  - 祖先要算，是因为原文常把限值写在总条款、把细则挂在子条款
+    （C §5.12.1.3 只说「见 5.12.1.2」，0.25 cd 在 5.12.1.2 里）；
+  - 后代要算，是因为父条款只是个标题（5.7.2「Single lamps」），
+    数值在 5.7.2.1 里。
+
+**命中分两档**：
+- **强命中**：带单位的量值在条款里找到（单位按基准量纲换算后比较，
+  矩阵写 `m`、原文写 `mm` 也算对）；
+- **弱命中**：原文里只有裸数字（单位在表头、或用「参考值」定义）——
+  算过，但要在报告里单独说明。
+
+无单位行（色度坐标这类）走**弱命中 + 表格页**：
+  色度值在「表1 装置发出的光色」里，条款正文只说「见表1 至表4」。
+
 对照表：条款索引（scripts/clause_split.py，源 PDF 文本层）× 矩阵取值。
 
 用法： python scripts/clause_value_check.py
@@ -12,56 +27,53 @@
 import importlib.util, io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-spec = importlib.util.spec_from_file_location("cs", os.path.join(ROOT, "scripts", "clause_split.py"))
-cs = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cs)
-# 解析规则与覆盖审计共用一份 —— 两边口径不一致时，会出现
-# 「审计说漏了、核对说没错」这种没法判的场面。
-spec2 = importlib.util.spec_from_file_location("ca", os.path.join(ROOT, "scripts", "coverage_audit.py"))
-ca = importlib.util.module_from_spec(spec2)
-spec2.loader.exec_module(ca)
-
-parse_num = ca.parse_num
-unit_of = ca.unit_of
-VAL = ca.VAL
-UNIT_ALIAS = ca.UNIT_ALIAS
 
 
-def values_in(body):
-    """条款正文里的 (数值, 单位) 列表。"""
-    clean = ca.BROKEN_NUM.sub(".", re.sub(r"\s+", " ", body))
+def _load(name, path):
+    s = importlib.util.spec_from_file_location(name, path)
+    m = importlib.util.module_from_spec(s)
+    s.loader.exec_module(m)
+    return m
+
+
+cs = _load("cs", os.path.join(ROOT, "scripts", "clause_split.py"))
+ls = _load("ls", os.path.join(ROOT, "scripts", "limit_scan.py"))
+
+
+def ancestors(clause):
+    """5.6.4.2.1 → 5.6.4.2 → 5.6.4 → 5.6 → 5"""
+    parts = clause.split(".")
+    return [".".join(parts[:i]) for i in range(len(parts) - 1, 0, -1)]
+
+
+def scope(idx, v, clause):
+    """条款 + 祖先 + 后代 的正文。"""
     out = []
-    for m in VAL.finditer(clean):
-        raw = m.group(1)
-        unit = unit_of(m.group(2), clean[m.end(2):m.end(2) + 12])
-        try:
-            v = parse_num(raw)
-        except ValueError:
-            continue
-        # 「3.15」这种条款号形态、纯小数（无单位）先跳过
-        if not unit and "." in raw:
-            continue
-        out.append((v, unit))
-    return out
-
-
-def to_mm(v, unit):
-    """米 → 毫米（矩阵的 unit=mm 时用）。"""
-    if unit == "m":
-        return v * 1000.0
-    return v
+    for k in ancestors(clause):
+        b = idx.get(v, {}).get(k, {}).get("body")
+        if b:
+            out.append(b)
+    b = idx.get(v, {}).get(clause, {}).get("body")
+    if b:
+        out.append(b)
+    for k, c2 in idx.get(v, {}).items():
+        if k.startswith(clause + "."):
+            out.append(c2.get("body", ""))
+    return "\n".join(out)
 
 
 def main():
     docs = cs.pick_docs()
     idx = {v: cs.split_clauses(p) for v, p in docs.items()}
+    pages = {v: cs.doc_lines(p) for v, p in docs.items()}
     rep = json.load(io.open(os.path.join(ROOT, "reports", "last-report.json"), encoding="utf-8"))
     rows = rep["parameterMatrix"]
 
-    checked = skipped = 0
+    strong = weak = skipped = 0
     bad = []
     for r in rows:
-        row_unit = r.get("unit", "")
+        row_unit = (r.get("unit") or "").strip()
+        dimensionless = row_unit in ("", "—", "-")
         for v in ("A", "B", "C"):
             c = r["cells"].get(v, {})
             if c.get("status") != "verified":
@@ -72,34 +84,60 @@ def main():
                 skipped += 1
                 continue
             body = idx.get(v, {}).get(cl, {}).get("body")
-            if not body or not body.strip():
+            if body is None or not body.strip():
                 skipped += 1          # 条款索引里没有 / 正文为空（索引不全，不是矛盾）
                 continue
-            have = values_in(body)
-            # 父条款（5.7.5 几何可见度）的值常在子条款里（5.7.5.1）——
-            # 把**后代条款**的值也算进来。
-            for k, c2 in idx.get(v, {}).items():
-                if k.startswith(cl + "."):
-                    have += values_in(c2.get("body", ""))
-            have_mm = [(to_mm(x, u), u) for x, u in have]
+            text = scope(idx, v, cl)
+            found = ls.scan_limits(text)
+            decimals = ls.scan_decimals(text)
+            # **表格回退**：值可能落在条款引入的表里 —— 条款正文只写
+            # 「见表1 至表4」（色度坐标）、或值在 Vr/TTC 表、照度表里。
+            # 这类命中算「弱」：条款没错，但值不在正文句子里。
+            pg = idx[v][cl].get("page", 0)
+            page_found = []
+            page_decimals = []
+            if pg:
+                extra = []
+                for p, lines in pages.get(v, []):
+                    if abs(p - pg) <= 1:
+                        extra.append("\n".join(lines))
+                if extra:
+                    blob = "\n".join(extra)
+                    page_found = ls.scan_limits(blob)
+                    page_decimals = ls.scan_decimals(blob)
             for n in nums:
                 try:
                     fv = float(n)
                 except ValueError:
                     continue
-                ok = any(abs(x - fv) < 1e-6 and (not u or not row_unit or u == row_unit)
-                         for x, u in have_mm)
-                if not ok:
-                    # 再给一次机会：单位不同但数值相同（% / 无单位这类）
-                    ok = any(abs(x - fv) < 1e-6 for x, u in have_mm if u in ("", row_unit))
-                if not ok:
-                    bad.append((r["id"], v, cl, n, row_unit, sorted(set(have_mm))[:8]))
-                checked += 1
-    print("检查了 %d 个取值格，%d 个格因无条款号/条款不在索引里而跳过" % (checked, skipped))
+                hit = None
+                if not dimensionless:
+                    for x, u in found:
+                        if ls.same_limit(x, u, fv, row_unit):
+                            hit = "强"
+                            break
+                if hit is None:
+                    for x, u in page_found:
+                        if ls.same_limit(x, u, fv, row_unit):
+                            hit = "弱"
+                            break
+                if hit is None:
+                    for d in decimals + page_decimals:
+                        if abs(d - fv) <= 1e-9 * max(1.0, abs(d)):
+                            hit = "弱"
+                            break
+                if hit is None:
+                    bad.append((r["id"], v, cl, n, row_unit, sorted(set(found))[:8]))
+                elif hit == "强":
+                    strong += 1
+                else:
+                    weak += 1
+    print("检查了 %d 个取值格（强命中 %d · 弱命中 %d），%d 个格因无条款号/条款不在索引里而跳过"
+          % (strong + weak, strong, weak, skipped))
     if bad:
         print("不符 %d 处：" % len(bad))
         for b in bad:
-            print("   %-42s %s 条款 %-12s 报 %s%s   该条款里的值: %s"
+            print("   %-42s %s 条款 %-14s 报 %s%s   该条款里的值: %s"
                   % (b[0], b[1], b[2], b[3], b[4], b[5]))
     else:
         print("全部通过 ✓")

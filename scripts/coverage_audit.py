@@ -30,82 +30,72 @@ spec2 = importlib.util.spec_from_file_location("cis", os.path.join(ROOT, "script
 cis = importlib.util.module_from_spec(spec2)
 spec2.loader.exec_module(cis)
 
-UNIT_ALIAS = {
-    "mm": "mm", "㎜": "mm", "cm": "cm", "cd": "cd", "hz": "Hz",
-    "km/h": "km/h", "°": "°", "º": "°", "%": "%", "v": "V", "lx": "lx", "nm": "Nm",
-    "cm²": "cm²", "cm2": "cm²", "mm²": "mm²", "mm2": "mm²", "㎝": "cm²",
-    # 英文单位（R48 写 degree / lux / lumen / second）
-    "degree": "°", "degrees": "°", "lux": "lx", "lumen": "lm", "lumens": "lm",
-    "second": "s", "seconds": "s", "min": "min", "minute": "min", "minutes": "min",
-    "cd/m²": "cd/m²", "cd/m2": "cd/m²", "min": "min", "s": "s",
-}
-LIMIT_UNITS = {"mm", "cm", "cd", "Hz", "km/h", "°", "%", "V", "lx", "Nm",
-               "cm²", "mm²", "cd/m²", "min", "s", "lm"}
-VAL = re.compile(
-    # 前瞻①：数字不能紧跟在字母/破折号后面 —— 否则页脚「GB4785—2019」里的
-    #   2019 会被并进下一个数（"2019 12.5cm" → 201912.5）。
-    #   ASCII 连字符不在排除表里，因为那是负号（-0.5%）。
-    r"(?<![\d.])(?<![A-Za-z—–])(\d+(?:[ ,]\d+)*(?:\.\d+)?)\s*"
-    # 单位：cd/m² 必须排在 cd 前面；°C 不能当成 °（前瞻②）。
-    # 单位后面**不能紧跟 ASCII 字母或数字**（否则 12.5cm2 会被读成 cm）。
-    # 但**中文要放行** —— Python 的 \w 含汉字，早先用 (?![\w°]) 的话
-    # 「7000lx时」「30º至60º」全都检不出来，量值就这么被漏掉了。
-    r"(cd\s*/\s*m\s*(?:2|²)|mm\s*(?:2|²)|cm\s*(?:2|²)|mm|㎜|㎝|cm|cd|Hz|km\s*/\s*h|kmh|°|º|%|V|W|lx|Nm|min|s|degrees?|lux|lumens?|seconds?)(?![A-Za-z0-9°º])"
-    r"(?:\s*per\s*cent)?",
-    re.I,
-)
-NOT_A_LIMIT = re.compile(
-    r"(?:GB/T|GB|ISO|IEC|UN|ECE|第|类|条|款|章|附录|图|表|共|计|其余|其中|符合)\s*$"
-)
-# GB 2019 的 PDF 把每个数字都拆开：「12.\n5cm」「0.\n1%」「-1.\n0%」。
-# 不先把它拼回去，审计器会把 12.5cm 读成 5cm —— 假漏 + 假命中一起来。
-BROKEN_NUM = re.compile(r"(?<=\d)\s*\.\s*(?=\d)")
+# 限值解析**只有一份**（scripts/limit_scan.py）。审计与条款核对必须同口径，
+# 否则会出现「审计说漏了、核对说没错」这种没法判的场面。
+spec3 = importlib.util.spec_from_file_location("ls", os.path.join(ROOT, "scripts", "limit_scan.py"))
+ls = importlib.util.module_from_spec(spec3)
+spec3.loader.exec_module(ls)
+
 # 过渡条款（Chapter 12）与温度不是灯光限值。
 SKIP_BODY = re.compile(r"Transitional provisions|shall no longer be recognized|"
                        r"in the event of the approval of a lamp", re.I)
 
 
 def parse_num(raw):
-    s = raw.replace(" ", "")
+    """矩阵里的取值（纯数字，可能带千分位）。"""
+    s = re.sub(r"\s+", "", str(raw))
     if "," in s:
         a, _, b = s.partition(",")
         s = ("%s.%s" % (a, b)) if len(b) != 3 else a + b
-    return float(s)
+    try:
+        return float(s)
+    except ValueError:
+        return None
 
 
-def unit_of(u, tail=""):
-    if not u:
-        return ""
-    k = re.sub(r"\s+", "", u).lower().replace("kmh", "km/h")
-    k = k.replace("cd/m2", "cd/m²").replace("cm2", "cm²").replace("mm2", "mm²")
-    # 只有完整的「per cent」才算百分号 —— 「per lamp」不是。
-    if re.match(r"\s*per\s*cent\b", tail or "", re.I):
-        return "%"
-    return UNIT_ALIAS.get(k, k)
+def row_unit_of(unit):
+    """矩阵行的单位名 → 规范单位（「mm²（80mm圆面积）」这种带说明的取前缀）。"""
+    u = (unit or "").strip()
+    if u.startswith("mm²"):
+        return "mm²"
+    return u
 
 
 def limits_in(body):
-    """条款正文里的**限值** (值, 单位)。"""
-    clean = BROKEN_NUM.sub(".", re.sub(r"\s+", " ", body))
-    out = []
-    for m in VAL.finditer(clean):
-        raw = m.group(1)
-        unit = unit_of(m.group(2), clean[m.end(2):m.end(2) + 12])
-        if unit not in LIMIT_UNITS:
-            continue
-        try:
-            v = parse_num(raw)
-        except ValueError:
-            continue
-        before = clean[max(0, m.start() - 12):m.start()]
-        if NOT_A_LIMIT.search(before):
-            continue
-        # 「2 V 级近光模式」里的 V 是**等级字母**，不是伏特；
-        # 「13.5V」/「24 V」才是电压。判据：单位后面紧跟汉字就不是量值单位。
-        if unit in ("V", "W") and re.match(r"\s*[一-鿿]", clean[m.end():m.end() + 3]):
-            continue
-        out.append((v, unit))
-    return out
+    """条款正文里的**限值** (值, 规范单位)。"""
+    return ls.scan_limits(body)
+
+
+def same(v1, u1, v2, u2):
+    """两个量值是不是同一个（跨写法：m vs mm、° vs degree）。"""
+    return ls.same_limit(v1, u1, v2, u2)
+
+
+def load_bitmap_chapters():
+    """条款号印在位图里、只能按页区间扫的章节。"""
+    path = os.path.join(ROOT, "data", "bitmap-chapters.json")
+    if not os.path.exists(path):
+        return {}
+    raw = json.load(io.open(path, encoding="utf-8"))
+    return {v: (raw.get(v) or {}) for v in ("A", "B", "C")}
+
+
+def bitmap_chapter_text(v, meta):
+    """该章节的正文（按页区间取，按标记切掉下一章的开头）。"""
+    docs = cs.pick_docs()
+    pgs = meta.get("pages") or []
+    if not pgs:
+        return ""
+    lo, hi = min(pgs), max(pgs)
+    blob = []
+    for p, lines in cs.doc_lines(docs[v]):
+        if lo <= p <= hi:
+            blob.append("\n".join(lines))
+    text = "\n".join(blob)
+    cut = meta.get("cutAt")
+    if cut and cut in text:
+        text = text[:text.index(cut)]
+    return text
 
 
 def is_table_clause(body, vals):
@@ -145,29 +135,37 @@ def chapter_of(clause):
     return ".".join(p[:2])
 
 
+def _chap_key(k):
+    """章节排序键；位图章节的标签不是条款号，排在最后。"""
+    try:
+        return [int(x) for x in k.split(".")]
+    except ValueError:
+        return [10 ** 6]
+
+
 def main():
     docs = cs.pick_docs()
     idx = {v: cs.split_clauses(p) for v, p in docs.items()}
     TABLES = load_tables()
+    BITMAP_CHAPTERS = load_bitmap_chapters()
     rep = json.load(io.open(os.path.join(ROOT, "reports", "last-report.json"), encoding="utf-8"))
     rows = rep["parameterMatrix"]
 
     by_clause, by_chapter, anywhere = {}, {}, {}
     for v in ("A", "B", "C"):
-        bc, bch, an = defaultdict(list), defaultdict(list), defaultdict(list)
+        bc, bch, an = defaultdict(list), defaultdict(list), []
         for r in rows:
             c = r["cells"].get(v, {})
             if c.get("status") != "verified":
                 continue
             cl = (c.get("clause") or "").strip()
-            unit = (r.get("unit") or "").strip()
+            unit = row_unit_of(r.get("unit") or "")
             for n in c.get("nums", []):
-                try:
-                    f = parse_num(str(n))
-                except ValueError:
+                f = parse_num(str(n))
+                if f is None:
                     continue
-                item = (round(f, 6), unit, r["id"], r["name"], cl)
-                an[(round(f, 6), unit)].append(item)
+                item = (f, unit, r["id"], r["name"], cl)
+                an.append(item)
                 if not cl:
                     continue
                 bc[cl].append(item)
@@ -197,6 +195,7 @@ def main():
         same_hits, other_hits, else_hits, dev_hits, misses = [], [], [], [], []
         tables = []
         oos = []
+        mixed = []
         for clause, obj in cls.items():
             body = obj.get("body", "")
             if not body.strip() or clause.startswith("3."):
@@ -207,10 +206,12 @@ def main():
             # B/C 的 upper/lower inclination limit）本来就没有带单位的标量量值，
             # 先算量值会把它们整条跳过。
             cur = TABLES.get(v, {}).get(clause)
+            skip = set()
             if cur:
                 if cur.get("kind") == "outOfScope":
                     oos.append({"clause": clause, "note": cur.get("note", "")})
-                else:
+                    continue
+                if cur.get("kind") != "mixed":
                     tables.append({
                         "clause": clause,
                         "device": dev_of(v, clause),
@@ -218,8 +219,15 @@ def main():
                         "note": cur.get("note", ""),
                         "values": sorted({("%g %s" % (x, u)) for x, u in limits_in(body)}),
                     })
-                continue
-            vals = limits_in(body)
+                    continue
+                # kind=mixed：这条里既有真限值、也有**适用门槛**（如「车长大于 6m
+                # 但不大于 7m」里的 6m/7m 是车长分档，不是灯具的安装限值）。
+                # 门槛逐个列在 skip 里，其余照常算覆盖。
+                skip = {(round(float(a), 6), b) for a, b in (cur.get("skip") or [])}
+                mixed.append({"clause": clause, "note": cur.get("note", ""),
+                              "skip": ["%g %s" % (a, b) for a, b in (cur.get("skip") or [])]})
+            vals = [x for x in limits_in(body)
+                    if (round(x[0], 6), x[1]) not in skip]
             if not vals:
                 continue
             n_clause += 1
@@ -227,23 +235,24 @@ def main():
             seen = set()
             for val, unit in vals:
                 key = (round(val, 6), unit)
-                if key in seen:
+                # 去重按**规范量值**：「0.5 m」和「500 mm」是同一个限值的两种写法
+                cv = ls.canon_value(val, unit)
+                ckey = (round(cv[1], 6), cv[0]) if cv else key
+                if ckey in seen:
                     continue
-                seen.add(key)
+                seen.add(ckey)
                 n_value += 1
-                exact = [x for x in by_clause[v].get(clause, [])
-                         if x[0] == key[0] and (not unit or not x[1] or x[1] == unit)]
-                loose = [x for x in by_clause[v].get(clause, []) if x[0] == key[0]]
-                if exact or loose:
-                    same_hits.append((clause, key, (exact or loose)[0][3]))
+                # 单位按**基准量纲**比较：原文写 0.5 m、矩阵写 500 mm，是同一个限值。
+                exact = [x for x in by_clause[v].get(clause, []) if same(val, unit, x[0], x[1])]
+                if exact:
+                    same_hits.append((clause, key, exact[0][3]))
                     continue
                 near = [x for x in by_chapter[v].get(chapter_of(clause), [])
-                        if x[0] == key[0] and (not unit or not x[1] or x[1] == unit)]
+                        if same(val, unit, x[0], x[1])]
                 if near:
                     other_hits.append((clause, key, near[0][3]))
                     continue
-                cands = anywhere[v].get(key) or \
-                    [x for x in anywhere[v].get((key[0], ""), []) if not unit or not x[1] or x[1] == unit]
+                cands = [x for x in anywhere[v] if same(val, unit, x[0], x[1])]
                 if not cands:
                     misses.append((clause, key, obj.get("page", 0)))
                     continue
@@ -268,6 +277,33 @@ def main():
                     "values": sorted({("%g %s" % (x, u)) for x, u in vals}),
                 })
                 misses = [m for m in misses if m[0] != clause]
+        # ── 条款号印在位图里的章节 ──────────────────────────────
+        # GB 4785 草案第 4 章（一般要求）的条款号是位图，文本层一个「4.x」都
+        # 读不到 —— 按条款扫描根本扫不到它，等于**整章隐形**。这里按页区间补扫。
+        for ch, meta in (BITMAP_CHAPTERS.get(v) or {}).items():
+            label = "第%s章（条款号在位图里）" % ch
+            blob = bitmap_chapter_text(v, meta)
+            if not blob.strip():
+                continue
+            vals = limits_in(blob)
+            n_clause += 1
+            seen = set()
+            skip = {(round(float(a), 6), b) for a, b in (meta.get("skip") or [])}
+            for val, unit in vals:
+                key = (round(val, 6), unit)
+                if key in skip:
+                    continue
+                cv = ls.canon_value(val, unit)
+                ckey = (round(cv[1], 6), cv[0]) if cv else key
+                if ckey in seen:
+                    continue
+                seen.add(ckey)
+                n_value += 1
+                hit = [x for x in anywhere[v] if same(val, unit, x[0], x[1])]
+                if hit:
+                    else_hits.append((label, key, hit[0][3]))
+                else:
+                    misses.append((label, key, meta.get("pages", [""])[0]))
         grand["same"] += len(same_hits)
         grand["other"] += len(other_hits)
         grand["elsewhere"] += len(else_hits)
@@ -284,7 +320,7 @@ def main():
             for m in bucket:
                 bych[chapter_of(m[0])].append(m)
             print("  ── %s ──" % label)
-            for chap in sorted(bych, key=lambda k: [int(x) for x in k.split(".")]):
+            for chap in sorted(bych, key=_chap_key):
                 ms = bych[chap]
                 print("  §%s %s —— %d 个" % (chap, cis.device_of(v, chap), len(ms)))
                 for clause, (val, unit), *rest in ms:
@@ -308,6 +344,7 @@ def main():
             ],
             "tableShaped": tables,
             "outOfScope": oos,
+            "mixedScope": mixed,
         }
     print("=" * 92)
     print("三版合计：同条款 %d · 同章别处 %d · 通用条款已覆盖 %d · **别装置顶替 %d** · **真漏 %d**"
