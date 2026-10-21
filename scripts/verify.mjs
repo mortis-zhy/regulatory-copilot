@@ -1194,6 +1194,21 @@ check("every empty matrix cell says why it is empty", () => {
   return `${empty} 个空格全部写明了原因`;
 });
 
+check("the clause index has no holes and no abnormally long clauses", () => {
+  // 条款切分器的碎片拼接一旦被**正文行**打断，后面的真条款会被拼成
+  // 「23.4.10」这种不存在的条款号，于是**整条丢掉**：
+  // B（GB 4785-2019）第 4 章的 4.10–4.31 曾经整段没进索引，
+  // 而 4.9 又被登记为「不在范围」——**一般要求整章对覆盖审计隐形**，
+  // 电压、货车透光面、移动部件 0.15% / 遮挡 50%、可藏灯、光色…一条都没被清点过。
+  //
+  // 两条信号：条款号**有洞**（标准自己编的号不跳号）、条款正文**异常长**
+  // （被吞掉的条款会挂在上一条身上）。附录/术语章/配光表天然长，
+  // 登记在 data/clause-gap-allowlist.json 里，写明理由。
+  const { ok, out } = runPy(["scripts/clause_gap_check.py"], "clause_gap_check");
+  assert(ok, `条款索引有洞或异常长的条款:\n        ${out.slice(-900)}`);
+  return out.split("\n")[0];
+});
+
 check("printed TOC page numbers resolve to real chapter pages", () => {
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";

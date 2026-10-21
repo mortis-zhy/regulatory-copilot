@@ -291,7 +291,19 @@ def main():
                 if gen:
                     else_hits.append((clause, key, gen[0][3]))
                 else:
-                    dev_hits.append((clause, key, cands[0][3], dev))
+                    # 「别装置顶替」：这个值在**别的装置**那一条里出现过。
+                    # 光有计数不够 —— 报告里写着「已核对」，可产物里查不到核的是哪几条。
+                    # 把**原条款 / 原装置 / 被哪一行顶替 / 顶替行引的是哪条**都记下来。
+                    dev_hits.append({
+                        "clause": clause,
+                        "value": "%g %s" % (key[0], key[1]),
+                        "page": obj.get("page", 0),
+                        "device": dev,
+                        "coveredByRow": cands[0][2],
+                        "coveredByName": cands[0][3],
+                        "coveredByClause": cands[0][4],
+                        "candidates": len(cands),
+                    })
             # 这条是不是**分档表 / 配光表**？
             # 判据：**一个值都没被矩阵覆盖**。已覆盖的条款不是表 ——
             # 早先用「量值多、句子少」去判，把前位灯几何可见度（45°/20°/80°/
@@ -372,14 +384,21 @@ def main():
                 continue
             bych = defaultdict(list)
             for m in bucket:
-                bych[chapter_of(m[0])].append(m)
+                clause = m["clause"] if isinstance(m, dict) else m[0]
+                bych[chapter_of(clause)].append(m)
             print("  ── %s ──" % label)
             for chap in sorted(bych, key=_chap_key):
                 ms = bych[chap]
                 print("  §%s %s —— %d 个" % (chap, cis.device_of(v, chap), len(ms)))
-                for clause, (val, unit), *rest in ms:
-                    pg = rest[0] if rest else ""
-                    print("      %-14s %-10s %-6s %s" % (clause, val, unit, pg))
+                for m in ms:
+                    if isinstance(m, dict):
+                        print("      %-14s %-10s p%-4s 顶替行 %s（%s）"
+                              % (m["clause"], m["value"], m.get("page", 0),
+                                 m.get("coveredByRow"), m.get("coveredByName")))
+                    else:
+                        clause, (val, unit), *rest = m
+                        pg = rest[0] if rest else ""
+                        print("      %-14s %-10s %-6s %s" % (clause, val, unit, pg))
         report.append((v, dev_hits, misses))
         out_json["versions"][v] = {
             "label": {"A": "GB 4785 草案 V4.3.5", "B": "GB 4785-2019",
@@ -390,6 +409,9 @@ def main():
             "otherChapter": len(other_hits),
             "general": len(else_hits),
             "otherDevice": len(dev_hits),
+            # 「已核对」这句话要能被核对：把每一条都记下来 ——
+            # 哪个条款的哪个值、被**哪一行**顶替、顶替行引的是哪条条款。
+            "otherDeviceItems": dev_hits,
             "missing": len(misses),
             "missingItems": [
                 {"clause": c, "value": ("%g" % k[0]), "unit": k[1], "page": p,

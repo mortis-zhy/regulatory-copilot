@@ -6625,21 +6625,24 @@
       "unit": "%",
       "patterns": {
         "A": {
-          "source": "移动部件从正常使用位置上移开并返回\\s*10\\s*次[^。]{0,140}?偏差应不大于\\s*(0\\.15)\\s*%",
+          "source": "移动部件从正常使用位置上移开并返回\\s*10\\s*次[\\s\\S]{0,120}?偏差应不大于\\s*(0\\.\\s*15)\\s*%",
           "flags": "i",
-          "clause": "4.19"
+          "clause": "4.20"
         },
         "C": {
           "source": "5\\.20[\\s\\S]{0,700}?differs by more than\\s*(0\\.15)\\s*per cent",
           "flags": "i"
+        },
+        "B": {
+          "source": "移动部件从正常使用位置上移开并返回\\s*10\\s*次[\\s\\S]{0,120}?偏差不大于\\s*(0\\.\\s*15)\\s*%",
+          "flags": "i",
+          "clause": "4.20"
         }
       },
       "why": {
-        "A": "A §4.19（p20，条款号在位图里、文本层取不到）：「对于近光灯和前雾灯，移动部件从正常使用位置上移开并返回10 次，每次所测量的相对于其支撑件的倾斜角与10 次平均值之间的偏差应不大于0.15%。」—— 条款号 4.19 由左边距裁剪渲染读出，登记在 data/clause-bitmap-fixes.json。",
-        "C": "R48 §5.20（p32）：「…no value of the angular inclination of these lamps, relative to its support, measured after each operation of the movable component, differs by more than 0.15 per cent from the average of the 10 measured values.」"
-      },
-      "absent": {
-        "B": "GB 4785-2019 没有可移动部件回位后的下倾角偏差这一条。属版本差异，不是抽取失败。"
+        "A": "A §4.20（p20，条款号印在左边距的**位图**里，裁图读出：「4.20 当灯具主功能以及从属功能安装在移动部件上…对于近光灯和前雾灯，移动部件从正常使用位置上移开并返回 10 次，每次所测量的相对于其支撑件的倾斜角与 10 次平均值之间的偏差应不大于 0.15%。」）—— **原引 §4.19 是错的**：左边距上 4.19 是「对于主功能安装在可移动部件上的后位灯…」，0.15% 在**下一条 4.20**。值对、条款错，且因为 A 第 4 章是位图，「取值在所引条款里」那一关退回弱命中，一直没被抓住。",
+        "C": "R48 §5.20（p32）：「…no value of the angular inclination of these lamps, relative to its support, measured after each operation of the movable component, differs by more than 0.15 per cent from the average of the 10 measured values.」",
+        "B": "B §4.20（p20）：「当灯具安装在移动部件上,且移动部件处于『可移动部件的正常使用位置』…对于近光灯和前雾灯,若移动部件从正常使用位置上移开并返回10次,每次所测量的相对于其支撑件的倾斜角与10次平均值之间的偏差不大于0.15%…」—— **B 此前整格是空的**，而 B 原文有这条：B 第 4 章整章没进条款索引（碎片链被交叉引用污染），覆盖审计根本没扫到它。"
       }
     },
     {
@@ -7020,6 +7023,104 @@
         "A": "A 附录C 表C.1（p84）：「大于7000 lx｜关闭｜大于5s，不大于300s。」",
         "B": "B 附录H 表H.1（p80）：「大于7000lx｜关闭｜大于5s,不大于300s。」",
         "C": "R48 Annex 13（p143）：「…but no more than 300 seconds」"
+      }
+    },
+    {
+      "id": "movableLamp.occlusionMaxRatio",
+      "name": "移动部件遮蔽前/后位灯等视表面的比例上限",
+      "family": "几何可见度 / 安装角度",
+      "unit": "%",
+      "patterns": {
+        "A": {
+          "source": "遮蔽前、后位灯，前、后转向信号灯的主功能和前、后回复反射器不应超过其视表面的\\s*(50)\\s*%",
+          "flags": "i",
+          "clause": "4.21"
+        },
+        "B": {
+          "source": "遮蔽前、后位灯,前、后转向信号灯和前、后回复反射器不应超过其视表面的\\s*(50)\\s*%",
+          "flags": "i",
+          "clause": "4.21"
+        },
+        "C": {
+          "source": "shall not be hidden more than\\s*(50)\\s*per cent",
+          "flags": "i",
+          "clause": "5.21"
+        }
+      },
+      "why": {
+        "A": "A §4.21（p21，条款号印在左边距的**位图**里，由 `scripts/read_margin_clause.py` 裁图读出）：「b) 遮蔽前、后位灯，前、后转向信号灯的主功能和前、后回复反射器不应超过其视表面的50%。」—— 条款号**写死**：A 第 4 章条款号全是位图，就近推断根本取不到。",
+        "B": "B §4.21（p20）：「当从基准轴线方向观察时,任何可移动部件(不管是否装有光信号装置),在所有固定位置上遮蔽前、后位灯,前、后转向信号灯和前、后回复反射器不应超过其视表面的50%。」—— **B 第 4 章此前整章没进条款索引**（碎片链被交叉引用污染），所以这一条既没被审计、也没进矩阵。",
+        "C": "R48 §5.21（p32）：「The apparent surface … of front and rear position lamps, front and rear direction-indicator lamps and retro-reflectors shall not be hidden more than 50 per cent by any movable component…」—— §5.21.1 / §5.21.2 的 50% 是同一条的展开。"
+      }
+    },
+    {
+      "id": "bandStripLamp.minLength",
+      "name": "带(条)状双灯/偶数灯的最小长度",
+      "family": "位置 / 间距限值",
+      "unit": "m",
+      "patterns": {
+        "B": {
+          "source": "带\\(条\\)状双灯或偶数灯外形应对称于车辆纵向对称平面,长度不小于\\s*(0\\.\\s*8)\\s*m",
+          "flags": "i",
+          "clause": "4.7"
+        },
+        "C": {
+          "source": "and are not less than\\s*(0\\.\\s*8)\\s*m long",
+          "flags": "i",
+          "clause": "5.7.2.4"
+        }
+      },
+      "absent": {
+        "A": "**GB 4785 草案把这一条删了** —— 不是抽取失败。A §4.7（p14–15，条款号在位图里）改成了「c) 成对安装的灯具（包括回复反射器），左灯和右灯可在同一带（条）状灯体内，且可分别作为左侧和右侧的『D』型灯或互存灯…」，**没有** B/C 那种「带(条)状双灯或偶数灯…长度不小于 0.8m」的要求。**这是版本间的实质差异**（草案不再规定灯带长度），不是漏抽。"
+      },
+      "why": {
+        "B": "B §4.7c)（p14）：「带(条)状双灯或偶数灯外形应对称于车辆纵向对称平面,长度不小于0.8m,其两端至车辆外缘端面的距离不大于0.4m;光源不少于两个,且尽量靠近两端…」",
+        "C": "R48 §5.7.2.4（p26）：「Two lamps or an even number of lamps in the shape of a band or strip shall be placed symmetrically … and are not less than 0.8 m long…」"
+      }
+    },
+    {
+      "id": "bandStripLamp.endToEdgeMax",
+      "name": "带(条)状灯两端至车辆外缘端面的距离上限",
+      "family": "位置 / 间距限值",
+      "unit": "m",
+      "patterns": {
+        "B": {
+          "source": "其两端至车辆外缘端面的距离不大于\\s*(0\\.\\s*4)\\s*m",
+          "flags": "i",
+          "clause": "4.7"
+        },
+        "C": {
+          "source": "extending on both sides to within at least\\s*(0\\.\\s*4)\\s*m of the extreme outer edge",
+          "flags": "i",
+          "clause": "5.7.2.4"
+        }
+      },
+      "absent": {
+        "A": "同 `bandStripLamp.minLength`：**GB 4785 草案的 §4.7 改写后没有灯带长度/端距要求**。"
+      },
+      "why": {
+        "B": "B §4.7c)（p14）：「…其两端至车辆外缘端面的距离**不大于** 0.4m…」",
+        "C": "R48 §5.7.2.4（p26）：「…extending on both sides to **within at least** 0.4 m of the extreme outer edge of the vehicle…」—— ⚠ **数值相同、限定词看着相反**：B 说「距离**不大于** 0.4m」（灯带要贴近车缘），C 的英文是「to within **at least** 0.4 m」（读起来是离车缘**至少** 0.4m）。**这一格不能只看数值** —— 出口欧盟按哪个方向执行，要回 R48 原文/官方译本确认。"
+      }
+    },
+    {
+      "id": "conspicuityMarking.continuityGapMaxRatio",
+      "name": "醒目标志相邻元件间距与最短元件长度之比上限（连续性判定）",
+      "family": "光色 / 标记",
+      "unit": "%",
+      "patterns": {
+        "C": {
+          "source": "do not exceed\\s*(50)\\s*per cent of the shortest adjacent element length",
+          "flags": "i",
+          "clause": "6.21.7.1"
+        }
+      },
+      "absent": {
+        "A": "**A 不自己规定这条，转引了另一份标准** —— A §5.20（p57，条款号在位图里）：「汽车及挂车车身反光标识和车辆尾部标志板的安装按 **GB 11564** 要求。」（GB 11564 是《机动车回复反射器》，与反光标识不是同一件事 —— **草案这里引的标准与 2019 版不同，值得客户回原文确认是不是笔误**。）**不是抽取失败，是这一版没写这条数值要求。**",
+        "B": "**B 同样转引** —— B §5.21（p49）：「汽车及挂车车身反光标识的安装按 **GB23254** 相关要求。车辆尾部标志板的安装按 **GB25990** 相关要求。」连续性判定（相邻元件间距比）在 GB 23254 里，GB 4785-2019 自己不写。"
+      },
+      "why": {
+        "C": "R48 §6.21.7.1（p81）：「Conspicuity markings shall be considered continuous if the distance between adjacent elements are as small as possible and do not exceed 50 per cent of the shortest adjacent element length.」—— 此前这个 50% 被「昼间行驶灯相对前转向灯光强的豁免门槛」那行**顶掉了**（数值撞车，两者是不同的要求）。"
       }
     }
   ]
