@@ -34,6 +34,11 @@ _spec = _ilu.spec_from_file_location("diff_corrections", str(ROOT / "scripts" / 
 dc = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(dc)
 
+# scripts/versions.py —— 全项目唯一的版本清单声明处
+_vspec = _ilu.spec_from_file_location("versions", str(ROOT / "scripts" / "versions.py"))
+versions = _ilu.module_from_spec(_vspec)
+_vspec.loader.exec_module(versions)
+
 def load_mineru():
     data = json.load(open(MINERU, encoding="utf-8"))
     texts = {}
@@ -1227,7 +1232,9 @@ def build_topic_columns(cache_docs, texts):
     """A|B|C three-column comparison per topic with excerpt verification.
     Topic names are normalised (spaces stripped) so variants like
     '追尾警告信号 Vr 表' / '追尾警告信号Vr表' merge into one row."""
-    labels = ["A", "B", "C"]
+    # 版本清单从**语料**推导 —— 写死 A/B/C 的话，换一套标准时
+    # 它的条款一条都不会进核验，而报告照样写「已核验」。
+    labels = [v for v in versions.KNOWN_VERSIONS if v in cache_docs] or list(cache_docs.keys())
     page_rejected: list[str] = []
     topic_names = []
     seen_keys = set()

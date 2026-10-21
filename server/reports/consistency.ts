@@ -62,12 +62,25 @@ function checkUnits(rows: string[][]): ConsistencyIssue[] {
 
   for (const row of rows) {
     if (row.length < 3) continue;
-    const label = (row[1] ?? row[0] ?? "").replace(/\*\*/g, "").trim();
-    if (!label || /^[\d.\s—-]+$/.test(label)) continue;
+    // 主题 = 第一个不是纯序号的单元格（与 checkDuplicates 同一口径）。
+    // 过去一律从第 2 格开始取值对，于是**三列**的横向表
+    // （| 参数 | A | B |）根本不会被比较 —— m/mm 互换查不出来。
+    const cells = row.map((c) => (c ?? "").replace(/\*\*/g, "").trim());
+    let labelIdx = -1;
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i];
+      if (!c) continue;
+      if (/^[\d.\s\u2014-]+$/.test(c)) continue;
+      labelIdx = i;
+      break;
+    }
+    if (labelIdx < 0) continue;
+    const label = cells[labelIdx];
+    if (!label) continue;
 
     // Try every pair of value-bearing cells.
-    for (let i = 2; i < row.length; i++) {
-      for (let j = i + 1; j < row.length; j++) {
+    for (let i = labelIdx + 1; i < cells.length; i++) {
+      for (let j = i + 1; j < cells.length; j++) {
         const aText = row[i] ?? "";
         const bText = row[j] ?? "";
         if (!aText || !bText) continue;
@@ -235,34 +248,14 @@ function checkNumerics(md: string): ConsistencyIssue[] {
       detail: `全文有 ${truncated} 处摘录以「…」结尾被截断 — 关键限定条件可能丢失，工程师需回原文`,
     });
   }
-  // 疑似页码串位：**只在带「页码」列的表里查**。
-  // 旧判据是「任何单元格里只有 5 位以上数字」—— 于是 430000cd
-  // （同时点亮远光灯最大发光强度之和）这种**真实光度值**被报成页码串位。
-  // 页码不可能有 5 位，所以旧判据只会误报。
-  let strayNums = 0;
-  for (const block of tableBlocks(md)) {
-    const lines = block.filter((l) => l.trim().startsWith("|"));
-    if (lines.length < 2) continue;
-    const header = lines[0].replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
-    const pageCol = header.findIndex((h) => /页/.test(h));
-    if (pageCol < 0) continue;
-    for (const l of lines.slice(1)) {
-      if (/^\|[\s:|-]+\|?$/.test(l.trim())) continue;
-      const cells = l.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
-      cells.forEach((c, i) => {
-        if (i === pageCol) return;
-        if (/^\d{5,}$/.test(c)) strayNums++;
-      });
-    }
-  }
-  if (strayNums > 0) {
-    out.push({
-      kind: "numeric",
-      severity: "medium",
-      label: "疑似页码串位",
-      detail: `${strayNums} 个单元格只有 5 位以上数字 — 可能是页码被写进了数值列`,
-    });
-  }
+  // 曾经还有一条「疑似页码串位」（任何单元格里只有 5 位以上数字就算），
+  // **已删除** —— 它没有可靠信号：
+  //   · 页码在本报告里是「第26页」，**裸 5 位以上的数字从来不是页码**；
+  //   · 而 430000cd（同时点亮远光灯最大发光强度之和，GB/R48 都有）
+  //     恰恰就是 6 位数 —— 真实光度值被报成页码串位；
+  //   · 缩窄成「同一行里出现与页码相同的裸数字」也不准：26mm 这种
+  //     合法取值一样会中枪。
+  // 一个只会误报的检查比没有检查更糟：读者会学会忽略整块自查面板。
   return out;
 }
 

@@ -20,6 +20,12 @@
 用法： python scripts/coverage_audit.py
 """
 import importlib.util, io, json, os, re, sys
+
+# scripts/versions.py —— 全项目唯一的版本清单声明处
+_vs = importlib.util.spec_from_file_location(
+    "versions", os.path.join(os.path.dirname(os.path.abspath(__file__)), "versions.py"))
+versions = importlib.util.module_from_spec(_vs)
+_vs.loader.exec_module(versions)
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -77,7 +83,7 @@ def load_bitmap_chapters():
     if not os.path.exists(path):
         return {}
     raw = json.load(io.open(path, encoding="utf-8"))
-    return {v: (raw.get(v) or {}) for v in ("A", "B", "C")}
+    return {v: (raw.get(v) or {}) for v in raw}
 
 
 def load_annex_ranges():
@@ -86,7 +92,7 @@ def load_annex_ranges():
     if not os.path.exists(path):
         return {}
     raw = json.load(io.open(path, encoding="utf-8"))
-    return {v: raw.get(v) for v in ("A", "B", "C") if raw.get(v)}
+    return {v: raw.get(v) for v in raw if raw.get(v)}
 
 
 def bitmap_chapter_text(v, meta):
@@ -145,7 +151,7 @@ def load_tables():
     """
     path = os.path.join(ROOT, "data", "table-clauses.json")
     raw = json.load(io.open(path, encoding="utf-8"))
-    return {v: (raw.get(v) or {}) for v in ("A", "B", "C")}
+    return {v: (raw.get(v) or {}) for v in raw}
 
 
 def dev_of(ver, clause):
@@ -175,7 +181,7 @@ def main():
     rows = rep["parameterMatrix"]
 
     by_clause, by_chapter, anywhere = {}, {}, {}
-    for v in ("A", "B", "C"):
+    for v in versions.ordered_versions(docs):
         bc, bch, an = defaultdict(list), defaultdict(list), []
         for r in rows:
             c = r["cells"].get(v, {})
@@ -212,7 +218,7 @@ def main():
     grand = {"same": 0, "other": 0, "elsewhere": 0, "otherdev": 0, "miss": 0}
     report = []
     out_json = {"generatedAt": None, "versions": {}}
-    for v in ("A", "B", "C"):
+    for v in versions.ordered_versions(docs):
         cls = idx.get(v, {})
         n_clause = n_value = 0
         same_hits, other_hits, else_hits, dev_hits, misses = [], [], [], [], []

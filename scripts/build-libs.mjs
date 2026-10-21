@@ -44,6 +44,12 @@ const ENTRIES = [
   // offline rebuild path (rebuild_report.mjs) could not reach buildMinerUReport.
   ["server/reports/reportV6.ts", "dist/reportV6.js"],
   ["server/reports/parameterMatrix.ts", "dist/parameterMatrix.js"],
+  // consistency.ts is the report's self-check. It needs its own module so
+  // _test_consistency.mjs can feed it **synthetic** tables — the false
+  // positives it used to raise (55 medium findings, 53 of them the checker's
+  // own fault) could only be caught that way, not by looking at the real
+  // report and squinting.
+  ["server/reports/consistency.ts", "dist/consistency.js"],
   ["server/_core/deliveryGate.ts", "dist/deliveryGate.js"],
 ];
 

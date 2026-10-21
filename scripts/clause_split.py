@@ -23,6 +23,15 @@ GB 4785 的 PDF 把条款号拆成几行：
     python scripts/clause_split.py --clause 5.7.4.2.1 --ver B
 """
 import io, json, os, re, glob, sys
+import importlib.util as _ilu
+
+# scripts/versions.py —— 全项目唯一的版本清单声明处
+_vs = _ilu.spec_from_file_location(
+    "versions", os.path.join(os.path.dirname(os.path.abspath(__file__)), "versions.py"))
+versions = _ilu.module_from_spec(_vs)
+_vs.loader.exec_module(versions)
+KNOWN_VERSIONS = versions.KNOWN_VERSIONS
+ordered_versions = versions.ordered_versions
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "uploaded-docs")
@@ -37,8 +46,23 @@ NUM_HEAD = re.compile(r"^(\d+(?:\.\d+)*)\.?\s+(.*)$")
 TOC = re.compile(r"^(?:[….]{6,})|(?:[0-9]{1,3}[…]{2,}\s*$)|(?:\.{4,}\s*$)")
 
 
+# 版本识别表 —— **声明式**。换一套标准 = 加一行，不改代码。
+# 键 = 版本代号；值 = 首页三页里出现即认定（去空白、去连字符后匹配）。
+VERSION_FINGERPRINTS = [
+    ("A", ["4785XXXX", "4785X X X X"]),
+    ("B", ["47852019", "47852019"]),
+    ("C", ["UnitedNationsRegulations", "AgreementConcerning"]),
+]
+
+# 认不出来版本的 PDF —— **不静默丢弃**。一份没进账的 PDF，
+# 它的要求就没人清点过，而报告照样会写「真缺口 0」。
+# 这正是 ⑲ 的翻版（A 第 4 章整章隐形）。
+UNMATCHED_DOCS: list = []
+
+
 def pick_docs():
     out = {}
+    UNMATCHED_DOCS.clear()
     for p in sorted(glob.glob(os.path.join(DOCS, "*.pdf"))):
         try:
             import fitz
@@ -48,12 +72,20 @@ def pick_docs():
         except Exception:
             continue
         nodash = re.sub(r"[—–‐‑‒−-]", "", re.sub(r"\s+", "", head))
-        if "UnitedNationsRegulations" in nodash or "AgreementConcerning" in nodash:
-            out["C"] = p
-        elif "4785XXXX" in nodash:
-            out["A"] = p
-        elif "47852019" in nodash:
-            out["B"] = p
+        hit = None
+        for key, marks in VERSION_FINGERPRINTS:
+            if any(m.replace(" ", "") in nodash for m in marks):
+                hit = key
+                break
+        if hit is None:
+            UNMATCHED_DOCS.append(p)
+            continue
+        out[hit] = p
+    if UNMATCHED_DOCS:
+        print("[clause_split] ⚠ 有 %d 份 PDF 没有被识别成任何版本 —— 它们的条款"
+              "**没有**进入覆盖审计，报告里的「真缺口 0」不覆盖它们：" % len(UNMATCHED_DOCS))
+        for p in UNMATCHED_DOCS:
+            print("[clause_split]    · " + os.path.basename(p))
     return out
 
 
@@ -225,7 +257,7 @@ def main():
         print("-" * 78)
         print(c["body"][:1800])
         return
-    for ver in ("A", "B", "C"):
+    for ver in ordered_versions(idx):
         if ver in idx:
             print("  %s 版：%d 个条款" % (ver, len(idx[ver])))
         else:

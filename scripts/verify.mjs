@@ -1405,7 +1405,15 @@ check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
     // is worse than no check.
     "'rawsub':len(re.findall(r'<(?:/?)(?:sub|sup|i|b|em|strong|br)>',t)),\n" +
     "'latex':len(re.findall(r'\\\\\\\\(?:mathrm|mathbf|dfrac|frac|left|right)',t)),\n" +
-    "'empty':[i+1 for i,pg in enumerate(d) if not pg.get_text().strip()]}))\n";
+    "'empty':[i+1 for i,pg in enumerate(d) if not pg.get_text().strip()],\n" +
+    // 最小字号：版式炸掉的第二个症状（栅格列数错 → 文字被压到不可读）
+    "'minfs':min([round(s['size'],2) for pg in d for b in pg.get_text('dict')['blocks']\n" +
+    "           for l in b.get('lines',[]) for s in l.get('spans',[])\n" +
+    "           if s.get('text','').strip()] or [99]),\n" +
+    "'maxfs':max([round(s['size'],2) for pg in d for b in pg.get_text('dict')['blocks']\n" +
+    "           for l in b.get('lines',[]) for s in l.get('spans',[])\n" +
+    "           if s.get('text','').strip()] or [0]),\n" +
+    "'pages':d.page_count}))\n";
   const r = spawnSync("python", ["-c", py2], {
     cwd: ROOT,
     encoding: "utf-8",
@@ -1424,11 +1432,112 @@ check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
   // clipping an excerpt mid-tag adds `N<sub>1` and `N<sub>1</su` on top.
   assert(m.rawsub === 0, `${m.rawsub} unrendered sub/sup/emphasis tag(s) in the PDF`);
   assert(m.latex === 0, `${m.latex} unrendered LaTeX macro(s) in the PDF`);
-  return `${m.pages}p, ${m.bookmarks} bookmarks, 0 bold, 0 tofu, 0 raw-tag, 0 blank`;
+  // 字号下限：栅格列数写错时（--trip-cols 传了字符串长度），
+  // 文字被压进 0.16mm 宽的列里 —— 客户拿到的是一页页读不了的字。
+  assert(
+    m.minfs >= 4.5,
+    `PDF 里出现了 ${m.minfs}pt 的字（小于 4.5pt）—— 版式炸了（栅格列数 / 缩放）`,
+  );
+  return `${m.pages}p, ${m.bookmarks} bookmarks, 0 bold, 0 tofu, 0 raw-tag, 0 blank, 字号 ${m.minfs}–${m.maxfs}pt`;
+});
+
+check("the delivered page count matches the recorded baseline", () => {
+  // 交付件的文件名里就写着页数（「㉓_…_216页_…」）—— **页数是交付契约的一部分**。
+  // 这一轮就漏过一次：卡片栅格的列数误传成字符串长度（1154 而不是 3），
+  // 全文从 216 页变成 690 页，而**闸门一道都没红**（内容还是全的，
+  // 只是每行只剩一个字）。
+  // 基线记在 reports/page-count.json；页数变动超过 8% 必须**有意识地**改基线。
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+  const basePath = resolve(ROOT, "reports/page-count.json");
+  assert(existsSync(basePath), "reports/page-count.json 不存在 —— 没法对照页数基线");
+  const base = JSON.parse(readFileSync(basePath, "utf-8"));
+  const r = spawnSync(
+    "python",
+    [
+      "-c",
+      "import sys,base64,fitz,json;d=fitz.open(base64.b64decode(sys.stdin.read().strip()).decode('utf-8'));print(d.page_count)",
+    ],
+    { cwd: ROOT, encoding: "utf-8", input: Buffer.from(pdfPath, "utf-8").toString("base64") },
+  );
+  if (r.status !== 0) return "skipped — PyMuPDF 打不开闸门渲染的 PDF";
+  const pages = Number((r.stdout || "").trim().split("\n").pop());
+  const drift = Math.abs(pages - base.pages) / Math.max(1, base.pages);
+  assert(
+    drift <= 0.08,
+    `版式变了：${base.pages} 页 → ${pages} 页（${(drift * 100).toFixed(0)}%）。` +
+      `版式改动是有意的就更新 reports/page-count.json（当前记着 ${base.pages} 页）`,
+  );
+  return `${pages} 页（基线 ${base.pages}，漂移 ${(drift * 100).toFixed(1)}%）`;
+});
+
+check("the completeness layer is version-agnostic", () => {
+  // **完整性保证本身不许写死版本键。**
+  // 覆盖审计 / 条款索引 / 核验层如果写着 ("A", "B", "C")，
+  // 换一套标准时它的条款一条都不会进账 —— 而报告照样写「真缺口 0」。
+  // 这与 ⑲ 的事故同构：⑲ 是 A 第 4 章的位图条款号让整章隐形，
+  // 这次是版本键写死。**「看不见」伪装成「没有缺口」**，是同一个错。
+  const files = ["scripts/coverage_audit.py", "scripts/clause_split.py", "verify_claims.py"];
+  const hits = [];
+  for (const f of files) {
+    const src = read(f);
+    if (/\(\s*["']A["']\s*,\s*["']B["']\s*,\s*["']C["']\s*\)/.test(src)) hits.push(`${f}（版本元组写死）`);
+    if (/labels\s*=\s*\[\s*["']A["']\s*,\s*["']B["']\s*,\s*["']C["']/.test(src)) hits.push(`${f}（labels 写死）`);
+  }
+  assert(
+    hits.length === 0,
+    `这些文件把版本清单写死了，换一套标准时它们的要求不会进账:\n        ${hits.join("\n        ")}`,
+  );
+  // 认不出来的 PDF 必须被报出来，不能静默丢弃
+  const cs = read("scripts/clause_split.py");
+  assert(
+    cs.includes("UNMATCHED_DOCS"),
+    "scripts/clause_split.py 没有报出「认不出版本的 PDF」—— 它的要求会静默地不进覆盖审计",
+  );
+  return "版本清单从语料推导；认不出来的 PDF 会大声报";
+});
+
+check("the renderer derives its version list from the corpus", () => {
+  // 渲染层曾经把版本写死成 A/B/C：横向对照表只认三列（多一版就整张退回
+  // 普通表格）、卡片栅格是 repeat(3, 1fr)、DOC_META 只有三项
+  // （未知版本 → undefined → 卡片崩）。
+  const src = read("server/reports/htmlRenderV8.ts");
+  const fn = src.match(/export async function renderPdfFromReportV8[\s\S]*?\n}/);
+  assert(fn, "renderPdfFromReportV8 not found");
+  assert(
+    fn[0].includes("setActiveVersions("),
+    "渲染入口没有把语料的版本清单传进去 —— 换一套标准时对照表会悄悄丢掉新版本",
+  );
+  assert(
+    src.includes("repeat(var(--trip-cols"),
+    "卡片栅格仍然写死三列 —— 第四版会被挤成三列",
+  );
+  return "渲染层的版本列数跟着语料走";
+});
+
+check("the diff value cleaner never changes a number", () => {
+  // 清洗器改的是**报告里的数字**。它一旦判错，「1s~1.5s」会被改成
+  // 「1s~1.5」（数值被改小），而这种错**不会报错** —— 只会安静地
+  // 改掉法规结论。所以清洗规则必须有已知答案的用例。
+  const { ok, out } = runPy(["scripts/test_diff_corrections.py"], "test_diff_corrections");
+  assert(ok, `差值清洗自测没过:\n        ${out.slice(-900)}`);
+  const m = out.match(/(\d+) 条用例/);
+  assert(m, `test_diff_corrections 没有给出统计行:\n        ${out.slice(-400)}`);
+  return `${m[1]} 条用例：数字一个没动、重复单位都清掉了、区间写法没被误伤`;
 });
 
 console.log("\n=== 5. renderer unit harness ===");
-for (const t of ["_test_math.mjs", "_test_impact.mjs", "_test_table.mjs", "_test_gap_guard.mjs", "_test_versions.mjs"]) {
+for (const t of [
+  "_test_math.mjs",
+  "_test_impact.mjs",
+  "_test_table.mjs",
+  "_test_gap_guard.mjs",
+  "_test_versions.mjs",
+  // 一致性自查器的**合成用例**（它的 53 项误报只有这样才抓得住）
+  "_test_consistency.mjs",
+  // 泛化用例：两版 / 四版 / 改名的版本键
+  "_test_gen.mjs",
+]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });
     const out = (r.stdout || "") + (r.stderr || "");

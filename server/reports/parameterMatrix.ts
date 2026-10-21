@@ -69,6 +69,22 @@ export function versionsOf(data: Record<string, any>): Version[] {
   return [...ordered, ...extras];
 }
 
+/**
+ * Put a set of version keys into display order: the **declared** ones first
+ * (in VERSION_META order), then any unknown key alphabetically.
+ *
+ * The renderer used to hardcode `["A","B","C"]` in four places. That works
+ * exactly as long as the corpus has three documents — and silently drops the
+ * fourth: the data layer was already version-agnostic (`versionsOf`), so the
+ * matrix grew a D column while the PDF's comparison tables did not.
+ */
+export function orderVersions(keys: string[]): string[] {
+  const present = new Set(keys ?? []);
+  const known = VERSION_META.map((m) => m.key).filter((k) => present.has(k));
+  const extras = [...present].filter((k) => !known.includes(k)).sort();
+  return [...known, ...extras];
+}
+
 /** Display label for a version key; unknown keys fall back to the key itself. */
 export function versionLabel(v: Version): string {
   return VERSION_META.find((m) => m.key === v)?.label ?? v;

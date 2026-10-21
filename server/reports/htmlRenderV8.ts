@@ -28,8 +28,20 @@ import {
   reportMarkdown,
 } from "./trustChecks";
 import { buildLedger, ledgerToCounts } from "./closureLedger";
+import { orderVersions } from "./parameterMatrix";
 import { checkConsistency } from "./consistency";
 import type { ReportOutline } from "./reportGenerator";
+
+/**
+ * 当前语料里**实际有几版**。渲染层的版本列识别按它走，
+ * 不再写死 A/B/C —— 换一套标准（X/Y/Z）或加第四版时，
+ * 对照表与卡片布局都会跟着变，而不是把新版本悄悄丢掉。
+ */
+let ACTIVE_VERSIONS: string[] = ["A", "B", "C"];
+export function setActiveVersions(v: string[]): void {
+  const clean = (v ?? []).map((x) => String(x ?? "").trim()).filter(Boolean);
+  if (clean.length) ACTIVE_VERSIONS = clean;
+}
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
 export type ReportAppendix = { id: string; title: string; markdown?: string; page?: number };
@@ -340,9 +352,9 @@ type ParsedTable = {
   rows: string[][]; // rows[0] = header; multi-line cells joined with \n
   isComparison: boolean; // version-in-row table (| 版本/来源 | ... |)
   versionIdx: number;
-  comparisonCols: Array<"A" | "B" | "C">;
-  /** Present when the table is horizontal (A/B/C as header columns). */
-  horizontalCols?: { A: number; B: number; C: number };
+  comparisonCols: string[];
+  /** Present when the table is horizontal (one column per version). */
+  horizontalCols?: Record<string, number>;
 };
 
 function parseTableRow(line: string): string[] {
@@ -441,13 +453,13 @@ function parseTable(rowLines: string[]): ParsedTable | null {
         rows,
         isComparison: true,
         versionIdx: -1,
-        comparisonCols: ["A", "B", "C"],
+        comparisonCols: orderVersions(Object.keys(hCols)),
         horizontalCols: hCols,
       };
     }
     return { rows, isComparison: false, versionIdx: -1, comparisonCols: [] };
   }
-  const cols: Array<"A" | "B" | "C"> = [];
+  const cols: string[] = [];
   for (const r of rows.slice(1)) {
     const v = normVersion(r[versionIdx] ?? "");
     if (v && !cols.includes(v)) cols.push(v);
@@ -456,7 +468,7 @@ function parseTable(rowLines: string[]): ParsedTable | null {
     rows,
     isComparison: cols.length >= 1,
     versionIdx,
-    comparisonCols: (["A", "B", "C"] as const).filter((v) => cols.includes(v)),
+    comparisonCols: orderVersions(cols),
   };
 }
 
@@ -985,6 +997,26 @@ const DOC_META: Record<string, { label: string; short: string; name: string; col
 };
 
 /**
+ * 显示元数据：**未知版本也要有兜底**。
+ * 换一套标准（键叫 X/Y/Z）时 DOC_META 里没有对应项，
+ * 直接取 `DOC_META[v]` 会是 undefined —— 卡片渲染会崩。
+ * 这里按 DOC_META 的长度取调色板，未知版本拿得到标签、颜色与背景。
+ */
+const DOC_META_FALLBACK_COLORS = [
+  { color: "#7a4b8f", bg: "#f3ecf7" },
+  { color: "#8f5b2e", bg: "#f7f0e6" },
+  { color: "#2f6f7a", bg: "#e8f3f5" },
+  { color: "#5a5f8a", bg: "#eeeff6" },
+];
+function docMeta(v: string): { label: string; short: string; name: string; color: string; bg: string } {
+  const known = DOC_META[v];
+  if (known) return known;
+  const i = Object.keys(DOC_META).length % DOC_META_FALLBACK_COLORS.length;
+  const pal = DOC_META_FALLBACK_COLORS[i];
+  return { label: v, short: v, name: `第 ${v} 版`, color: pal.color, bg: pal.bg };
+}
+
+/**
  * Front-matter symbol legend page. Explains every tag the report uses so
  * readers don't lose context between chapters. Pre-pended by buildHtml.
  */
@@ -1402,17 +1434,23 @@ function renderCandidateWorklist(ledger: ReturnType<typeof buildLedger>): string
  *
  * Returns the column index for A/B/C, or null when this isn't such a table.
  */
-function findHorizontalVersionCols(header: string[]): { A: number; B: number; C: number } | null {
+export function findHorizontalVersionCols(header: string[]): Record<string, number> | null {
   const clean = header.map((h) => (h ?? "").replace(/\*/g, "").trim());
-  const idx = (v: "A" | "B" | "C") =>
+  const idx = (v: string) =>
     clean.findIndex((h) => new RegExp(`^\\s*${v}(?![A-Za-z])[（(【\\s]|${v}\\s*$`).test(h));
-  const A = idx("A");
-  const B = idx("B");
-  const C = idx("C");
-  // Require three distinct columns and at least one non-version first column
-  // (the topic column). Column 0 being "项目" is fine.
-  if (A < 0 || B < 0 || C < 0) return null;
-  if (new Set([A, B, C]).size !== 3) return null;
+  // 版本列按**当前语料实际有的版本**认 —— 写死 A/B/C 的话，
+  // 语料里多一版时整张横向对照表会退回普通表格（卡片布局整个消失）。
+  const found: Record<string, number> = {};
+  for (const v of ACTIVE_VERSIONS) {
+    const i = idx(v);
+    if (i >= 0 && !Object.values(found).includes(i)) found[v] = i;
+  }
+  const keys = Object.keys(found);
+  // **当前语料的每一版都要在这一行里**（与旧版「A/B/C 齐全」同义）——
+  // 少一版就退回普通表格：卡片布局是给「三版逐项对照」用的，
+  // 两版对照用普通表格更清楚。
+  if (keys.length < ACTIVE_VERSIONS.length) return null;
+  if (new Set(Object.values(found)).size !== keys.length) return null;
   // The card layout shows ONE label and ONE value per row, so it can only carry
   // a topic column plus A/B/C. Every extra column is silently dropped — and for
   // `| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |` the two dropped
@@ -1423,26 +1461,28 @@ function findHorizontalVersionCols(header: string[]): { A: number; B: number; C:
   // Measured on this report: every table that reached the card layout had 6 or
   // 7 columns; the only 4-column horizontal tables carry no A/B/C at all and so
   // were already rejected above. Anything wider belongs in a plain table.
-  if (header.length !== 4) return null;
-  return { A, B, C };
+  // 宽度判据跟着版本数走：1 个主题列 + N 个版本列。
+  if (header.length !== keys.length + 1) return null;
+  return found;
 }
 
 /** Render a horizontal 3-version table as the same triptych card layout. */
-function renderHorizontalTriptych(t: ParsedTable, cols: { A: number; B: number; C: number }): string {
+function renderHorizontalTriptych(t: ParsedTable, cols: Record<string, number>): string {
   const header = t.rows[0] ?? [];
   const body = t.rows.slice(1);
   // The topic column is whatever sits left of the first version column. Using
   // "first column" instead breaks on tables that begin with an empty cell.
-  const versionCols = new Set([cols.A, cols.B, cols.C]);
+  const versionCols = new Set(Object.values(cols));
   let topicIdx = 0;
   for (let i = 0; i < header.length; i++) {
     if (!versionCols.has(i)) { topicIdx = i; break; }
   }
   const topicLabel = (header[topicIdx] ?? "").trim() || "对比项";
 
-  const cards = (["A", "B", "C"] as const)
+  const versions = orderVersions(Object.keys(cols));
+  const cards = versions
     .map((v) => {
-      const meta = DOC_META[v];
+      const meta = docMeta(v);
       const col = cols[v];
       const entries: Array<{ topic: string; text: string }> = [];
       body.forEach((r, ri) => {
@@ -1490,13 +1530,16 @@ function renderHorizontalTriptych(t: ParsedTable, cols: { A: number; B: number; 
 </article>`;
     })
     .join("\n");
-  return `<section class="triptych">${cards}</section>`;
+  return `<section class="triptych" style="--trip-cols:${versions.length}">${cards}</section>`;
 }
 
 function renderTriptych(t: ParsedTable): string {
   // Horizontal tables take a different path — see renderHorizontalTriptych.
   if (t.horizontalCols) return renderHorizontalTriptych(t, t.horizontalCols);
-  const cols: Array<"A" | "B" | "C"> = ["A", "B", "C"]; // always three columns
+  // 卡片按**当前语料实际有的版本**排（不再写死 A/B/C）。
+  // 注意：不是「表里出现过的版本」—— 少了 C 的行时，旧版仍然会画第三张卡，
+  // 卡片里安静地写「本条 C 版无对应条款行」，栅格才不会塌成两列。
+  const cols: string[] = orderVersions(ACTIVE_VERSIONS);
   const body = t.rows.slice(1);
   const byVersion = new Map<string, string[]>();
   for (const row of body) {
@@ -1542,9 +1585,10 @@ function renderTriptych(t: ParsedTable): string {
   }
   const textCols = header.map((_, i) => i).filter((i) => i > t.versionIdx && i !== cCol && i !== pCol);
 
-  const cards = cols
+  const versions = cols;
+  const cards = versions
     .map((v) => {
-      const meta = DOC_META[v];
+      const meta = docMeta(v);
       const row = byVersion.get(v);
       if (!row) {
         // A full "源数据未提供" card reads as a broken table, and this fired 48
@@ -1595,7 +1639,7 @@ function renderTriptych(t: ParsedTable): string {
 </article>`;
     })
     .join("\n");
-  return `<section class="triptych">${cards}</section>`;
+  return `<section class="triptych" style="--trip-cols:${versions.length}">${cards}</section>`;
 }
 
 /**
@@ -2170,7 +2214,7 @@ code { background: #faf6ec; border: 0.4pt solid #ece4d1; border-radius: 2px;
 
 /* ====== Triptych ====== */
 .triptych {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(var(--trip-cols, 3), 1fr);
   gap: 3mm; margin: 4mm 0; page-break-inside: avoid;
 }
 .trip-card {
@@ -2708,6 +2752,12 @@ async function findAnchorPages(pdf: Buffer, anchors: string[]): Promise<Map<stri
 }
 
 export async function renderPdfFromReportV8(report: RenderableReport): Promise<Buffer> {
+  // 版本清单从报告本身推导（语料里有几版就出几版）
+  setActiveVersions(
+    ((report as any)?.parameterMatrixStats?.versions ??
+      (report as any)?.sourceDocuments?.map((d: any) => d?.key ?? d?.id ?? d?.label) ??
+      []) as string[],
+  );
   const fonts = await loadFonts();
   const { chromium } = await import("playwright-core");
   const browser = await chromium.launch({ channel: "chrome" });
