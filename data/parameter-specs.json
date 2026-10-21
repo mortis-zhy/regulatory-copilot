@@ -189,16 +189,18 @@
       "patterns": {
         "A": {
           "source": "若透光面不是圆形[\\s\\S]{0,40}?容纳一个\\s*(40\\s*(?:mm|㎜))",
-          "flags": "i"
+          "flags": "i",
+          "clause": "4.27"
         },
         "B": {
           "source": "若透光面不是圆形[\\s\\S]{0,40}?容纳一个\\s*(40\\s*(?:mm|㎜))",
-          "flags": "i"
+          "flags": "i",
+          "clause": "4.29"
         }
       },
       "why": {
-        "A": "起草说明里也出现「透光面」三字，主题名锚定会命中修订说明；必须锚定「不是圆形…容纳一个 N 圆」的整段判断句。",
-        "B": "同 A。B 的 MinerU 文本该句前带「4.29 」编号，正则不依赖它，靠整段判断句定位。"
+        "A": "A §4.27（p21，条款号印在 PDF 左边距的位图里，登记在 data/clause-bitmap-fixes.json）：「总质量不小于4500kg 的货车、专项作业车和挂车的所有后位灯、后转向信号灯和制动灯，其透 光面面积应不小于一个80mm 直径圆的面积；若透光面不是圆形，其形状还应能容纳一个40mm 直径的 圆。」—— **条款号必须写死**：同一页里有「（测量方法参照4.8 b)）」这个交叉引用，就近取条款号会取到 4.8（几何可见度测量方法那条），而 4.8 里根本没有 40mm。",
+        "B": "B §4.29（p21）：「总质量不小于4500kg的货车、专项作业车和挂车的所有后位灯、后转向信号灯和制动灯,其透光面面积应不小于一个80mm 直径圆的面积;若透光面不是圆形,其形状应能容纳一个40mm 直径的圆。」—— 同样写死条款号，别让就近推断漂移。"
       },
       "absent": {
         "C": "R48 全文检索无「circumscribed circle / minimum diameter」这类表述 —— R48 不规定「非圆形透光面最小容纳圆直径」，该口径是 GB 独有的。"
@@ -865,7 +867,7 @@
         "C": {
           "source": "does not exceed\\s*(15)\\s*km\\s*/\\s*h",
           "flags": "i",
-          "clause": "6.2.7.5"
+          "clause": "6.2.7.5.1"
         },
         "A": {
           "source": "当车速不大于\\s*(15)\\s*km\\s*/\\s*h",
@@ -874,7 +876,7 @@
         }
       },
       "why": {
-        "C": "R48 6.2.7.5（p44）：「If the vehicle speed does not exceed 15 km/h, the control shall be designed in such a way that manual deactivation shall not be possible with less than two deliberate actions.」—— 6.2.7.5 的条款号印在 p43 的页边栏、正文在 p44，跨页，条款号显式写明。",
+        "C": "R48 §6.2.7.5.1(d)（p43–44）：「If the vehicle speed does not exceed 15 km/h, the control shall be designed in such a way that manual deactivation shall not be possible with less than two deliberate actions.」—— 此前写 6.2.7.5（父条款），值确实在 6.2.7.5.1 的 (d) 项里，写到子条款读者一步就能看到。",
         "A": "A 的 5.2.7.5.1 标题在 p28 末尾，a)~e) 的清单在 p29 —— 条款号与取值分居两页，这里按 p29 本地的措辞锚，条款号显式写明 5.2.7.5.1。",
         "B": "B 的 §5.2.7 电路连接没有这一条 —— **草案新增**，不是抽取失败。"
       },
@@ -1147,24 +1149,25 @@
       "unit": "°",
       "patterns": {
         "A": {
-          "source": "1、1a、1b、2a\\s*和\\s*2b\\s*类转向灯[\\s\\S]{0,160}?向内几何可见度角可由\\s*45\\s*°\\s*减至\\s*(20\\s*°)",
+          "source": "5\\.6\\.5\\.2[\\s\\S]{0,400}?1、1a、1b、2a\\s*和\\s*2b\\s*类转向灯[\\s\\S]{0,200}?向内几何可见度角可由\\s*45\\s*°\\s*减至\\s*(20\\s*°)",
           "flags": "i",
           "clause": "5.6.5.2"
         },
         "B": {
-          "source": "1、1a、1b、2a和2b类转向灯[\\s\\S]{0,200}?向内几何可见度角可由\\s*45\\s*°\\s*减至\\s*(\\$?\\s*2\\s*0\\s*\\^\\s*\\{?\\s*\\\\circ\\s*\\}?)",
+          "source": "5\\.5\\.5\\.2[\\s\\S]{0,400}?1、1a、1b、2a和2b类转向灯[\\s\\S]{0,200}?向内几何可见度角可由\\s*45\\s*°\\s*减至\\s*(\\$?\\s*2\\s*0\\s*\\^\\s*\\{?\\s*\\\\circ\\s*\\}?)",
           "flags": "i",
           "clause": "5.5.5.2"
         },
         "C": {
           "source": "6\\.5\\.[\\s\\S]{0,900}?inward angle of 45\\s*°\\s*may be reduced to\\s*(20\\s*°)",
-          "flags": "i"
+          "flags": "i",
+          "clause": "6.5.5.1"
         }
       },
       "why": {
         "A": "⚠ 这句话在 A 里出现 7 次、B 里 4 次（转向灯 5.6.5.2、制动灯 5.7.5.2、位置灯 5.10.5.1/.2、5.12.5、5.9.5，以及 4.8 的通用条款），**每处措辞几乎一模一样**。按这句话锚定会取到数值正确但灯具随机的一处 —— 读者核对数值时看不出问题，只有翻条款才发现不对。这里锚的是只有该灯具才有的类别列举「1、1a、1b、2a和2b类转向灯」。条款号**显式写 5.6.5.2**：正则以类别列举开头，锚不出条款号，而自动推断取到的是「（测量方法参照 4.8 b)）」里的 4.8 —— 那是**离地高度的测量方法条款**，不是本条要求所在的位置。条款号写错，读者翻 4.8 根本找不到「向内角 45°→20°」。",
         "B": "见 A。B 的条款号显式写 **5.5.5.2**（B 的转向信号灯章是 5.5，A 是 5.6 —— 同一份标准在草案里重排过章节号，条款号必须逐版确认）。另外 B 把 20° 写成 `$2 0 ^ { \\circ }$`（数字间带空格），`20\\s*°` 匹配不到；不处理这一点的话 B 侧会匹配到制动灯那句同数值的条款去。",
-        "C": "R48 与 A/B 逐字对应（低于 750mm 时向内角 45°→20°），三版齐全。捕获组框的是**减至后的值 20**，不是原值 45 —— 45 才是基准档，锚「may be reduced to」才是在问放宽后的数。"
+        "C": "R48 §6.5.5.1 的图注 (*)（p52）：「For the direction indicator lamps of categories 1, 1a, 1b, 2a and 2b mounted below 750 mm …, the inward angle of 45° may be reduced to 20° under the H plane.」—— 这句挂在 6.5.5.1 的图注上，此前写 6.5（章级），读者按 6.5 找不到那句话。"
       }
     },
     {
@@ -1274,7 +1277,8 @@
       "patterns": {
         "A": {
           "source": "若选装灯的离地高度不小于\\s*2100\\s*(?:mm|㎜)[\\s\\S]{0,90}?水平面以上的垂直方向角可由\\s*15\\s*°\\s*减至\\s*(5\\s*°)",
-          "flags": "i"
+          "flags": "i",
+          "clause": "5.6.5.1"
         },
         "B": {
           "source": "5\\.5\\.5\\.1[\\s\\S]{0,400}?离地高度不小于\\s*2100\\s*mm[\\s\\S]{0,90}?水平面以上的垂直方向角可由\\s*15\\s*°\\s*减至\\s*(5\\s*°)",
@@ -1286,7 +1290,7 @@
         }
       },
       "why": {
-        "A": "放宽档，锚「可由 15°减至」。原文是「水平面以**上**的垂直方向角」—— 写成「向上…的」对不上，这类措辞细节只能回原文确认，推不出来。",
+        "A": "A §5.6.5.1（p40，转向信号灯 垂直方向角）：「若选装灯的离地高度不小于2100㎜（测量方法参照4.8 b)），则水平面以上的垂直方向角可由15°减至5°。」—— **条款号必须写死**：括号里的「4.8 b)」是**测量方法的交叉引用**，就近取条款号会取到 4.8（几何可见度测量方法那条），而 4.8 里没有 15°/5°。",
         "B": "B 比 A 多一个「于」字（「若于选装灯」），逐版写。",
         "C": "R48 6.5.5.1(b) 逐字对应，阈值与单位都一致（2,100 mm 带千分位逗号）。中间隔着 「paragraph 5.8.1. above」，用 [\\s\\S] 跨过去。"
       }
@@ -1566,11 +1570,15 @@
         },
         "C": {
           "source": "white lamp with a luminous intensity of\\s*(150\\s*cd)",
-          "flags": "i"
+          "flags": "i",
+          "clause": "6.1.9.3.1.2"
         }
       },
       "absent": {
         "B": "GB 4785-2019 全文无「电动自行车」字样 —— 该条是**草案新增**的（草案 §5.1.9.2.1.2：电动自行车可用一盏发光强度为 150cd 的白色灯具代替）。R48 §6.1.9.3.1 有对应要求。"
+      },
+      "why": {
+        "C": "R48 §6.1.9.3.1.2(c)（p39）：「An oncoming bicycle at a distance extending to at least 75 m, its illumination represented by a white lamp with a luminous intensity of 150 cd with a light emitting area of 10 cm² ± 3 cm²…」—— 此前写 6.1.9.3.1（父条款）。"
       }
     },
     {
@@ -1655,11 +1663,11 @@
         "C": {
           "source": "end-outline marker lamp in relation to corresponding position lamp[\\s\\S]{0,340}?not less than\\s*(200\\s*mm)",
           "flags": "i",
-          "clause": "6.13"
+          "clause": "6.13.9"
         }
       },
       "why": {
-        "C": "R48 的这条在**示廓灯章 §6.13 的表格行**里（p67）：「The position of an end-outline marker lamp in relation to corresponding position lamp shall be such that the distance between the projections … is not less than 200 mm.」—— 上一轮曾把这一格写成「R48 无此规定（已核）」，**那是假的**：MinerU 把这段排成表格行、行首标签还是乱的（`| 6.14.6.14.1. |`），按条款号检索搜不到。**把抽取失败写成法规结论，比留空更糟。** 条款号**只给到章级 6.13**：这一行在源 PDF 里跨表又跨页（§6.13 的表格行末尾与 §6.14 的表格首行被 MinerU 揉在一起，源 PDF 里这句话也跨页），**定位不到具体条款号** —— 印一个客户翻不到、而且一翻就发现不对的条款号（上一轮写的 6.13.9 其实是「Other requirements: … 可组合成一个装置」，与 200mm 无关），比给章级更糟。GB 两版的同一条是 §5.13.9。"
+        "C": "R48 §6.13.9 Other requirements（p66–67）：「The position of an end-outline marker lamp in relation to corresponding position lamp shall be such that the distance between the projections … is not less than 200 mm.」—— 此前写 6.13（父条款）。"
       }
     },
     {
@@ -2518,22 +2526,24 @@
     },
     {
       "id": "heavyVehicle.apertureMinArea",
-      "name": "总质量≥4500kg车辆灯具透光面最小面积",
+      "name": "总质量≥4500kg车辆灯具透光面·最小等效圆直径（面积不小于该圆面积）",
       "family": "灯具本体 / 构造要求",
-      "unit": "mm²（80mm圆面积）",
+      "unit": "mm",
       "patterns": {
         "A": {
           "source": "总质量不小于\\s*4500\\s*kg[\\s\\S]{0,140}?不小于一个\\s*(80\\s*(?:mm|㎜))\\s*直径圆的面积",
-          "flags": "i"
+          "flags": "i",
+          "clause": "4.27"
         },
         "B": {
           "source": "总质量不小于\\s*4500\\s*kg[\\s\\S]{0,140}?不小于一个\\s*(80\\s*(?:mm|㎜))\\s*直径圆的面积",
-          "flags": "i"
+          "flags": "i",
+          "clause": "4.29"
         }
       },
       "why": {
-        "A": "「总质量不小于4500kg」是唯一的车辆限定锚点；单靠「透光面面积」会命中 §3 的术语定义。",
-        "B": "同 A。"
+        "A": "A §4.27（p21，条款号在位图里）：「…其透 光面面积应不小于一个80mm 直径圆的面积；」—— **单位是 mm 不是 mm²**：原文的数是**直径** 80mm（面积是该圆的面积），写成 mm² 会让读者以为限值是 80 平方毫米。**条款号写死**：同页的「（测量方法参照4.8 b)）」会把就近推断带偏到 4.8。",
+        "B": "B §4.29（p21）：「…其透光面面积应不小于一个80mm 直径圆的面积;」—— 单位同理。"
       },
       "absent": {
         "C": "R48 不使用「透光面最小面积」这个口径（全文无对应表述），该口径为 GB 4785 草案独有。"
@@ -5351,14 +5361,17 @@
         "C": {
           "source": "6\\.2\\.7\\.8[\\s\\S]{0,400}?ambient illuminance is\\s*(1\\s*,?\\s*000)\\s*lx",
           "flags": "i"
+        },
+        "B": {
+          "source": "小于\\s*1000\\s*lx[\\s\\S]{0,40}?开启",
+          "flags": "i",
+          "clause": "附录H"
         }
       },
       "why": {
         "A": "A §5.2.7.5.3（p29）：「尽管按5.2.7.5 要求，环境照度大于1000lx，但近光灯自动控制系统仍然可以根据诸如时间或环境状况…来决定近光灯的点亮和熄灭。」",
-        "C": "R48 §6.2.7.8（p44）：「in cases where the ambient illuminance is 1,000 lx or more the dipped-beam headlamps may switch ON and OFF automatically…」"
-      },
-      "absent": {
-        "B": "GB 4785-2019 的近光章（§5.2.7）没有这一条 —— 没有「环境照度 ≥ 1000 lx 时允许自动开关」的豁免条款，属版本差异，不是抽取失败。"
+        "C": "R48 §6.2.7.8（p44）：「in cases where the ambient illuminance is 1,000 lx or more the dipped-beam headlamps may switch ON and OFF automatically…」",
+        "B": "B 附录H 表H.1（p80）：「外界环境光｜近光灯｜响应时间：小于1000lx｜开启｜不大于2s；1000lx~7000lx｜由制造商确定｜由制造商确定；大于7000lx｜关闭｜大于5s,不大于300s。」—— **B 的自动切换条件只写在附录里**，正文一个字都没有，所以矩阵里 B 列原本是空的。"
       }
     },
     {
@@ -5724,13 +5737,14 @@
         },
         "C": {
           "source": "5\\.7\\.2\\.[12][\\s\\S]{0,900}?does not exceed\\s*(75)\\s*mm|shall not exceed\\s*(75)\\s*mm",
-          "flags": "i"
+          "flags": "i",
+          "clause": "5.7.2.2"
         }
       },
       "why": {
         "A": "A §4.7 b) 1)（p14）：「或在基准轴线方向上，各灯间距不大于75 mm。」—— 与 60% 是**二选一**判据（满足其一即可）。",
         "B": "B §4.7 b)（p14）：「或在基准轴线方向上，两个相邻/相切的部分间距不超过75mm」",
-        "C": "R48 §5.7.2.1 / §5.7.2.2（p25–26）：「the minimum distance between the facing edges … shall not exceed 75 mm」"
+        "C": "R48 §5.7.2.2(b)（p26）：「the minimum distance between the facing edges of the apparent surfaces in the direction of the reference axis of two lamps or two independent retro reflectors does not exceed 75 mm when measured perpendicularly to the reference axis.」—— 此前写 5.7.2（父条款）。"
       }
     },
     {
@@ -6104,7 +6118,8 @@
       "patterns": {
         "A": {
           "source": "若环境光大于\\s*(7000)\\s*lx（按附录C\\s*规定的条件测量），后位灯和",
-          "flags": "i"
+          "flags": "i",
+          "clause": "5.19.7.5"
         },
         "C": {
           "source": "ambient light conditions outside vehicle are above\\s*(7,?000)\\s*lux",
@@ -6113,8 +6128,11 @@
         }
       },
       "why": {
-        "A": "A §5.19.7.5（p57）：「昼间行驶灯开启时，若环境光大于7000lx（按附录C 规定的条件测量），后位灯和4.11 规定的其他灯具允许熄灭，但当此环境光条件消失后，应恢复点亮。」—— 锚「后位灯和」是为了避开 A 第 4 章里同义的通用条款（p16）。",
+        "A": "A §5.19.7.5（p57）：「当昼间行驶灯点亮时，后位灯也应点亮，4.11 规定的其他灯具可点亮。然而，昼间行驶灯开启时，若环境光大于7000lx（按附录C 规定的条件测量），后位灯和4.11 规定的其他灯具允许熄灭，但当此环境光条件消失后，应恢复点亮。」—— **条款号必须写死**：句子里有两个「4.11」，都是**交叉引用**（电路连接那条），就近取条款号会取到 4.11，而 4.11 里没有 7000lx。",
         "C": "R48 §6.19.7.5（p74）：「may remain switched OFF as long as the ambient light conditions outside vehicle are above 7,000 lux」"
+      },
+      "absent": {
+        "B": "GB 4785-2019 **全篇没有**这个阈值 —— 不是抽取失败，是该版确实没这条。B §5.2.7.6b)（p26）写的是「昼间行驶灯与4.11 规定的灯具共同操作，作为最低要求，**至少后位灯应开启**」：2019 版**要求**后位灯点亮，根本不存在「允许熄灭」这一说。「环境光 > 7000lx 时后位灯允许熄灭」是 **2026 草案新增的宽松条款**（A §4.11e 与 A §5.19.7.5）。**这一格是三版对比里很值得给客户看的一处：B 比 A 严。**"
       }
     },
     {
@@ -6779,56 +6797,6 @@
       }
     },
     {
-      "id": "truckLamp.minApparentCircleDiameter",
-      "name": "货车后位灯/后转向灯/制动灯·透光面最小等效圆直径",
-      "family": "灯具本体 / 构造要求",
-      "unit": "mm",
-      "patterns": {
-        "A": {
-          "source": "总质量不小于4500kg[^。]{0,140}?透\\s*光面面积应不小于一个\\s*(80)\\s*mm\\s*直径圆的面积",
-          "flags": "i",
-          "clause": "4.27"
-        },
-        "B": {
-          "source": "总质量不小于4500kg[^。]{0,140}?透\\s*光面面积应不小于一个\\s*(80)\\s*mm\\s*直径圆的面积",
-          "flags": "i",
-          "clause": "4.29"
-        }
-      },
-      "why": {
-        "A": "A §4.27（p21，条款号在位图里）：「总质量不小于4500kg 的货车、专项作业车和挂车的所有后位灯、后转向信号灯和制动灯，其透 光面面积应不小于一个80mm 直径圆的面积；」—— **A 是 4.27、B 是 4.29**：草案删掉了两条，所以条款号对不上，两个号都由左边距裁剪渲染读出并登记。",
-        "B": "B §4.29（p21）：「总质量不小于4500kg的货车、专项作业车和挂车的所有后位灯、后转向信号灯和制动灯,其透 光面面积应不小于一个80mm 直径圆的面积;」"
-      },
-      "absent": {
-        "C": "R48 没有针对 4500kg 以上货车/挂车的这项透光面面积要求。属版本差异，不是抽取失败。"
-      }
-    },
-    {
-      "id": "truckLamp.minContainedCircleDiameter",
-      "name": "货车后位灯/后转向灯/制动灯·透光面须容纳的最小圆直径",
-      "family": "灯具本体 / 构造要求",
-      "unit": "mm",
-      "patterns": {
-        "A": {
-          "source": "若透光面不是圆形[,，]其形状还应能容纳一个\\s*(40)\\s*mm\\s*直径的\\s*圆",
-          "flags": "i",
-          "clause": "4.27"
-        },
-        "B": {
-          "source": "若透光面不是圆形[,，]其形状应能容纳一个\\s*(40)\\s*mm\\s*直径的\\s*圆",
-          "flags": "i",
-          "clause": "4.29"
-        }
-      },
-      "why": {
-        "A": "A §4.27（p21）：「若透光面不是圆形，其形状还应能容纳一个40mm 直径的 圆。」",
-        "B": "B §4.29（p21）：「若透光面不是圆形,其形状应能容纳一个40 mm 直径的 圆。」"
-      },
-      "absent": {
-        "C": "R48 没有针对 4500kg 以上货车/挂车的这项透光面形状要求。属版本差异。"
-      }
-    },
-    {
       "id": "externalStatusIndicator.intensityMax",
       "name": "外部状态指示器·各方向光强上限",
       "family": "光强 / 照度限值",
@@ -6940,6 +6908,118 @@
         "A": "A §5.17.4.3（p54）：「安装于最后的回复反射器离车辆尾部应不大于1m。」—— 原文是「最后的」。",
         "B": "B §5.17.4.3（p45）：「最后面的侧回复反射器离车辆后端应不大于1m。」—— 原文带「侧」字。",
         "C": "R48 §6.17.4.3（p70）：「The distance between the rearmost side retro-reflector and the rear of the vehicle shall not exceed 1 m.」"
+      }
+    },
+    {
+      "id": "dippedBeam.tiltChangeUnderLoadMax",
+      "name": "近光光束倾斜度·随装载变化的安全界限",
+      "family": "几何可见度 / 安装角度",
+      "unit": "%",
+      "patterns": {
+        "A": {
+          "source": "安全界限为\\s*4\\s*mrad\\s*[（(]\\s*(0\\.4)\\s*%\\s*倾斜度",
+          "flags": "i",
+          "clause": "D.5.5"
+        },
+        "B": {
+          "source": "安全界限为\\s*4\\s*mrad\\s*[（(]\\s*(0\\.4)\\s*%\\s*倾斜度",
+          "flags": "i",
+          "clause": "D.5.5"
+        },
+        "C": {
+          "source": "safety margin of\\s*4\\s*mrad\\s*\\(\\s*(0\\.4)\\s*per cent inclination",
+          "flags": "i",
+          "clause": "Annex 5"
+        }
+      },
+      "why": {
+        "A": "A 附录D.5.5a)（p87）：「若对于所有的装载状况，倾斜度的变化位于一种安全界限为4mrad（0.4%倾斜度）的计算限值内（如，位于标出的初始倾斜度与型式检验规定上、下限之间的偏差内），则就满足要求。」—— **这条住在附录里**：正文的条款索引看不见附录，覆盖审计此前整份附录没扫过。",
+        "B": "B 附录D.5.5a)（p73）：「若对于所有的装载状况，倾斜度的变化位于一种安全界限为4mrad(0.4%倾斜度)的计算限值内…」",
+        "C": "R48 Annex 5 §5.5.1（p131）：「…with a safety margin of 4 mrad (0.4 per cent inclination).」—— 矩阵里记的是**百分数**（0.4），原文的 4 mrad 是同一个值的另一种写法（附录D.2.1.3：「由于角度小，所以，1%等于 10mrad」）。"
+      }
+    },
+    {
+      "id": "dippedBeam.autoSwitchOnTimeMax",
+      "name": "近光灯自动开启·响应时间上限",
+      "family": "闪烁频率 / 时间参数",
+      "unit": "s",
+      "patterns": {
+        "A": {
+          "source": "小于\\s*1000\\s*lx[\\s\\S]{0,60}?不大于\\s*(2)\\s*s",
+          "flags": "i",
+          "clause": "表C.1"
+        },
+        "B": {
+          "source": "小于\\s*1000\\s*lx[\\s\\S]{0,60}?不大于\\s*(2)\\s*s",
+          "flags": "i",
+          "clause": "附录H"
+        },
+        "C": {
+          "source": "less than\\s*1,?000\\s*lux[\\s\\S]{0,90}?no more than\\s*(2)\\s*seconds",
+          "flags": "i",
+          "clause": "Annex 13"
+        }
+      },
+      "why": {
+        "A": "A 附录C 表C.1（p84）：「外界环境光｜近光灯｜响应时间：小于1000 lx｜开启｜不大于2s；1000 lx至7000 lx｜由制造商确定｜由制造商确定；大于7000 lx｜关闭｜大于5s，不大于300s。」—— 这张表是**自动切换近光**的条件表，条款索引看不见附录。",
+        "B": "B 附录H 表H.1（p80）：「小于1000lx｜开启｜不大于2s；…」—— **B 的自动切换条件只写在附录H 的表里**，正文一个字都没有。",
+        "C": "R48 Annex 13（p143）：「less than 1,000 lux | ON | no more than 2 seconds; between 1,000 lux and 7,000 lux | at manufacturer's discretion; more than 7,000 lux | OFF | more than 5 seconds, but no more than 300 seconds」"
+      }
+    },
+    {
+      "id": "dippedBeam.autoSwitchOffDelayMin",
+      "name": "近光灯自动关闭·响应时间下限",
+      "family": "闪烁频率 / 时间参数",
+      "unit": "s",
+      "patterns": {
+        "A": {
+          "source": "大于\\s*7000\\s*lx[\\s\\S]{0,60}?大于\\s*(5)\\s*s",
+          "flags": "i",
+          "clause": "表C.1"
+        },
+        "B": {
+          "source": "大于\\s*7000\\s*lx[\\s\\S]{0,60}?大于\\s*(5)\\s*s",
+          "flags": "i",
+          "clause": "附录H"
+        },
+        "C": {
+          "source": "more than\\s*(5)\\s*seconds",
+          "flags": "i",
+          "clause": "Annex 13"
+        }
+      },
+      "why": {
+        "A": "A 附录C 表C.1（p84）：「大于7000 lx｜关闭｜大于5s，不大于300s。」—— 关闭**不得早于** 5s（防止频繁开关）。",
+        "B": "B 附录H 表H.1（p80）：「大于7000lx｜关闭｜大于5s,不大于300s。」",
+        "C": "R48 Annex 13（p143）：「more than 7,000 lux | OFF | more than 5 seconds, but no more than 300 seconds」—— **只锚这半句**：C 全文里「more than 5 seconds」只出现这一次（表里那句），锚长了会把引文截断到「more than 7,000 lux」就断，读者在引文里看不到 5 这个数。"
+      }
+    },
+    {
+      "id": "dippedBeam.autoSwitchOffTimeMax",
+      "name": "近光灯自动关闭·响应时间上限",
+      "family": "闪烁频率 / 时间参数",
+      "unit": "s",
+      "patterns": {
+        "A": {
+          "source": "不大于\\s*(300)\\s*s",
+          "flags": "i",
+          "clause": "表C.1"
+        },
+        "B": {
+          "source": "不大于\\s*(300)\\s*s",
+          "flags": "i",
+          "clause": "附录H"
+        },
+        "C": {
+          "source": "no more than\\s*(300)\\s*seconds",
+          "flags": "i",
+          "clause": "Annex 13"
+        }
+      },
+      "why": {
+        "A": "A 附录C 表C.1（p84）：「大于7000 lx｜关闭｜大于5s，不大于300s。」",
+        "B": "B 附录H 表H.1（p80）：「大于7000lx｜关闭｜大于5s,不大于300s。」",
+        "C": "R48 Annex 13（p143）：「…but no more than 300 seconds」"
       }
     }
   ]

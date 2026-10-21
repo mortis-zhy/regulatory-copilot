@@ -357,6 +357,27 @@ function anchorClause(source: string): string {
   return m ? m[1].replace(/\\/g, "") : "";
 }
 
+/**
+ * A clause citation may also point into an **appendix**:
+ *   - `D.5.5`      — GB 4785 附录D 的第 5.5 条（附录用字母编号：附录A…附录J）
+ *   - `表C.1`      — GB 4785 附录C 的表 C.1
+ *   - `附录H`      — GB 4785-2019 附录H
+ *   - `Annex 5`   — UN R48 的 Annex 5
+ *
+ * 附录里住着真要求（随装载变化的倾斜度安全界限 4 mrad（0.4%）、自动切换近光的
+ * 响应时间 2s/5s/300s），而 `nearestClause()` 只会从「数字.数字」里推条款号 ——
+ * 推不到附录。所以附录引用必须**显式声明**。
+ *
+ * 这些形态一样要过交付闸门：条款号必须在那份标准的文本里验到
+ * （scripts/verify.mjs 的「显式条款号必须在原文里验到」）。
+ */
+// UN R48 的条款号有到 **七级**的（6.1.9.3.1.1.1 传感器探测边界角），
+// GB 两版也有六级的（5.19.7.5.1）。形态校验要放得下这些层级，
+// 否则「写死条款号」这条路在深层条款上根本走不通 ——
+// 于是只剩就近推断，而就近推断会被交叉引用吃掉。
+const CLAUSE_SHAPE =
+  /^(?:\d+(?:\.\d+){1,6}|[A-Z]\.\d+(?:\.\d+){0,3}|Annex\s+\d+(?:\.\d+){0,3}|表[A-Z]\.\d+(?:\.\d+)?|附录[A-Z](?:\s*表[A-Z]\.\d+)?)$/;
+
 function compileSpecs(raw: unknown): Spec[] {
   const list = (raw as { specs?: SpecJson[] })?.specs;
   if (!Array.isArray(list) || !list.length) {
@@ -381,9 +402,10 @@ function compileSpecs(raw: unknown): Spec[] {
       const explicit = typeof pat === "string" ? "" : String((pat as any)?.clause ?? "").trim();
       const anchored = anchorClause(patStr);
       if (explicit) {
-        if (!/^\d+(?:\.\d+){1,4}$/.test(explicit)) {
+        if (!CLAUSE_SHAPE.test(explicit)) {
           throw new Error(
-            `${r.id}/${ver} 显式条款号 "${explicit}" 不是条款号形态（应形如 5.16.4.2）`,
+            `${r.id}/${ver} 显式条款号 "${explicit}" 不是条款号形态` +
+              `（应形如 5.16.4.2 / D.5.5 / 表C.1 / 附录H / Annex 5）`,
           );
         }
         if (!String((r as any).why?.[ver] ?? "").trim()) {
@@ -633,14 +655,24 @@ function nearestClause(text: string, idx: number): string {
  * `>`, printing a bare `N<sub>` in the client PDF. Closing the tag would be a
  * lie about the text; dropping the fragment is honest and short.
  */
-function trimPartialTag(s: string): string {
+function trimPartialTag(s: string, keep?: [number, number]): string {
   // Locate the last OPENING tag (not `</`) and check whether its own closing
   // partner follows. Two shapes were observed in the delivered PDF:
   //   `N<sub>1`      — cut after the `>`
   //   `N<sub>1</su`  — cut INSIDE the closing tag
   // A plain "is there a `<`" test misses the first; a "find the last `<`"
   // test then mistakes the second's `</sub>` for a partner.
+  //
+  // `keep` = the [start, end) range of the **value** inside `s` — the span the
+  // excerpt exists to show. It must survive every cut below. Before this
+  // existed, the C row for「自动关闭·响应时间下限」rendered the excerpt
+  // 「OFF</td>」while the row reported 5 seconds: the window ended inside a
+  // table cell, the unclosed `<td>` had no partner, so the tail was cut —
+  // and the tail was where the number was. The reader was left with a quote
+  // that did not contain the value it was supposed to explain.
   let out = s;
+  const k0 = keep ? Math.max(0, keep[0]) : 0;
+  const k1 = keep ? Math.min(out.length, keep[1]) : out.length;
   // Step 1 — a tag cut inside its OWN closing tag (`…</su`): drop the fragment.
   //
   // Step 2 — the OPENING-tag check. It has to run *after* step 1, not before:
@@ -649,12 +681,21 @@ function trimPartialTag(s: string): string {
   // unclosed `<sub>1` on the page — the exact defect step 2 exists to prevent.
   // (Getting this order wrong is what a previous revision did.)
   const dangling = out.match(/<\/?[a-zA-Z][a-zA-Z0-9]*$/);
-  if (dangling) out = out.slice(0, dangling.index).trimEnd();
+  if (dangling && dangling.index >= k1) out = out.slice(0, dangling.index).trimEnd();
   const opens = [...out.matchAll(/<([a-zA-Z][a-zA-Z0-9]*)[\s>]/g)];
   const last = opens[opens.length - 1];
   if (!last) return out;
   const close = `</${last[1]}>`;
   if (out.slice(last.index).includes(close)) return out;
+  if (last.index >= k0 && last.index < k1) return out;   // tag sits inside the value
+  if (last.index < k0) {
+    // The unclosed opening tag is *before* the value. Cutting the whole tail
+    // would delete the value itself — so cut only the tag (it is complete, so
+    // nothing is left dangling) and keep the text that follows it.
+    const tagEnd = out.indexOf(">", last.index);
+    if (tagEnd < 0) return out;
+    return (out.slice(0, last.index) + out.slice(tagEnd + 1)).trimEnd();
+  }
   return out.slice(0, last.index).trimEnd();
 }
 
@@ -666,23 +707,31 @@ function quoteAround(text: string, idx: number, len: number): string {
   // 白色色度边界.
   const pad = Math.min(70, Math.max(12, Math.round(len * 0.5)));
   const end = Math.min(text.length, idx + len + pad);
+  let start: number;
   // Source-PDF pages arrive with newlines stripped — that is exactly what makes
   // the fragmented decimals join back into "0.150+0.640x" — so there are no line
   // breaks to anchor to and a boundary walk lands mid-number, opening cells
   // with ".640xW23黄绿色边界…". Use a fixed centred window for that corpus.
   if (!/\n/.test(text)) {
-    return trimPartialTag(text.slice(Math.max(0, idx - pad), end).replace(/\s+/g, " "));
+    start = Math.max(0, idx - pad);
+  } else {
+    // MinerU pages keep line breaks: walk back to the nearest clause/sentence
+    // boundary rather than using a fixed offset, which opened cells with
+    // fragments like "ub>类车辆。对于".
+    const floor = Math.max(0, idx - pad);
+    start = floor;
+    for (let i = idx - 1; i >= floor; i--) {
+      if (/[。；;|,\n]/.test(text[i])) { start = i + 1; break; }
+      start = i;
+    }
   }
-  // MinerU pages keep line breaks: walk back to the nearest clause/sentence
-  // boundary rather than using a fixed offset, which opened cells with
-  // fragments like "ub>类车辆。对于".
-  const floor = Math.max(0, idx - pad);
-  let start = floor;
-  for (let i = idx - 1; i >= floor; i--) {
-    if (/[。；;|,\n]/.test(text[i])) { start = i + 1; break; }
-    start = i;
-  }
-  return trimPartialTag(text.slice(start, end).replace(/\s+/g, " "));
+  // The whitespace collapse changes the string's length, so the value's
+  // position has to be tracked through it — normalise head, value and tail
+  // separately and keep the value's own span.
+  const head = text.slice(start, idx).replace(/\s+/g, " ");
+  const body = text.slice(idx, idx + len).replace(/\s+/g, " ");
+  const tail = text.slice(idx + len, end).replace(/\s+/g, " ");
+  return trimPartialTag(head + body + tail, [head.length, head.length + body.length]);
 }
 
 function locate(

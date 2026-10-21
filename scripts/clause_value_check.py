@@ -40,6 +40,58 @@ cs = _load("cs", os.path.join(ROOT, "scripts", "clause_split.py"))
 ls = _load("ls", os.path.join(ROOT, "scripts", "limit_scan.py"))
 
 
+# 附录形态的条款引用：附录里的条（D.5.5）、表（表C.1）、附录号（附录H）、R48 的 Annex
+ANNEX_CLAUSE = re.compile(r"^(?:[A-Z]\.\d+(?:\.\d+)*|Annex\s+\d+(?:\.\d+)*|表[A-Z]\.\d+(?:\.\d+)?|附录[A-Z](?:\s*表[A-Z]\.\d+)?)$")
+
+
+def load_bitmap_chapters():
+    """条款号印在位图里、只能按页区间扫的章节。"""
+    path = os.path.join(ROOT, "data", "bitmap-chapters.json")
+    if not os.path.exists(path):
+        return {}
+    raw = json.load(io.open(path, encoding="utf-8"))
+    return {v: (raw.get(v) or {}) for v in ("A", "B", "C")}
+
+
+def bitmap_text(v, meta):
+    """位图章节的正文（按页区间取）。"""
+    docs = cs.pick_docs()
+    pgs = meta.get("pages") or []
+    if not pgs:
+        return ""
+    lo, hi = min(pgs), max(pgs)
+    blob = []
+    for p, lines in cs.doc_lines(docs[v]):
+        if lo <= p <= hi:
+            blob.append("\n".join(lines))
+    text = "\n".join(blob)
+    cut = meta.get("cutAt")
+    if cut and cut in text:
+        text = text[:text.index(cut)]
+    return text
+
+
+def load_annex_ranges():
+    """附录 / Annex 的页区间 —— 附录里的条款号不在条款索引里。"""
+    path = os.path.join(ROOT, "data", "annex-ranges.json")
+    if not os.path.exists(path):
+        return {}
+    raw = json.load(io.open(path, encoding="utf-8"))
+    return {v: raw.get(v) for v in ("A", "B", "C") if raw.get(v)}
+
+
+def annex_text(v, meta):
+    docs = cs.pick_docs()
+    start = int(meta.get("start") or 0)
+    if not start:
+        return ""
+    blob = []
+    for p, lines in cs.doc_lines(docs[v]):
+        if p >= start:
+            blob.append("\n".join(lines))
+    return "\n".join(blob)
+
+
 def ancestors(clause):
     """5.6.4.2.1 → 5.6.4.2 → 5.6.4 → 5.6 → 5"""
     parts = clause.split(".")
@@ -66,6 +118,8 @@ def main():
     docs = cs.pick_docs()
     idx = {v: cs.split_clauses(p) for v, p in docs.items()}
     pages = {v: cs.doc_lines(p) for v, p in docs.items()}
+    ANNEXES = load_annex_ranges()
+    BITMAP = load_bitmap_chapters()
     rep = json.load(io.open(os.path.join(ROOT, "reports", "last-report.json"), encoding="utf-8"))
     rows = rep["parameterMatrix"]
 
@@ -84,16 +138,43 @@ def main():
                 skipped += 1
                 continue
             body = idx.get(v, {}).get(cl, {}).get("body")
+            annex_ctx = False
             if body is None or not body.strip():
-                skipped += 1          # 条款索引里没有 / 正文为空（索引不全，不是矛盾）
-                continue
-            text = scope(idx, v, cl)
+                # 条款索引里没有这一条。三种可能，各自取不同的上下文：
+                #  1) **附录里的条款**（D.5.5 / 表C.1 / 附录H / Annex 5）
+                #     → 拿附录原文当背景；
+                #  2) **位图章节里的条款**（A 的 4.15 —— 条款号印在位图里，
+                #     索引里根本没有「4」这一章）→ 拿该章的页区间当背景；
+                #  3) 其它（索引不全）→ 拿**同章**的正文当背景
+                #     （B 的 4.29 藏在 4.9 的正文里 —— 索引只切出 4.1–4.9，
+                #     因为 B 的两位数条款号是「4. 29」这种带空格的写法）。
+                # 背景越宽，命中只能算**弱命中**。
+                blob = ""
+                if ANNEX_CLAUSE.match(cl):
+                    am = ANNEXES.get(v)
+                    blob = annex_text(v, am) if am else ""
+                elif re.match(r"^\d", cl):
+                    ch = cl.split(".")[0]
+                    parts = [b for k, o in idx.get(v, {}).items()
+                             if k == ch or k.startswith(ch + ".") for b in [o.get("body", "")] if b]
+                    blob = "\n".join(parts)
+                    if not blob:
+                        bm = (BITMAP.get(v) or {}).get(ch)
+                        if bm:
+                            blob = bitmap_text(v, bm)
+                if not blob:
+                    skipped += 1      # 条款索引里没有 / 正文为空（索引不全，不是矛盾）
+                    continue
+                body = blob
+                annex_ctx = True
+            # 附录条款没有「祖先/后代」可取，背景就是整份附录原文
+            text = body if annex_ctx else scope(idx, v, cl)
             found = ls.scan_limits(text)
             decimals = ls.scan_decimals(text)
             # **表格回退**：值可能落在条款引入的表里 —— 条款正文只写
             # 「见表1 至表4」（色度坐标）、或值在 Vr/TTC 表、照度表里。
             # 这类命中算「弱」：条款没错，但值不在正文句子里。
-            pg = idx[v][cl].get("page", 0)
+            pg = (idx.get(v, {}).get(cl) or {}).get("page", 0) or 0
             page_found = []
             page_decimals = []
             if pg:
@@ -111,10 +192,13 @@ def main():
                 except ValueError:
                     continue
                 hit = None
+                # 附录 / 位图章节的上下文：整份附录（或整章）当背景，
+                # 验到值只能算**弱命中** —— 它证明「这个值在那片区域里」，
+                # 不能证明「就在那一条里」。
                 if not dimensionless:
                     for x, u in found:
                         if ls.same_limit(x, u, fv, row_unit):
-                            hit = "强"
+                            hit = "弱" if annex_ctx else "强"
                             break
                 if hit is None:
                     for x, u in page_found:

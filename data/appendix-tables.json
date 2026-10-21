@@ -10,10 +10,26 @@
           "page": 26,
           "quote": "5.2.6.1.2 明暗截止线的下倾度极限的确定：车辆在空载状态下，测量近光灯在基准轴线方向上视表面下边缘的安装高度h（单位：m），对处于附录G 各装载状况下的静止车辆，其近光明暗截止线的垂直向倾斜度应符合表7 中规定，初始照准也应在表7 规定范围。",
           "rows": [
-            ["安装高度 h（m）", "倾斜上限（%）", "倾角下限（%）"],
-            ["0.5 ≤ h ≤ 0.9", "-0.50", "-(h + 1.2)"],
-            ["0.9 < h ≤ 1.2", "-(h × 2.17 - 1.45)", "-(h × 2.17 + 0.15)"],
-            ["1.2 < h ≤ 1.5", "（与上一行合并单元格，公式相同）", "（与上一行合并单元格，公式相同）"]
+            [
+              "安装高度 h（m）",
+              "倾斜上限（%）",
+              "倾角下限（%）"
+            ],
+            [
+              "0.5 ≤ h ≤ 0.9",
+              "-0.50",
+              "-(h + 1.2)"
+            ],
+            [
+              "0.9 < h ≤ 1.2",
+              "-(h × 2.17 - 1.45)",
+              "-(h × 2.17 + 0.15)"
+            ],
+            [
+              "1.2 < h ≤ 1.5",
+              "（与上一行合并单元格，公式相同）",
+              "（与上一行合并单元格，公式相同）"
+            ]
           ],
           "extra": "表下注：表7中的安装高度和倾斜度关系可转换为图1，其中虚线部分仅适用于M2G、M3G、N2G、N3G类车辆。"
         },
@@ -22,11 +38,31 @@
           "page": 25,
           "quote": "5.2.6.1.2 下倾度值的确定,取决于空载车条件下测量的近光灯在基准轴线方向上视表面下边缘的安装高度h(单位:m),对处于附录A 各装载状况下的静止车辆,其近光明暗截止线的垂直向倾斜度应保持在以下限值内,同时初始照准也在以下范围内",
           "rows": [
-            ["安装高度 h", "限值", "初始照准"],
-            ["h < 0.8 m", "-0.5% ~ -2.5%", "-1.0% ~ -1.5%"],
-            ["0.8 m ≤ h ≤ 1.0 m", "-0.5% ~ -2.5%（或按制造商规定 -1.0% ~ -3.0%）", "-1.0% ~ -1.5%（或 -1.5% ~ -2.0%）"],
-            ["h > 1.0 m", "-1.0% ~ -3.0%", "-1.5% ~ -2.0%"],
-            ["N3G 越野车且前照灯高度 > 1200 mm", "-1.5% ~ -3.5%", "-2.0% ~ -2.5%"]
+            [
+              "安装高度 h",
+              "限值",
+              "初始照准"
+            ],
+            [
+              "h < 0.8 m",
+              "-0.5% ~ -2.5%",
+              "-1.0% ~ -1.5%"
+            ],
+            [
+              "0.8 m ≤ h ≤ 1.0 m",
+              "-0.5% ~ -2.5%（或按制造商规定 -1.0% ~ -3.0%）",
+              "-1.0% ~ -1.5%（或 -1.5% ~ -2.0%）"
+            ],
+            [
+              "h > 1.0 m",
+              "-1.0% ~ -3.0%",
+              "-1.5% ~ -2.0%"
+            ],
+            [
+              "N3G 越野车且前照灯高度 > 1200 mm",
+              "-1.5% ~ -3.5%",
+              "-2.0% ~ -2.5%"
+            ]
           ],
           "extra": "B 独有的 N3G 越野车数值档；A/C 用「高度放宽 + 图1 虚线」实现同一目的，没有独立数字档。"
         },
@@ -35,10 +71,26 @@
           "page": 41,
           "quote": "6.2.6.1.2. Vertical inclination limits of the cut-off",
           "rows": [
-            ["Mounting height h [m]", "Upper inclination limit [per cent]", "Lower inclination limit [per cent]"],
-            ["0.5 ≤ h ≤ 0.9", "-0.50", "- (h + 1.2)"],
-            ["0.9 < h ≤ 1.2", "- (h x 2.17 - 1.45)", "- (h x 2.17 + 0.15)"],
-            ["1.2 < h ≤ 1.5", "（与上一行合并单元格，公式相同）", "（与上一行合并单元格，公式相同）"]
+            [
+              "Mounting height h [m]",
+              "Upper inclination limit [per cent]",
+              "Lower inclination limit [per cent]"
+            ],
+            [
+              "0.5 ≤ h ≤ 0.9",
+              "-0.50",
+              "- (h + 1.2)"
+            ],
+            [
+              "0.9 < h ≤ 1.2",
+              "- (h x 2.17 - 1.45)",
+              "- (h x 2.17 + 0.15)"
+            ],
+            [
+              "1.2 < h ≤ 1.5",
+              "（与上一行合并单元格，公式相同）",
+              "（与上一行合并单元格，公式相同）"
+            ]
           ],
           "extra": "The area within the dashed line indicates the extension of the aiming diagram only valid for M2G, M3G, N2G, N3G (off-road) vehicles"
         }
@@ -53,9 +105,21 @@
           "page": 36,
           "quote": "5.4.6.1.2 对于任一单侧总光通量大于2000lm 的情况，应满足以下要求。",
           "rows": [
-            ["安装高度 h", "限值", "初始照准"],
-            ["h ≤ 0.8", "-1.0% ~ -3.0%", "-1.5% ~ -2.0%"],
-            ["h > 0.8", "-1.5% ~ -3.5%", "-2.0% ~ -2.5%"]
+            [
+              "安装高度 h",
+              "限值",
+              "初始照准"
+            ],
+            [
+              "h ≤ 0.8",
+              "-1.0% ~ -3.0%",
+              "-1.5% ~ -2.0%"
+            ],
+            [
+              "h > 0.8",
+              "-1.5% ~ -3.5%",
+              "-2.0% ~ -2.5%"
+            ]
           ],
           "extra": "§5.4.6.1.1：单侧总光通量不大于2000lm 时，明暗截止线垂直向倾斜度应不大于 -1.0%。"
         },
@@ -64,9 +128,21 @@
           "page": 28,
           "quote": "5.3.6.1.2 对于F3前雾灯:",
           "rows": [
-            ["安装高度 h", "限值", "初始照准"],
-            ["h ≤ 0.8 m", "-1.0% ~ -3.0%", "-1.5% ~ -2.0%"],
-            ["h > 0.8 m", "-1.5% ~ -3.5%", "-2.0% ~ -2.5%"]
+            [
+              "安装高度 h",
+              "限值",
+              "初始照准"
+            ],
+            [
+              "h ≤ 0.8 m",
+              "-1.0% ~ -3.0%",
+              "-1.5% ~ -2.0%"
+            ],
+            [
+              "h > 0.8 m",
+              "-1.5% ~ -3.5%",
+              "-2.0% ~ -2.5%"
+            ]
           ],
           "extra": "§5.3.6.1.1：B 级前雾灯的明暗截止线垂直向倾斜度应不大于 -1.5%。"
         },
@@ -75,9 +151,21 @@
           "page": 46,
           "quote": "6.3.6.1.2. When the total objective luminous flux of the light source for each front fog lamp exceeds 2,000 lumens:",
           "rows": [
-            ["Mounting height h", "Limits", "Initial aiming"],
-            ["h ≤ 0.8", "between -1.0 per cent and -3.0 per cent", "between -1.5 per cent and -2.0 per cent"],
-            ["h > 0.8", "between -1.5 per cent and -3.5 per cent", "between -2.0 per cent and -2.5 per cent"]
+            [
+              "Mounting height h",
+              "Limits",
+              "Initial aiming"
+            ],
+            [
+              "h ≤ 0.8",
+              "between -1.0 per cent and -3.0 per cent",
+              "between -1.5 per cent and -2.0 per cent"
+            ],
+            [
+              "h > 0.8",
+              "between -1.5 per cent and -3.5 per cent",
+              "between -2.0 per cent and -2.5 per cent"
+            ]
           ],
           "extra": "§6.3.6.1.1.1：总目标光通量不超过 2,000 lumens 时，明暗截止线的垂直倾角应为 –1.0 per cent or lower。"
         }
@@ -92,10 +180,26 @@
           "page": 25,
           "quote": "5.1.9.2.1.1 传感器可探测的由其他车辆所发出的光线（如5.1.7.2 所述），最小范围边界由下述角度确定。",
           "rows": [
-            ["向上角度", "传感器安装高度（传感器孔径中心距离地面距离）", "向下角度"],
-            ["5°", "小于 2.0m", "2°"],
-            ["5°", "1.5m 到 2.5m", "2°到 5°"],
-            ["5°", "大于 2.0m", "5°"]
+            [
+              "向上角度",
+              "传感器安装高度（传感器孔径中心距离地面距离）",
+              "向下角度"
+            ],
+            [
+              "5°",
+              "小于 2.0m",
+              "2°"
+            ],
+            [
+              "5°",
+              "1.5m 到 2.5m",
+              "2°到 5°"
+            ],
+            [
+              "5°",
+              "大于 2.0m",
+              "5°"
+            ]
           ],
           "extra": "水平角度：向左15°，向右15°（这一行在第 12 章矩阵里：传感器水平探测角）。"
         },
@@ -104,10 +208,26 @@
           "page": 23,
           "quote": "5.1.9.3.1.1 传感器可探测的由其他车辆所发出的光线(如5.1.7.1所述),最小范围边界由下述角度确定:",
           "rows": [
-            ["向上角度", "传感器安装高度（传感器孔径中心距离地面距离）", "向下角度"],
-            ["5°", "小于2.0m", "2°"],
-            ["5°", "1.5m到2.5m", "2°~5°"],
-            ["5°", "大于2.0m", "5°"]
+            [
+              "向上角度",
+              "传感器安装高度（传感器孔径中心距离地面距离）",
+              "向下角度"
+            ],
+            [
+              "5°",
+              "小于2.0m",
+              "2°"
+            ],
+            [
+              "5°",
+              "1.5m到2.5m",
+              "2°~5°"
+            ],
+            [
+              "5°",
+              "大于2.0m",
+              "5°"
+            ]
           ],
           "extra": "水平角度:向左15°,向右15°。"
         },
@@ -116,10 +236,26 @@
           "page": 38,
           "quote": "6.1.9.3.1.1.1. Horizontal angles: 15° to the left and 15° to the right.",
           "rows": [
-            ["Upward angle", "Mounting height of the sensor (centre of sensor aperture above the ground)", "Downward angle"],
-            ["5°", "Less than 2 m", "2°"],
-            ["5°", "Between 1.5 m and 2.5 m", "2° to 5°"],
-            ["5°", "Greater than 2.0 m", "5°"]
+            [
+              "Upward angle",
+              "Mounting height of the sensor (centre of sensor aperture above the ground)",
+              "Downward angle"
+            ],
+            [
+              "5°",
+              "Less than 2 m",
+              "2°"
+            ],
+            [
+              "5°",
+              "Between 1.5 m and 2.5 m",
+              "2° to 5°"
+            ],
+            [
+              "5°",
+              "Greater than 2.0 m",
+              "5°"
+            ]
           ],
           "extra": "These angles are measured from the centre of the sensor aperture relative to a horizontal straight line through its centre and parallel to the longitudinal median plane of the vehicle."
         }
@@ -134,8 +270,14 @@
           "page": 20,
           "quote": "或，车速不大于20km/h 或后车距离不大于20m，可在GB 5920 要求的配光范围内降低光强。在此前提下，当车速处于不大于50km/h 的情况下，可以保持已激活的低光强状态。",
           "rows": [
-            ["触发减光的车速上限", "20 km/h（或后车距离不大于 20 m）"],
-            ["已减光状态可保持的车速上限", "50 km/h"]
+            [
+              "触发减光的车速上限",
+              "20 km/h（或后车距离不大于 20 m）"
+            ],
+            [
+              "已减光状态可保持的车速上限",
+              "50 km/h"
+            ]
           ],
           "extra": "A 另要求「光强变化过渡期应平稳，不应通过熄灭/点亮部分光源或发光体的方式来变化光强」；C §5.26.4 同义。"
         },
@@ -143,7 +285,11 @@
           "clause": "无对应条款",
           "page": 0,
           "quote": "",
-          "rows": [["GB 4785-2019 未把车速/车距写成可变光强的触发条件"]],
+          "rows": [
+            [
+              "GB 4785-2019 未把车速/车距写成可变光强的触发条件"
+            ]
+          ],
           "extra": "B §4.9「其他要求」只给原则性规定：光学特性允许变化的情况为「随外界环境光变化 / 随其他灯具开启而进行的变化 / 当灯具切换为另一个功能」；这一组条件在 2019 版体系下由 GB 17509 / GB 5920 承担。"
         },
         "C": {
@@ -151,10 +297,79 @@
           "page": 33,
           "quote": "a decrease of the luminous intensity, in the limits prescribed in the pertinent UN Regulations, is allowed as long as the vehicle speed is equal or less than 20 km/h or the distance to the following vehicle is equal or less than 20 m.",
           "rows": [
-            ["Trigger for the decrease", "vehicle speed ≤ 20 km/h, or distance to the following vehicle ≤ 20 m"],
-            ["Speed up to which the decrease may remain active", "50 km/h"]
+            [
+              "Trigger for the decrease",
+              "vehicle speed ≤ 20 km/h, or distance to the following vehicle ≤ 20 m"
+            ],
+            [
+              "Speed up to which the decrease may remain active",
+              "50 km/h"
+            ]
           ],
           "extra": "§5.26.4：No sharp variation of intensity shall be observed during transition."
+        }
+      }
+    },
+    {
+      "title": "前雾灯随装载变化的倾斜度范围（按安装高度 h 分档）",
+      "note": "**为什么这张表不进第 12 章的标量矩阵**：限值按安装高度 h 分两档（≤0.8 / ＞0.8），档内是「最小垂直倾角 ~ 最大垂直倾角」一个**区间**，压成一行数字就丢掉「哪个高度对应哪一档」。A 写在附录J（生产一致性检验要求），C 写在 Annex 9；**GB 4785-2019 没有这一条**（它没有「生产一致性检验」附录）。注意这组数与附录 F 第 2 组（前雾灯**初始**下倾度）不是同一回事 ——这里是**随装载变化**的范围（-0.7~-3.3 / -1.2~-3.8），那里是初始照准范围（-1.0~-3.0 / -1.5~-2.0）。",
+      "versions": {
+        "A": {
+          "clause": "J.1.3.2（附录J）",
+          "page": 102,
+          "quote": "对于任一单侧总光通量大于2000lm的前雾灯，随装载变化的倾斜度范围，应在以下范围： h≤0.8 -0.7%～-3.3% h＞0.8 -1.2%～-3.8% 各类车辆按附录G要求，在以下装载情况下进行试验： a) M1类车辆：按G2.1.1a）f）和G2.1.",
+          "rows": [
+            [
+              "安装高度 h",
+              "最小垂直倾角",
+              "最大垂直倾角"
+            ],
+            [
+              "h ≤ 0.8",
+              "-0.7%",
+              "-3.3%"
+            ],
+            [
+              "h ＞ 0.8",
+              "-1.2%",
+              "-3.8%"
+            ]
+          ],
+          "extra": "A 的同一条还规定「近光灯随装载变化的倾斜度范围，应符合表7」（表7 见附录 F 第 1 组）。"
+        },
+        "B": {
+          "clause": "无对应条款",
+          "page": 0,
+          "quote": "",
+          "rows": [
+            [
+              "GB 4785-2019 没有「生产一致性检验」附录，也就没有这一组随装载变化的范围"
+            ]
+          ],
+          "extra": "B 的近光/前雾灯下倾度限值在正文 §5.2.6.1.2 / §5.3.6.1.2（见附录 F 第 1、2 组），但没有「随装载变化」的这一档范围。"
+        },
+        "C": {
+          "clause": "Annex 9 §1.3.2",
+          "page": 135,
+          "quote": "9 135 downward inclination as a function of the loading conditions specified within this section shall remain within the range: h < 0.8: 0.7 per cent minimum vertical inclination and 3.3 per cent maximum vertical inclination; h > 0,8: 1.2 per cent minimum vertical inclination and 3.8 per cent maximum vertical inclination. The states of loading to b",
+          "rows": [
+            [
+              "Mounting height h",
+              "Minimum vertical inclination",
+              "Maximum vertical inclination"
+            ],
+            [
+              "h < 0.8",
+              "0.7 per cent",
+              "3.3 per cent"
+            ],
+            [
+              "h > 0.8",
+              "1.2 per cent",
+              "3.8 per cent"
+            ]
+          ],
+          "extra": "C 的原文把 0.8 写成「0,8」（逗号），照抄。"
         }
       }
     }

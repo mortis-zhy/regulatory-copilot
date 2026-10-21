@@ -135,3 +135,7 @@ __pycache__/
 reports/.verify-render.pdf
 reports/final.pdf
 reports/last-report.BAK.json
+
+# 审计/排查脚本的临时输出（每次运行重写）
+reports/_*.txt
+reports/_*.log

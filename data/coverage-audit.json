@@ -3,20 +3,22 @@
   "versions": {
     "A": {
       "label": "GB 4785 草案 V4.3.5",
-      "clauses": 107,
-      "limits": 301,
-      "same": 220,
+      "clauses": 108,
+      "limits": 316,
+      "same": 221,
       "otherChapter": 36,
-      "general": 44,
+      "general": 58,
       "otherDevice": 1,
       "missing": 0,
       "missingItems": [],
       "tableShaped": [
         {
           "clause": "5.1.9.2.1.1",
+          "indexClause": "5.1.9.2.1.1",
           "device": "远光灯",
           "page": 25,
           "note": "远光自动控制传感器的垂直最小探测范围（表6）：向上 5°，向下按传感器安装高度分三档（2° / 2°~5° / 5°）。",
+          "appendixF": "5.1.9.2.1.1",
           "values": [
             "1.5 m",
             "15 °",
@@ -28,25 +30,31 @@
         },
         {
           "clause": "5.2.6.1.2",
+          "indexClause": "5.2.6.1.2",
           "device": "近光灯",
           "page": 26,
           "note": "近光灯明暗截止线下倾度限值表（表7）：限值与初始照准按安装高度 h 分三档，档内是 h 的线性公式，不是标量。",
+          "appendixF": "5.2.6.1.2",
           "values": []
         },
         {
           "clause": "5.4.6.1.1",
+          "indexClause": "5.4.6.1.1",
           "device": "前雾灯",
           "page": 35,
           "note": "前雾灯下倾度（单侧总光通量 ≤2000lm 一档）。",
+          "appendixF": "同组 5.4.6.1.2（档位定义在该条）",
           "values": [
             "1 %"
           ]
         },
         {
           "clause": "5.4.6.1.2",
+          "indexClause": "5.4.6.1.2",
           "device": "前雾灯",
           "page": 36,
           "note": "前雾灯下倾度限值表：限值与初始照准按安装高度 h 分两档。",
+          "appendixF": "5.4.6.1.2",
           "values": [
             "0.1 %",
             "1 %",
@@ -59,9 +67,11 @@
         },
         {
           "clause": "5.19.9",
+          "indexClause": "5.19.9",
           "device": "昼间行驶灯",
           "page": 57,
           "note": "昼间行驶灯配光表（测试点网格），不是标量限值。",
+          "appendixF": "",
           "values": [
             "0.5 m",
             "1 m",
@@ -153,20 +163,22 @@
     },
     "B": {
       "label": "GB 4785-2019",
-      "clauses": 103,
-      "limits": 271,
+      "clauses": 104,
+      "limits": 283,
       "same": 203,
       "otherChapter": 42,
-      "general": 18,
+      "general": 30,
       "otherDevice": 8,
       "missing": 0,
       "missingItems": [],
       "tableShaped": [
         {
-          "clause": "5.1.9.3.1",
+          "clause": "5.1.9.3.1.1",
+          "indexClause": "5.1.9.3.1",
           "device": "远光灯",
           "page": 23,
-          "note": "远光自动控制传感器的垂直最小探测范围（表6）：向上 5°，向下按传感器安装高度分三档。",
+          "note": "远光自动控制传感器的垂直最小探测范围（表6）：向上 5°，向下按传感器安装高度分三档。**条款号被拆成两行**（「5. 1. 9. 3. 1. 1」），切条款时正文挂到了 5.1.9.3.1 上 —— 这里报**真号 5.1.9.3.1.1**。",
+          "appendixF": "5.1.9.3.1.1",
           "values": [
             "1.5 m",
             "15 °",
@@ -177,10 +189,12 @@
           ]
         },
         {
-          "clause": "5.2.6.1.1",
+          "clause": "5.2.6.1.2",
+          "indexClause": "5.2.6.1.1",
           "device": "近光灯",
           "page": 25,
-          "note": "近光灯明暗截止线下倾度限值表 —— GB 2019 的条款号被拆成「5.2.6.1.2」的碎片，正文落在本条里。",
+          "note": "近光灯明暗截止线下倾度限值表：**条款号在 PDF 里被拆成两行**（「5. 2. 6. 1. 2」），切条款时正文挂到了 5.2.6.1.1 上 —— 这里报**真号 5.2.6.1.2**。",
+          "appendixF": "5.2.6.1.2",
           "values": [
             "0.1 %",
             "0.5 %",
@@ -197,18 +211,22 @@
         },
         {
           "clause": "5.3.6.1.1",
+          "indexClause": "5.3.6.1.1",
           "device": "前雾灯",
           "page": 28,
           "note": "前雾灯（B 级）下倾度限值。",
+          "appendixF": "同组 5.3.6.1.2（档位定义在该条）",
           "values": [
             "1.5 %"
           ]
         },
         {
           "clause": "5.3.6.1.2",
+          "indexClause": "5.3.6.1.2",
           "device": "前雾灯",
           "page": 28,
           "note": "前雾灯（F3 级）下倾度限值表：限值与初始照准按安装高度 h 分两档。",
+          "appendixF": "5.3.6.1.2",
           "values": [
             "0.1 %",
             "0.8 m",
@@ -268,20 +286,22 @@
     },
     "C": {
       "label": "UN R48-09",
-      "clauses": 147,
-      "limits": 330,
-      "same": 248,
-      "otherChapter": 52,
-      "general": 17,
+      "clauses": 148,
+      "limits": 349,
+      "same": 251,
+      "otherChapter": 49,
+      "general": 36,
       "otherDevice": 13,
       "missing": 0,
       "missingItems": [],
       "tableShaped": [
         {
           "clause": "6.1.9.3.1.1.1",
+          "indexClause": "6.1.9.3.1.1.1",
           "device": "远光灯",
           "page": 38,
           "note": "远光自动控制传感器的垂直最小探测范围表（Upward angle / Downward angle by sensor mounting height）。",
+          "appendixF": "6.1.9.3.1.1.1",
           "values": [
             "1.5 m",
             "15 °",
@@ -293,43 +313,53 @@
         },
         {
           "clause": "6.2.6.1.2",
+          "indexClause": "6.2.6.1.2",
           "device": "近光灯",
           "page": 41,
           "note": "近光灯明暗截止线的垂直倾角限值表（Upper/Lower inclination limit by mounting height h），档内是 h 的线性公式。",
+          "appendixF": "6.2.6.1.2",
           "values": []
         },
         {
           "clause": "6.3.6.1.1",
+          "indexClause": "6.3.6.1.1",
           "device": "前雾灯",
           "page": 46,
           "note": "前雾灯下倾度：单侧总光通量 **不超过 2000 lumens** 的一档（表头条款，档内限值见 6.3.6.1.1.1）。",
+          "appendixF": "同组 6.3.6.1.2.1（档位定义在该条）",
           "values": [
             "2000 lm"
           ]
         },
         {
           "clause": "6.3.6.1.1.1",
+          "indexClause": "6.3.6.1.1.1",
           "device": "前雾灯",
           "page": 46,
           "note": "前雾灯下倾度：单侧总光通量 ≤2000 lumens 一档的限值（–1.0 per cent or lower），已在附录 F「前雾灯明暗截止线的下倾度限值」里逐字收录。",
+          "appendixF": "6.3.6.1.2.1（该组 extra 行逐字给出本档）",
           "values": [
             "1 %"
           ]
         },
         {
           "clause": "6.3.6.1.2",
+          "indexClause": "6.3.6.1.2",
           "device": "前雾灯",
           "page": 46,
           "note": "前雾灯下倾度：单侧总光通量 **超过 2000 lumens** 的一档（表头条款，档内限值见 6.3.6.1.2.1）。",
+          "appendixF": "同组 6.3.6.1.2.1（档位定义在该条）",
           "values": [
             "2000 lm"
           ]
         },
         {
           "clause": "6.3.6.1.2.1",
+          "indexClause": "6.3.6.1.2.1",
           "device": "前雾灯",
           "page": 46,
           "note": "前雾灯下倾度：单侧总光通量 >2000 lumens 一档的限值（按安装高度 h 分档），已在附录 F「前雾灯明暗截止线的下倾度限值」里逐字收录。",
+          "appendixF": "6.3.6.1.2.1",
           "values": [
             "1 %",
             "1.5 %",
@@ -423,11 +453,11 @@
     }
   },
   "totals": {
-    "same": 671,
-    "otherChapter": 130,
-    "general": 79,
+    "same": 675,
+    "otherChapter": 127,
+    "general": 124,
     "otherDevice": 22,
     "missing": 0,
-    "limits": 902
+    "limits": 948
   }
 }

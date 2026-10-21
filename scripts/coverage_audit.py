@@ -80,6 +80,15 @@ def load_bitmap_chapters():
     return {v: (raw.get(v) or {}) for v in ("A", "B", "C")}
 
 
+def load_annex_ranges():
+    """附录 / Annex 的页区间 —— 条款索引看不见它们，必须单独扫。"""
+    path = os.path.join(ROOT, "data", "annex-ranges.json")
+    if not os.path.exists(path):
+        return {}
+    raw = json.load(io.open(path, encoding="utf-8"))
+    return {v: raw.get(v) for v in ("A", "B", "C") if raw.get(v)}
+
+
 def bitmap_chapter_text(v, meta):
     """该章节的正文（按页区间取，按标记切掉下一章的开头）。"""
     docs = cs.pick_docs()
@@ -96,6 +105,19 @@ def bitmap_chapter_text(v, meta):
     if cut and cut in text:
         text = text[:text.index(cut)]
     return text
+
+
+def annex_text(v, meta):
+    """该附录的正文（从附录起始页到文末）。"""
+    docs = cs.pick_docs()
+    start = int(meta.get("start") or 0)
+    if not start:
+        return ""
+    blob = []
+    for p, lines in cs.doc_lines(docs[v]):
+        if p >= start:
+            blob.append("\n".join(lines))
+    return "\n".join(blob)
 
 
 def is_table_clause(body, vals):
@@ -148,6 +170,7 @@ def main():
     idx = {v: cs.split_clauses(p) for v, p in docs.items()}
     TABLES = load_tables()
     BITMAP_CHAPTERS = load_bitmap_chapters()
+    ANNEXES = load_annex_ranges()
     rep = json.load(io.open(os.path.join(ROOT, "reports", "last-report.json"), encoding="utf-8"))
     rows = rep["parameterMatrix"]
 
@@ -213,10 +236,15 @@ def main():
                     continue
                 if cur.get("kind") != "mixed":
                     tables.append({
-                        "clause": clause,
+                        # 条款号被 PDF 拆行吃掉时，索引的 key 是**父条款**，
+                        # 真号在 trueClause 里（GB 2019 的「5. 1. 9. 3. 1. 1」、
+                        # 「5. 2. 6. 1. 2」都拆成了两行）。报真号，别报错号。
+                        "clause": cur.get("trueClause") or clause,
+                        "indexClause": clause,
                         "device": dev_of(v, clause),
                         "page": obj.get("page", 0),
                         "note": cur.get("note", ""),
+                        "appendixF": cur.get("appendixF", ""),
                         "values": sorted({("%g %s" % (x, u)) for x, u in limits_in(body)}),
                     })
                     continue
@@ -304,6 +332,32 @@ def main():
                     else_hits.append((label, key, hit[0][3]))
                 else:
                     misses.append((label, key, meta.get("pages", [""])[0]))
+        # ── 附录 / Annex ──────────────────────────────────────────
+        # `clause_split.py` 只认「数字.数字」形态的条款号，附录是另一套编号
+        # 体系 —— **附录从来没被扫过**。GB 两版的「随装载变化的倾斜度安全界限
+        # 4 mrad（0.4%）」、三版的「自动切换近光响应时间 2s/5s/300s」都住在附录里。
+        meta = ANNEXES.get(v)
+        if meta:
+            label = "%s（附录）" % meta.get("title", "附录")
+            vals = limits_in(annex_text(v, meta))
+            n_clause += 1
+            skip = {(round(float(a), 6), b) for a, b in (meta.get("skip") or [])}
+            seen = set()
+            for val, unit in vals:
+                key = (round(val, 6), unit)
+                if key in skip:
+                    continue
+                cv = ls.canon_value(val, unit)
+                ckey = (round(cv[1], 6), cv[0]) if cv else key
+                if ckey in seen:
+                    continue
+                seen.add(ckey)
+                n_value += 1
+                hit = [x for x in anywhere[v] if same(val, unit, x[0], x[1])]
+                if hit:
+                    else_hits.append((label, key, hit[0][3]))
+                else:
+                    misses.append((label, key, meta.get("start", 0)))
         grand["same"] += len(same_hits)
         grand["other"] += len(other_hits)
         grand["elsewhere"] += len(else_hits)

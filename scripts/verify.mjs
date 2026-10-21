@@ -1130,6 +1130,70 @@ check("the chapters whose clause numbers are bitmaps are still scanned", () => {
   return `${entries.length} 个位图章节在扫：${entries.join("、")}`;
 });
 
+check("every cited clause can actually reach the value", () => {
+  // 不变式：矩阵引用的条款，必须**管得着**取值所在的那一页。
+  //
+  // 「值对、条款错」里最阴的一种是**交叉引用吃掉了条款号**：
+  //   A §5.19.7.5「……后位灯和 4.11 规定的其他灯具允许熄灭……」
+  //                              ^^^^^ 4.11 是电路连接那条，不是本条
+  // 引用被就近推断带成 4.11（位图章节，索引里根本没有这一条），
+  // 而「取值在它引用的条款里」那一关对位图章节只能退回整章当背景的
+  // **弱命中** → 照样放行。于是页对、值对、条款错，读者按 4.11 翻过去
+  // 找不到那句话。
+  //
+  // 这一关用**页码**当独立证据：条款在索引里 → 比它管的页区间；
+  // 条款属于位图章节 → 取值必须落在该章的页区间里。
+  const { ok, out } = runPy(["scripts/clause_page_check.py"], "clause_page_check");
+  assert(ok, `引用的条款管不到取值所在的那一页:\n        ${out.slice(-900)}`);
+  const m = out.match(/核了 (\d+) 个取值格/);
+  assert(m, `clause_page_check 没有给出统计行:\n        ${out.slice(-400)}`);
+  return `${m[1]} 个取值格的条款号与页码互相对得上`;
+});
+
+check("every matrix cell's page carries the quote it shows", () => {
+  // 矩阵的页码来自 MinerU 的分页标记；**主题列**早就做过「源 PDF 页码复核」
+  // （verify_claims.py 的那一遍，四个格因此被降级），**矩阵这一路没做过**。
+  // 拿引文本身当证据回源 PDF 找：引文不在它自己报的页上，就是一条错信息。
+  const { ok, out } = runPy(["scripts/matrix_page_check.py"], "matrix_page_check");
+  assert(ok, `矩阵报的页上找不到它自己的引文:\n        ${out.slice(-900)}`);
+  const m = out.match(/核了 (\d+) 个取值格/);
+  assert(m, `matrix_page_check 没有给出统计行:\n        ${out.slice(-400)}`);
+  return `${m[1]} 个取值格的引文回源 PDF 验到，页码全对`;
+});
+
+check("every empty matrix cell says why it is empty", () => {
+  // 「宁可空着，不可错着」还有另一半：**空着也要说清为什么空**。
+  // 一个既没有取值、也没有说明的格子，读者分不清是「该版确实没这条」
+  // 还是「抽不出来」—— 前者是法规结论，后者是数据缺陷。
+  //
+  // 之前全矩阵 301 行里只有一格属于后者（GB 4785-2019 的
+  // 「昼间行驶灯点亮时后位灯允许熄灭的环境照度阈值」）：
+  // 2019 版确实没这条（它 5.2.7.6b) 要求后位灯**必须**点亮），
+  // 但矩阵里既没值也没写原因 —— 读者会以为漏抽了。
+  const spec = JSON.parse(read("data/parameter-specs.json"));
+  const byId = new Map((spec.specs ?? []).map((s) => [s.id, s]));
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const bad = [];
+  let empty = 0;
+  for (const r of rep.parameterMatrix ?? []) {
+    const s = byId.get(r.id);
+    for (const ver of ["A", "B", "C"]) {
+      const c = r.cells?.[ver];
+      if (c?.status === "verified") continue;
+      empty++;
+      const note = (s?.absent ?? {})[ver];
+      if (!String(note ?? "").trim()) {
+        bad.push(`${r.id}/${ver}（status=${c?.status ?? "none"}, miss=${c?.miss ?? "-"}）`);
+      }
+    }
+  }
+  assert(
+    bad.length === 0,
+    `这些格子既没有取值、也没有说明为什么没有（读者分不清「该版无此规定」和「抽不出来」）:\n        ${bad.join("\n        ")}`,
+  );
+  return `${empty} 个空格全部写明了原因`;
+});
+
 check("printed TOC page numbers resolve to real chapter pages", () => {
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";

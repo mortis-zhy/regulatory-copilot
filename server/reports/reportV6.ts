@@ -2167,10 +2167,17 @@ function buildAppendixE(matrixRows: any[]): string {
   for (const v of order) {
     const x = vs[v] ?? {};
     for (const tb of x.tableShaped ?? []) {
+      // 「原文位置」由覆盖审计登记（data/table-clauses.json 的 appendixF 字段），
+      // 逐条写明这条表的原文在附录 F 的哪一条 —— 附录 F 没收录的（配光测试点
+      // 网格这类大表）就写「见页码回原文」，不笼统地说「都在附录 F」。
+      const af = String(tb.appendixF ?? "").trim();
+      const where = af
+        ? `附录 F：${af}`
+        : "附录 F 未收录（配光网格表），见上列页码回原文";
       tableRows.push(
         `| ${esc(label[v])}（${v}） | ${esc(tb.clause)} | ${esc(tb.device || "—")} | 第 ${esc(
           String(tb.page),
-        )} 页 | ${esc(tb.note ?? "")} |`,
+        )} 页 | ${esc(where)} | ${esc(tb.note ?? "")} |`,
       );
     }
     for (const o of x.outOfScope ?? []) {
@@ -2219,11 +2226,12 @@ function buildAppendixE(matrixRows: any[]): string {
     "",
     "> 这些条款的限值**是表**（按安装高度分档、或配光测试点网格），",
     "> 压成一行标量会丢掉「哪一档对应哪个高度」这个信息。",
-    "> 它们的**原文逐字**列在附录 F，可直接回查。",
+    "> **已进附录 F 的**按附录 F 逐字回查；**未进附录 F 的**（配光测试点网格这类大表）",
+    "> 请按「原文位置」一列的页码回原文 —— 逐条标清了，不含糊。",
     "",
-    "| 标准 | 条款号 | 装置 | 页码 | 说明 |",
-    "|---|---|---|---|---|",
-    ...(tableRows.length ? tableRows : ["| — | — | — | — | （无） |"]),
+    "| 标准 | 条款号 | 装置 | 页码 | 原文位置 | 说明 |",
+    "|---|---|---|---|---|---|",
+    ...(tableRows.length ? tableRows : ["| — | — | — | — | — | （无） |"]),
     "",
     "---",
     "",
@@ -2243,7 +2251,7 @@ function buildAppendixE(matrixRows: any[]): string {
     totalMiss === 0
       ? [
           `**三版共 ${esc(String(totalLimits))} 条量化限值，全部有着落：**`,
-          "要么进了第 12 章的矩阵（分四档见 E.1），要么是分档表/配光表（在附录 F 逐条列出），",
+          "要么进了第 12 章的矩阵（分四档见 E.1），要么是分档表/配光表（在附录 F 逐条列出，或在 E.2 标出页码），",
           "要么本来就不是安装要求（在 E.3 单列）。",
           "**没有需要补的量值。**",
         ]
