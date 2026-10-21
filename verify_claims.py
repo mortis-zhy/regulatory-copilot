@@ -1042,6 +1042,40 @@ def _pdf_page_disagrees(label: str, page_label: str, excerpt: str) -> str:
     return f"第{n}页在源 PDF 中找不到该摘录"
 
 
+def _pdf_find_page(label: str, excerpt: str) -> tuple:
+    """在源 PDF 全文里找这段摘录。
+
+    返回 (页码, 说明)：
+      · 唯一命中 → (页号, "")：页码指错了，但原文在这儿 —— 改页码，不降级
+      · 多页命中 → (None, "在第 … 页都出现，无法判定"): 不敢指
+      · 找不到   → (None, "源 PDF 全文找不到该摘录"): 这才是真缺口
+    """
+    pages = _source_pdf_pages(label)
+    if pages is None:
+        return None, ""
+    e = _flat_cn_alnum(excerpt or "")
+    if len(e) < 14:
+        return None, "摘录太短，无法在全文里唯一定位"
+    # **从最严的探针开始**：14 字的探针会在好几页上撞上（页眉、条款号），
+    # 一撞上就判「无法判定」会把明明唯一的 24 字命中也误杀。
+    for L in (24, 18, 14):
+        if len(e) < L:
+            continue
+        hits = set()
+        for i, ptxt in enumerate(pages, 1):
+            for s in (0, len(e) // 2, max(0, len(e) - L)):
+                if e[s : s + L] in ptxt:
+                    hits.add(i)
+                    break
+        if len(hits) == 1:
+            return next(iter(hits)), ""
+        if hits:
+            return None, "摘录在源 PDF 的第 %s 页都出现，无法判定在哪一页" % "/".join(
+                str(x) for x in sorted(hits)[:4]
+            )
+    return None, "源 PDF 全文找不到该摘录"
+
+
 _PDF_PAGE_CACHE: dict = {}
 
 
@@ -1236,6 +1270,7 @@ def build_topic_columns(cache_docs, texts):
     # 它的条款一条都不会进核验，而报告照样写「已核验」。
     labels = [v for v in versions.KNOWN_VERSIONS if v in cache_docs] or list(cache_docs.keys())
     page_rejected: list[str] = []
+    page_corrected: list[str] = []
     topic_names = []
     seen_keys = set()
     for lb in labels:
@@ -1385,6 +1420,7 @@ def build_topic_columns(cache_docs, texts):
             if status == "verified":
                 why = _pdf_page_disagrees(lb, actual_page, excerpt)
                 if why:
+                    claimed = actual_page
                     # The page number was located in MINERU's text, but the
                     # reader opens the source PDF. When the two disagree the
                     # ✓ is a citation to a page that does not contain the
@@ -1392,9 +1428,22 @@ def build_topic_columns(cache_docs, texts):
                     # 第102页, B 光色与色度坐标表 / 灯具光色对应表 第16页,
                     # C 自动切换前照灯条件表 第65页). A wrong page number is
                     # worse than an admitted gap: it looks checkable and is not.
-                    status = "missing"
-                    actual_page = ""
-                    page_rejected.append(f"{lb}/{topic} ({why})")
+                    # 页码指错了，但摘录本身在源 PDF 里 —— **改页码**，
+                    # 不要把一条有原文的引用说成「原文里找不到」。
+                    # 实测 11 条未核验里 9 条属于这种（例：B 灯具光色对应表
+                    # 抽取给 p16，摘录实际在 p19）。
+                    fixed_page, amb = _pdf_find_page(lb, excerpt)
+                    if fixed_page:
+                        # 与其它格的页码格式保持一致（「第N页」）
+                        actual_page = f"第{fixed_page}页"
+                        status = "verified"
+                        page_corrected.append(
+                            f"{lb}/{topic} {claimed} → 第{fixed_page}页"
+                        )
+                    else:
+                        status = "missing"
+                        actual_page = ""
+                        page_rejected.append(f"{lb}/{topic} ({why}{'；' + amb if amb else ''})")
             row[lb] = {
                 "clause": clause,
                 "claimedPage": claimed_page,
@@ -1412,10 +1461,37 @@ def build_topic_columns(cache_docs, texts):
             else:
                 stats["missing"] += 1
         cols.append(row)
+    if page_corrected:
+        print(f"  ✓ 页码已更正：{len(page_corrected)} 条摘录在源 PDF 里找到（抽取给的页码指错）")
+        for r in page_corrected:
+            print(f"     - {r}")
     if page_rejected:
-        print(f"  ⚠ 源 PDF 页码复核：{len(page_rejected)} 个 ✓ 被证伪并降级为未核验（页码指向的源 PDF 页面找不到该摘录）")
+        print(f"  ⚠ {len(page_rejected)} 个 ✓ 被证伪并降级为未核验（页码指向的源 PDF 页面找不到该摘录）")
         for r in page_rejected:
             print(f"     - {r}")
+
+    # ---- 逐格回源复核（改过页码的也要再验一遍）----
+    # 「改页码」这个动作必须自己经得起复核：每一格 ✓ 都要在源 PDF 的那一页上
+    # 真的找得到那段摘录。对不上就报出来 —— 宁可让闸门红。
+    recheck_fail = []
+    recheck_ok = 0
+    for row in cols:
+        for lb in labels:
+            c = row.get(lb) or {}
+            if c.get("status") != "verified":
+                continue
+            why = _pdf_page_disagrees(lb, str(c.get("actualPage") or ""), c.get("excerpt") or "")
+            if why:
+                recheck_fail.append(f"{lb}/{row.get('topic')} 第{c.get('actualPage')}页 —— {why}")
+            else:
+                recheck_ok += 1
+    print(
+        f"  源 PDF 页码复核：{recheck_ok} 格 ✓ 逐格回源验过 · "
+        f"{len(page_corrected)} 条页码已更正 · {len(recheck_fail)} 格证伪 · "
+        f"{len(page_rejected)} 格降级为未核验"
+    )
+    for r in recheck_fail:
+        print(f"     ✗ {r}")
     return cols, stats
 
 def run_verify() -> dict:
