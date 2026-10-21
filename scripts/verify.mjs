@@ -1209,6 +1209,58 @@ check("the clause index has no holes and no abnormally long clauses", () => {
   return out.split("\n")[0];
 });
 
+check("every chapter-11 diff value is backed by the source text", () => {
+  // 第 11 章的 45 条差值是全报告唯一**没有回原文验过**的取值来源
+  // （第 12 章有 clause_value_check.py 守着）。逐条回原文核下来，
+  // 事故是系统性的，不是个案：
+  //   · 近光灯·弯道照明曲率半径的 A 值被抄成「不大于500mm」——
+  //     原文三版都是「不大于 500m」，差 1000 倍，这一行还被标成「有变化」；
+  //   · 自动切换前照灯近光条件（A 附录C 表C.1 / B 附录H 表H.1 两表逐格相同）
+  //     被错配成「近光灯状态：开启 → 不大于2s」这种不成对的假变化；
+  //   · 单位被重复写了两遍（「（4.0±1.0）HzHz」「不得超过3ss」）。
+  // 更正见 data/diff-corrections.json，清洗见 scripts/diff_corrections.py。
+  const { ok, out } = runPy(["scripts/diff_value_check.py"], "diff_value_check");
+  assert(ok, `第 11 章的差值取值站不住:\n        ${out.slice(-900)}`);
+  const m = out.match(/差值表复核：(\d+) 条差值，(\d+) 条人工更正/);
+  assert(m, `diff_value_check 没有给出统计行:\n        ${out.slice(-400)}`);
+  return `${m[1]} 条差值回原文复核通过（其中 ${m[2]} 条人工更正）`;
+});
+
+check("the shipped report carries no known-wrong diff value and no false change count", () => {
+  // 报告层再兜一层底：已知错值不许出现在交付件里，矩阵小结的「实质变化」
+  // 条数必须等于核验过的条数（过去那张 45 行的表用「两个取值当字符串一比」
+  // 判变化，写着「45 项参数中 45 项有实质变化」—— 45 行里 42 行是假的）。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const md = (rep.chapters ?? []).map((c) => c.markdown ?? "").join("\n");
+  const bad = [];
+  // 只看**表格行**里有没有这个错值 —— 正文里引用它来解释「改了什么」是应该的
+  const wrongCell = md
+    .split("\n")
+    .filter((l) => l.trim().startsWith("|") && l.includes("不大于500mm"));
+  if (wrongCell.length) {
+    bad.push(
+      `表格里还有 ${wrongCell.length} 处「不大于500mm」—— 原文三版都是「不大于 500m」:` +
+        wrongCell.slice(0, 3).map((l) => "\n        " + l.slice(0, 160)).join(""),
+    );
+  }
+  if (/\d+ 项参数中 \*\*\d+ 项有实质变化\*\*/.test(md)) {
+    bad.push("矩阵小结仍用旧口径宣称「N 项参数中 N 项有实质变化」");
+  }
+  const facts = JSON.parse(read("dist/facts.json"));
+  const verdicts = Object.values(facts.diffVerdicts ?? {});
+  const realChanges = verdicts.filter((v) => String(v.verdict ?? "").startsWith("有变化")).length;
+  const m = md.match(/(\d+) 项差值候选中 \*\*(\d+) 项为实质变化\*\*/);
+  assert(m, "矩阵小结没有给出「差值候选 / 实质变化」的条数");
+  assert(
+    Number(m[2]) === realChanges,
+    `矩阵小结说 ${m[2]} 项实质变化，核验结果是 ${realChanges} 项 —— 数字对不上`,
+  );
+  const pending = verdicts.filter((v) => v.verdict === "待核实").length;
+  assert(pending === 0, `还有 ${pending} 行判不出来（待核实）—— 宁可空着，也要把结论留给原文`);
+  assert(bad.length === 0, bad.join("\n        "));
+  return `${verdicts.length} 行差值全部有判定，实质变化 ${realChanges} 项`;
+});
+
 check("printed TOC page numbers resolve to real chapter pages", () => {
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";

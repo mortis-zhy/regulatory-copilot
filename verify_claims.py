@@ -27,6 +27,13 @@ DIFF = ROOT / "diff-result.json"
 CACHE_DIR = ROOT / "dist" / "extract-cache"
 OUT = ROOT / "dist" / "verified-comparison.json"
 
+# scripts/diff_corrections.py — 差值表的机械清洗 + 人工更正。
+# 它住在 scripts/ 下（不是包），按路径加载。
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location("diff_corrections", str(ROOT / "scripts" / "diff_corrections.py"))
+dc = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(dc)
+
 def load_mineru():
     data = json.load(open(MINERU, encoding="utf-8"))
     texts = {}
@@ -329,6 +336,109 @@ def semantic_normalize(s: str) -> str:
     s = re.sub(r"[，。、；：()（）【】\[\]<>|]", "", s)
     s = normalize_cn(s)
     return s
+
+
+# ---------------------------------------------------------------------------
+# 差值表的「这一行到底算不算变化」
+# ---------------------------------------------------------------------------
+# 限值口径词：数字相同但口径相反（「不大于 65」vs「不小于 65」）是**真变化**，
+# 所以比数字的时候必须连口径一起比。
+_POLARITY = ("不大于", "不小于", "不超过", "不低于", "不得大于", "不得小于",
+             "不多于", "不小于", "至少", "最多", "大于", "小于", "以上", "以下",
+             "上限", "下限", "范围", "±", "+-")
+
+
+def _limit_signature(s: str) -> tuple:
+    """取值里的「数字 + 口径」签名。两侧签名相同 = 限值口径相同。"""
+    t = semantic_normalize(s or "")
+    numbers = tuple(re.findall(r"-?\d+(?:\.\d+)?", t))
+    polarity = tuple(w for w in _POLARITY if w in t)
+    return numbers, polarity
+
+
+def build_diff_verdicts(vds_fixed: list, fixed_by_key: dict, buckets: dict) -> dict:
+    """给每条差值判定「算不算变化」。
+
+    优先级：
+    1. `data/diff-corrections.json` 的人工裁定（回原文核过，最高优先）
+    2. 证据规则的分桶（已核验变化 / 同文勘误 / 引用重排 / 规则非变化）
+    3. 表述差异桶里，再比一次「数字 + 口径」：
+       相同 → 数值与口径相同（非数值变化）；不同 → 表述差异（未做数值核验）
+    4. 都不匹配 → 待核实（**不写「有变化」**）
+
+    为什么要有这一层：第 11.3.3 那张 45 行矩阵过去用「两个取值当字符串一比」
+    判变化，于是「（4.0±1.0）HzHz」vs「(4.0±1.0)Hz」、「不大于500mm」vs「500m」
+    都被判成**有变化** —— 45 行里 42 行是假的，矩阵小结还写着「45 项有实质变化」。
+    """
+    def _k(row):
+        return f"{row.get('topic','')}|{row.get('name','')}"
+
+    def _index(rows):
+        idx = {}
+        for r in rows or []:
+            idx.setdefault(_k(r), []).append(r)
+        return idx
+
+    idx_num = _index(buckets.get("numeric"))
+    idx_same = _index(buckets.get("sameText"))
+    idx_word = _index(buckets.get("wording"))
+    idx_renum = _index(buckets.get("renumbered"))
+    idx_rule = _index(buckets.get("ruleDropped"))
+
+    out = {}
+    for row in vds_fixed or []:
+        k = _k(row)
+        verdict, reason = None, ""
+        manual = row.get("verdict")
+        if manual == "change":
+            verdict = "有变化"
+            reason = row.get("verdictReason", "")
+        elif manual == "no-change":
+            verdict = "两版同文（已回原文核验）"
+            reason = row.get("verdictReason", "")
+        elif manual == "duplicate":
+            verdict = "重复行（已合并）"
+            reason = row.get("verdictReason", "")
+        elif manual == "unverified":
+            verdict = "待核实"
+            reason = row.get("verdictReason", "")
+        elif k in idx_num:
+            r = idx_num[k][0]
+            verdict = "有变化" if r.get("status") == "verified" else "有变化（待核实）"
+            reason = "已定位到原文页码" if r.get("status") == "verified" else "未能定位到原文页码"
+        elif k in idx_same:
+            verdict = "两版同文（勘误）"
+            reason = (idx_same[k][0].get("reason") or "")
+        elif k in idx_renum:
+            verdict = "引用编号变化（非实质）"
+            reason = "章节重组导致的条款号重排"
+        elif k in idx_rule:
+            verdict = "非变化（规则判定）"
+            reason = (idx_rule[k][0].get("reason") or "")
+        elif k in idx_word:
+            so = _limit_signature(row.get("oldValue", ""))
+            sn = _limit_signature(row.get("newValue", ""))
+            if so[0] and so == sn:
+                verdict = "数值与口径相同（非数值变化）"
+                reason = "两版数字与限值口径一致，仅措辞/格式不同"
+            else:
+                verdict = "表述差异（未做数值核验）"
+                reason = "数字或口径不同，需人工逐条比对原文（见 11.8）"
+        else:
+            verdict = "待核实"
+            reason = "未匹配到任何证据分桶"
+        out[k] = {
+            "verdict": verdict,
+            "reason": reason,
+            "oldValue": row.get("oldValue", ""),
+            "newValue": row.get("newValue", ""),
+            "topic": row.get("topic", ""),
+            "name": row.get("name", ""),
+            "source": row.get("source", ""),
+            "aClause": row.get("aClause", ""),
+            "bClause": row.get("bClause", ""),
+        }
+    return out
 
 def noise_filter_diffs(vds):
     """Returns (real, wording, renumbered)."""
@@ -1312,8 +1422,29 @@ def run_verify() -> dict:
     print("[verify] loading diff valueDiffs...")
     diff = json.load(open(DIFF, encoding="utf-8"))
     vds = diff.get("valueDiffs", [])
+    # 取值清洗 + 人工更正（scripts/diff_corrections.py + data/diff-corrections.json）。
+    # 分类仍在**原始**取值上做（证据规则的判定不因人工更正而改变，账目闭合不变），
+    # 但**展示用的取值**一律用更正后的版本 —— 报告里不该再出现「500mm」这种
+    # 抄错单位的值，也不该再出现被重复写了两遍的单位。
+    vds_fixed, _applied, _unmatched, _residual = dc.apply_corrections(vds)
+    if _unmatched:
+        raise AssertionError(
+            f"差值更正表里有 {len(_unmatched)} 条没能在 valueDiffs 里找到对应行："
+            + "；".join(f"{c.get('topic')}|{c.get('name')}" for c in _unmatched)
+        )
+    if _residual:
+        raise AssertionError(
+            f"差值表有 {len(_residual)} 处机械噪声（重复单位等）没有人工兜底："
+            + "；".join(f"{d[0]}/{d[1]}:{d[2]}" for d in _residual)
+        )
+    # 键用**原始**的 topic|name（更正表里可能给某行改了名字，改完就认不出了）
+    fixed_by_key = {
+        f"{raw.get('topic','')}|{raw.get('name','')}": fixed
+        for raw, fixed in zip(vds, vds_fixed)
+    }
     real, wording, renumbered = noise_filter_diffs(vds)
     print(f"  {len(vds)} total → {len(real)} real numeric changes + {len(wording)} paraphrase noise (dropped)")
+    print(f"  取值更正：机械清洗 + {len(_applied)} 条人工更正（data/diff-corrections.json）")
 
     print("[verify] verifying numeric changes against MinerU text...")
     verified, same_text, rule_dropped = verify_numeric_changes(real, texts)
@@ -1322,6 +1453,39 @@ def run_verify() -> dict:
     rule_counts = Counter(r["rule"] for r in rule_dropped)
     print(f"  status: {dict(st)} | same-text demoted: {len(same_text)}")
     print(f"  rule-dropped: {len(rule_dropped)} {dict(rule_counts)}")
+
+    # ---- 展示用取值换成更正后的版本（分类不变，账目不变）----
+    def _with_fixed_values(rows: list) -> list:
+        out_rows = []
+        for r in rows:
+            r2 = dict(r)
+            fx = fixed_by_key.get(f"{r.get('topic','')}|{r.get('name','')}")
+            if fx:
+                for side in ("oldValue", "newValue"):
+                    if fx.get(side) is not None:
+                        r2[side] = fx[side]
+                if fx.get("name_new"):
+                    r2["name"] = fx["name_new"]
+            out_rows.append(r2)
+        return out_rows
+
+    verified = _with_fixed_values(verified)
+    same_text = _with_fixed_values(same_text)
+    rule_dropped = _with_fixed_values(rule_dropped)
+    wording = _with_fixed_values(wording)
+    renumbered = _with_fixed_values(renumbered)
+
+    # ---- 每条差值「到底算不算变化」的人工/规则判定 ----
+    # 这是第 11.3.3 那张 45 行矩阵的「变化」列。以前那一列是把两个取值当字符串
+    # 一比（`b === a`），于是「（4.0±1.0）HzHz」vs「(4.0±1.0)Hz」、
+    # 「不大于500mm」vs「500m」都被判成**有变化** —— 45 行里 42 行是假的，
+    # 而矩阵小结还写着「45 项有实质变化」。
+    diff_verdicts = build_diff_verdicts(vds_fixed, fixed_by_key, {
+        "numeric": verified, "sameText": same_text, "wording": wording,
+        "renumbered": renumbered, "ruleDropped": rule_dropped,
+    })
+    vc = Counter(v["verdict"] for v in diff_verdicts.values())
+    print("  差值判定分布：%s" % dict(vc))
 
     print("[verify] building A|B|C topic columns...")
     cache_docs = load_extract_cache()
@@ -1389,6 +1553,12 @@ def run_verify() -> dict:
         # each source PDF's SHA-256; if a source changes, every entry is
         # demoted to 待重核 rather than presented as still-verified.
         "manualFindings": _load_manual_findings(),
+        # 第 11.3.3 那张 45 行矩阵的**数据源**与**判定**。
+        # 过去那张表直接读原始 diff-result.json，变化列是「两个取值当字符串一比」，
+        # 于是抄错单位、重复单位、错配的取值全被算成「有变化」。
+        # 现在：取值 = 清洗+更正后的版本；判定 = 人工裁定优先、其次证据分桶。
+        "diffValueDiffs": vds_fixed,
+        "diffVerdicts": diff_verdicts,
     }
     # Partition gate. Every candidate must be accounted for exactly once, or the
     # report's "合计 N，账目闭环" sentence would be printing a number nobody can
@@ -1422,6 +1592,9 @@ def main():
         "wordingOnly": out.get("wordingOnly", []),
         "manualFindings": out.get("manualFindings", []),
         "topicColumns": out.get("topicColumns", []),
+        # 第 11.3.3 矩阵的数据源与判定（见 run_verify 里的说明）
+        "diffValueDiffs": out.get("diffValueDiffs", []),
+        "diffVerdicts": out.get("diffVerdicts", {}),
         "stats": out.get("stats", {}),
         "counts": {
             # candidate-flow accounting for the exec summary: every valueDiff

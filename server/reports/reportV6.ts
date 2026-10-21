@@ -1339,10 +1339,25 @@ function cClauseOf(source: string): string {
  * filtering) and left the other 42 — including every 安装高度 / 可见度角 /
  * 闪烁频率 / 试验速度 row a reviewer opens the document for — either demoted to
  * a wording-review list or dropped. UN R48 never appeared as a column at all.
+ *
+ * **变化判定这一列**：过去是把两个取值当字符串一比（`b === a`），于是
+ * 「（4.0±1.0）HzHz」vs「(4.0±1.0)Hz」（重复单位）、「不大于500mm」vs「500m」
+ * （抄错单位）、「开启」vs「不大于2s」（抽取错配）全被判成**有变化**，
+ * 矩阵小结还写着「45 项参数中 45 项有实质变化」—— 45 行里 42 行是假的。
+ * 现在判定来自 `verify_claims.py`：
+ *   人工更正（`data/diff-corrections.json`，回原文核过）> 证据分桶
+ *   > 「数字 + 口径」签名比对 > 待核实。
+ * 取值也一并换成清洗+更正后的版本（`scripts/diff_corrections.py`）。
  */
-function buildParameterMatrix(diffResult: any, topicColumns: any[]): string {
-  const rows: any[] = Array.isArray(diffResult?.valueDiffs) ? diffResult.valueDiffs : [];
-  if (!rows.length) return "_(参数矩阵：无 diff-result.json 数据)_";
+function buildParameterMatrix(
+  diffValueDiffs: any[],
+  diffVerdicts: Record<string, any>,
+  topicColumns: any[],
+): string {
+  const rows: any[] = Array.isArray(diffValueDiffs) ? diffValueDiffs : [];
+  if (!rows.length) {
+    return "_(参数矩阵：差值数据缺失 —— 请重跑 `python verify_claims.py` 生成 facts.json 里的 diffValueDiffs。宁可空着，也不用未经核验的原始 diff-result.json 顶替。)_";
+  }
 
   // R48 excerpts are verified per topic in facts.json; index them so the mapping
   // strength column has something to judge on instead of defaulting to 未映射.
@@ -1368,33 +1383,75 @@ function buildParameterMatrix(diffResult: any, topicColumns: any[]): string {
   const parts: string[] = [
     "### 11.3.3 A/B/C 参数对照矩阵（安装高度 · 角度 · 频率 · 车速）",
     "",
-    `本节是全报告的**参数级主对照表**：把 ${rows.length} 条 A/B 数值差异按参数维度归类，` +
-      "每行给出 B 现行值 → A 草案值，并单列 **C UN R48 条款号**与**映射强度**。" +
+    `本节是全报告的**参数级主对照表**：把 ${rows.length} 条 A/B 差值候选按参数维度归类，` +
+      "每行给出 B 现行值 → A 草案值，并单列 **变化判定**、**C UN R48 条款号**与**映射强度**。" +
       "映射强度按 [完全对应 / 部分重叠 / 无对应] 标注——**部分重叠不得按等价使用**。",
     "",
+    "> **「变化判定」这一列是核验过的**，不是把两个取值当字符串一比。" +
+      "取值来自 18 主题 diff 管线的 LLM 抽取，其中抄错单位、重复单位、错配行的情况都真实发生过" +
+      "（例如近光灯弯道照明曲率半径的 A 值曾被抄成「500mm」，原文是「500m」）。" +
+      "本表已逐条回原文核验并更正，判定依据见 `data/diff-corrections.json`。",
+    "",
     "> 阅读方式：先按参数维度定位（客户通常只关心安装高度、可见度角、闪烁频率、试验车速），" +
-      "再看该维度内 B→A 的变化幅度，最后用 C 列确认出口欧盟时是否需要额外满足 R48。",
+      "再看该维度内 B→A 的变化幅度，最后用 C 列确认出口欧盟时是否需要额外满足 R48。" +
+      "**「表述差异（待复核）」的行不是数值变化，但措辞改动也可能是真变化**（例如「允许选装」→「选装」），" +
+      "已逐条列在 11.8。",
     "",
   ];
 
   let n = 0;
+  const verdictOf = (r: any): { verdict: string; reason: string } => {
+    const key = `${String(r.topic ?? "").trim()}|${String(r.name ?? "").trim()}`;
+    const v = diffVerdicts?.[key];
+    if (v) return { verdict: String(v.verdict ?? "待核实"), reason: String(v.reason ?? "") };
+    return { verdict: "待核实", reason: "未匹配到判定结果" };
+  };
+  // 判定的**短标签**（表格里只放短标签，长的理由放在表下的更正说明里）
+  const shortVerdict = (v: string): string => {
+    switch (v) {
+      case "有变化":
+        return "**有变化**";
+      case "有变化（待核实）":
+        return "**有变化**（待核实）";
+      case "两版同文（已回原文核验）":
+        return "无变化（已核原文）";
+      case "两版同文（勘误）":
+        return "无变化（同文）";
+      case "数值与口径相同（非数值变化）":
+        return "无变化（数值同）";
+      case "引用编号变化（非实质）":
+        return "无变化（编号重排）";
+      case "非变化（规则判定）":
+        return "无变化（规则判定）";
+      case "重复行（已合并）":
+        return "重复行（已合并）";
+      case "表述差异（未做数值核验）":
+        return "表述差异（待复核）";
+      default:
+        return "待核实";
+    }
+  };
+
+  const corrections: { name: string; verdict: string; reason: string }[] = [];
+
   for (const fam of ordered) {
     const famRows = byFamily.get(fam)!;
     parts.push(`#### ${fam}（${famRows.length} 项）`, "");
     parts.push(
-      "| # | 参数 | B 现行 GB 4785-2019 | A 草案 V4.3.5 | 变化 | C UN R48 条款 | 映射强度 |",
+      "| # | 参数 | B 现行 GB 4785-2019 | A 草案 V4.3.5 | 变化判定 | C UN R48 条款 | 映射强度 |",
       "|---|---|---|---|---|---|---|",
     );
     for (const r of famRows) {
       n++;
       const b = String(r.oldValue ?? "—").replace(/\s+/g, " ").trim();
       const a = String(r.newValue ?? "—").replace(/\s+/g, " ").trim();
-      const same = b.replace(/[\s,，]/g, "") === a.replace(/[\s,，]/g, "");
-      const delta = same ? "无变化" : "**有变化**";
+      const { verdict, reason } = verdictOf(r);
+      const delta = shortVerdict(verdict);
       const cClause = cClauseOf(r.source);
       const strength = mapStrength(r, cExcerptByTopic);
       const strengthCell =
         strength === "完全对应" ? "[完全对应]" : strength === "部分重叠" ? "[部分重叠]" : strength === "无对应" ? "[无对应]" : "未映射";
+      if (r.verdictReason) corrections.push({ name: `${r.topic} · ${r.name}`, verdict, reason: String(r.verdictReason) });
       parts.push(
         `| ${pad2(n)} | ${cell(`${r.topic} · ${r.name}`)} | ${cell(b)} | ${cell(a)} | ${delta} | ${cClause ? `R48 ${cClause}` : "—"} | ${strengthCell} |`,
       );
@@ -1402,12 +1459,40 @@ function buildParameterMatrix(diffResult: any, topicColumns: any[]): string {
     parts.push("");
   }
 
-  const changed = rows.filter((r) => String(r.oldValue ?? "").replace(/[\s,，]/g, "") !== String(r.newValue ?? "").replace(/[\s,，]/g, "")).length;
-  parts.push(
-    `**矩阵小结**：${rows.length} 项参数中 **${changed} 项有实质变化**、${rows.length - changed} 项两版同文；` +
-      `覆盖 ${ordered.length} 个参数维度。全部 ${rows.filter((r) => cClauseOf(r.source)).length} 项均标注了 C UN R48 对应条款号。`,
+  // 判定分布 —— 小结只报**核验过的**事实
+  const byVerdict = new Map<string, number>();
+  for (const r of rows) {
+    const v = verdictOf(r).verdict;
+    byVerdict.set(v, (byVerdict.get(v) ?? 0) + 1);
+  }
+  const vcount = (v: string) => byVerdict.get(v) ?? 0;
+  const realChanges = vcount("有变化") + vcount("有变化（待核实）");
+  const parts_: string[] = [];
+  parts_.push(
+    `**矩阵小结**：${rows.length} 项差值候选中 **${vcount("有变化")} 项为实质变化**（均已回原文核验）` +
+      (vcount("有变化（待核实）") ? `、${vcount("有变化（待核实）")} 项标为待核实` : "") +
+      `；其余 ${rows.length - realChanges} 项**不是数值变化**：` +
+      `两版同文 ${vcount("两版同文（已回原文核验）") + vcount("两版同文（勘误）")} 项` +
+      `、数值与口径相同 ${vcount("数值与口径相同（非数值变化）")} 项` +
+      `、表述差异待复核 ${vcount("表述差异（未做数值核验）")} 项` +
+      `、编号重排 ${vcount("引用编号变化（非实质）")} 项` +
+      `、规则判定非变化 ${vcount("非变化（规则判定）")} 项` +
+      `、重复行 ${vcount("重复行（已合并）")} 项。` +
+      `覆盖 ${ordered.length} 个参数维度；${rows.filter((r) => cClauseOf(r.source)).length} 项标注了 C UN R48 对应条款号。`,
     "",
   );
+  if (corrections.length) {
+    parts_.push(
+      `**本表更正了 ${corrections.length} 行的抽取错误**（逐条回原文核验；更正清单见 ` +
+        `\`data/diff-corrections.json\`，由 \`scripts/diff_value_check.py\` 在交付闸门里复核）：`,
+      "",
+    );
+    for (const c of corrections) {
+      parts_.push(`- **${c.name}** —— ${c.verdict}：${c.reason}`);
+    }
+    parts_.push("");
+  }
+  parts.push(...parts_);
   return parts.join("\n");
 }
 
@@ -1520,7 +1605,11 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
     manualFindings.forEach((m, i) => {
       const bCell = m.bPage ? `${m.oldValue}（${m.bPage}）` : m.oldValue;
       const aCell = m.aPage ? `${m.newValue}（${m.aPage}）` : m.newValue;
-      parts.push(`| ${pad2(i + 1)} | ${cell(m.topic)} · ${cell(m.name)} | [人工核验] | ${cell(bCell)} | ${cell(aCell)} | ${cell(m.source || "manual-audit")} |`);
+      // 来源列：显示中文说明，不要把内部标记 manual-audit 直接印给读者
+      const srcText = /manual-audit|人工对照/.test(String(m.source ?? ""))
+        ? "人工对照（已核原文）"
+        : String(m.source ?? "—");
+      parts.push(`| ${pad2(i + 1)} | ${cell(m.topic)} · ${cell(m.name)} | [人工核验] | ${cell(bCell)} | ${cell(aCell)} | ${cell(srcText)} |`);
     });
     parts.push("");
   }
@@ -2674,7 +2763,11 @@ export async function buildMinerUReport(
   } catch (e) {
     console.warn("[v6] diff-result.json unreadable:", e);
   }
-  const matrixMd = buildParameterMatrix(diffResult, verified.topicColumns ?? []);
+  const matrixMd = buildParameterMatrix(
+    verified.diffValueDiffs ?? [],
+    verified.diffVerdicts ?? {},
+    verified.topicColumns ?? [],
+  );
   for (const seg of parts11) {
     if (seg.startsWith("### 11.4")) {
       rebuilt.push(build11_4_v62(indicatorResults) + "\n\n");

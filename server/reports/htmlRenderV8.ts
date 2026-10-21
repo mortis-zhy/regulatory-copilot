@@ -1632,7 +1632,9 @@ const PLACEHOLDER_TITLE_RE =
  * 未核验 ⚠ for a checked page anchor is exactly the failure mode the report's
  * own disclaimer warns about, so these get their own class.
  */
-const UNVERIFIED_RE = /未核验|待核实|未找到|待人工确认|manual-audit|源数据未提供|本版未规定/;
+// 注意：`manual-audit` **不在**这个列表里 —— 它表示「已由人工对照原文核过」，
+// 把它当「未核验」标记会让同一行既写 [人工核验] 又挂一个 ⚠ 待人工核验 的徽标。
+const UNVERIFIED_RE = /未核验|待核实|未找到|待人工确认|源数据未提供|本版未规定/;
 
 function unverifiedBadge(text: string): string {
   const t = text.trim();

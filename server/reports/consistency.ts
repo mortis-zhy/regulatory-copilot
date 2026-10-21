@@ -117,14 +117,19 @@ function checkUnits(rows: string[][]): ConsistencyIssue[] {
 // ---------------------------------------------------------------------------
 
 /**
- * GB4785 里这三个词指同一个物理面，但两版用词不同：
- *   B (2007/2019) 用「视表面」
- *   A (V4.3.5) 用「发光面」/「透光面」
- * 报告若在同一句话里混用，读者会以为是不同参数。
+ * 同义词族检查。
+ *
+ * **曾经在这里放过「视表面 / 透光面 / 发光面」—— 那是错的，已移除。**
+ * GB 4785 把这三个词定义成**三个不同的面**（A 3.1.8 透光面 light emitting
+ * surface、3.1.9 发光面 illuminating surface、3.1.10 视表面 apparent
+ * surface；B 版同）。报告照抄原文摘录，三个词都会出现 —— 那是**忠实引用**，
+ * 不是术语混用。把它报成「三者指同一物理面」等于在客户面前给报告扣一个
+ * 不存在的罪名。
+ *
+ * 往这里加词族的前提：**标准自己把它们当同一个东西**。
+ * 三个不同的术语混在一起报，只会制造误报。
  */
-const TERM_FAMILY: Array<{ terms: string[]; canonical: string }> = [
-  { terms: ["视表面", "透光面", "发光面"], canonical: "发光面 / 视表面" },
-];
+const TERM_FAMILY: Array<{ terms: string[]; canonical: string }> = [];
 
 function checkTerms(md: string): ConsistencyIssue[] {
   const out: ConsistencyIssue[] = [];
@@ -137,7 +142,7 @@ function checkTerms(md: string): ConsistencyIssue[] {
         severity: "medium",
         label: `同义术语混用：${fam.canonical}`,
         detail: used.map((c) => `「${c.t}」${c.n} 处`).join(" / ") +
-          " — 三者指同一物理面，混用会让读者误以为是不同参数",
+          " — 同一概念出现多种写法，读者可能误以为是不同参数",
       });
     }
   }
@@ -152,8 +157,15 @@ function checkTerms(md: string): ConsistencyIssue[] {
  * 同一参数在**不同章节**重复出现是正常的（核心参数表 + 变化点 + 逐句对照
  * 各引用一次）；真正的问题是**同一张表内**出现两行几乎相同的参数。
  *
- * 只比「主题列 + 至少一侧有实质取值」的行 —— 表头里的分类标签
- * （"数值变化"、"GB4785指标"）和纯序号不算，否则满屏噪音。
+ * **主题列不固定在第 2 格。** 报告里的表有三种列法：
+ *   | 序号 | 主题 | 参数 | … |   → 主题在第 2 格，第 1 格是行号
+ *   | 参数 | 单位 | A | B | C |   → 主题在第 1 格，第 2 格是**单位**
+ *   | 版本 | 原文取值 | 条款 | … | → 第 1 格是**版本**；同一句「—该版无此规定」
+ *                                     在 B、C 两行都出现，那是**两行合法的对照**，
+ *                                     不是复制残留
+ * 过去一律拿第 2 格当主题，于是「单位那列是 s」的两行被判成「s 重复 3 次」，
+ * 而「两版都无此规定」被判成「重复行」—— 55 项中等告警里 53 项是这么来的。
+ * 现在主题取**第一个不是纯序号的单元格**，值取它**之后**的各格。
  */
 function checkDuplicates(rows: string[][]): ConsistencyIssue[] {
   const out: ConsistencyIssue[] = [];
@@ -161,15 +173,27 @@ function checkDuplicates(rows: string[][]): ConsistencyIssue[] {
 
   for (const row of rows) {
     if (row.length < 4) continue;
-    const topic = (row[1] ?? "").replace(/\*\*/g, "").trim();
-    if (!topic) continue;
+    const cells = row.map((c) => (c ?? "").replace(/\*\*/g, "").trim());
+    // 主题 = 第一个「不是纯序号/占位符」的单元格
+    let topicIdx = -1;
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i];
+      if (!c) continue;
+      if (/^[\d.\s\u2014-]+$/.test(c)) continue;
+      topicIdx = i;
+      break;
+    }
+    if (topicIdx < 0) continue;
+    const topic = cells[topicIdx];
     // 跳过纯序号 / 纯编号 / 占位符（"3"、"5.1"、"—"、"—（未定位）"）
     if (/^[\d.\s—-]+$/.test(topic)) continue;
     // 跳过分类标签：整行只有短标签 + 空值
-    const values = row.slice(2).map((c) => c.replace(/\*\*/g, "").trim()).filter(Boolean);
+    // 值 = 主题之后的各格（主题之前的格是行号/序号，不参与比较）
+    const values = cells.slice(topicIdx + 1).filter(Boolean);
     if (values.length === 0) continue;
-    // 跳过"分类 | 数量 | 说明"这类汇总行（第二列全是数字或极短）
-    if (topic.length <= 6 && values.every((v) => v.length <= 8)) continue;
+    // 跳过"分类 | 数量 | 说明"这类汇总行：主题很短、取值格 ≤ 2 且都很短。
+    // （取值格多于 2 个的短行是**真条目**，不能跳 —— 否则真重复行反而检不出来）
+    if (topic.length <= 6 && values.length <= 2 && values.every((v) => v.length <= 8)) continue;
 
     const key = `${topic.replace(/\s+/g, "")}|${values.join("|").slice(0, 60)}`;
     seen.set(key, (seen.get(key) ?? 0) + 1);
@@ -211,8 +235,26 @@ function checkNumerics(md: string): ConsistencyIssue[] {
       detail: `全文有 ${truncated} 处摘录以「…」结尾被截断 — 关键限定条件可能丢失，工程师需回原文`,
     });
   }
-  // 空单元格里的孤立数字（| 123456 |）— 常是页码串位
-  const strayNums = (md.match(/\|\s*\d{5,}\s*\|/g) ?? []).length;
+  // 疑似页码串位：**只在带「页码」列的表里查**。
+  // 旧判据是「任何单元格里只有 5 位以上数字」—— 于是 430000cd
+  // （同时点亮远光灯最大发光强度之和）这种**真实光度值**被报成页码串位。
+  // 页码不可能有 5 位，所以旧判据只会误报。
+  let strayNums = 0;
+  for (const block of tableBlocks(md)) {
+    const lines = block.filter((l) => l.trim().startsWith("|"));
+    if (lines.length < 2) continue;
+    const header = lines[0].replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+    const pageCol = header.findIndex((h) => /页/.test(h));
+    if (pageCol < 0) continue;
+    for (const l of lines.slice(1)) {
+      if (/^\|[\s:|-]+\|?$/.test(l.trim())) continue;
+      const cells = l.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      cells.forEach((c, i) => {
+        if (i === pageCol) return;
+        if (/^\d{5,}$/.test(c)) strayNums++;
+      });
+    }
+  }
   if (strayNums > 0) {
     out.push({
       kind: "numeric",
