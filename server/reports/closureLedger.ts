@@ -46,6 +46,8 @@ export type LedgerEntry = {
   reason?: string;
   /** Page anchors found in the row, if any. */
   pages?: string[];
+  /** 该行里的原文摘录（待复核条目没有页码时，它是唯一的线索）。 */
+  detail?: string;
 };
 
 export type Ledger = {
@@ -320,11 +322,17 @@ function harvestCandidates(md: string): LedgerEntry[] {
       if (isIndexRow(row)) continue;
       // §11.0.2 traceability rows: A/B located, C not applicable → not ⚠.
       if (isTraceabilityRow(row)) continue;
+      // 摘录 = 行里最长的一格（原文那一格），待复核条目没有页码时它是唯一线索
+      const detail = row
+        .map((c) => c.replace(/\*\*/g, "").trim())
+        .filter((c) => c.length >= 12)
+        .sort((a, b) => b.length - a.length)[0];
       out.push({
         category: "candidate",
         section: inferSection(row[1] ?? "") ?? "正文",
         no: /^\d+$/.test(row[0] ?? "") ? row[0] : "",
         topic: (row[1] ?? row[0] ?? "").replace(/\*\*/g, "").slice(0, 60),
+        detail: detail ? detail.slice(0, 160) : undefined,
         reason: /未找到/.test(joined)
           ? "两版原文中未定位到该指标出处"
           : /manual-audit/.test(joined)

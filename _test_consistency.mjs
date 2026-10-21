@@ -113,4 +113,29 @@ const kinds = (md) => checkConsistency(md).issues.filter((i) => i.kind);
   ok(unit.length >= 1, `m / mm 互换必须报出来，实际报了 ${unit.length} 条`);
 }
 
+/* --- 7. 截断摘录：只算**以「…」收尾**的，原文自带的省略号不算 -------------- */
+{
+  // 原文自带的省略号（GB 4785 A 的 4.x 正文里就有这种）
+  const src = `
+| 版本 | 原文取值 | 条款 | 页码 |
+|---|---|---|---|
+| **A 草案** | 安装时其基准轴线应平行于停放面……各灯具每个方向上允差为±3° | 4.5 | 第18页 |
+`;
+  const t1 = kinds(src).filter((i) => i.label.includes("截断"));
+  ok(t1.length === 0, `原文自带的省略号不是截断，实际报了 ${t1.length} 条`);
+}
+{
+  // 我们自己截断的（clipExcerpt 收尾是「 …」）
+  const cut = `
+| 版本 | 原文取值 | 条款 | 页码 |
+|---|---|---|---|
+| **A 草案** | 安装时其基准轴线应平行于车辆在道路上的停放面，各灯具每个方向上允差为 ±3° | 4.5 | 第18页 |
+`;
+  // 造 13 行触发阈值 >12
+  const many = cut + Array.from({ length: 13 }, (_, i) =>
+    `| **A 草案** | 这是一段被截断的原文摘录，第 ${i} 行，后面还有很多字没有显示出来 … | 4.5 | 第18页 |`).join("\n");
+  const t2 = kinds(many).filter((i) => i.label.includes("截断"));
+  ok(t2.length === 1, `真截断必须报出来，实际报了 ${t2.length} 条`);
+}
+
 console.log(`_test_consistency.mjs — ${checks} checks passed`);

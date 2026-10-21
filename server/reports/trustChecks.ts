@@ -499,6 +499,8 @@ export type TrustBundle = {
       topic: string;
       reason: string;
       pages: string[];
+      /** 该行的原文摘录 —— 没有页码时，它是唯一能回查的线索 */
+      detail?: string;
     }>;
     /** 报告自述数字 vs 台账实算数字 */
     reconciliation: {
@@ -561,6 +563,7 @@ export function buildTrustBundle(
           topic: e.topic,
           reason: e.reason ?? "",
           pages: e.pages ?? [],
+          detail: e.detail,
         })),
       reconciliation: {
         selfReported: ledger.selfReported,

@@ -235,11 +235,35 @@ function checkDuplicates(rows: string[][]): ConsistencyIssue[] {
 // 数值异常
 // ---------------------------------------------------------------------------
 
+/**
+ * 表格单元里**以「…」收尾**的摘录数 —— 这才是我们截断的。
+ * 原文自带的省略号在句子中间，不收尾，不算。
+ */
+function countTruncatedCells(md: string): number {
+  let n = 0;
+  for (const line of md.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("|") || !t.endsWith("|")) continue;
+    for (const raw of t.slice(1, -1).split("|")) {
+      const c = raw.trim();
+      if (c.length >= 8 && c.endsWith("…")) n++;
+    }
+  }
+  return n;
+}
+
 /** Physically implausible readings that usually mean a truncation or typo. */
 function checkNumerics(md: string): ConsistencyIssue[] {
   const out: ConsistencyIssue[] = [];
-  // "……" 结尾的截断摘录
-  const truncated = (md.match(/[^。｜|\n]{6,}…(?=[^。\n])/g) ?? []).length;
+  // 截断摘录 —— 只数**以「…」收尾**的表格单元。
+  //
+  // 以前数的是「… 前面有 6 个字、后面还有字」，于是**标准原文自带的省略号**
+  // （GB 4785 A 的 4.x 正文里就有「……各灯具每个方向上允差为±3°」这种）
+  // 也被算成截断：交付件第 4 页写着「全文有 16 处摘录以「…」结尾被截断」，
+  // 而其中大部分根本没被截断。
+  // 一个只会误报的检查比没有检查更糟 —— 读者会学会忽略整块自查面板，
+  // 于是连真的那几条也会被一起忽略（㉒ 的 53 项误报就是这个形状）。
+  const truncated = countTruncatedCells(md);
   if (truncated > 12) {
     out.push({
       kind: "numeric",

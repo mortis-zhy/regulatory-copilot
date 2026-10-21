@@ -1325,9 +1325,31 @@ ${discrepancies.length ? `<div class="reconcile-box">
  * "数值相同但单位不同"这类摘录错误。放在封面让读者先看到报告的
  * 已知瑕疵，再决定要不要采信。
  */
-function renderConsistencyPanel(report: ReturnType<typeof checkConsistency>): string {
+function renderConsistencyPanel(
+  report: ReturnType<typeof checkConsistency>,
+  candidateCount = 0,
+): string {
   const { issues, counts } = report;
-  if (!issues.length) return "";
+  if (!issues.length) {
+    // 扫描干净了也要**留着这一页** ——
+    // 客户需要知道「这份报告被扫过」，以及**扫的范围不覆盖什么**。
+    // 以前是整页删掉，于是「0 项」与「没扫过」在报告里长得一模一样。
+    return `
+<section class="consistency-panel">
+  <h1 class="cc-title">一致性自查 · Consistency Findings</h1>
+  <p class="cc-intro">
+    渲染期对<b>全文表格</b>做的机器扫描：单位互换 / 同义术语混用 / 同表重复行 / 截断摘录。
+    <b>本版检出 0 项</b>（上一版曾报「截断摘录偏多」，那一轮的多数命中其实是
+    标准原文自带的省略号，已把规则改成只认「以「…」收尾」的摘录）。
+    <span class="cc-summary">✅ 0 项严重 · 0 项中等 · 0 项提示</span>
+  </p>
+  <p class="cc-intro">
+    <b>这一页不覆盖什么</b>：它只扫表格层面的形态，<b>不判断取值对不对</b>（取值回原文由
+    四道证据链闸门逐条核）、<b>不判断有没有漏</b>（覆盖完整性见第 12 章开头与附录 E.5）。
+    下一页的「待复核明细清单」列出 ${candidateCount} 条尚未完成双源核验的条目。
+  </p>
+</section>`;
+  }
 
   const ICON: Record<string, string> = { high: "⛔", medium: "⚠", low: "ℹ" };
   const KIND_LABEL: Record<string, string> = {
@@ -1398,12 +1420,17 @@ function renderCandidateWorklist(ledger: ReturnType<typeof buildLedger>): string
     .map((it, i) => {
       const pages = (it.pages ?? []).length ? it.pages.join(" / ") : "—";
       const sec = it.section && it.section !== "正文" ? it.section : "—";
+      // 没有页码的行，摘录是唯一能回查的线索 —— 必须印出来
+      const clue = it.detail
+        ? `<td class="cw-clue">${cellHtml(it.detail.slice(0, 90))}</td>`
+        : `<td class="cw-clue">—</td>`;
       return `<tr>
         <td class="cw-idx">${i + 1}</td>
         <td class="cw-topic">${cellHtml(it.topic)}</td>
         <td class="cw-sec">${esc(sec)}</td>
         <td class="cw-reason">${esc(it.reason ?? "未分类")}</td>
         <td class="cw-pages">${esc(pages)}</td>
+        ${clue}
       </tr>`;
     })
     .join("\n");
@@ -1413,7 +1440,8 @@ function renderCandidateWorklist(ledger: ReturnType<typeof buildLedger>): string
   <h1 class="cw-title">待复核明细清单 · Review Worklist</h1>
   <p class="cw-intro">
     下表逐条列出本报告 <b>${items.length}</b> 个尚未完成双源核验的条目 ——
-    每条含参数、所在章节、未核验原因、可回查的原文页码。工程师可按「原因」分组分工，
+    每条含参数、所在章节、未核验原因、可回查的原文页码；
+    <b>没有页码的行给出原文摘录</b>（那是它唯一的回查线索）。工程师可按「原因」分组分工，
     逐条打开页码核对后在审阅工作台（<code>/review</code>）标记确认 / 驳回。
   </p>
   <div class="cw-reasons">
@@ -1422,7 +1450,7 @@ function renderCandidateWorklist(ledger: ReturnType<typeof buildLedger>): string
   </div>
   <table class="cw-table">
     <thead>
-      <tr><th class="cw-idx">#</th><th>参数 / 主题</th><th>章节</th><th>未核验原因</th><th>可回查页码</th></tr>
+      <tr><th class="cw-idx">#</th><th>参数 / 主题</th><th>章节</th><th>未核验原因</th><th>可回查页码</th><th>原文摘录 / 线索</th></tr>
     </thead>
     <tbody>${rows}</tbody>
   </table>
@@ -2688,7 +2716,10 @@ export async function buildHtml(
   );
   const transitionHtml = renderTransitionTable(extractTransitionDates(chapters));
   const worklistHtml = renderCandidateWorklist(ledger);
-  const consistencyHtml = renderConsistencyPanel(checkConsistency(reportMarkdown(chapters)));
+  const consistencyHtml = renderConsistencyPanel(
+    checkConsistency(reportMarkdown(chapters)),
+    ledger.entries.filter((e) => e.category === "candidate").length,
+  );
   const frontBlocks = [symbolLegendHtml, closureDashboardHtml, consistencyHtml, worklistHtml, transitionHtml, mappingHtml, masterParamsHtml].filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>

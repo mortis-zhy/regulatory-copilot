@@ -2154,7 +2154,7 @@ function buildChapterTopics(topicColumns: any[], keywords: RegExp, matrixRows?: 
       }
       const pg = c.status === "verified" ? `${c.actualPage} ✓` : `未核验`;
       const upg = c.upgradedFromBoilerplate && lb === "C" ? " ·定量条款" : "";
-      parts.push(`| **${lb}** | ${cell(c.clause || "—")}${upg} | ${cell(pg)} | ${cell(clipExcerpt(c.excerpt))} |`);
+      parts.push(`| **${lb}** | ${cell(c.clause || "—")}${upg} | ${cell(pg)} | ${cell(clipExcerpt(c.excerpt, 240))} |`);
     }
     parts.push("");
 
@@ -2412,7 +2412,7 @@ function buildAppendixE(matrixRows: any[]): string {
     "> 这些要求**不参与限值统计**，所以 E.1 的「真缺口 0」**只对可量化的那一半成立**。",
     "",
     "> 本节把三份标准里每一条**含要求语的条款**逐条处置（`scripts/requirement_ledger.py` 现算，",
-    "> 数据见 `data/requirement-ledger.json`）。四档口径：",
+    "> 数据见 `data/requirement-ledger.json`）。五档口径：",
     "",
     "| 档 | 含义 | 需不需要处理 |",
     "|---|---|---|",
@@ -2822,7 +2822,7 @@ function buildAppendixC(topicColumns: any[]): string {
         continue;
       }
       const pageCell = c.status === "verified" ? `${c.actualPage} ✓` : `未核验 ⚠`;
-      const excerpt = clipExcerpt(c.excerpt, 160);
+      const excerpt = clipExcerpt(c.excerpt, 240);
       parts.push(`| ${lb} | ${cell(c.clause || "—")} | ${cell(pageCell)} | ${cell(excerpt)} |`);
     }
     parts.push("");
