@@ -109,6 +109,21 @@ def collect_report_refs(rep, facts, audit) -> dict:
     return refs
 
 
+def excerpt_of(body: str, limit: int = 320) -> str:
+    """条款正文摘录 —— 去掉首行的条款号，拼成一段，供附录逐条列出。"""
+    t = (body or "").strip()
+    if not t:
+        return ""
+    lines = [ln.strip() for ln in t.split("\n") if ln.strip()]
+    if lines and re.fullmatch(r"\d+(\.\d+)*\.?", lines[0]):
+        lines = lines[1:]
+    out = " ".join(lines)
+    # 有些条款的编号与正文在同一行（「19 当移动部件不处于…」）—— 同样剥掉
+    out = re.sub(r"^\d+(?:\.\d+)*\.?\s+", "", out)
+    out = re.sub(r"\s+", " ", out).strip()
+    return out[:limit] + ("…" if len(out) > limit else "")
+
+
 def ancestor_chain(clause: str) -> list:
     parts = clause.split(".")
     return [".".join(parts[:i]) for i in range(2, len(parts) + 1)]
@@ -134,7 +149,9 @@ def bitmap_clauses():
                 continue
             m = re.search(r"「([^」]+)」", note)
             title = m.group(1) if m else ""
-            out.setdefault(v, {})[cl] = title
+            pm = re.search(r"源 PDF p(\d+)", note)
+            page = int(pm.group(1)) if pm else 0
+            out.setdefault(v, {})[cl] = (title, page)
     return out
 
 
@@ -163,7 +180,8 @@ def main():
     bitmap = bitmap_clauses()
 
     rows = []
-    totals = {"requirements": 0, "covered": 0, "weak": 0, "notApplicable": 0, "gaps": 0}
+    totals = {"requirements": 0, "covered": 0, "appendixListed": 0, "weak": 0,
+              "notApplicable": 0, "gaps": 0}
     for v in cs.ordered_versions(docs):
         idx = cs.split_clauses(docs[v])
         vrefs = refs.get(v, set())
@@ -171,12 +189,13 @@ def main():
         # 位图章节的条款不进索引 —— 单独补进来
         clauses = {}
         for k, o in idx.items():
-            clauses[k] = (o.get("body", "") or "", (o.get("head") or "")[:120])
-        for cl, title in (bitmap.get(v) or {}).items():
+            clauses[k] = (o.get("body", "") or "", (o.get("head") or "")[:120],
+                          int(o.get("page") or 0))
+        for cl, (title, page) in (bitmap.get(v) or {}).items():
             if cl not in clauses:
-                clauses[cl] = (title, title)
+                clauses[cl] = (title, title, page)
         for k in sorted(clauses, key=lambda x: [int(p) if p.isdigit() else 0 for p in x.split(".")]):
-            body, head = clauses[k]
+            body, head, page = clauses[k]
             if not REQ.search(body) or len(body) < 12:
                 continue
             if SKIP_CHAPTER.match(k):
@@ -201,13 +220,21 @@ def main():
                 totals["weak"] += 1
             else:
                 gkey = f"{v}|{k}"
-                disp = "真缺口（已登记）" if gkey in registered_gaps else "真缺口"
-                totals["gaps"] += 1
-                na = gap_reasons.get(gkey, "")
+                if gkey in registered_gaps:
+                    # 登记过的：附录 E.5.1 会**逐条列出原文 + 页码**，
+                    # 所以它在报告里是有内容的 —— 不是「没有」，是「没进矩阵」。
+                    disp = "附录逐条"
+                    totals["appendixListed"] += 1
+                    na = gap_reasons.get(gkey, "")
+                else:
+                    disp = "真缺口"
+                    totals["gaps"] += 1
             rows.append({
                 "version": v,
                 "clause": k,
                 "head": head[:120],
+                "page": page,
+                "excerpt": excerpt_of(body),
                 "hasLimit": has_limit,
                 "disposition": disp,
                 "reason": na or "",
@@ -223,9 +250,9 @@ def main():
         lines.append("【%s 版】要求条款 %d 条：%s" % (
             v, len(sub), " · ".join("%s %d" % (k, n) for k, n in sorted(c.items()))))
     lines.append("")
-    lines.append("合计：要求条款 %d · 已覆盖 %d · 同章别处 %d · 不适用 %d · 真缺口 %d"
-                 % (totals["requirements"], totals["covered"], totals["weak"],
-                    totals["notApplicable"], totals["gaps"]))
+    lines.append("合计：要求条款 %d · 已覆盖 %d · 附录逐条 %d · 同章别处 %d · 不适用 %d · 真缺口 %d"
+                 % (totals["requirements"], totals["covered"], totals["appendixListed"],
+                    totals["weak"], totals["notApplicable"], totals["gaps"]))
     gap_rows = [r for r in rows if r["disposition"].startswith("真缺口")]
     if gap_rows:
         lines.append("")

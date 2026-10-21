@@ -2007,9 +2007,12 @@ function buildExecSummary(input: {
         `5. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到，` +
           `${wordingN} 条表述差异待人工裁定。结论层面已逐条列在第 11 章，使用前须回原文确认。`,
         `6. **「真缺口 0」说的是量化限值，不是全部要求**：三版合计 ${(REQUIREMENT_LEDGER as any)?.totals?.requirements ?? 0} 条要求条款里，` +
-          `${(REQUIREMENT_LEDGER as any)?.totals?.covered ?? 0} 条已覆盖、${(REQUIREMENT_LEDGER as any)?.totals?.weak ?? 0} 条同章别处（弱），` +
-          `另有 **${(REQUIREMENT_LEDGER as any)?.totals?.gaps ?? 0} 条定性要求本版没有逐条讲**（如 R48 的「紧急制动信号应自动开启与关闭」` +
-          `「应独立于其他灯具工作」），逐条登记了理由，见附录 E.5。**出口认证前请按那 23 条回原文确认。**`,
+          `${(REQUIREMENT_LEDGER as any)?.totals?.covered ?? 0} 条已覆盖、` +
+          `**${(REQUIREMENT_LEDGER as any)?.totals?.appendixListed ?? 0} 条定性要求在附录 E.5.1 逐条列出原文与页码**` +
+          `（如 R48 的「紧急制动信号应自动开启与关闭」「应独立于其他灯具工作」—— 报告只对照了它的闪烁频率），` +
+          `${(REQUIREMENT_LEDGER as any)?.totals?.weak ?? 0} 条同章别处（弱覆盖，E.5.2 列出条款号与页码），` +
+          `${(REQUIREMENT_LEDGER as any)?.totals?.notApplicable ?? 0} 条非产品要求（已登记理由），` +
+          `**真缺口 ${(REQUIREMENT_LEDGER as any)?.totals?.gaps ?? 0} 条**。见附录 E.5。`,
       ]
     : [];
 
@@ -2375,7 +2378,8 @@ function buildAppendixE(matrixRows: any[]): string {
     "| 档 | 含义 | 需不需要处理 |",
     "|---|---|---|",
     "| 已覆盖 | 报告里**明确引用了这一条**（矩阵格 / 主题列 / 覆盖清单 / 章内引文） | 已覆盖 |",
-    "| 同章别处 | 报告讲了这一章，但没讲这一条 | **弱覆盖**，回原文时留意 |",
+    "| **附录逐条** | 是产品要求，但**没有可压缩的标量**（定性要求）—— 本附录 E.5.1 逐条列出**原文与页码** | 已覆盖 |",
+    "| 同章别处 | 报告讲了这一章，但没逐条讲这一条（E.5.2 列出条款号、页码与摘要） | **弱覆盖**，回原文时留意 |",
     "| 不适用 | 不是产品要求（批准程序 / 标志 / 生产一致性 / 过渡），已登记理由 | 不进对照 |",
     "| **真缺口** | 是产品要求，报告里**一条都没说** | **要补** |",
     "",
@@ -2384,6 +2388,8 @@ function buildAppendixE(matrixRows: any[]): string {
   const LEDGER = (REQUIREMENT_LEDGER as any) ?? { totals: {}, rows: [] };
   const T = LEDGER.totals ?? {};
   const ledRows = Array.isArray(LEDGER.rows) ? LEDGER.rows : [];
+  const listedRows = ledRows.filter((r: any) => r.disposition === "附录逐条");
+  const weakRows = ledRows.filter((r: any) => r.disposition === "同章别处");
   const gapRows = ledRows.filter((r: any) => String(r.disposition ?? "").startsWith("真缺口"));
   const gapReasons = new Map<string, string>();
   for (const g of ((REQUIREMENT_GAPS as any)?.gaps ?? []) as any[]) {
@@ -2396,33 +2402,61 @@ function buildAppendixE(matrixRows: any[]): string {
   };
   lines.push(
     `**三版合计 ${esc(String(T.requirements ?? 0))} 条要求条款**：`,
-    `已覆盖 ${esc(String(T.covered ?? 0))} 条 · 同章别处 ${esc(String(T.weak ?? 0))} 条 · ` +
-      `不适用 ${esc(String(T.notApplicable ?? 0))} 条 · **真缺口 ${esc(String(T.gaps ?? 0))} 条**。`,
+    `已覆盖 ${esc(String(T.covered ?? 0))} 条（正文/矩阵/主题列）· ` +
+      `**附录逐条 ${esc(String(T.appendixListed ?? 0))} 条**（E.5.1 列出原文与页码）· ` +
+      `同章别处 ${esc(String(T.weak ?? 0))} 条（弱覆盖，E.5.2 列出条款号与页码）· ` +
+      `不适用 ${esc(String(T.notApplicable ?? 0))} 条（已登记理由）· ` +
+      `**真缺口 ${esc(String(T.gaps ?? 0))} 条**。`,
     "",
   );
-  if (gapRows.length) {
+  if (listedRows.length) {
     lines.push(
-      "### E.5.1 未逐条讲的要求条款（逐条登记了理由）",
+      "### E.5.1 定性要求逐条列出（原文 + 页码）",
       "",
-      "> 下面是**本报告的边界**：这些是产品要求，报告里**一条都没讲**。",
-      "> 出口认证前请按条款号回原文确认 —— 登记理由在 `data/requirement-gaps.json`。",
+      "> 这些是**产品要求**，但**没有可压缩的标量**（不是安装高度、不是光强、不是频率）——",
+      "> 所以它们不进第 12 章的参数矩阵，而是在这里**逐条列出原文与源 PDF 页码**。",
+      "> 「为什么不进矩阵」一列写的是本版的取舍理由（登记在 `data/requirement-gaps.json`）。",
       "",
-      "| 标准 | 条款号 | 原文标题 | 未覆盖的理由 |",
-      "|---|---|---|---|",
-      ...gapRows.map((r: any) => {
+      "> **这些条款对出口认证的影响不比频率小** —— 比如 R48 对紧急制动信号要求",
+      "> 「应自动开启与关闭」「应独立于其他灯具工作」，对转向/危险警告信号互斥；",
+      "> 报告只对照了它的闪烁频率与作用时间，功能性子条款在这里补齐。",
+      "",
+      "| 标准 | 条款号 | 页码 | 原文摘录 | 为什么不进矩阵 |",
+      "|---|---|---|---|---|",
+      ...listedRows.map((r: any) => {
         const key = `${r.version}|${r.clause}`;
         const reason = gapReasons.get(key) || String(r.reason ?? "");
-        const head = String(r.head ?? "").replace(/\|/g, "／").slice(0, 90);
-        return `| ${esc(verLabel[r.version] ?? r.version)} | ${esc(r.clause)} | ${esc(head) || "—"} | ${esc(reason)} |`;
+        const ex = String(r.excerpt ?? "").replace(/\|/g, "／").slice(0, 300);
+        const pg = r.page ? `第${r.page}页` : "—";
+        return `| ${esc(verLabel[r.version] ?? r.version)} | ${esc(r.clause)} | ${esc(pg)} | ${esc(ex) || "—"} | ${esc(reason)} |`;
       }),
       "",
     );
   } else {
-    lines.push("### E.5.1 未逐条讲的要求条款", "", "（无 —— 每一条要求条款都有处置）", "");
+    lines.push("### E.5.1 定性要求逐条列出", "", "（无）", "");
+  }
+  if (weakRows.length) {
+    lines.push(
+      "### E.5.2 同章别处的弱覆盖（本章讲了，但这几条没逐条讲）",
+      "",
+      "> 这些条款**不是缺数据**：同一章里报告讲了别的条款（通常是该装置的定量条款），",
+      "> 而这几条**本身**没有被逐条展开。下表列出它们的**条款号与页码**，",
+      "> 出口认证时按号回原文即可核对。",
+      "",
+      "| 标准 | 条款号 | 页码 | 条款摘要 |",
+      "|---|---|---|---|",
+      ...weakRows.map((r: any) => {
+        const ex = String(r.excerpt ?? r.head ?? "").replace(/\|/g, "／").slice(0, 120);
+        const pg = r.page ? `第${r.page}页` : "—";
+        return `| ${esc(verLabel[r.version] ?? r.version)} | ${esc(r.clause)} | ${esc(pg)} | ${esc(ex) || "—"} |`;
+      }),
+      "",
+    );
   }
   lines.push(
     "> **这一节不影响 E.1 的结论**：E.1 的「真缺口 0」指的是**量化限值**没有缺口；",
-    "> 本节说的是**定性要求**里本版没有逐条展开的那几条。两者的口径不同，不要混用。",
+    "> 本节把**定性要求**也逐条清点了 —— 口径不同，不要混用。",
+    "> 要求级里剩下的不是「缺」，而是**弱覆盖**（E.5.2）与**不适用**（已登记理由）。",
     "",
   );
   return lines.join("\n");

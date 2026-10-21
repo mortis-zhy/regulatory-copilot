@@ -1478,21 +1478,43 @@ check("every requirement clause has a disposition", () => {
   // 现在每一条要求条款都要有处置，四档合计必须等于总数。
   const { ok, out } = runPy(["scripts/requirement_ledger.py"], "requirement_ledger");
   assert(ok, `有要求条款没有处置（未登记理由）:\n        ${out.slice(-900)}`);
-  const m = out.match(/合计：要求条款 (\d+) · 已覆盖 (\d+) · 同章别处 (\d+) · 不适用 (\d+) · 真缺口 (\d+)/);
+  const m = out.match(/合计：要求条款 (\d+) · 已覆盖 (\d+) · 附录逐条 (\d+) · 同章别处 (\d+) · 不适用 (\d+) · 真缺口 (\d+)/);
   assert(m, `requirement_ledger 没有给出统计行:\n        ${out.slice(-400)}`);
-  const [req, cov, weak, na, gaps] = m.slice(1).map(Number);
+  const [req, cov, listed, weak, na, gaps] = m.slice(1).map(Number);
   assert(
-    req === cov + weak + na + gaps,
-    `四档合计 ${cov + weak + na + gaps} ≠ 要求条款 ${req} —— 账目不闭合`,
+    req === cov + listed + weak + na + gaps,
+    `五档合计 ${cov + listed + weak + na + gaps} ≠ 要求条款 ${req} —— 账目不闭合`,
   );
-  // 未覆盖的那些必须逐条登记了理由
+  assert(gaps === 0, `还有 ${gaps} 条要求条款报告里一条都没说（应逐条列出原文）`);
+  // 「附录逐条」的那些必须逐条登记了理由
   const gapsFile = JSON.parse(read("data/requirement-gaps.json"));
   const registered = (gapsFile.gaps ?? []).filter((g) => String(g.reason ?? "").trim()).length;
   assert(
-    registered === gaps,
-    `真缺口 ${gaps} 条，但只有 ${registered} 条登记了理由`,
+    registered === listed,
+    `「附录逐条」${listed} 条，但只有 ${registered} 条登记了理由`,
   );
-  return `${req} 条要求条款全部有处置（已覆盖 ${cov} · 同章别处 ${weak} · 不适用 ${na} · 真缺口 ${gaps}，逐条登记理由）`;
+  return `${req} 条要求条款全部有处置（已覆盖 ${cov} · 附录逐条 ${listed} · 同章别处 ${weak} · 不适用 ${na} · 真缺口 ${gaps}）`;
+});
+
+check("every requirement listed in the appendix is actually in the delivered report", () => {
+  // 台账说「这 23 条在附录 E.5.1 逐条列出了原文」—— 报告里就得真的有。
+  // 台账说谎而报告不知情，比没有台账更坏。
+  const ledger = JSON.parse(read("data/requirement-ledger.json"));
+  const listed = (ledger.rows ?? []).filter((r) => r.disposition === "附录逐条");
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const md = (rep.appendices ?? []).map((a) => a.markdown ?? "").join("\n");
+  const missing = [];
+  for (const r of listed) {
+    const key = `| ${r.clause} |`;
+    if (!md.includes(`| ${r.clause} |`)) {
+      missing.push(`${r.version} §${r.clause}`);
+    }
+  }
+  assert(
+    missing.length === 0,
+    `台账标成「附录逐条」的 ${missing.length} 条在交付件里找不到:\n        ${missing.join("\n        ")}`,
+  );
+  return `${listed.length} 条定性要求在附录 E.5.1 逐条列出（条款号 + 原文 + 页码）`;
 });
 
 check("the requirement ledger is not stale", () => {
