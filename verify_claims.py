@@ -1449,6 +1449,11 @@ def run_verify() -> dict:
         f"{raw.get('topic','')}|{raw.get('name','')}": fixed
         for raw, fixed in zip(vds, vds_fixed)
     }
+
+    def _fixed_row(row: dict) -> dict:
+        """抽取行 → 更正后的行（按「主题|参数名」对齐；改过名的行也能对上）。"""
+        key = "%s|%s" % (row.get("topic", ""), row.get("name", ""))
+        return fixed_by_key.get(key) or row
     real, wording, renumbered = noise_filter_diffs(vds)
     print(f"  {len(vds)} total → {len(real)} real numeric changes + {len(wording)} paraphrase noise (dropped)")
     print(f"  取值更正：机械清洗 + {len(_applied)} 条人工更正（data/diff-corrections.json）")
@@ -1519,9 +1524,14 @@ def run_verify() -> dict:
         for w in renumbered
     ],
     "wordingOnly": [
-            {"topic": w.get("topic", ""), "name": w.get("name", ""),
-             "oldValue": display_clean(w.get("oldValue", "")),
-             "newValue": display_clean(w.get("newValue", ""))}
+            # 取**更正后**的行：11.8 印的是报告口径的取值。
+            # 以前直接用抽取的原始行，于是「外界环境光1000lx~7000lx时近光灯响应」
+            # 那行印着**别行的值**（大于5s，不大于300s）—— 报告里出现一个
+            # 与该行无关的取值，比不印更糟。
+            {"topic": w.get("topic", ""),
+             "name": _fixed_row(w).get("name", w.get("name", "")),
+             "oldValue": display_clean(_fixed_row(w).get("oldValue", "")),
+             "newValue": display_clean(_fixed_row(w).get("newValue", ""))}
             for w in wording
         ],
         "topicColumns": cols,

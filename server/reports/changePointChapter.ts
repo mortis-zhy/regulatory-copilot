@@ -76,6 +76,9 @@ export type ChangeChapterInput = {
   /** Paraphrase-only diffs (30 条): 被 noise filter 丢弃但含术语/格式/单位候选差异，
    *  工程师做文档对照需逐条人工核验。 */
   wordingOnly?: Array<{ topic: string; name: string; oldValue: string; newValue: string }>;
+  /** 差值候选的**裁定**（facts.diffVerdicts）—— 键 = "主题|参数名"。
+   *  有了它，11.8 就不只是一张「初筛候选」清单，而能标出每行**已裁定成什么**。 */
+  diffVerdicts?: Record<string, { verdict?: string; reason?: string }>;
 };
 
 /** Tag a change with the canonical marker. */
@@ -574,27 +577,49 @@ function build11_7(
  * 工程师做文档对照需要看到这些；本节把它们按主题列出，**显式标注为未做
  * 数值核验**，请工程师对照原文核实。每行给 topic / name / B 原文 / A 原文。
  */
-function build11_8(wording: Array<{ topic: string; name: string; oldValue: string; newValue: string }>): string {
+function build11_8(
+  wording: Array<{ topic: string; name: string; oldValue: string; newValue: string }>,
+  diffVerdicts?: Record<string, { verdict?: string; reason?: string }>,
+): string {
   if (!wording.length) return "> **本子节无内容** — 经逐条比对，A/B 两版在此子节无新增/删除/修改条款。这是结论，不是缺漏。";
+  // 已裁定的行数：抽取口径下这些是「候选」，裁定后才知道有没有工程含义
+  const verdictOf = (w: { topic: string; name: string }) =>
+    diffVerdicts?.[`${w.topic}|${w.name}`]?.verdict ?? "";
+  const shortVerdict = (v: string) =>
+    v === "有变化" ? "**有变化**"
+      : v === "表述差异（未做数值核验）" ? "待复核"
+      : v === "两版同文（已回原文核验）" || v === "两版同文（勘误）" ? "两版同文"
+      : v === "数值与口径相同（非数值变化）" ? "数值口径相同"
+      : v === "引用编号变化（非实质）" ? "编号重排"
+      : v === "重复行（已合并）" ? "重复行"
+      : v === "非变化（规则判定）" ? "规则判定"
+      : "";
+  const adjudicated = wording.filter((w) => verdictOf(w)).length;
+  const realChanges = wording.filter((w) => verdictOf(w) === "有变化").length;
+  const stillOpen = wording.filter((w) => verdictOf(w) === "表述差异（未做数值核验）").length;
   const parts: string[] = [
     "### 11.8 表述/术语/格式候选差异（工程师复核清单）",
     "",
-    "本章列出 **30 条** A/B 同名参数的表述差异（数值一致、措辞或格式不同）。",
+    `本章列出 **${wording.length} 条** A/B 同名参数的**抽取口径候选差异**（抽取时数值一致或措辞格式不同）。`,
     "",
-    "**重要说明**：这些条目**未做数值核验**（verify_numeric_changes 跳过它们）。它们包含三类潜在实质差异——",
+    `**已裁定**：这 ${wording.length} 条里 **${adjudicated} 条**已在 11.3.3 逐条回原文裁定` +
+      (realChanges ? `，其中 **${realChanges} 条改判为实质变化**（详见 11.3.3 的变化判定列）` : "") +
+      `；**${stillOpen} 条仍待人工复核**。下表保留候选清单与分级（取值已按更正表更正），便于工程师对照原文。`,
+    "",
+    "**重要说明**：这些条目在**抽取阶段**未做数值核验（verify_numeric_changes 跳过它们）。它们包含三类潜在实质差异——",
     "- **术语更换**（如\"不应使用\"→\"不应安装\"）",
     "- **数字格式规范化**（\"两只\"→\"2只（成对）\"）",
-    "- **疑似单位错误**（如弯道曲率半径 500m / 500mm 显示歧异，已回原文核验：B p26/p52 + A p28/p33 均为 **500m**，属记录错误，非真改）",
+    "- **疑似单位错误**（抽取曾把弯道曲率半径的 A 值抄成 500mm，已回原文更正为 **500m**：B p26/p52 + A p28/p33 均为 500m，属记录错误，非真改）",
     "",
     "**使用指引**：下表每行按**数字是否变化分级**，工程师按优先级复核——",
     "- `⚠ 数字不同`：**优先复核**，可能漏掉的真实数值变化",
     "- `术语/格式`：无数字参与（如\"不应使用\"→\"不应安装\"），逐字确认是否术语更换",
-    "- `数字相同`：**低优先**（格式/单位展示差异）——已核验实例：弯道曲率半径 500m/500mm 显示歧异，回原文 B p26/p52 + A p28/p33 均为 **500m**，属记录错误，非真改",
+    "- `数字相同`：**低优先**（格式/单位展示差异）——已核验实例：弯道曲率半径的抽取值曾为 500mm，回原文 B p26/p52 + A p28/p33 均为 **500m**，属记录错误，非真改",
     "",
     `**共 ${wording.length} 条候选差异**`,
     "",
-    "| 序号 | 主题 | 参数 | B 现行版（原文摘录） | A 草案（原文摘录） | 分级 |",
-    "|---|---|---|---|---|---|",
+    "| 序号 | 主题 | 参数 | B 现行版（原文摘录） | A 草案（原文摘录） | 分级 | 裁定（11.3.3） |",
+    "|---|---|---|---|---|---|---|",
   ];
   // group by topic for readability
   const grouped = new Map<string, typeof wording>();
@@ -647,11 +672,11 @@ function build11_8(wording: Array<{ topic: string; name: string; oldValue: strin
       if (topic.includes("慢行灯") && w.name.includes("数量")) {
         grade = "⚠ 摘录不全（A 5.22.2 另有车长分档 4/6 只，见 ch14）— 优先复核";
       }
-      parts.push(`| ${i++} | ${topic} | ${w.name} | ${ov} | ${nv} | ${grade} |`);
+      parts.push(`| ${i++} | ${topic} | ${w.name} | ${ov} | ${nv} | ${grade} | ${shortVerdict(verdictOf(w)) || "—"} |`);
     }
   }
   parts.push("", "---", "");
-  parts.push("**使用边界**：本节为初筛候选，非已核验结论。\"数字相同\"级已知至少 1 条为记录错误（500m/500mm，原文两版均 500m）；\"数字不同\"与\"术语/格式\"级仍需逐条人工比对原文。本节是**分级复核清单**而非**结论**。");
+  parts.push("**使用边界**：本节是**抽取口径的候选清单**；每一行在 11.3.3 都已有裁定（见末列），本表保留分级是为了让工程师知道当初是按什么口径把它挑出来的。若末列为「待复核」，那一行**尚未回原文核对**，使用前必须自行核对原文。");
   return parts.join("\n");
 }
 
@@ -669,7 +694,7 @@ export function buildChangePointsChapter(
     { id: "11.5", title: "引入的新概念", markdown: build11_5(chapterAdded, diff.changes) },
     { id: "11.6", title: "修订重点章节对比", markdown: build11_6(diff.changes, input.chapterRenumbered) },
     { id: "11.7", title: "关键变化点的影响分析", markdown: build11_7(diff.changes, diff.valueDiffs, chapterAdded, chapterRemoved) },
-    { id: "11.8", title: "表述/术语/格式候选差异（工程师复核清单）", markdown: build11_8(input.wordingOnly ?? []) },
+    { id: "11.8", title: "表述/术语/格式候选差异（工程师复核清单）", markdown: build11_8(input.wordingOnly ?? [], input.diffVerdicts) },
   ];
 
   const chapterTitle = "关键变化点总结";

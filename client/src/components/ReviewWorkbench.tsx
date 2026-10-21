@@ -32,7 +32,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Counts = { confirmed: number; candidate: number; errata: number; renum: number; format: number };
+type Counts = {
+  confirmed: number;
+  /** §11.3.1 人工核验补录 —— 双源核验，但不在 18 个固定对比主题内 */
+  manual: number;
+  candidate: number;
+  errata: number;
+  renum: number;
+  format: number;
+};
 
 type Dashboard = { counts: Counts; total: number; candidateShare: number };
 
@@ -136,6 +144,7 @@ export default function ReviewWorkbench() {
       total,
       candidateShare: data.dashboard.candidateShare,
       segOk: seg(counts.confirmed, "#3a6b4f"),
+      segManual: seg(counts.manual ?? 0, "#5b7c99"),
       segWarn: seg(counts.candidate, data.dashboard.candidateShare >= 50 ? "#c9542a" : "#b9a173"),
       segErrata: seg(counts.errata, "#9c8b6c"),
       segRenum: seg(counts.renum, "#c0b89c"),
@@ -212,6 +221,7 @@ export default function ReviewWorkbench() {
         <div className="mt-4">
           <div className="flex h-3.5 w-full overflow-hidden rounded-full">
             <div style={{ width: `${stats.segOk}%`, background: "#3a6b4f" }} />
+            <div style={{ width: `${stats.segManual}%`, background: "#5b7c99" }} />
             <div style={{ width: `${stats.segWarn}%`, background: highRisk ? "#c9542a" : "#b9a173" }} />
             <div style={{ width: `${stats.segErrata}%`, background: "#9c8b6c" }} />
             <div style={{ width: `${stats.segRenum}%`, background: "#c0b89c" }} />
@@ -219,6 +229,7 @@ export default function ReviewWorkbench() {
           </div>
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px]" style={{ color: MUTED }}>
             <span><b style={{ color: "#3a6b4f" }}>✅</b> 已核验 {stats.segOk.toFixed(0)}%</span>
+            <span><b style={{ color: "#5b7c99" }}>🧾</b> 人工补录 {stats.segManual.toFixed(0)}%</span>
             <span><b style={{ color: highRisk ? "#c9542a" : "#b9a173" }}>⚠</b> 待复核 {stats.candidateShare}%</span>
             <span><b style={{ color: "#9c8b6c" }}>🟡</b> 同文勘误 {stats.segErrata.toFixed(0)}%</span>
             <span><b style={{ color: "#c0b89c" }}>🔢</b> 编号重排 {stats.segRenum.toFixed(0)}%</span>
@@ -232,7 +243,7 @@ export default function ReviewWorkbench() {
             style={{ background: "#fbede2", color: "#c9542a", borderLeft: "3px solid #c9542a" }}
           >
             ⚠ <strong>风险提示</strong>：{stats.candidateShare}% 的差异尚未完成双源核验 —— 切勿直接采信任何 ⚠ 条目结论。
-            🟡 / 🔢 / ✍ 三类标记不计入「实质技术变化」总数。合规判定必须查阅官方原始标准文本。
+            ✅ 与 🧾 计入「实质技术变化」总数，🟡 / 🔢 / ✍ 不计入。合规判定必须查阅官方原始标准文本。
           </p>
         )}
       </header>

@@ -20,6 +20,8 @@ import { buildLedger, ledgerToCounts } from "./closureLedger";
 
 export type TrustCounts = {
   confirmed: number;
+  /** §11.3.1 人工核验补录 —— 双源核验，但不在 18 个固定对比主题内 */
+  manual: number;
   candidate: number;
   errata: number;
   renum: number;
@@ -74,6 +76,7 @@ export function extractClosureCounts(md: string): TrustCounts {
   const c = ledgerToCounts(buildLedger(md));
   return {
     confirmed: c.confirmed,
+    manual: c.manual,
     candidate: c.candidate,
     errata: c.errata,
     renum: c.renum,
@@ -515,12 +518,15 @@ export function buildTrustBundle(
   const c = ledgerToCounts(ledger);
   const counts: TrustCounts = {
     confirmed: c.confirmed,
+    manual: c.manual,
     candidate: c.candidate,
     errata: c.errata,
     renum: c.renum,
     format: c.format,
   };
-  const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
+  const total =
+    counts.confirmed + counts.manual + counts.candidate +
+    counts.errata + counts.renum + counts.format;
   const warnings = [
     checkDualSource(md),
     checkFalseDiff(md),

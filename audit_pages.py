@@ -119,7 +119,16 @@ def parse_manual_pages() -> dict:
     # finding count so an emptied file fails loudly.
     mf = json.loads((ROOT / "data" / "manual-findings.json").read_text(encoding="utf-8"))
     findings = mf["findings"]
-    assert len(findings) == 9, f"expected 9 manualFindings, got {len(findings)}"
+    assert findings, "data/manual-findings.json 的 findings 为空 —— 人工核验数据疑似损坏"
+    # 条数不写死（写死过一次 9：新增两条就红），改为与**报告实际用的那份**对账。
+    facts_path = ROOT / "dist" / "facts.json"
+    if facts_path.exists():
+        facts = json.loads(facts_path.read_text(encoding="utf-8"))
+        n_facts = len(facts.get("manualFindings") or [])
+        assert len(findings) == n_facts, (
+            f"manual-findings.json 有 {len(findings)} 条，facts.json 里有 {n_facts} 条 —— "
+            "两份不是同一份数据（改了其中一份）"
+        )
     out = {}
     first = findings[0]
     bm = re.search(r"第(\d+)页", first.get("bPage") or "")
@@ -280,8 +289,16 @@ def main() -> int:
         nums = [n for n in re.findall(r"\d+(?:\.\d+)?", s) if len(n) >= 2 or "." in n]
         if nums:
             return nums
-        # no distinctive digits (e.g. "两只") → mid-prefix of the raw value
-        return [s[:8]] if len(s) >= 4 else []
+        # 没有有辨识度的数字（"两只"、"表5 醒目标志：…"）→ 取正文里的一段中文。
+        # 先剥掉「A 5.8.2 数量：」这类前缀（版本号 + 条款号 + 小标题）——
+        # 不剥的话针子带着前缀，源 PDF 上永远找不到，而那是**检查器自己**的错。
+        body = re.sub(r"^\s*[ABC]\s*", "", s)
+        body = re.sub(r"^(附录[^\s：:]*|表\s*\d+|\d+(?:\.\d+)*[a-z]?)\s*", "", body)
+        body = re.sub(r"^[^：:]{0,14}[：:]\s*", "", body)
+        cjk = re.findall(r"[一-鿿]{4,}", body)
+        if cjk:
+            return [cjk[0][:8]]
+        return [body[:8]] if len(body) >= 4 else []
 
     def check_value_rows(rows: list, label: str) -> None:
         for i, c in enumerate(rows, 1):

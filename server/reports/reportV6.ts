@@ -1482,11 +1482,16 @@ function buildParameterMatrix(
       `、重复行 ${vcount("重复行（已合并）")} 项。` +
       `覆盖 ${ordered.length} 个参数维度；${rows.filter((r) => cClauseOf(r.source)).length} 项标注了 C UN R48 对应条款号。`,
     "",
+    `> **口径说明**：本表的分布是**逐条裁定后**的；执行摘要第 2 条用的是**抽取流量**口径` +
+      `（候选 = 数值变化 + 引用重排 + 同文 + 措辞差异 + 规则过滤）。两者的差额来自下面这 ` +
+      `${corrections.length} 条**回原文裁定**的行 —— 抽取时看着像差异，回原文核过才知道是同文、错配或非变化。` +
+      `逐条理由见本表下方。`,
+    "",
   );
   if (corrections.length) {
     parts_.push(
-      `**本表更正了 ${corrections.length} 行的抽取错误**（逐条回原文核验；更正清单见 ` +
-        `\`data/diff-corrections.json\`，由 \`scripts/diff_value_check.py\` 在交付闸门里复核）：`,
+      `**本表对 ${corrections.length} 行做了人工裁定**（逐条回原文核验，含抄错单位、错配行、纯措辞与定性要求的裁定；` +
+        `裁定清单见 \`data/diff-corrections.json\`，由 \`scripts/diff_value_check.py\` 在交付闸门里复核）：`,
       "",
     );
     for (const c of corrections) {
@@ -1975,6 +1980,35 @@ function buildExecSummary(input: {
   const ruleD = counts.ruleDropped ?? 0;
   const sameN = (verified?.sameTextDropped ?? []).length;
   const cand = counts.candidates ?? (num.length + refN + wordingN + ruleD + sameN);
+  // 人工补录的清单**从数据生成** —— 以前是手写的一句话，
+  // 新增一条 manual finding 时它不会跟着变（漏数据，且没人会发现）。
+  const manualBriefs = (verified?.manualFindings ?? [])
+    .map((m: any) => String(m.brief ?? `${m.topic ?? ""}·${m.name ?? ""}`).trim())
+    .filter(Boolean)
+    .join("、");
+
+  // 差值候选的**裁定后**分布（11.3.3 逐行判定的那一份）。
+  // 执行摘要第 2 条以前用的是**抽取流量**分桶（sameText 9 / wording 30），
+  // 那些桶是「抽取时看着像不像差异」，不是「有没有工程含义」——
+  // 牌照灯数量、醒目标志光色、DRL×A2 互斥三行都落在措辞桶里，
+  // 回原文核过却是**真变化**。按流量桶下结论，会把三条真变化说成「无工程含义」。
+  const verdictCounts = (() => {
+    const m = new Map<string, number>();
+    for (const v of Object.values((verified?.diffVerdicts ?? {}) as Record<string, any>)) {
+      const k = String((v as any)?.verdict ?? "");
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return m;
+  })();
+  const vc = (k: string) => verdictCounts.get(k) ?? 0;
+  const diffCandidates = (verified?.diffValueDiffs ?? []).length;
+  const diffChanges = vc("有变化");
+  const diffSameText = vc("两版同文（已回原文核验）") + vc("两版同文（勘误）");
+  const diffSameNum = vc("数值与口径相同（非数值变化）");
+  const diffPending = vc("表述差异（未做数值核验）");
+  const diffRenumbered = vc("引用编号变化（非实质）");
+  const diffDuplicate = vc("重复行（已合并）");
+  const diffNonChange = diffSameText + diffSameNum + diffPending + diffRenumbered + diffDuplicate;
 
   // Decision layer. The summary previously listed what changed ("新增 9 项")
   // and stopped there, so a reader learned nothing actionable. These four lines
@@ -1990,10 +2024,13 @@ function buildExecSummary(input: {
           `（自动核验 ${matrix.numericOnly} 项 + 人工补录 ${matrix.manualOnly} 项），集中在 ${matrix.topFamilies}。` +
           (matrix.example ? `这些不是措辞调整——${matrix.example}` : "") +
           "每条的条款号与页码见第 11.3 节，可回原文逐条核对。",
-        `2. **不需要改设计**：${matrix.same} 项两版原文完全相同（非变化），` +
-          `${matrix.wordingOnly} 项仅措辞/标点差异（无工程含义），` +
-          `另有 ${renumberNote(verified)} 项属章节重组导致的条款号重排——` +
-          "这三类只需更新内部引用文件编号，产品无需变更。",
+        `2. **不需要改设计**：${diffCandidates} 条差值候选里 **${diffChanges} 项为实质变化**` +
+          `（均已回原文核验，含在上条的 ${matrix.changed} 项之内；逐条判定见 11.3.3），` +
+          `其余 **${diffNonChange} 项不是数值变化**：` +
+          `两版原文完全相同 ${diffSameText} 项（已回原文核验）、` +
+          `数值与限值口径相同 ${diffSameNum} 项（仅措辞/格式不同）、` +
+          `条款号重排 ${diffRenumbered} 项、重复行 ${diffDuplicate} 项——` +
+          "这些只需更新内部引用文件编号，产品无需变更。",
         `3. **出口欧盟：请以第 12 章的参数矩阵为准**。该章逐参数给出 A/B/C 三版取值与条款页码，` +
           `是本版唯一可支撑 C 定量判断的部分；但**覆盖尚不完整**（见第 12 章开头的覆盖率与` +
           `「定位失败的参数」一节）。未定位到的参数一律标注为「⚠ 未在原文定位到」，` +
@@ -2004,8 +2041,10 @@ function buildExecSummary(input: {
           "而 R48 §5.35.10 写的是「**低于 65 km/h 不得开启**」「**高于 40 km/h 方可保持开启**」——" +
           "**数字相同，条件方向相反**。矩阵里两列都显示 65 / 40，只看数值会判成「三版一致」。" +
           "这类差异无法从数值矩阵自动检出（要读条件句而非读数字），全表需人工过一遍条件方向。",
-        `5. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到，` +
-          `${wordingN} 条表述差异待人工裁定。结论层面已逐条列在第 11 章，使用前须回原文确认。`,
+        `5. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到；` +
+          `差值候选里 **${diffPending} 项仍待人工裁定**（其余 ${diffCandidates - diffPending - diffChanges} 项已逐条回原文核验，` +
+          `判定见 11.3.3；11.8 保留全部 ${wordingN} 条表述/术语候选差异供工程师复核）。` +
+          "结论层面已逐条列在第 11 章，使用前须回原文确认。",
         `6. **「真缺口 0」说的是量化限值，不是全部要求**：三版合计 ${(REQUIREMENT_LEDGER as any)?.totals?.requirements ?? 0} 条要求条款里，` +
           `${(REQUIREMENT_LEDGER as any)?.totals?.covered ?? 0} 条已覆盖、` +
           `**${(REQUIREMENT_LEDGER as any)?.totals?.appendixListed ?? 0} 条定性要求在附录 E.5.1 逐条列出原文与页码**` +
@@ -2027,7 +2066,7 @@ function buildExecSummary(input: {
     "",
     `**1. 结构变化**：A 草案在 B 基础上新增 ${chapterAdded} 项（${chapterAdded - newDevices} 项章节级：第 6 从属功能章、第 7 扩展功能章；${newDevices} 项装置级新功能：ADS 标志灯、驾驶员辅助投射、图文交互、发光徽标、外部氛围功能、外部状态指示器等）。另有 ${DEVICE_RENUMBERING.length} 项装置级编号重排 + ${refN} 项引用编号变化（章节重组所致，非实质，见 11.6.2 / 11.3.2）。`,
     "",
-    `**2. 数值变化**：共 ${num.length} 条 A/B 同名参数数值变化（**${numOk} 条已定位到原文页码**，第 11.3 节标注 [已核验]）+ ${(verified.manualFindings ?? []).length} 条人工对照补录（AFS 数量、慢行灯 10→15 km/h、近光灯倾斜度分档、前位灯 A1/A2 分类、倒车灯可见度、前雾灯判定基准、示廓灯基准、慢行灯位置、示廓灯500mm放宽——均为 18 个固定对比主题之外的条款，见 11.3.1）。${cand} 条候选的完整去向：${num.length} 条入 11.3、${refN} 条引用编号变化单列 11.3.2、**${sameN} 条同文勘误见 11.3.0**（两版原文同文，非变化）、${wordingN} 条表述差异 + ${ruleD} 条非变化项过滤（表述差异全部呈现于 **11.8 表述/术语候选差异（复核清单）**）——合计 ${num.length + refN + sameN + wordingN + ruleD}，账目闭环。`,
+    `**2. 数值变化**：共 ${num.length} 条 A/B 同名参数数值变化（**${numOk} 条已定位到原文页码**，第 11.3 节标注 [已核验]）+ ${(verified.manualFindings ?? []).length} 条人工对照补录（${manualBriefs}——均为 18 个固定对比主题之外的条款，见 11.3.1）。${cand} 条候选的**抽取流量口径**（尚未逐条裁定）：${num.length} 条入 11.3、${refN} 条引用编号变化单列 11.3.2、**${sameN} 条同文勘误见 11.3.0**（两版原文同文，非变化）、${wordingN} 条表述差异 + ${ruleD} 条非变化项过滤——合计 ${num.length + refN + sameN + wordingN + ruleD}，账目闭环。表述差异全部呈现于 **11.8 表述/术语候选差异（复核清单）**；其中 ${diffChanges - num.length} 条经回原文核验后**改判为实质变化**，其余改判为同文或数值口径相同 —— 逐条判定见 11.3.3。`,
     "",
     `**3. GB4785 表 11.6 九条数据指标核验**：${keep.length} 条在 A/B 原文找到且**数值两版相同（[保留]）**（ESS 闪烁频率 4.0±1.0Hz、侧标志灯间距 3m），${single.length} 条仅一版提到（[单边]，如 DRL 减光后最大光强 140cd），${missing.length} 条在当前版本原文**未找到**——此前引用该 9 条数值属未经核验，本版如实标注。`,
     "",
@@ -2840,6 +2879,7 @@ export async function buildMinerUReport(
       chapterRenumbered: struct.renumbered,
       indicatorRows: [],
       wordingOnly: (verified.wordingOnly ?? []) as any,
+      diffVerdicts: (verified.diffVerdicts ?? {}) as any,
     } as ChangeChapterInput,
     11,
   );
@@ -2977,11 +3017,14 @@ export async function buildMinerUReport(
   const numChanges = (verified.numericChanges ?? []).length;
   const manualN = (verified.manualFindings ?? []).length;
   const refChanges = (verified.renumberedOnly ?? []).length;
+  // 差值候选的裁定后「实质变化」数（11.3.3 的判定分布）
+  const diffChanges = Object.values((verified.diffVerdicts ?? {}) as Record<string, any>)
+    .filter((v: any) => String(v?.verdict ?? "") === "有变化").length;
   const keptIndicators = indicatorResults.filter((r) => r.status === "kept").length;
   const singleSideIndicators = indicatorResults.filter((r) => r.status === "single-side").length;
   ch11Md = ch11Md.replace(
     /另有 \d+ 条重大修订条款、\d+ 条数据指标数值变化[^。]*。/,
-    `另有 ${numChanges} 条重大修订条款（数值级 · 见 11.3）+ ${manualN} 条人工审计补录（见 11.3.1）+ ${refChanges} 条引用编号变化（见 11.3.2）+ ${((verified.sameTextDropped ?? []).length)} 条同文勘误（见 11.3.0，非变化）+ ${DEVICE_RENUMBERING.length} 项装置级编号重排（见 11.6.2，非实质），以及 ${indicatorResults.length} 条 GB4785 指标核验（${keptIndicators} 保留 + ${singleSideIndicators} 单边，见 11.4）；另有 ${(verified.wordingOnly ?? []).length} 条表述/术语候选差异（未做数值核验，见 11.8 工程师复核清单）。`,
+    `另有 ${numChanges} 条重大修订条款（数值级 · 见 11.3）+ ${manualN} 条人工审计补录（见 11.3.1）+ ${refChanges} 条引用编号变化（见 11.3.2）+ ${((verified.sameTextDropped ?? []).length)} 条同文勘误（见 11.3.0，非变化）+ ${DEVICE_RENUMBERING.length} 项装置级编号重排（见 11.6.2，非实质），以及 ${indicatorResults.length} 条 GB4785 指标核验（${keptIndicators} 保留 + ${singleSideIndicators} 单边，见 11.4）；另有 ${(verified.wordingOnly ?? []).length} 条表述/术语候选差异（抽取时的候选口径，已在 11.3.3 逐条回原文裁定，其中 ${diffChanges - numChanges} 条改判为**实质变化**；11.8 保留原始候选供工程师复核）。`,
   );
 
   // Chapters 2-10 from MinerU headings

@@ -340,6 +340,14 @@ check("decision-caliber counts match the audited buckets", () => {
     .chapters.map((c) => c.markdown ?? "")
     .join("\n");
   const facts = JSON.parse(read("dist/facts.json"));
+  // 差值候选的**裁定后**分布（11.3.3 逐行判定的那一份）。
+  // 第 2 条决策口径以前用的是**抽取流量**分桶（sameText 9 / wording 30），
+  // 那些桶回答的是「抽取时看着像不像差异」，不是「有没有工程含义」——
+  // 牌照灯数量、醒目标志光色、DRL×A2 互斥三行都落在措辞桶里，
+  // 回原文核过却是真变化。按流量桶下结论，就会把三条真变化说成「无工程含义」。
+  const vd = facts.diffVerdicts ?? {};
+  const vc = (k) =>
+    Object.values(vd).filter((v) => (v?.verdict ?? "") === k).length;
 
   const expect = [
     {
@@ -348,14 +356,24 @@ check("decision-caliber counts match the audited buckets", () => {
       what: "实质变化项数",
     },
     {
-      re: /(\d+)\s*项两版原文完全相同/,
-      want: facts.sameTextDropped?.length ?? 0,
+      re: /(\d+)\s*项为实质变化/,
+      want: vc("有变化"),
+      what: "差值候选中的实质变化项数",
+    },
+    {
+      re: /两版原文完全相同\s*(\d+)\s*项/,
+      want: vc("两版同文（已回原文核验）") + vc("两版同文（勘误）"),
       what: "两版同文项数",
     },
     {
-      re: /(\d+)\s*项仅措辞\/标点差异/,
-      want: facts.counts?.wordingFiltered ?? 0,
-      what: "措辞差异项数",
+      re: /数值与限值口径相同\s*(\d+)\s*项/,
+      want: vc("数值与口径相同（非数值变化）"),
+      what: "数值口径相同项数",
+    },
+    {
+      re: /(\d+)\s*项仍待人工裁定/,
+      want: vc("表述差异（未做数值核验）"),
+      what: "仍待裁定项数",
     },
   ];
 
@@ -369,6 +387,32 @@ check("decision-caliber counts match the audited buckets", () => {
     );
     seen.push(`${what}=${m[1]}`);
   }
+
+  // 抽取流量口径的那一句也必须对得上，并且**账目闭环**。
+  // （两个口径都在摘要里出现：一个是抽取分桶，一个是裁定结果 —— 读者要能对上账。）
+  const flow = md.match(
+    /抽取流量口径\*\*（尚未逐条裁定）：(\d+) 条入 11\.3、(\d+) 条引用编号变化单列 11\.3\.2、\*\*(\d+) 条同文勘误[^）]*）、(\d+) 条表述差异 \+ (\d+) 条非变化项过滤/,
+  );
+  assert(flow, "执行摘要找不到「抽取流量口径」的候选去向声明");
+  const c = facts.counts ?? {};
+  const flowWant = [
+    [Number(flow[1]), c.numeric, "数值变化"],
+    [Number(flow[2]), c.renumbered, "引用编号变化"],
+    [Number(flow[3]), c.sameText ?? c.sameTextDropped, "同文勘误"],
+    [Number(flow[4]), c.wordingFiltered, "表述差异"],
+    [Number(flow[5]), c.ruleDropped, "非变化项过滤"],
+  ];
+  for (const [got, want, what] of flowWant) {
+    assert(
+      got === want,
+      `执行摘要的抽取流量口径声称 ${what} = ${got}，facts.json 审计值为 ${want}`,
+    );
+  }
+  const flowSum = flowWant.reduce((a, [g]) => a + g, 0);
+  assert(
+    flowSum === (c.candidates ?? 0),
+    `抽取流量口径五项相加 ${flowSum} ≠ 候选 ${c.candidates} —— 账目不闭环`,
+  );
 
   // Caliber 3 previously printed "13 项部分重叠 / 32 项无法证明等价", derived by
   // intersecting A's numbers with numbers scraped out of R48 §6.x.1 "Presence"
@@ -1277,7 +1321,28 @@ for i in range(min(12, d.page_count)):
         toc = i
         break
 if toc is None:
-    print(json.dumps({"skipped": "no printed TOC"})); raise SystemExit(0)
+    # 交付件没有印在纸上的目录页（导航靠 PDF 书签）——
+    # 那就查书签：客户端真正用来跳转的东西。
+    toc_entries = []
+    for lvl, title, page in (d.get_toc() or []):
+        t = re.sub(r"^[0-9]+[.\s]*", "", str(title)).strip()
+        toc_entries.append((t, int(page)))
+    if not toc_entries:
+        print(json.dumps({"skipped": "no printed TOC and no bookmarks"})); raise SystemExit(0)
+    bad_bm = []
+    for title, page in toc_entries:
+        key = re.sub(r"\s+", "", title)[:10]
+        if not key or page < 1 or page > d.page_count:
+            continue
+        hit = any(re.sub(r"\s+", "", key) in re.sub(r"\s+", "", d[i].get_text()[:400]) for i in range(d.page_count))
+        if hit and not any(re.sub(r"\s+", "", key) in re.sub(r"\s+", "", d[p - 1].get_text()[:400]) for p in (page, page + 1) if 1 <= p <= d.page_count):
+            bad_bm.append((title, page))
+    uniq_bm = {p for _, p in toc_entries}
+    if len(uniq_bm) == 1:
+        print(json.dumps({"error": "every bookmark reads page %d — the pass-2 backfill degenerated" % uniq_bm.pop()}))
+        raise SystemExit(0)
+    print(json.dumps({"bookmarks": len(toc_entries), "distinct_pages": len(uniq_bm), "mismatched": bad_bm[:6]}))
+    raise SystemExit(0)
 rows = {}
 for x0, y0, x1, y1, t, *_ in d[toc].get_text("words"):
     rows.setdefault(round(y0), []).append((x0, t))
@@ -1318,6 +1383,9 @@ print(json.dumps({"entries": len(entries), "distinct_pages": len(uniq), "mismatc
     res.mismatched.length === 0,
     `TOC page numbers do not land on the chapter: ${JSON.stringify(res.mismatched)}`,
   );
+  if (res.bookmarks !== undefined) {
+    return `${res.bookmarks} 条书签 · ${res.distinct_pages} 个不同页码 · 每条都落在对应章节`;
+  }
   return `${res.entries} 条目录项 · ${res.distinct_pages} 个不同页码 · 抽查一致`;
 });
 
@@ -1383,6 +1451,57 @@ check("no markdown artefacts in the assembled report", () => {  const md = loadR
     `${placeholders.length} unexpanded template placeholder(s) in the report body: ${[...new Set(placeholders)].slice(0, 4).join(" ")} — a plain string was used where a template literal was meant`,
   );
   return "no orphan # lines, no unexpanded placeholders";
+});
+
+check("the closure dashboard counts the same changes the summary does", () => {
+  // PDF 第 3 页的「候选差异闭环统计」与执行摘要的「实质变化项数」说的是同一批事实。
+  // §11.3.1 人工核验补录以前没进台账 → 第 3 页只数到 3 条「已双源核验」，
+  // 而执行摘要说 14 项 —— 同一份报告里两个数。这条闸门把它们绑在一起。
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 无法渲染 reports/last-report.json（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+    const py =
+    "import sys,io,json,base64,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path)\n" +
+    "lines=[]\n" +
+    "for pg in d: lines.extend(pg.get_text().splitlines())\n" +
+    "def grab(label):\n" +
+    "    for i,ln in enumerate(lines):\n" +
+    "        if label in ln:\n" +
+    "            for j in range(i+1, min(i+4, len(lines))):\n" +
+    "                v=lines[j].strip()\n" +
+    "                if v.isdigit(): return int(v)\n" +
+    "    return None\n" +
+    "print(json.dumps({'confirmed':grab('已双源核验'),'manual':grab('人工核验补录')}))";
+const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  assert(
+    r.status === 0,
+    `闭环统计闸门的取数片段跑不起来（不能"跳过"—— 跳过的闸门等于没有闸门）：${(r.stderr || "").trim().split("\n").pop().slice(0, 200)}`,
+  );
+  const m = JSON.parse(r.stdout.trim().split("\n").pop());
+  const facts = JSON.parse(read("dist/facts.json"));
+  assert(m.confirmed !== null, "PDF 里找不到闭环统计的「已双源核验」一行");
+  assert(m.manual !== null, "PDF 里找不到闭环统计的「人工核验补录」一行");
+  assert(
+    m.confirmed === (facts.numericChanges?.length ?? 0),
+    `闭环统计说「已双源核验 ${m.confirmed} 条」，facts.json 里数值变化是 ${facts.numericChanges?.length ?? 0} 条`,
+  );
+  assert(
+    m.manual === (facts.manualFindings?.length ?? 0),
+    `闭环统计说「人工核验补录 ${m.manual} 条」，facts.json 里人工补录是 ${facts.manualFindings?.length ?? 0} 条`,
+  );
+  const total = m.confirmed + m.manual;
+  assert(
+    total === (facts.numericChanges?.length ?? 0) + (facts.manualFindings?.length ?? 0),
+    `闭环统计的已核验 + 人工补录 = ${total}，与执行摘要的实质变化数对不上`,
+  );
+  return `已核验 ${m.confirmed} + 人工补录 ${m.manual} = ${total}，与执行摘要一致`;
 });
 
 check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
@@ -1578,6 +1697,40 @@ check("the diff value cleaner never changes a number", () => {
   const m = out.match(/(\d+) 条用例/);
   assert(m, `test_diff_corrections 没有给出统计行:\n        ${out.slice(-400)}`);
   return `${m[1]} 条用例：数字一个没动、重复单位都清掉了、区间写法没被误伤`;
+});
+
+check("the diff evidence model rejects corrections the source does not support", () => {
+  // 取证模型（数字 → 逐字 → 锚点）守的是第 11 章的取值。
+  // 只测「好的更正能过」是不够的 —— 一个从不报错的检查器等于没有检查器
+  // （这正是 ㉒ 一致性自查页 53 项误报的教训）。所以这里必须**逐条挡住**
+  // 已知答案的反例：改一个词的定性取值、抄错的单位、指错的条款与页码。
+  const { ok, out } = runPy(["scripts/test_diff_evidence.py"], "test_diff_evidence");
+  assert(ok, `取证模型自测没过:\n        ${out.slice(-900)}`);
+  const m = out.match(/(\d+) 条反例 \+ (\d+) 条正例/);
+  assert(m, `test_diff_evidence 没有给出统计行:\n        ${out.slice(-400)}`);
+  return `${m[1]} 条反例全被挡住、${m[2]} 条正例全被放行`;
+});
+
+check("every manual finding is named in the executive summary", () => {
+  // 执行摘要里「人工对照补录」那一串以前是**手写的**：
+  // 新增一条 manual finding，摘要照旧只列九条 —— 而那句话正是
+  // 报告的头号结论（几项参数有实质变化）。漏一条 = 少数据，且没人会发现。
+  // 现在清单由每条 finding 的 brief 生成，闸门只查「brief 在不在、列没列」。
+  const mf = JSON.parse(read("data/manual-findings.json"));
+  const noBrief = mf.findings.filter((f) => !String(f.brief ?? "").trim());
+  assert(
+    noBrief.length === 0,
+    `manual findings without a brief: ${noBrief.map((f) => `${f.topic}·${f.name}`).join(", ")}`,
+  );
+  const md = loadReport()
+    .chapters.map((c) => c.markdown ?? "")
+    .join("\n");
+  const notListed = mf.findings.filter((f) => !md.includes(String(f.brief).trim()));
+  assert(
+    notListed.length === 0,
+    `manual findings missing from the report: ${notListed.map((f) => f.brief).join(", ")}`,
+  );
+  return `${mf.findings.length} findings, each named in the summary`;
 });
 
 console.log("\n=== 5. renderer unit harness ===");

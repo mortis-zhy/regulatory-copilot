@@ -201,6 +201,12 @@ def apply_corrections(rows: list) -> tuple:
                 row["aClause"] = c["aClause"]
             if c.get("bClause"):
                 row["bClause"] = c["bClause"]
+            # 表格取证：引用的是表（不是条款）时，记下 MinerU 的页码，
+            # 让复核脚本把取证范围限定到那一页的表格内容
+            if c.get("aTable"):
+                row["aTable"] = c["aTable"]
+            if c.get("bTable"):
+                row["bTable"] = c["bTable"]
             if c.get("source"):
                 row["source"] = c["source"]
         else:

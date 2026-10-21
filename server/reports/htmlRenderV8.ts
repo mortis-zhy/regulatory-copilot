@@ -1217,7 +1217,9 @@ function renderTransitionTable(rows: ReturnType<typeof extractTransitionDates>):
 }
 
 function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>, discrepancies: string[] = []): string {
-  const total = counts.confirmed + counts.candidate + counts.errata + counts.renum + counts.format;
+  const total =
+    counts.confirmed + (counts.manual ?? 0) + counts.candidate +
+    counts.errata + counts.renum + counts.format;
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
   const candidateShare = pct(counts.candidate);
   const isHighRisk = candidateShare >= 50;
@@ -1236,6 +1238,7 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>,
   const bar = `
   <svg class="dashboard-bar" viewBox="0 0 100 14" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
     ${seg(counts.confirmed, "#3a6b4f")}
+    ${seg(counts.manual ?? 0, "#5b7c99")}
     ${seg(counts.candidate, isHighRisk ? "#c9542a" : "#b9a173")}
     ${seg(counts.errata, "#9c8b6c")}
     ${seg(counts.renum, "#c0b89c")}
@@ -1254,12 +1257,13 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>,
   return `
 <section class="closure-dashboard">
   <h1 class="dashboard-title">候选差异闭环统计 · Closure Dashboard</h1>
-  <p class="dashboard-intro">对第 11 章「关键变化点汇总」与第 10 章「新增/删除/重大修订」逐项扫描后，按 5 类差异标记分类计数。${total} 条候选差异中，<strong>${counts.candidate} 条 (${candidateShare}%) 仍处于待复核状态</strong>${isHighRisk ? " — 比例偏高，工程师在采信前必须人工逐条核对原始 PDF。" : "。"}</p>
+  <p class="dashboard-intro">对第 11 章「关键变化点总结」与第 10 章「新增/删除/重大修订」逐项扫描后，按 6 类差异标记分类计数。${total} 条候选差异中，<strong>${counts.candidate} 条 (${candidateShare}%) 仍处于待复核状态</strong>${isHighRisk ? " — 比例偏高，工程师在采信前必须人工逐条核对原始 PDF。" : "。"}</p>
 
   <figure class="claim-figure">
     ${bar}
     <figcaption class="claim-caption">
       <span><b style="color:#3a6b4f">✅</b> ${pct(counts.confirmed)}%</span>
+      <span><b style="color:#5b7c99">🧾</b> ${pct(counts.manual ?? 0)}%</span>
       <span><b style="color:${isHighRisk ? "#c9542a" : "#b9a173"}">⚠</b> ${candidateShare}%</span>
       <span><b style="color:#9c8b6c">🟡</b> ${pct(counts.errata)}%</span>
       <span><b style="color:#c0b89c">🔢</b> ${pct(counts.renum)}%</span>
@@ -1273,6 +1277,7 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>,
     </thead>
     <tbody>
       ${row("row-confirmed", "✅", "已双源核验", counts.confirmed, "A、B 原文与页码均已定位，可作为变更依据")}
+      ${row("row-manual", "🧾", "人工核验补录", counts.manual ?? 0, "18 个固定对比主题之外的条款，人工对照 A/B 原文，页码齐备（11.3.1）")}
       ${row("row-candidate", "⚠", "待复核", counts.candidate, "单源 / 缺页码 — 仅供工程师参考，输入合规判定前必须人工确认")}
       ${row("row-errata", "🟡", "同文勘误", counts.errata, "之前误判为变化的文本差异，实质内容相同")}
       ${row("row-renum", "🔢", "仅编号重排", counts.renum, "章节号变更但技术内容不变 — 不计入技术变化")}
@@ -1287,16 +1292,20 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>,
   </table>
 
   ${isHighRisk
-    ? `<p class="dashboard-disclaimer dashboard-risk">⚠ 风险提示：本报告 ${candidateShare}% 的差异尚未完成双源核验 — 切勿直接采信任何 ⚠ 条目结论。所有 ✅ / ⚠ 之外的标记（🟡 / 🔢 / ✍）均不计入「实质技术变化」总数。</p>`
+    ? `<p class="dashboard-disclaimer dashboard-risk">⚠ 风险提示：本报告 ${candidateShare}% 的差异尚未完成双源核验 — 切勿直接采信任何 ⚠ 条目结论。✅ 与 🧾 计入「实质技术变化」总数；🟡 / 🔢 / ✍ 不计入。</p>`
     : `<p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09）。</p>`}
 
   <p class="dashboard-method">
     统计口径：以上数字由 <b>条目级台账</b>逐表统计得出（每个数字 = 对应表格的实际行数），
-    <u>不是</u>对标记字符串的出现次数。台账来源：§11.3 数值变化表 · §11.3.0 同文勘误表 ·
+    <u>不是</u>对标记字符串的出现次数。台账来源：§11.3 数值变化表 · <b>§11.3.1 人工核验补录</b> ·
+    §11.3.0 同文勘误表 ·
     §11.6.1 章节重排表 · §11.8 表述复核清单 · 各章 ⚠ 未找到 / manual-audit 行。<br>
     <b>两套口径不可相加</b>：§11.3 的「候选差异条目」只统计"看起来像变更的参数"；
     上表的「待复核」统计的是全文所有 <code>⚠未找到 / 未核验</code> 标记行（含 §11.0 的 9 条网传指标）。
-    二者成员不同、相交但不等价。
+    二者成员不同、相交但不等价。<br>
+    上表的 <b>✅ 已双源核验 + 🧾 人工核验补录 = ${counts.confirmed + (counts.manual ?? 0)} 项</b>，
+    与执行摘要第 1 条「${counts.confirmed + (counts.manual ?? 0)} 项参数在 A 草案中有实质变化」
+    是<b>同一批事实</b>（自动核验 ${counts.confirmed} 项 + 人工补录 ${counts.manual ?? 0} 项）。
   </p>
 ${discrepancies.length ? `<div class="reconcile-box">
     <p class="reconcile-title">⚠ 账目对账：报告自述与台账实算不一致（${discrepancies.length} 项）</p>

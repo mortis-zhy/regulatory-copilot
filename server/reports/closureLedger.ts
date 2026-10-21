@@ -25,6 +25,7 @@
 
 export type LedgerCategory =
   | "confirmed"    // ✅ 已双源核验 — 两版原文 + 页码齐备
+  | "manual"       // 🧾 人工核验补录 — 18 主题之外的条款，人工对照 A/B 原文
   | "candidate"    // ⚠ 待复核 — 单源或缺页码
   | "errata"       // 🟡 同文勘误 — 曾误判为变化，实为同文
   | "renumber"     // 🔢 仅编号重排 — 章节重构
@@ -118,6 +119,36 @@ function harvestConfirmed(md: string): LedgerEntry[] {
       no,
       topic: topic.replace(/\*\*/g, ""),
       reason: /已核验/.test(status) ? "A/B 原文与页码齐备" : "缺少一侧页码，需人工回原文",
+      pages: pagesIn(rest),
+    });
+  }
+  return out;
+}
+
+/**
+ * §11.3.1 人工对照补录 —— 每一行都带 A/B 两侧原文**与页码**，
+ * 与 §11.3 的数值变化一样是**双源核验**。
+ *
+ * 为什么单列一档：以前这段表根本不被采集，于是闭环统计里
+ * 「已双源核验」只有 3 行（§11.3 的数值变化），而执行摘要说
+ * **14 项**实质变化 —— 客户在第 3 页与第 1 页看到的是两个数，
+ * 而两者说的是同一批事实。
+ */
+function harvestManualVerified(md: string): LedgerEntry[] {
+  const body = section(md, /^#{2,4}\s*11\.3\.1[^\n]*\n/m);
+  if (!body) return [];
+  const out: LedgerEntry[] = [];
+  for (const row of tableRows(body)) {
+    if (!/^\d+$/.test(row[0] ?? "")) continue;
+    const statusCol = row.findIndex((c) => /\[人工核验\]|\[已核验\]|manual-audit/.test(c));
+    if (statusCol < 0) continue;
+    const rest = row.slice(statusCol + 1).join(" ");
+    out.push({
+      category: "manual",
+      section: "11.3.1",
+      no: row[0],
+      topic: (row[1] ?? "").replace(/\*\*/g, ""),
+      reason: "人工对照 A/B 原文，页码齐备（11.3.1 人工核验补录）",
       pages: pagesIn(rest),
     });
   }
@@ -339,6 +370,7 @@ export function buildLedger(src: string | Array<{ markdown?: string }>): Ledger 
       ? src
       : src.map((c) => c?.markdown ?? "").join("\n");
   const confirmed = harvestConfirmed(md);
+  const manualVerified = harvestManualVerified(md);
   // NOTE ON TWO DIFFERENT UNIVERSES — the single most confusing thing in this
   // report, so state it where the numbers are produced:
   //   §11.3「N 条候选」  = 差异候选条目（看起来像变更的参数）
@@ -396,6 +428,7 @@ export function buildLedger(src: string | Array<{ markdown?: string }>): Ledger 
 
   const entries: LedgerEntry[] = [
     ...confirmedOnly,
+    ...manualVerified,
     ...dedupCandidates,
     ...errata,
     ...added,
@@ -503,6 +536,7 @@ export function ledgerToCounts(ledger: Ledger) {
   const c = ledger.byCategory;
   return {
     confirmed: c.confirmed ?? 0,
+    manual: c.manual ?? 0,
     candidate: c.candidate ?? 0,
     errata: c.errata ?? 0,
     renum: c.renumber ?? 0,
