@@ -25,6 +25,8 @@ import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, loadSource
 // 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
 import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
 import COVERAGE_AUDIT from "../../data/coverage-audit.json";
+import REQUIREMENT_LEDGER from "../../data/requirement-ledger.json";
+import REQUIREMENT_GAPS from "../../data/requirement-gaps.json";
 import APPENDIX_TABLES from "../../data/appendix-tables.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
@@ -2004,6 +2006,10 @@ function buildExecSummary(input: {
           "这类差异无法从数值矩阵自动检出（要读条件句而非读数字），全表需人工过一遍条件方向。",
         `5. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到，` +
           `${wordingN} 条表述差异待人工裁定。结论层面已逐条列在第 11 章，使用前须回原文确认。`,
+        `6. **「真缺口 0」说的是量化限值，不是全部要求**：三版合计 ${(REQUIREMENT_LEDGER as any)?.totals?.requirements ?? 0} 条要求条款里，` +
+          `${(REQUIREMENT_LEDGER as any)?.totals?.covered ?? 0} 条已覆盖、${(REQUIREMENT_LEDGER as any)?.totals?.weak ?? 0} 条同章别处（弱），` +
+          `另有 **${(REQUIREMENT_LEDGER as any)?.totals?.gaps ?? 0} 条定性要求本版没有逐条讲**（如 R48 的「紧急制动信号应自动开启与关闭」` +
+          `「应独立于其他灯具工作」），逐条登记了理由，见附录 E.5。**出口认证前请按那 23 条回原文确认。**`,
       ]
     : [];
 
@@ -2352,7 +2358,73 @@ function buildAppendixE(matrixRows: any[]): string {
     "> **口径提醒**：本清单按「条款 + 数值 + 单位」比对，**不比对引文措辞**。",
     "> 另外，矩阵比较的是**数值**；条件方向相反（同样两个数、一个是上限一个是下限）",
     "> 这类差异数值矩阵**检不出来**，须回原文读条件句 —— 第 12 章开头已就此单列提示。",
+    "",
+    "---",
+    "",
+    "## E.5 要求级清点（定性要求有没有漏）",
+    "",
+    "> **E.1–E.4 回答的是「限值有没有漏」。这一节回答的是「要求有没有漏」。**",
+    "> 两者不是一回事：法规里的要求有一大半**没有数值** ——",
+    "> 「紧急制动信号应自动开启与关闭」「应独立于其他灯具工作」",
+    "> 「转向灯、危险警告信号或紧急制动信号工作时，追尾警告信号不得开启」。",
+    "> 这些要求**不参与限值统计**，所以 E.1 的「真缺口 0」**只对可量化的那一半成立**。",
+    "",
+    "> 本节把三份标准里每一条**含要求语的条款**逐条处置（`scripts/requirement_ledger.py` 现算，",
+    "> 数据见 `data/requirement-ledger.json`）。四档口径：",
+    "",
+    "| 档 | 含义 | 需不需要处理 |",
+    "|---|---|---|",
+    "| 已覆盖 | 报告里**明确引用了这一条**（矩阵格 / 主题列 / 覆盖清单 / 章内引文） | 已覆盖 |",
+    "| 同章别处 | 报告讲了这一章，但没讲这一条 | **弱覆盖**，回原文时留意 |",
+    "| 不适用 | 不是产品要求（批准程序 / 标志 / 生产一致性 / 过渡），已登记理由 | 不进对照 |",
+    "| **真缺口** | 是产品要求，报告里**一条都没说** | **要补** |",
+    "",
   ];
+  // --- E.5 的数据 ---
+  const LEDGER = (REQUIREMENT_LEDGER as any) ?? { totals: {}, rows: [] };
+  const T = LEDGER.totals ?? {};
+  const ledRows = Array.isArray(LEDGER.rows) ? LEDGER.rows : [];
+  const gapRows = ledRows.filter((r: any) => String(r.disposition ?? "").startsWith("真缺口"));
+  const gapReasons = new Map<string, string>();
+  for (const g of ((REQUIREMENT_GAPS as any)?.gaps ?? []) as any[]) {
+    if (g && g.version && g.clause) gapReasons.set(`${g.version}|${g.clause}`, String(g.reason ?? ""));
+  }
+  const verLabel: Record<string, string> = {
+    A: "GB 4785 草案 V4.3.5",
+    B: "GB 4785-2019",
+    C: "UN R48-09",
+  };
+  lines.push(
+    `**三版合计 ${esc(String(T.requirements ?? 0))} 条要求条款**：`,
+    `已覆盖 ${esc(String(T.covered ?? 0))} 条 · 同章别处 ${esc(String(T.weak ?? 0))} 条 · ` +
+      `不适用 ${esc(String(T.notApplicable ?? 0))} 条 · **真缺口 ${esc(String(T.gaps ?? 0))} 条**。`,
+    "",
+  );
+  if (gapRows.length) {
+    lines.push(
+      "### E.5.1 未逐条讲的要求条款（逐条登记了理由）",
+      "",
+      "> 下面是**本报告的边界**：这些是产品要求，报告里**一条都没讲**。",
+      "> 出口认证前请按条款号回原文确认 —— 登记理由在 `data/requirement-gaps.json`。",
+      "",
+      "| 标准 | 条款号 | 原文标题 | 未覆盖的理由 |",
+      "|---|---|---|---|",
+      ...gapRows.map((r: any) => {
+        const key = `${r.version}|${r.clause}`;
+        const reason = gapReasons.get(key) || String(r.reason ?? "");
+        const head = String(r.head ?? "").replace(/\|/g, "／").slice(0, 90);
+        return `| ${esc(verLabel[r.version] ?? r.version)} | ${esc(r.clause)} | ${esc(head) || "—"} | ${esc(reason)} |`;
+      }),
+      "",
+    );
+  } else {
+    lines.push("### E.5.1 未逐条讲的要求条款", "", "（无 —— 每一条要求条款都有处置）", "");
+  }
+  lines.push(
+    "> **这一节不影响 E.1 的结论**：E.1 的「真缺口 0」指的是**量化限值**没有缺口；",
+    "> 本节说的是**定性要求**里本版没有逐条展开的那几条。两者的口径不同，不要混用。",
+    "",
+  );
   return lines.join("\n");
 }
 

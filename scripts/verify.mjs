@@ -1471,6 +1471,38 @@ check("the delivered page count matches the recorded baseline", () => {
   return `${pages} 页（基线 ${base.pages}，漂移 ${(drift * 100).toFixed(1)}%）`;
 });
 
+check("every requirement clause has a disposition", () => {
+  // 「真缺口 0」过去只对**可量化**的那一半成立：445 条要求条款里
+  // 290 条**无数值**（「紧急制动信号应自动开启与关闭」「应独立于其他灯具工作」）
+  // 根本不参与限值统计 —— 不参与，就既没被证明在，也没被证明缺。
+  // 现在每一条要求条款都要有处置，四档合计必须等于总数。
+  const { ok, out } = runPy(["scripts/requirement_ledger.py"], "requirement_ledger");
+  assert(ok, `有要求条款没有处置（未登记理由）:\n        ${out.slice(-900)}`);
+  const m = out.match(/合计：要求条款 (\d+) · 已覆盖 (\d+) · 同章别处 (\d+) · 不适用 (\d+) · 真缺口 (\d+)/);
+  assert(m, `requirement_ledger 没有给出统计行:\n        ${out.slice(-400)}`);
+  const [req, cov, weak, na, gaps] = m.slice(1).map(Number);
+  assert(
+    req === cov + weak + na + gaps,
+    `四档合计 ${cov + weak + na + gaps} ≠ 要求条款 ${req} —— 账目不闭合`,
+  );
+  // 未覆盖的那些必须逐条登记了理由
+  const gapsFile = JSON.parse(read("data/requirement-gaps.json"));
+  const registered = (gapsFile.gaps ?? []).filter((g) => String(g.reason ?? "").trim()).length;
+  assert(
+    registered === gaps,
+    `真缺口 ${gaps} 条，但只有 ${registered} 条登记了理由`,
+  );
+  return `${req} 条要求条款全部有处置（已覆盖 ${cov} · 同章别处 ${weak} · 不适用 ${na} · 真缺口 ${gaps}，逐条登记理由）`;
+});
+
+check("the requirement ledger is not stale", () => {
+  // 矩阵加了行、条款索引变了、登记改了，台账必须跟着重算 ——
+  // 否则附录 E.5 印着的是旧数。
+  const { ok, out } = runPy(["scripts/requirement_ledger.py", "--check"], "requirement_ledger_check");
+  assert(ok, `要求台账已过期:\n        ${out.slice(-600)}`);
+  return (out.match(/要求台账与现算一致：.*/) ?? ["一致"])[0].trim();
+});
+
 check("the completeness layer is version-agnostic", () => {
   // **完整性保证本身不许写死版本键。**
   // 覆盖审计 / 条款索引 / 核验层如果写着 ("A", "B", "C")，
