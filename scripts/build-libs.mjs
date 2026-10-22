@@ -51,6 +51,14 @@ const ENTRIES = [
   // report and squinting.
   ["server/reports/consistency.ts", "dist/consistency.js"],
   ["server/_core/deliveryGate.ts", "dist/deliveryGate.js"],
+  // agentTools is the **evidence source** for the tool-calling agent: every
+  // fact the agent states comes back through one of these tools, resolved
+  // against the source PDFs. It gets its own module so _test_agent_tools.mjs
+  // can drive it with known answers (a tool that returns the wrong page is
+  // worse than a tool that returns nothing — the agent has no way to tell).
+  ["server/reports/agentTools.ts", "dist/agentTools.js"],
+  ["server/reports/agentLoop.ts", "dist/agentLoop.js"],
+  ["server/reports/agentPrompt.ts", "dist/agentPrompt.js"],
 ];
 
 const SHARED = {

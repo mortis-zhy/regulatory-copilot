@@ -34,6 +34,7 @@ import {
   PenLine,
   RefreshCw,
   ScanSearch,
+  Search,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -86,6 +87,8 @@ type ChatMessage = {
   /** Complete raw text as accumulated by the SSE consumer. More reliable than
    *  `text` for PDF export because it bypasses any React batching delay. */
   fullText?: string;
+  /** 取证 agent 调过的工具 —— 让用户看得见「这个结论是查出来的，不是编的」 */
+  toolCalls?: ToolTrace[];
 };
 
 type ReportPayload = {
@@ -160,6 +163,46 @@ function parseSseChunk(buffer: { text: string }, line: string) {
     return null;
   }
 }
+
+/**
+ * 取证 agent 的 SSE 事件 —— 与 `parseSseChunk` **不是同一种格式**。
+ *
+ * 老的 `/api/agent/chat/stream` 发 `{content, reasoning, done}`；
+ * 取证 agent 发 `{type, delta}`，type ∈
+ *   reasoning | content | tool_call | tool_result | done | error
+ *
+ * 两者混用会静默丢内容 —— 所以这里单独一个解析器，不复用旧的。
+ */
+type AgentEvent = {
+  type?: "reasoning" | "content" | "tool_call" | "tool_result" | "done" | "error";
+  delta?: string;
+  message?: string;
+  name?: string;
+  args?: Record<string, unknown>;
+  ok?: boolean;
+  summary?: string;
+  rounds?: number;
+  toolCalls?: number;
+};
+
+function parseAgentEvent(line: string): AgentEvent | null {
+  if (!line.startsWith("data:")) return null;
+  const payload = line.slice(5).trim();
+  if (!payload) return null;
+  try {
+    return JSON.parse(payload) as AgentEvent;
+  } catch {
+    return null;
+  }
+}
+
+/** 一次工具调用的可读记录 —— 前端展示「agent 到底查了什么」。 */
+export type ToolTrace = {
+  name: string;
+  args?: Record<string, unknown>;
+  ok?: boolean;
+  summary?: string;
+};
 
 /* ----------------------------------------------------------------------------
  * 上传 + 解析（带阶段动画的本地解析）
@@ -389,6 +432,86 @@ async function streamChat(
 }
 
 /* ----------------------------------------------------------------------------
+ * 取证型 agent 的流式调用（带工具）
+ * -------------------------------------------------------------------------*/
+
+/**
+ * 走 `/api/agent/chat/agent` —— 模型自己调只读工具回源核实。
+ *
+ * 与 `streamChat`（一问一答、模型看不到项目数据）的区别就是这个：
+ * 前者每个事实都能落到源 PDF 的具体页码，后者只能凭训练记忆讲。
+ *
+ * 回答**不要求** JSON findings 块 —— 取证 agent 的产出是带页码的正文，
+ * 所以这里不注入那套「至少 20 条 changes / parameters」的模板要求。
+ */
+async function streamAgentChat(
+  text: string,
+  history: ChatMessage[],
+  llm: { model: string; temperature: number },
+  callbacks: {
+    onReasoning: (delta: string) => void;
+    onContent: (delta: string) => void;
+    onTool: (trace: ToolTrace) => void;
+    onDone: (fullText: string) => void;
+    onError: (msg: string) => void;
+  },
+) {
+  const trimmedHistory = history
+    .filter((m) => m.role && m.text && m.id !== "welcome")
+    .slice(-12)
+    .map((m) => ({ role: m.role, content: m.text }));
+  const messages = [...trimmedHistory, { role: "user" as const, content: text }];
+  try {
+    const response = await fetch("/api/agent/chat/agent", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        messages,
+        model: llm.model,
+        temperature: llm.temperature,
+        maxRounds: 8,
+      }),
+    });
+    if (!response.ok || !response.body) throw new Error(await response.text());
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let accumulated = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const ev = parseAgentEvent(line.trim());
+        if (!ev) continue;
+        if (ev.type === "error") throw new Error(ev.message || "agent 出错");
+        if (ev.type === "reasoning" && ev.delta) callbacks.onReasoning(ev.delta);
+        if (ev.type === "content" && ev.delta) {
+          accumulated += ev.delta;
+          callbacks.onContent(ev.delta);
+        }
+        if (ev.type === "tool_call" && ev.name) {
+          callbacks.onTool({ name: ev.name, args: ev.args });
+        }
+        if (ev.type === "tool_result" && ev.name) {
+          callbacks.onTool({ name: ev.name, ok: ev.ok, summary: ev.summary });
+        }
+        if (ev.type === "done") {
+          callbacks.onDone(accumulated);
+          return;
+        }
+      }
+    }
+    callbacks.onDone(accumulated);
+  } catch (error) {
+    console.error("[streamAgentChat] ERROR:", error);
+    callbacks.onError(error instanceof Error ? error.message : "取证 agent 暂不可用，请检查环境配置");
+  }
+}
+
+/* ----------------------------------------------------------------------------
  * 主组件
  * --------------------------------------------------------------------------*/
 
@@ -409,6 +532,14 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
   ]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
+  /**
+   * 取证模式 —— 让 agent 自己调只读工具回源核实（`/api/agent/chat/agent`）。
+   *
+   * 关着时走的是原来那条「一问一答」：模型看不到项目数据，
+   * 只能凭训练记忆回答 GB 4785 —— 那正是 v1 事故的根源。
+   * 默认**开着**：宁可慢一点，也不要一个编出来的页码。
+   */
+  const [agentMode, setAgentMode] = useState(true);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [extracting, setExtracting] = useState<ExtractionStage | null>(null);
@@ -584,53 +715,88 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       setRunning(true);
       const history = [...messages, userMsg];
       const t0 = Date.now();
-      await streamChat(text, history, docs, templateId, { model: settings.model, temperature: settings.temperature }, {
-        onReasoning: (delta) =>
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== assistantId) return m;
-              const status: ChatMessage["status"] = m.status === "complete" ? "complete" : "thinking";
-              return {
-                ...m,
-                reasoning: m.reasoning + delta,
-                status,
-                metaHint: Date.now() - t0 > 8000 ? "模型在长上下文上思考" : "",
-              };
-            }),
-          ),
-        onContent: (delta) =>
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== assistantId) return m;
-              const status: ChatMessage["status"] = m.status === "complete" ? "complete" : "answering";
-              return { ...m, text: m.text + delta, status };
-            }),
-          ),
-        onDone: (fullText) => {
-          // Stash the full text in a ref synchronously — the React state
-          // batch that follows may not have settled by the time the user
-          // clicks the "下载 PDF" button.
-          fullTextRef.current[assistantId] = fullText || "";
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== assistantId) return m;
-              const finalText = fullText || m.text;
-              const rawJson = extractJsonBlock(finalText);
-              const findings = toFindings(rawJson);
-              return { ...m, text: finalText, fullText: finalText, status: "complete", findings };
-            }),
-          );
-        },
-        onError: (msg) => {
-          toast.error(msg);
-          setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, status: "error", text: m.text || msg } : m)),
-          );
-        },
-      });
+
+      // 共用的消息更新回调 —— 两条流式路径（取证 / 草稿）行为一致，
+      // 差别只在**证据来源**。
+      const onReasoning = (delta: string) =>
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== assistantId) return m;
+            const status: ChatMessage["status"] = m.status === "complete" ? "complete" : "thinking";
+            return {
+              ...m,
+              reasoning: m.reasoning + delta,
+              status,
+              metaHint: Date.now() - t0 > 8000 ? "模型在长上下文上思考" : "",
+            };
+          }),
+        );
+      const onContent = (delta: string) =>
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== assistantId) return m;
+            const status: ChatMessage["status"] = m.status === "complete" ? "complete" : "answering";
+            return { ...m, text: m.text + delta, status };
+          }),
+        );
+      const onDone = (fullText: string) => {
+        // Stash the full text in a ref synchronously — the React state
+        // batch that follows may not have settled by the time the user
+        // clicks the "下载 PDF" button.
+        fullTextRef.current[assistantId] = fullText || "";
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== assistantId) return m;
+            const finalText = fullText || m.text;
+            const rawJson = extractJsonBlock(finalText);
+            const findings = toFindings(rawJson);
+            return { ...m, text: finalText, fullText: finalText, status: "complete", findings };
+          }),
+        );
+      };
+      const onError = (msg: string) => {
+        toast.error(msg);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, status: "error", text: m.text || msg } : m)),
+        );
+      };
+
+      if (agentMode) {
+        // **取证模式** —— 模型自己调只读工具回源核实，回答带页码。
+        await streamAgentChat(text, history, { model: settings.model, temperature: settings.temperature }, {
+          onReasoning,
+          onContent,
+          onTool: (trace) =>
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id !== assistantId) return m;
+                const list = m.toolCalls ?? [];
+                // tool_call 先到、tool_result 后到 —— 按名字配对，
+                // 结果写回同一条记录，不另起一行。
+                const idx = list.findIndex((t) => t.name === trace.name && t.ok === undefined);
+                const next =
+                  idx >= 0
+                    ? list.map((t, i) => (i === idx ? { ...t, ...trace } : t))
+                    : [...list, trace];
+                return { ...m, toolCalls: next };
+              }),
+            ),
+          onDone,
+          onError,
+        });
+      } else {
+        // **草稿模式** —— 一问一答，模型看不到项目数据。
+        // 回答头部会标「未经核验」，免得它被当成有出处的结论。
+        await streamChat(text, history, docs, templateId, { model: settings.model, temperature: settings.temperature }, {
+          onReasoning,
+          onContent,
+          onDone,
+          onError,
+        });
+      }
       setRunning(false);
     },
-    [docs, input, messages, running, templateId],
+    [agentMode, docs, input, messages, running, templateId, settings.model, settings.temperature],
   );
 
   // 把一条 assistant 回答组装成报告 payload（正文 + 结构化 findings）
@@ -902,6 +1068,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           homeFileInputRef.current?.click();
         }}
         running={running}
+        agentMode={agentMode}
+        onToggleAgentMode={() => setAgentMode((v) => !v)}
       />
 
       {dragActive && <DropOverlay />}
@@ -1361,6 +1529,9 @@ function MessageBubble({
           <p className="whitespace-pre-line">{message.text}</p>
         ) : (
           <>
+            {message.toolCalls && message.toolCalls.length > 0 && (
+              <ToolTraceList traces={message.toolCalls} />
+            )}
             <div className="rc-prose">
               <AnnotatedStreamdown text={stripJsonBlock(message.text)} reasoning={message.reasoning} status={message.status} />
             </div>
@@ -1392,8 +1563,53 @@ function MessageBubble({
   );
 }
 
-function AnnotatedStreamdown({
-  text,
+/**
+ * 取证记录 —— 把 agent 调过的工具摆给用户看。
+ *
+ * 为什么必须可见：agent 的价值全在「这个结论是查出来的」上。
+ * 只给答案不给取证过程，用户无法判断该信几分；
+ * 而一份**看得见检索过程**的「未找到」，比一个编出来的页码有用得多。
+ */
+function ToolTraceList({ traces }: { traces: ToolTrace[] }) {
+  const [open, setOpen] = useState(false);
+  const hits = traces.filter((t) => t.ok === true).length;
+  return (
+    <div
+      className="mb-2 rounded-lg border text-[11px]"
+      style={{ borderColor: "#ece4d1", background: "#faf6ec" }}
+    >
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left text-[#7c6a4f]"
+        aria-expanded={open}
+      >
+        <Search className="h-3 w-3" />
+        <span className="font-medium">取证记录</span>
+        <span className="text-[10px] text-[#9c8b6c]">
+          {traces.length} 次调用 · {hits} 次命中
+        </span>
+        <ChevronDown className={`ml-auto h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <ul className="space-y-1 border-t px-2.5 py-2" style={{ borderColor: "#ece4d1" }}>
+          {traces.map((t, i) => (
+            <li key={`${t.name}-${i}`} className="flex items-start gap-1.5">
+              <span
+                className="mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: t.ok === false ? "#c96b6b" : t.ok === true ? "#7d9a6a" : "#c9b89a" }}
+                title={t.ok === true ? "命中" : t.ok === false ? "未命中" : "执行中"}
+              />
+              <span className="font-mono text-[10px] text-[#0c1a2b]">{t.name}</span>
+              {t.summary && <span className="text-[10px] text-[#7c6a4f]">{t.summary}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AnnotatedStreamdown({  text,
   reasoning,
   status,
 }: {
@@ -1499,6 +1715,8 @@ const Composer = ({
   onSubmit,
   onAttach,
   running,
+  agentMode,
+  onToggleAgentMode,
 }: {
   ref: React.RefObject<HTMLTextAreaElement | null>;
   value: string;
@@ -1506,6 +1724,8 @@ const Composer = ({
   onSubmit: () => void;
   onAttach: () => void;
   running: boolean;
+  agentMode: boolean;
+  onToggleAgentMode: () => void;
 }) => (
   <div
     className="fixed bottom-0 left-0 right-0 lg:left-[276px] z-20 pb-6 pt-12"
@@ -1539,6 +1759,27 @@ const Composer = ({
           <div className="flex items-center gap-1 text-[11px] text-[#7c6a4f]">
             <button onClick={onAttach} className="flex h-8 items-center gap-1.5 rounded-md px-2 hover:bg-[#faf6ec]">
               <Paperclip className="h-3.5 w-3.5" /> 把文件拖到上方更快
+            </button>
+            {/* 取证模式开关 —— 这是**证据来源**的开关，不是花哨选项。
+                开：模型自己调只读工具回源核实，回答带页码、查不到会说查不到。
+                关：一问一答，模型看不到项目数据，只能凭训练记忆（未经核验）。 */}
+            <button
+              onClick={onToggleAgentMode}
+              disabled={running}
+              aria-pressed={agentMode}
+              title={
+                agentMode
+                  ? "取证模式：回答前先回源 PDF 检索，每条事实带页码"
+                  : "草稿模式：模型看不到项目数据，凭训练记忆回答（未经核验）"
+              }
+              className="flex h-8 items-center gap-1.5 rounded-md px-2 hover:bg-[#faf6ec] disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                color: agentMode ? "#8a5c1a" : "#9c8b6c",
+                background: agentMode ? "#fdf3df" : "transparent",
+              }}
+            >
+              <Search className="h-3.5 w-3.5" />
+              {agentMode ? "取证模式（回源核验）" : "草稿模式（未经核验）"}
             </button>
             <span className="hidden text-[10px] text-[#9c8b6c] md:inline">
               · 所有回答带原文锚点 · 三类标签 · 可导出报告

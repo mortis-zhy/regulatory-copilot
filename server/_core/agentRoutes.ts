@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { storagePut } from "../storage";
 import { streamMiniMaxChat, type ChatMessage } from "../integrations/minimax";
+import { runAgentLoop } from "../reports/agentLoop";
+import { AGENT_SYSTEM_PROMPT } from "../reports/agentPrompt";
+import { toolSchemas } from "../reports/agentTools";
 import { parseWithRagAnything } from "../integrations/ragAnything";
 import { renderPdf, renderWordHtml, type ReportPayload } from "../reports/export";
 import { extractPdfTextServer } from "../ingestion/pdfExtract";
@@ -112,6 +115,10 @@ export function registerAgentRoutes(router: Router) {
   router.post("/api/agent/chat/stream", async (req, res) => {
     const messages = Array.isArray(req.body?.messages) ? req.body.messages as ChatMessage[] : [];
     if (!messages.length) return res.status(400).json({ error: "messages are required" });
+    // 这条端点是**旧的一问一答**路径：模型看不到项目数据，只凭训练记忆回答。
+    // 它给「快速草稿」用（网页版的 diff 生成器仍走它）。
+    // **要能回源核实的问答请走 /api/agent/chat/agent**（带工具调用）。
+    res.set("X-Agent-Mode", "unverified-draft");
     // The Settings panel exposes 模型 and Temperature, but the values were
     // dropped on the floor here — the request only ever carried `messages`, so
     // picking a model or dragging the slider changed nothing. Accept both and
@@ -158,6 +165,66 @@ export function registerAgentRoutes(router: Router) {
     } finally {
       if (!res.writableEnded) res.end();
     }
+  });
+
+  /**
+   * 取证型 agent —— **先取证，再回答**。
+   *
+   * 与 `/api/agent/chat/stream` 的区别：那个是「一问一答」，模型看不到项目数据，
+   * 只能凭训练记忆回答（v1 事故的根源）。这个让模型自己调**只读**工具：
+   * 查条款原文、查引文在哪一页、查覆盖台账、查差值判定 ——
+   * 每个事实都回源到源 PDF 的具体页码。
+   *
+   * SSE 事件：reasoning / content / tool_call / tool_result / done / error
+   */
+  router.post("/api/agent/chat/agent", async (req, res) => {
+    const messages = Array.isArray(req.body?.messages)
+      ? (req.body.messages as ChatMessage[])
+      : [];
+    if (!messages.length) {
+      return res.status(400).json({ error: "messages are required" });
+    }
+    const model =
+      typeof req.body?.model === "string" && req.body.model.trim()
+        ? req.body.model.trim()
+        : undefined;
+    const rawTemp = Number(req.body?.temperature);
+    const temperature = Number.isFinite(rawTemp) ? Math.min(2, Math.max(0, rawTemp)) : undefined;
+    const maxRounds = Number(req.body?.maxRounds);
+    res.status(200).set({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+    res.flushHeaders();
+    let finished = false;
+    res.on("close", () => { finished = true; });
+    try {
+      for await (const ev of runAgentLoop({
+        messages,
+        systemPrompt: AGENT_SYSTEM_PROMPT,
+        model,
+        temperature: temperature ?? 0.2,
+        maxRounds: Number.isFinite(maxRounds) ? maxRounds : 6,
+      })) {
+        if (finished || res.writableEnded) break;
+        res.write(`data: ${JSON.stringify(ev)}\n\n`);
+      }
+    } catch (error) {
+      if (!finished && !res.writableEnded) {
+        res.write(
+          `data: ${JSON.stringify({ type: "error", message: error instanceof Error ? error.message : String(error) })}\n\n`,
+        );
+      }
+    } finally {
+      if (!res.writableEnded) res.end();
+    }
+  });
+
+  /** 工具清单 —— 前端可以显示「agent 能做什么」，也让闸门能查它。 */
+  router.get("/api/agent/chat/agent/tools", (_req, res) => {
+    res.json({ tools: toolSchemas() });
   });
 
   router.post("/api/agent/report/word", (req, res) => {
