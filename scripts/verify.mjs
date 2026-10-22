@@ -175,7 +175,97 @@ async function prepareGatePdf() {
 }
 await prepareGatePdf();
 
+console.log("\n=== 3b. agent 取证循环的不变量 ===");
+
+check("agent 循环一定会以回答收尾（收口轮撤掉工具）", () => {
+  const src = read("server/reports/agentLoop.ts");
+  // 收口轮：**不传 tools**（不是 tool_choice:"none"）——
+  // MiniMax 对 tool_choice:"none" 的处理是把工具调用写成正文里的文本标记，
+  // 用户看到的是一堆 XML 而不是答案。撤掉 tools 才是真的不给它调用的机会。
+  assert(
+    /callWithTools\(convo,\s*\[\]/.test(src),
+    "agentLoop.ts 必须有一轮「不传工具」的收口调用 —— " +
+      "否则模型可能一轮轮查下去、把轮数耗光却一句话不说",
+  );
+  assert(
+    /maxTokens:\s*16384/.test(src),
+    "收口轮的 token 上限要放大 —— MiniMax-M3 先输出一大段思维链，" +
+      "上限不够会把答案截断，而「答案被截断」看起来和「查不到」一模一样",
+  );
+  assert(
+    /parseNativeToolCalls/.test(src) && /stripToolMarkup/.test(src),
+    "必须处理 MiniMax 把工具调用写进正文的那种形态，否则这一轮白跑",
+  );
+  return "收口轮撤掉工具 + 解析正文里的工具调用";
+});
+
+check("连续查不到时强制收口（注入「如实说未找到」指令）", () => {
+  const src = read("server/reports/agentLoop.ts");
+  assert(
+    /failRounds\s*>=\s*2/.test(src),
+    "agentLoop.ts 必须在连续整轮失败后收口",
+  );
+  assert(
+    /未找到/.test(src) && /编造页码/.test(src),
+    "收口指令必须明确要求「如实说未找到」且「不得编造页码」",
+  );
+  return "failRounds>=2 → 收口";
+});
+
+check("find_quote 带关键词回源（不命中时能一步确认「原文里没有」）", () => {
+  const src = read("server/reports/agentTools.ts");
+  assert(
+    /keywordsOf/.test(src) && /keywords/.test(src),
+    "agentTools.ts 的 find_quote 必须做关键词级回源 —— " +
+      "否则 agent 只能反复改写引文碰运气，把取证轮数耗光还没结论",
+  );
+  return "find_quote 关键词回源";
+});
+
+check("agent 的 messages 数组里不能有裸字符串", () => {
+  // MiniMax 的 OpenAI 兼容层对 messages 的元素类型要求很严：
+  // 塞一个裸字符串进去，它会回 400（"Mismatch type custom.OaiMessage with value string"），
+  // 而这个 400 只在**下一轮**才出现 —— 表现为「agent 突然不说话了」，
+  // 排查起来极难想到是上一轮 push 坏了。
+  const src = read("server/reports/agentLoop.ts");
+  const pushes = [...src.matchAll(/convo\.push\(\s*([^\n]{0,60})/g)].map((m) => m[1].trim());
+  assert(pushes.length >= 3, `预期至少 3 处 convo.push，实际 ${pushes.length}`);
+  const bare = pushes.filter((p) => !p.startsWith("{"));
+  assert(
+    bare.length === 0,
+    `convo.push 里有裸值（必须是 {role, content} 对象）：${bare.join(" | ")}`,
+  );
+  return `${pushes.length} 处 push，全是消息对象`;
+});
+
+check("agent 工具全部只读（没有写盘/删文件的入口）", () => {
+  const src = read("server/reports/agentTools.ts");
+  const names = [...src.matchAll(/name:\s*"([a-z_]+)"/g)].map((m) => m[1]);
+  assert(names.length >= 7, `期望至少 7 个工具，实际 ${names.length}`);
+  for (const bad of ["write_file", "delete_file", "run_command", "exec", "shell"]) {
+    assert(!names.includes(bad), `agent 工具里出现了写操作：${bad}`);
+  }
+  assert(!/fs\.(writeFile|unlink|rm|rename)/.test(src), "agentTools.ts 不许写盘");
+  return `${names.length} 个工具，全部只读`;
+});
+
+check("条款索引与 python 现算一致（agent 的条款证据不会脱节）", () => {
+  const r = spawnSync("python", ["scripts/export_clause_index.py", "--check"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(r.status === 0, `条款索引已过期：\n        ${out.slice(-300)}`);
+  return out.trim().split("\n").slice(-1)[0].slice(0, 70);
+});
+
 console.log("\n=== 4. python verification layer ===");
+check("GB4785 表 11.6 的 9 条指标回源核验（直接读源 PDF，绕开 MinerU）", () => {
+  const r = spawnSync("python", ["scripts/verify_indicators.py"], { cwd: ROOT, encoding: "utf-8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(r.status === 0, `9 条指标回源核验失败：\n        ${out.slice(-600)}`);
+  return out.trim().split("\n")[0].slice(0, 60);
+});
 
 function runPy(args, label) {
   // Windows 上 python 的 stdout 默认是 GBK —— 脚本里只要有一个 ✓ 或中文，
@@ -424,6 +514,71 @@ check("decision-caliber counts match the audited buckets", () => {
   );
 
   return seen.join(" · ") + " · C 定量判定已撤下";
+});
+
+check("11.4 的 9 条指标判定与回源核验一致（报告不得与已核实事实脱节）", () => {
+  const ch = loadReport().chapters.find((c) => c.id === 11);
+  const md = ch?.markdown ?? "";
+  const i = md.indexOf("### 11.4");
+  const j = md.indexOf("### 11.5", i);
+  const sec = md.slice(i, j > 0 ? j : undefined);
+  assert(sec.length > 0, "第 11 章里没有 11.4 节");
+  // 4 条在原文找到：ESS 频率 / DRL 可见度角度 / 侧标志灯间距（两版相同）+ DRL 减光 140cd（单边）
+  assert(
+    /9 条中 4 条在原文找到/.test(sec),
+    "11.4 的核验结论应为「9 条中 4 条在原文找到」—— 实际：" +
+      (sec.match(/9 条中 \d+ 条在原文找到/)?.[0] ?? "（没找到这句）"),
+  );
+  // DRL 可见度角度：两版都是 20°，**不是** [未找到]
+  const visRow = sec.split("\n").find((l) => l.includes("DRL 可见度角度") && l.includes("|"));
+  assert(!!visRow, "11.4 表里没有 DRL 可见度角度这一行");
+  assert(
+    /\[保留\]/.test(visRow) && /20/.test(visRow),
+    `DRL 可见度角度应为 [保留] 两版相同 20°，实际行：${visRow.slice(0, 120)}`,
+  );
+  // 每个 [未找到] 都要附「查过哪里」的依据 —— 否则分不清「没有」和「没查对」
+  const missing = sec.split("\n").filter((l) => l.includes("[未找到]") && l.startsWith("|"));
+  assert(missing.length === 5, `应有 5 条 [未找到]，实际 ${missing.length}`);
+  assert(
+    /逐条查证依据/.test(sec),
+    "11.4 缺「逐条查证依据」—— 没有它，「未找到」分不清是没查对还是确实没有",
+  );
+  return `4 找到 / 5 未找到（均附查证依据）`;
+});
+
+check("附录 D 的条款号都能在源 PDF 里查到（客户拿着这个号翻得到）", () => {
+  const idx = JSON.parse(read("data/clause-index.json"));
+  const known = new Set(Object.keys(idx._clauses?.C ?? {}));
+  const app = loadReport().appendices?.find((a) =>
+    (a.title ?? "").includes("R48 §6 量化条款全量清单"),
+  );
+  assert(!!app, "报告里没有附录 D（R48 §6 量化条款全量清单）");
+  const md = app.markdown ?? "";
+  const i = md.indexOf("## D.3");
+  assert(i > 0, "附录 D 里没有 D.3 全量清单");
+  const rows = md
+    .slice(i)
+    .split("\n")
+    .filter((l) => l.startsWith("| ") && !l.startsWith("| R48 条款") && !l.startsWith("|---"));
+  assert(rows.length > 100, `D.3 只有 ${rows.length} 行，清单疑似空了`);
+  const bad = [];
+  for (const r of rows) {
+    const cells = r.split("|").map((c) => c.trim());
+    const clause = cells[1] ?? "";
+    if (!clause || clause === "—") continue;
+    if (!known.has(clause.replace(/[.。\s]+$/, ""))) bad.push(clause);
+    // 条款号不是 §6 的行不许被标成「已入矩阵」——
+    // 旧实现里 `chapterOf("13")` 与「没有 C 列条款号」的矩阵行两边都是 "",
+    // 于是脚注行被误判成 ✅（还挂到了完全不相干的参数上）。
+    if (!/^6\./.test(clause) && (cells[6] ?? "").includes("✅")) {
+      bad.push(`${clause}（被误标为已入矩阵）`);
+    }
+  }
+  assert(
+    bad.length === 0,
+    `附录 D 有 ${bad.length} 行条款号在源 PDF 里查不到：${[...new Set(bad)].join(", ")}`,
+  );
+  return `${rows.length} 行条款号全部可在源 PDF 查到`;
 });
 
 check("chapter 12 is a parameter matrix, not a table dump", () => {
@@ -1597,14 +1752,23 @@ check("every requirement clause has a disposition", () => {
   // 现在每一条要求条款都要有处置，四档合计必须等于总数。
   const { ok, out } = runPy(["scripts/requirement_ledger.py"], "requirement_ledger");
   assert(ok, `有要求条款没有处置（未登记理由）:\n        ${out.slice(-900)}`);
-  const m = out.match(/合计：要求条款 (\d+) · 已覆盖 (\d+) · 附录逐条 (\d+) · 同章别处 (\d+) · 不适用 (\d+) · 真缺口 (\d+)/);
+  const m = out.match(
+    /合计：要求条款 (\d+) · 已覆盖 (\d+) · 附录逐条 (\d+) · 已引原文 (\d+) · 同章别处 (\d+) · 不适用 (\d+) · 真缺口 (\d+)/,
+  );
   assert(m, `requirement_ledger 没有给出统计行:\n        ${out.slice(-400)}`);
-  const [req, cov, listed, weak, na, gaps] = m.slice(1).map(Number);
+  const [req, cov, listed, quoted, weak, na, gaps] = m.slice(1).map(Number);
   assert(
-    req === cov + listed + weak + na + gaps,
-    `五档合计 ${cov + listed + weak + na + gaps} ≠ 要求条款 ${req} —— 账目不闭合`,
+    req === cov + listed + quoted + weak + na + gaps,
+    `六档合计 ${cov + listed + quoted + weak + na + gaps} ≠ 要求条款 ${req} —— 账目不闭合`,
   );
   assert(gaps === 0, `还有 ${gaps} 条要求条款报告里一条都没说（应逐条列出原文）`);
+  // 「同章别处」= 弱覆盖。59 条真弱覆盖已逐条登记进 E.5.1，
+  // 这一档必须降到 0 —— 剩下任何一条都是「报告没讲、也没列出原文」的真缺口。
+  assert(
+    weak === 0,
+    `还有 ${weak} 条要求条款既没被引用、原文也不在报告里、也没登记进 E.5.1 —— ` +
+      "这些是真缺口，必须逐条列出原文与页码",
+  );
   // 「附录逐条」的那些必须逐条登记了理由
   const gapsFile = JSON.parse(read("data/requirement-gaps.json"));
   const registered = (gapsFile.gaps ?? []).filter((g) => String(g.reason ?? "").trim()).length;
@@ -1612,7 +1776,23 @@ check("every requirement clause has a disposition", () => {
     registered === listed,
     `「附录逐条」${listed} 条，但只有 ${registered} 条登记了理由`,
   );
-  return `${req} 条要求条款全部有处置（已覆盖 ${cov} · 附录逐条 ${listed} · 同章别处 ${weak} · 不适用 ${na} · 真缺口 ${gaps}）`;
+  return `${req} 条要求条款全部有处置（已覆盖 ${cov} · 附录逐条 ${listed} · 已引原文 ${quoted} · 同章别处 ${weak} · 不适用 ${na} · 真缺口 ${gaps}）`;
+});
+
+check("every clause claimed as '已引原文' really is in the delivered report", () => {
+  // 台账有一档「已引原文」：说这一条的原文**在报告里**（随长摘录带入），
+  // 只是报告没按它的编号索引。这是个**对客户的承诺** —— 客户按号回查要能查到。
+  //
+  // 复核逻辑**只有一份实现**（scripts/requirement_ledger.py --verify-quoted）：
+  // 以前这道闸门用 JS 重写了一遍归一化，标点处理与 python 不一致，
+  // 11 条「已引原文」在闸门里搜不到 —— 是**闸门自己的 bug**。
+  // 一个只会误报的检查比没有检查更糟：读者会学会忽略整块面板。
+  const { ok, out } = runPy(["scripts/requirement_ledger.py", "--verify-quoted"], "verify_quoted");
+  assert(ok, `「已引原文」复核不通过:\n        ${out.slice(-900)}`);
+  const m = out.match(/(\d+) 条逐条回报告搜过 · (\d+) 条搜不到/);
+  assert(m, `requirement_ledger --verify-quoted 没有给出统计行:\n        ${out.slice(-400)}`);
+  assert(Number(m[2]) === 0, `有 ${m[2]} 条「已引原文」在报告里搜不到`);
+  return `${m[1]} 条「已引原文」逐条在交付件里搜到（≥24 字连续命中）`;
 });
 
 check("every requirement listed in the appendix is actually in the delivered report", () => {
@@ -1744,6 +1924,9 @@ for (const t of [
   "_test_consistency.mjs",
   // 泛化用例：两版 / 四版 / 改名的版本键
   "_test_gen.mjs",
+  // 取证工具的回归用例：**不调模型**（用已知答案断言具体页码），
+  // 但它是 agent 唯一的证据来源 —— 工具回源错了，agent 就会把错的东西当事实讲出去
+  "_test_agent_tools.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

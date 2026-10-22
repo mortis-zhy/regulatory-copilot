@@ -139,3 +139,28 @@ reports/last-report.BAK.json
 # 审计/排查脚本的临时输出（每次运行重写）
 reports/_*.txt
 reports/_*.log
+
+# ── 一次性排查脚本（每个任务写一个，跑完就扔）──
+# 真正要留的测试一律叫 `_test_*.mjs`，那是要进 `npm run verify` 的。
+_audit_*.py
+_probe_*.py
+_probe_*.mjs
+_fix_*.py
+_src*.py
+_mk_test.py
+_opt.py
+_c_boilerplate.py
+_pdf_defects.py
+_t_*.py
+_t_*.mjs
+_t_*.md
+_t_*.pdf
+_verify_fonts.py
+_demo_*.png
+reports/_*.json
+reports/*.err
+server.err
+server.out.log
+srv.out.log
+srv.err.log
+ui-test/

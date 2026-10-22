@@ -395,7 +395,6 @@ export async function renderPdfFromReport(report: RenderableReport): Promise<Buf
       subject: "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照",
       keywords: "GB 4785, UN R48, AFS, 颜色, 光强, 倾斜度, 核验, 追溯, 法规对比",
       format: "A4",
-      format: "A4",
       printBackground: true,
       margin: { top: "22mm", bottom: "20mm", left: "18mm", right: "18mm" },
       displayHeaderFooter: true,

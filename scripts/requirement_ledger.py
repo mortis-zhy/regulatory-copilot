@@ -68,6 +68,66 @@ def clause_refs(text: str) -> set:
     return set(re.findall(r"\b\d{1,2}(?:\.\d{1,4}){1,4}\b", text or ""))
 
 
+_PUNCT_MAP = {"，": ",", "；": ";", "：": ":", "、": ",", "（": "(", "）": ")",
+              "。": ".", "．": ".", "～": "~", "–": "-", "—": "-"}
+
+
+def _norm_body(s: str) -> str:
+    """归一化正文：去空白 + 统一标点 + 小写（比对用）。"""
+    s = re.sub(r"\s+", "", s or "")
+    for a, b in _PUNCT_MAP.items():
+        s = s.replace(a, b)
+    return s.lower()
+
+
+def collect_report_text(rep) -> dict:
+    """报告正文（按版本分）—— 用于「内容是否在报告里」的判定。
+
+    报告里 A/B/C 三版的正文**混在一起**（章节级对照表三列并排），
+    所以按版本分开是不准确的 —— 这里给一个**不分版本**的合集，
+    判定时用「这一条的正文在任何一版里出现过」这一条即可：
+    条款正文足够独特，撞到别的版本上的概率极低，
+    而把版本分错的风险（判成「没覆盖」）远大于撞车。
+    """
+    parts = []
+    for ch in rep.get("chapters") or []:
+        parts.append(ch.get("markdown") or "")
+    for ap in rep.get("appendices") or []:
+        # **附录 E 必须排除** —— 它是这份台账自己的输出：
+        # E.5.1 逐条列出的原文会被当成「报告里有这条」，
+        # E.5.2 的弱覆盖清单同理。那是**循环论证**：
+        # 台账说「这条已覆盖」，理由是台账自己刚把它写进了报告。
+        if str(ap.get("id") or "").upper() == "E":
+            continue
+        parts.append(ap.get("markdown") or "")
+    return {"_all": _norm_body("\n".join(parts))}
+
+
+def content_in_report(excerpt: str, report_text: dict) -> int:
+    """这一条的正文在报告里吗？返回最长连续命中长度（0 = 没出现）。
+
+    条款号本身**不作为证据**（先剥掉）—— 否则「5.7.9.1」在报告里出现
+    就等于说它的内容被覆盖了，那是拿编号冒充内容。
+    """
+    ex = _norm_body(excerpt or "")
+    ex = re.sub(r"gb4785[—-]x{3,}\d*", "", ex)
+    ex = re.sub(r"\d+(?:\.\d+)*", " ", ex)
+    ex = re.sub(r"\s+", "", ex)
+    if len(ex) < 12:
+        return 0
+    body = report_text.get("_all", "")
+    best = 0
+    for L in (40, 30, 24, 18):
+        if len(ex) < L:
+            continue
+        step = max(1, L // 4)
+        for s in range(0, max(1, len(ex) - L), step):
+            frag = ex[s : s + L]
+            if frag and frag in body:
+                return L
+    return best
+
+
 def collect_report_refs(rep, facts, audit) -> dict:
     """报告里**引用过的条款号**，按版本分。
 
@@ -177,11 +237,12 @@ def main():
             registered_gaps.add(str(g))
 
     refs = collect_report_refs(rep, facts, audit)
+    report_text = collect_report_text(rep)
     bitmap = bitmap_clauses()
 
     rows = []
     totals = {"requirements": 0, "covered": 0, "appendixListed": 0, "weak": 0,
-              "notApplicable": 0, "gaps": 0}
+              "notApplicable": 0, "gaps": 0, "quoted": 0}
     for v in cs.ordered_versions(docs):
         idx = cs.split_clauses(docs[v])
         vrefs = refs.get(v, set())
@@ -209,35 +270,50 @@ def main():
                 ):
                     na = entry.get("reason") or "（未写理由）"
                     break
+            gkey = f"{v}|{k}"
+            # 用**发布出去的那段摘录**判定，不是条款全文 ——
+            # 客户在报告里看到的是摘录，判据必须与之一致。
+            excerpt = excerpt_of(body)
+            hit = content_in_report(excerpt, report_text)
             if na:
                 disp = "不适用"
                 totals["notApplicable"] += 1
             elif k in vrefs:
                 disp = "已覆盖"
                 totals["covered"] += 1
+            elif gkey in registered_gaps:
+                # 登记过的：附录 E.5.1 会**逐条列出原文 + 页码 + 理由**，
+                # 所以它在报告里是有内容的 —— 不是「没有」，是「没进矩阵」。
+                # 这一档**优先于**「已引原文」：E.5.1 的列出比「顺带被引到」
+                # 给客户的东西更多（多了理由与页码）。
+                disp = "附录逐条"
+                totals["appendixListed"] += 1
+                na = gap_reasons.get(gkey, "")
+            elif hit >= 24:
+                # **原文已在报告里**，只是这一条的编号没单独出现
+                # （报告引用父条款时长摘录把子条款正文一并带进去了）。
+                # 这不是弱覆盖 —— 客户能在报告里找到这段话。
+                # 但也**不是**「明确覆盖」：报告没有按它的编号索引。
+                disp = "已引原文"
+                totals["quoted"] += 1
             elif any(a in vrefs for a in ancestor_chain(k)):
                 disp = "同章别处"
                 totals["weak"] += 1
             else:
-                gkey = f"{v}|{k}"
-                if gkey in registered_gaps:
-                    # 登记过的：附录 E.5.1 会**逐条列出原文 + 页码**，
-                    # 所以它在报告里是有内容的 —— 不是「没有」，是「没进矩阵」。
-                    disp = "附录逐条"
-                    totals["appendixListed"] += 1
-                    na = gap_reasons.get(gkey, "")
-                else:
-                    disp = "真缺口"
-                    totals["gaps"] += 1
+                disp = "真缺口"
+                totals["gaps"] += 1
             rows.append({
                 "version": v,
                 "clause": k,
                 "head": head[:120],
                 "page": page,
-                "excerpt": excerpt_of(body),
+                "excerpt": excerpt,
                 "hasLimit": has_limit,
                 "disposition": disp,
                 "reason": na or "",
+                # 「已引原文」时记下命中的长度 —— 用来向客户说明
+                # 「报告里确实有这段原文，命中 N 字连续片段」
+                "quotedMatch": hit if disp == "已引原文" else 0,
             })
 
     out = {"generatedAt": None, "totals": totals, "rows": rows}
@@ -250,9 +326,10 @@ def main():
         lines.append("【%s 版】要求条款 %d 条：%s" % (
             v, len(sub), " · ".join("%s %d" % (k, n) for k, n in sorted(c.items()))))
     lines.append("")
-    lines.append("合计：要求条款 %d · 已覆盖 %d · 附录逐条 %d · 同章别处 %d · 不适用 %d · 真缺口 %d"
+    lines.append("合计：要求条款 %d · 已覆盖 %d · 附录逐条 %d · 已引原文 %d · 同章别处 %d · 不适用 %d · 真缺口 %d"
                  % (totals["requirements"], totals["covered"], totals["appendixListed"],
-                    totals["weak"], totals["notApplicable"], totals["gaps"]))
+                    totals.get("quoted", 0), totals["weak"],
+                    totals["notApplicable"], totals["gaps"]))
     gap_rows = [r for r in rows if r["disposition"].startswith("真缺口")]
     if gap_rows:
         lines.append("")
@@ -261,6 +338,32 @@ def main():
             lines.append("   · %s §%s  %s" % (r["version"], r["clause"], r["head"][:70]))
 
     print("\n".join(lines))
+    if "--verify-quoted" in sys.argv:
+        # 逐条复核「已引原文」这一档 —— 那一档说「原文在报告里」，
+        # 客户按号回查要能查到。**只有这一份实现**：
+        # 闸门调它，不再用 JS 重写一遍归一化（那样会与本文件不一致）。
+        missing = []
+        checked = 0
+        for r in rows:
+            if r["disposition"] != "已引原文":
+                continue
+            checked += 1
+            if content_in_report(r.get("excerpt", ""), report_text) < 24:
+                missing.append(f"{r['version']} §{r['clause']}")
+        print(
+            "「已引原文」复核：%d 条逐条回报告搜过 · %d 条搜不到"
+            % (checked, len(missing))
+        )
+        for m in missing[:20]:
+            print("   ✗ " + m)
+        if missing:
+            print(
+                "✗ 这些被标成「已引原文」但报告里搜不到 —— "
+                "那一档是对客户的承诺，说了就要做到"
+            )
+            return 1
+        print("✓ 全部搜到")
+        return 0
     if "--check" in sys.argv:
         # 台账**不许过期**：重算一遍，和文件里的比。
         # 矩阵加了行、条款索引变了、登记改了，这里就会不一致 ——

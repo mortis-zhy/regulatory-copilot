@@ -95,6 +95,14 @@ type IndicatorDef = {
   gb4785Old: string;   // what GB4785 表11.6 claims as 现行版
   gb4785New: string;   // what GB4785 claims as 草案版
   patterns: RegExp[];
+  /**
+   * 查不到时**要说清查过哪里、那里有什么**。
+   *
+   * 只有一个「[未找到]」标签等于把「检索没找对」和「原文里真没有」
+   * 混成一谈 —— 前者是可修的 bug，后者才是结论。
+   * 这段话是人工回原文逐条核过的（见 11.4 的人工复核结论）。
+   */
+  absenceNote?: string;
 };
 
 const INDICATORS: IndicatorDef[] = [
@@ -127,12 +135,24 @@ const INDICATORS: IndicatorDef[] = [
     gb4785Old: "400 cd",
     gb4785New: "600 cd",
     patterns: [/紧急制动信号[\s\S]{0,100}?(?:发光强度|光强|光度)[\s\S]{0,30}?(\d{2,4})\s*cd/i],
+    absenceNote:
+      "已查：B §5.23「紧急制动信号」(PDF 第50–54页) 全文只含 配备/数量/布局/安装位置/几何可见度/方向/电路连接 七项，" +
+      "**无光度条款**；A §7.2 同构。全文检索「紧急制动信号…cd」0 命中。结论：ESS 只规定闪烁频率，不规定光强。",
   },
   {
     id: "drl_vis_deg", label: "DRL 可见度角度", unit: "°",
     gb4785Old: "±20°",
     gb4785New: "±25°",
-    patterns: [/昼间行驶灯[\s\S]{0,100}?(?:可见度|水平角|垂直角)[\s\S]{0,30}?[±±]\s*(\d{1,2})\s*°/i],
+    // **按条款锚定**，不按主题名 —— 按主题名首次命中会打到远光灯的
+    // 几何可见度（5.1.5）上去，那不是 DRL 的角度。
+    // 原文写法是「水平方向角:向外、向内各20°」，
+    // **没有 ± 号**（旧正则要求 ±，所以永远匹配不上 → 被误判成「未找到」）。
+    patterns: [
+      /5\.\s*19\s*\.\s*5[\s\S]{0,80}?水平方向角[^。]{0,20}?各\s*(\d{1,2})\s*°/i,
+      /昼间行驶灯[\s\S]{0,300}?几何可见度[\s\S]{0,60}?水平方向角[^。]{0,20}?各\s*(\d{1,2})\s*°/i,
+      // 兼容真的带 ± 的写法
+      /5\.\s*19\s*\.\s*5[\s\S]{0,80}?[±±]\s*(\d{1,2})\s*°/i,
+    ],
   },
   {
     id: "side_marker_m", label: "侧标志灯间距", unit: "m",
@@ -147,24 +167,37 @@ const INDICATORS: IndicatorDef[] = [
     gb4785Old: "2000 h",
     gb4785New: "3000 h",
     patterns: [/(?:LED|发光二极管)[\s\S]{0,60}?寿命[\s\S]{0,40}?(\d{3,4})\s*h/i],
+    absenceNote:
+      "已查：A/B/C 三版全文检索「寿命」**0 命中**。LED 相关只有术语定义" +
+      "（A 3.2.1.x「发光二极管/LED模块」；B 3.7.6/3.7.7）。结论：光源寿命属光源标准" +
+      "（GB 15766 / UN R37 / UN R99 / UN R128）范畴，不在 GB 4785 外部照明装置标准内。",
   },
   {
     id: "lumen_pct", label: "光通维持率", unit: "%",
     gb4785Old: "70%",
     gb4785New: "80%",
     patterns: [/光通维持率[\s\S]{0,40}?(\d{1,3})\s*%/i],
+    absenceNote:
+      "已查：A/B/C 三版只有「**目标光通量**」（A 3.2.2 / B 3.7.8，指向光源标准数据页），" +
+      "**无「光通维持率」**。结论：光通维持率不在本标准内，同属光源标准范畴。",
   },
   {
     id: "preheat_min", label: "预热点灯时间", unit: "min",
     gb4785Old: "30 min",
     gb4785New: "60 min",
     patterns: [/预热[\s\S]{0,40}?(\d{1,3})\s*min/i],
+    absenceNote:
+      "已查：A/B/C 三版全文检索「预热」**0 命中**。结论：预热点灯时间不在本标准内。",
   },
   {
     id: "afs_switch_s", label: "AFS 切换时间", unit: "s",
     gb4785Old: "≤2 s",
     gb4785New: "≤1.5 s",
     patterns: [/(?:AFS|自适应前照)[\s\S]{0,60}?切换[\s\S]{0,40}?[≤<]?\s*(\d\.?\d*)\s*s/i],
+    absenceNote:
+      "已查：B §5.22「自适应前照明系统(AFS)」(PDF 第45–53页) 全节无「切换时间」；" +
+      "全文「切换」只出现在「自动切换前照灯近光」（附录 H）与「切换为另一个功能」（4.9b）。" +
+      "该节有的是 5.22.9.4「远光最大发光强度限值 430000cd」等条款。结论：AFS 切换时间不在本标准内。",
   },
 ];
 
@@ -183,6 +216,35 @@ function findPage(text: string, idx: number): string {
   return ms.length ? `第${ms[ms.length - 1][1]}页` : "";
 }
 
+/**
+ * 把 MinerU 里的 **LaTeX 数学片段**折算成普通文本。
+ *
+ * 为什么必须有这一步
+ * ------------------
+ * 同一个角度，A 版 MinerU 写「向外、向内各20°」，
+ * B 版写「向外、向内各 $2 0 ^ { \circ }$」——
+ * **数字被拆成两个字符，还带一层 LaTeX 壳**。
+ * 于是同一句话的同一个值，正则在 A 上匹配得到、在 B 上永远匹配不到。
+ * 后果不是「少一行」，而是**造出一条假的版本差异**（B 版被说成没有这条）。
+ *
+ * 本项目的老规矩：**宁可空着，不可错着** —— 但「错着说没有」同样不可接受。
+ * 所以扫描前先归一化，扫描口径对 A/B 完全一致。
+ *
+ * 覆盖的形态（统计自 dist/mineru-v4-data.json 实际语料）：
+ *   $2 0 ^ { \circ }$   18 处
+ *   ${ 2 0 } ^ { \circ }$  12 处
+ *   $2 ^ { \circ }$      6 处
+ */
+function normalizeMath(t: string): string {
+  return (t ?? "").replace(
+    /\$\s*([^{}$]*?)\s*\^\s*\{\s*\\circ\s*\}\s*\$/g,
+    (_m, body: string) => {
+      const digits = String(body).replace(/[^\d]/g, "");
+      return digits ? `${digits}°` : "°";
+    },
+  );
+}
+
 function scanIndicator(text: string, def: IndicatorDef): { value: string; page: string } | undefined {
   for (const pat of def.patterns) {
     // reset lastIndex — a /g regex reused across A and B documents
@@ -196,9 +258,12 @@ function scanIndicator(text: string, def: IndicatorDef): { value: string; page: 
 
 function scanAllIndicators(data: Record<string, any>): IndicatorResult[] {
   const results: IndicatorResult[] = [];
+  // **先归一化再扫描** —— A/B 的 LaTeX 形态不同，不归一化就是拿两把尺子量同一张桌子。
+  const aText = data.A?.fullText ? normalizeMath(data.A.fullText) : "";
+  const bText = data.B?.fullText ? normalizeMath(data.B.fullText) : "";
   for (const def of INDICATORS) {
-    const a = data.A?.fullText ? scanIndicator(data.A.fullText, def) : undefined;
-    const b = data.B?.fullText ? scanIndicator(data.B.fullText, def) : undefined;
+    const a = aText ? scanIndicator(aText, def) : undefined;
+    const b = bText ? scanIndicator(bText, def) : undefined;
     let status: IndicatorResult["status"] = "missing";
     if (a && b) status = normalize(a.value) === normalize(b.value) ? "kept" : "modified";
     else if (a || b) status = "single-side"; // only one doc mentions it — show actual value
@@ -219,16 +284,41 @@ function build11_4_v62(results: IndicatorResult[]): string {
   const rows = (results || []).filter((r: any) => r && r.def).map((r, i) => {
     let tag = "[未找到]";
     let gbNote = "";
+    const cn = (r.def?.gb4785New || "").match(/\d+/);
+    const co = (r.def?.gb4785Old || "").match(/\d+/);
+    const claimedNew = cn ? cn[0] : null;
+    const claimedOld = co ? co[0] : null;
+    /**
+     * 声称值与原文实测值是否对不上 —— **逐侧比、按数值比**。
+     *
+     * 逐侧：B 声称值对 B 实测、A 声称值对 A 实测。
+     * 声称「4 Hz → 5 Hz」而两版原文都是 4.0 Hz —— 只看 A 侧就知道声称错了。
+     * 按数值：「4.0」与「4」是同一个数，字符串比会误报。
+     */
+    const numOf = (s?: string): number | null => {
+      if (!s) return null;
+      const m = String(s).match(/\d+(?:\.\d+)?/);
+      return m ? parseFloat(m[0]) : null;
+    };
+    const sideMismatch = (actual: string | undefined, claimed: string | null): boolean => {
+      const a = numOf(actual);
+      const c = numOf(claimed ?? undefined);
+      if (a === null || c === null) return false;
+      return Math.abs(a - c) > 1e-9;
+    };
+    const contradictsClaim =
+      sideMismatch(r.bValue, claimedOld) || sideMismatch(r.aValue, claimedNew);
     if (r.status === "modified") tag = "[修改]";
-    else if (r.status === "kept") tag = "[保留] 两版相同";
-    else if (r.status === "single-side") {
+    else if (r.status === "kept") {
+      tag = "[保留] 两版相同";
+      // 两版相同**不代表** GB4785 声称的相同 —— 声称 20→25 而原文两版都是 20，
+      // 这是声称值错了，不是原文变了。不标 ⚠ 就会让读者以为「三版一致」。
+      if (contradictsClaim) {
+        gbNote = " ⚠ GB4785 表 11.6 声称值与原文不一致";
+      }
+    } else if (r.status === "single-side") {
       tag = "[单边] " + (r.aValue ? "仅 A 提到" : "仅 B 提到");
-      const cn = (r.def?.gb4785New || "").match(/\d+/);
-      const co = (r.def?.gb4785Old || "").match(/\d+/);
-      const claimedNew = cn ? cn[0] : null;
-      const claimedOld = co ? co[0] : null;
-      const actual = r.aValue ?? r.bValue;
-      if (actual && claimedNew && actual !== claimedNew && claimedOld && actual !== claimedOld) {
+      if (contradictsClaim) {
         gbNote = " ⚠ GB4785 表 11.6 声称值与原文不一致";
       }
     }
@@ -240,6 +330,11 @@ function build11_4_v62(results: IndicatorResult[]): string {
   const kept = results.filter((r) => r.status === "kept").length;
   const modified = results.filter((r) => r.status === "modified").length;
   const single = results.filter((r) => r.status === "single-side").length;
+  // [未找到] 项的查证依据 —— 「查过哪里、那里有什么」。
+  // 没有它，「未找到」就分不清是「原文里真没有」还是「没找对」。
+  const absenceLines = results
+    .filter((r) => r.status === "missing" && r.def?.absenceNote)
+    .map((r) => `- **${r.def?.label}** —— ${r.def?.absenceNote}`);
   return [
     "### 11.4 数据指标变化（GB4785 表 11.6 逐条核验）",
     "",
@@ -251,14 +346,19 @@ function build11_4_v62(results: IndicatorResult[]): string {
     "",
     `**核验结论**：9 条中 ${found} 条在原文找到（${modified} 条实际变化、${kept} 条两版相同 [保留]、${single} 条仅一版提到 [单边]），${9 - found} 条当前文档未找到。`,
     "",
+    ...(absenceLines.length
+      ? ["**逐条查证依据**（「未找到」= 查过了，原文里确实没有，不是没查对）：", "", ...absenceLines, ""]
+      : []),
     "> 说明：GB4785 第 11.4 表 11.6 中部分数值为推算或引用，未经 A/B 原文出现。⚠ 标记 = 本报告实测值与 GB4785 声称不一致，以原文为准。",
     "",
     // No `**` here on purpose: this line gets absorbed into the preceding
     // table cell, which is rendered without inlineMd, so the asterisks would
     // print literally. The bullets below carry the emphasis anyway.
-    "GB4785 声称值的人工复核结论（fitz 对照三份原文，2026-09-28）：",
+    "GB4785 声称值的人工复核结论（fitz 对照三份原文，逐条回查）：",
     "- **侧标志灯间距 \"≤6m→≤4m\" 属误读**：两版原文实为**两相邻侧标志灯间距不大于 3m（车型结构不能保证时可增至 4m）**——A p55 / B p46 逐字一致，\"3m [保留]\"判定正确；GB4785 引用的\"6m\"实际是**车长不大于 6m 车辆的侧回复反射器数量豁免**（A p54 / B p45），与间距无关。",
-    "- **DRL 最小光度 400→500 cd、ESS 光度 400→600 cd：A/B 原文均未出现**（A/B 全文检索 0 命中）——[未找到] 判定正确，勿引用。",
+    "- **DRL 可见度角度「±20°→±25°」：两版原文都是 20°，没有 25°**——A p56 §5.19.5「水平方向角β：向外、向内各20°」与 B p47 §5.19.5「水平方向角：向外、向内各20°」逐字一致，判 **[保留] 两版相同**；GB4785 声称的 25° 在 A/B 原文均不存在。",
+    "- **DRL 最小光度 400→500 cd、ESS 光度 400→600 cd：A/B 原文均未出现**——B §5.23「紧急制动信号」全节无光度条款，DRL 减光的 140cd 是**减光后的上限**、不是最小光度。两者均判 [未找到]，勿引用。",
+    "- **「DRL 转向冲突时减光后最大光强 140cd」是 A 独有的**——A p57 §5.19.7.6 把 B 的定性规定（B p48 §5.19.7.5「关闭；或……降低发光强度」）**量化**为「降低发光强度，使昼间行驶灯最大光强不大于 140cd」，并增加 HV 点 50% 豁免；A §5.19.7.7 对部分共用时剩余部分同样要求 ≤140cd。**注意：B 并非不允许降光，只是没有给 cd 上限**——把它写成「B 只允许关闭」是误述。",
     "- **ADB / 矩阵式 LED：A/B 原文 0 命中**；A 的附录 D 实为\"近光光束倾斜度随装载变化的测量\"（非 ADB 测试程序），\"像素\"唯一出处是 3.2.1.3 术语注（灯丝、发光颗粒、像素）。",
     "- **慢行灯速度阈值 10→15 km/h：GB4785 表 11.6 第 5 条声称正确**，两处子句均已改（B p30/p57 → A p58/p59）——因不在 18 主题内，已人工补录至 11.3.1。",
     "",
@@ -275,7 +375,7 @@ function build11_4_v62(results: IndicatorResult[]): string {
         return `| ${cell(r.def?.label || "")} | ${cell(v)} | ${cell(pages || "—")} | ${tag} |`;
       }),
     "",
-    "**DRL 减光 140cd 判定**：B 只允许\"关闭混合部分\"（B p48 5.19.7.6）；A 新增允许\"降光至 ≤140cd\"（A p57 5.19.7.6）——[单边]，属 A 草案新增的软件标定选项。",
+    "**DRL 减光 140cd 判定**：B §5.19.7.5（B p48）已允许两种操作——「关闭」或「降低发光强度」，**但未给 cd 上限**；A §5.19.7.6（A p57）把「降低发光强度」量化为「最大光强不大于 140cd」，并增加「前转向灯 HV 点光强 > 昼间行驶灯 HV 点光强 50% 时可不采用上述操作」的豁免；A §5.19.7.7 对部分共用的剩余部分同样要求 ≤140cd。判 [单边]（**数值**仅 A 有），实质是 A 把 B 的定性授权收紧为定量上限，属 A 草案新增的标定约束。",
   ].join("\n");
 }
 
@@ -1009,7 +1109,7 @@ function buildMethodChapter(data: Record<string, any>, verified?: any): string {
       "|---|---|---|---|---|",
       `| 条款级数值变化（第 11.3 节） | ${totN} | ${okN} | ${totN ? ((okN / totN) * 100).toFixed(0) : "-"}% | 标注 [待核实]，不作为确定事实 |`,
       `| 三版本主题摘录（附录 C） | ${totE} | ${okE} | ${totE ? ((okE / totE) * 100).toFixed(0) : "-"}% | 标注 ⚠，使用前人工复核 |`,
-      `| GB4785 表 11.6 九条指标（第 11.4 节） | 9 | 9（2[保留]+7[未找到]） | 100% 逐条核验 | 未找到者如实标注，不推测引用 |`,
+      `| GB4785 表 11.6 九条指标（第 11.4 节） | 9 | 9（3[保留]+1[单边]+5[未找到]） | 100% 逐条核验 | 未找到者附「查过哪里、那里有什么」，不推测引用 |`,
     );
   }
 
@@ -2047,9 +2147,9 @@ function buildExecSummary(input: {
           "结论层面已逐条列在第 11 章，使用前须回原文确认。",
         `6. **「真缺口 0」说的是量化限值，不是全部要求**：三版合计 ${(REQUIREMENT_LEDGER as any)?.totals?.requirements ?? 0} 条要求条款里，` +
           `${(REQUIREMENT_LEDGER as any)?.totals?.covered ?? 0} 条已覆盖、` +
-          `**${(REQUIREMENT_LEDGER as any)?.totals?.appendixListed ?? 0} 条定性要求在附录 E.5.1 逐条列出原文与页码**` +
+          `**${(REQUIREMENT_LEDGER as any)?.totals?.appendixListed ?? 0} 条定性要求在附录 E.5.1 逐条列出原文、页码与理由**` +
           `（如 R48 的「紧急制动信号应自动开启与关闭」「应独立于其他灯具工作」—— 报告只对照了它的闪烁频率），` +
-          `${(REQUIREMENT_LEDGER as any)?.totals?.weak ?? 0} 条同章别处（弱覆盖，E.5.2 列出条款号与页码），` +
+          `${(REQUIREMENT_LEDGER as any)?.totals?.quoted ?? 0} 条已引原文（随长摘录带入，E.5.2 列出条款号与页码），` +
           `${(REQUIREMENT_LEDGER as any)?.totals?.notApplicable ?? 0} 条非产品要求（已登记理由），` +
           `**真缺口 ${(REQUIREMENT_LEDGER as any)?.totals?.gaps ?? 0} 条**。见附录 E.5。`,
       ]
@@ -2412,13 +2512,14 @@ function buildAppendixE(matrixRows: any[]): string {
     "> 这些要求**不参与限值统计**，所以 E.1 的「真缺口 0」**只对可量化的那一半成立**。",
     "",
     "> 本节把三份标准里每一条**含要求语的条款**逐条处置（`scripts/requirement_ledger.py` 现算，",
-    "> 数据见 `data/requirement-ledger.json`）。五档口径：",
+    "> 数据见 `data/requirement-ledger.json`）。六档口径：",
     "",
     "| 档 | 含义 | 需不需要处理 |",
     "|---|---|---|",
     "| 已覆盖 | 报告里**明确引用了这一条**（矩阵格 / 主题列 / 覆盖清单 / 章内引文） | 已覆盖 |",
-    "| **附录逐条** | 是产品要求，但**没有可压缩的标量**（定性要求）—— 本附录 E.5.1 逐条列出**原文与页码** | 已覆盖 |",
-    "| 同章别处 | 报告讲了这一章，但没逐条讲这一条（E.5.2 列出条款号、页码与摘要） | **弱覆盖**，回原文时留意 |",
+    "| **附录逐条** | 是产品要求，但**没有可压缩的标量**（定性要求）—— 本附录 E.5.1 逐条列出**原文、页码与理由** | 已覆盖 |",
+    "| **已引原文** | 报告引用父条款时，长摘录把这一条的正文**一并带进去了** —— 客户在报告里**找得到原文**，但报告没按它的编号索引（E.5.2 列出条款号、页码与命中长度） | 已在报告里，按号回查即可 |",
+    "| 同章别处 | 报告讲了这一章，但没逐条讲这一条，**原文也不在报告里** | **弱覆盖**，回原文时留意 |",
     "| 不适用 | 不是产品要求（批准程序 / 标志 / 生产一致性 / 过渡），已登记理由 | 不进对照 |",
     "| **真缺口** | 是产品要求，报告里**一条都没说** | **要补** |",
     "",
@@ -2429,6 +2530,7 @@ function buildAppendixE(matrixRows: any[]): string {
   const ledRows = Array.isArray(LEDGER.rows) ? LEDGER.rows : [];
   const listedRows = ledRows.filter((r: any) => r.disposition === "附录逐条");
   const weakRows = ledRows.filter((r: any) => r.disposition === "同章别处");
+  const quotedRows = ledRows.filter((r: any) => r.disposition === "已引原文");
   const gapRows = ledRows.filter((r: any) => String(r.disposition ?? "").startsWith("真缺口"));
   const gapReasons = new Map<string, string>();
   for (const g of ((REQUIREMENT_GAPS as any)?.gaps ?? []) as any[]) {
@@ -2442,7 +2544,8 @@ function buildAppendixE(matrixRows: any[]): string {
   lines.push(
     `**三版合计 ${esc(String(T.requirements ?? 0))} 条要求条款**：`,
     `已覆盖 ${esc(String(T.covered ?? 0))} 条（正文/矩阵/主题列）· ` +
-      `**附录逐条 ${esc(String(T.appendixListed ?? 0))} 条**（E.5.1 列出原文与页码）· ` +
+      `**附录逐条 ${esc(String(T.appendixListed ?? 0))} 条**（E.5.1 列出原文、页码与理由）· ` +
+      `已引原文 ${esc(String(T.quoted ?? 0))} 条（随长摘录带入，E.5.2 列出条款号与页码）· ` +
       `同章别处 ${esc(String(T.weak ?? 0))} 条（弱覆盖，E.5.2 列出条款号与页码）· ` +
       `不适用 ${esc(String(T.notApplicable ?? 0))} 条（已登记理由）· ` +
       `**真缺口 ${esc(String(T.gaps ?? 0))} 条**。`,
@@ -2474,9 +2577,32 @@ function buildAppendixE(matrixRows: any[]): string {
   } else {
     lines.push("### E.5.1 定性要求逐条列出", "", "（无）", "");
   }
+  if (quotedRows.length) {
+    lines.push(
+      "### E.5.2 已引原文（正文随长摘录带入报告，编号未单独索引）",
+      "",
+      "> 这些条款的**原文已经在报告里** —— 报告引用父条款或相邻条款时，",
+      "> 长摘录把它们的正文一并带了出来（所以在报告里搜得到这段话，",
+      "> 哪怕报告没有按这一条的编号单独列一行）。",
+      "> 判据是**正文内容**的连续命中（不是条款号出现）——",
+      "> 「命中长度」列给出的是连续命中了多少字。",
+      "",
+      "> 这一档**不是缺口**，但也不是「明确覆盖」：报告没有按它的编号索引，",
+      "> 要精确回查时按条款号回原文即可。",
+      "",
+      "| 标准 | 条款号 | 页码 | 原文摘要 | 命中长度 |",
+      "|---|---|---|---|---|",
+      ...quotedRows.map((r: any) => {
+        const ex = String(r.excerpt ?? r.head ?? "").replace(/\|/g, "／").slice(0, 100);
+        const pg = r.page ? `第${r.page}页` : "—";
+        return `| ${esc(verLabel[r.version] ?? r.version)} | ${esc(r.clause)} | ${esc(pg)} | ${esc(ex) || "—"} | ${esc(String(r.quotedMatch ?? 0))} 字 |`;
+      }),
+      "",
+    );
+  }
   if (weakRows.length) {
     lines.push(
-      "### E.5.2 同章别处的弱覆盖（本章讲了，但这几条没逐条讲）",
+      "### E.5.3 同章别处的弱覆盖（本章讲了，但这几条没逐条讲）",
       "",
       "> 这些条款**不是缺数据**：同一章里报告讲了别的条款（通常是该装置的定量条款），",
       "> 而这几条**本身**没有被逐条展开。下表列出它们的**条款号与页码**，",
@@ -2495,7 +2621,7 @@ function buildAppendixE(matrixRows: any[]): string {
   lines.push(
     "> **这一节不影响 E.1 的结论**：E.1 的「真缺口 0」指的是**量化限值**没有缺口；",
     "> 本节把**定性要求**也逐条清点了 —— 口径不同，不要混用。",
-    "> 要求级里剩下的不是「缺」，而是**弱覆盖**（E.5.2）与**不适用**（已登记理由）。",
+    "> 要求级里剩下的不是「缺」，而是**已引原文**（E.5.2，随长摘录带入）与**不适用**（已登记理由）。",
     "",
   );
   return lines.join("\n");
@@ -2598,7 +2724,7 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   let page = 0;
   let curClause = "";
   let inSec6 = false;
-  const raw: Array<{ clause: string; page: number; value: string; unit: string; text: string }> = [];
+  const raw: Array<{ clause: string; page: number; value: string; unit: string; text: string; note?: boolean }> = [];
   for (const line of lines) {
     const st = line.trim();
     const pm = st.match(/^\[第(\d+)页\]$/);
@@ -2621,12 +2747,37 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
       continue;
     }
     const mc = st.match(clauseRe);
-    if (mc) curClause = clauseFix[mc[1]] ?? mc[1];
+    if (mc) {
+      const num = mc[1];
+      if (num.includes(".")) {
+        // **带点的才是条款号。**
+        // 裸整数是脚注号或表格单元格的标签 ——「13 In case of additional…」
+        // 「1 or 1a or 1b,」—— 旧代码把它当条款号，于是这些行挂到了
+        //「13」「1」这种**客户在 R48 里根本翻不到**的号上；
+        // 更糟的是它们还会被误判成「已入矩阵」。
+        // 这里不动 curClause：脚注总是紧跟它注释的那一条款，
+        // 所以这些行继承**所属条款**（6.22.4.1.4 之类）—— 那才是能用的查找线索。
+        if (!num.startsWith("6.")) {
+          // 离开了 §6 —— UN R48-09 的 §7 起（型式批准变更 / 一致性生产 /
+          // 处罚 / 停产 / 过渡条款）自成一套编号，**不是安装要求**。
+          // 旧代码只认 `Annex N` 这行标题，而 MinerU 的文本里根本没有那一行，
+          // 于是 §12「过渡条款」的 2,100 mm / 6,000 mm（车宽/车长阈值）
+          // 混进了「§6 量化条款全量清单」。
+          inSec6 = false;
+          curClause = "";
+          continue;
+        }
+        curClause = clauseFix[num] ?? num;
+      }
+    }
     if (!inSec6) continue;
     q.lastIndex = 0;
     let m: RegExpExecArray | null;
+    // 行首是「13 」这样的裸整数 + 空格 → 这是**脚注**（R48 的注号），
+    // 不是条款的正文。它归属它注释的那一条款，但性质上不是条款本身。
+    const isFootnote = /^\d{1,2}\s+[A-Z“"(]/.test(st);
     while ((m = q.exec(st)) !== null) {
-      raw.push({ clause: curClause, page, value: bareNum(m[1]), unit: m[2], text: st });
+      raw.push({ clause: curClause, page, value: bareNum(m[1]), unit: m[2], text: st, note: isFootnote });
     }
   }
 
@@ -2654,6 +2805,12 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   };
   const matchMatrix = (r: { clause: string; value: string; unit: string }): string => {
     const ch = chapterOf(r.clause);
+    // **条款号无效的行不许进矩阵。**
+    // 旧代码里 `chapterOf("13")` 返回 ""，而矩阵里那些**没有 C 列条款号**的行
+    // 也返回 "" —— 两边一撞就判成「已入矩阵」。
+    // 于是「13 In case of … 200 mm」这种脚注行被标成
+    // 「✅ 驾驶员辅助投射·保持开启车速下限」—— 一个完全错误的归属。
+    if (!ch) return "";
     for (const m of matC) {
       if (chapterOf(m.clause) !== ch) continue;
       if (m.unit && r.unit && m.unit.replace(/\s/g, "") !== r.unit.replace(/\s/g, "")) continue;
@@ -2674,8 +2831,10 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
     .map((r) => ({ ...r, matrix: matchMatrix(r) }));
 
   // ── 未入矩阵的分类 ──────────────────────────────────────────────────
-  const kindOf = (r: { clause: string; text: string }): string => {
+  const kindOf = (r: { clause: string; text: string; note?: boolean }): string => {
     if (!r.clause) return "非条款行";
+    // 脚注：归属它注释的条款，但**本身不是条款正文**
+    if (r.note) return "脚注（归属所引条款）";
     // 脚注号 / 图注里的编号（「1」「13」「12.2」）不是条款号 ——
     // 它们没有第 6 章的前缀，多半是表格的脚注或图的标注。
     if (!/^6\./.test(r.clause)) return "非条款行（脚注/图注）";
@@ -2747,7 +2906,8 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
     "> 数值、单位、原文，以及它有没有进第 12 章参数矩阵。",
     "",
     `> 实测：R48 §6 共 **${items.length}** 条唯一量化陈述（同一句里重复出现的同一数值只算一条），`,
-    `> 其中 **${covered}** 条进了参数矩阵（**${pct}%**），其余 ${notIn.length} 条在 D.2 逐类说明。`,
+    `> 其中 **${covered}** 条进了参数矩阵（**${pct}%**）` +
+      (notIn.length ? `，其余 ${notIn.length} 条在 D.2 逐类说明。` : "，**没有漏项**。"),
     "> 清单是**每次出报告时从语料现算**的，与第 12 章同步 —— 参数加了，清单不会忘记更新。",
     ">",
     "> **「已入矩阵」的判定口径**：同一 R48 章（§6.x，一章一盏灯）+ 同一数值 + 同一单位。",
@@ -2786,11 +2946,17 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
           "> 它们与已收录的参数在法规上同型，只是装置不同。",
           "> 需要逐条查这些的话，D.3 给了条款号与页码，可直接回原文。",
         ]
-      : [
-          "> **没有「未展开的参数」了** —— R48 §6 每一条带数字的安装要求都进了第 12 章矩阵。",
-          "> 下面列的都不是要求：脚注号、图注、表格续行（它们没有第 6 章的条款号前缀）。",
-          "> D.3 仍逐条列出，供核对。",
-        ]),
+      : notIn.length === 0
+        ? [
+            "> **本节无条目** —— R48 §6 里每一条带数字的量化陈述都进了第 12 章参数矩阵",
+            `> （${items.length}/${items.length}，100%），没有需要读者自己留意的漏项。`,
+            "> D.3 仍逐条列出条款号、页码与原文，供逐条核对。",
+          ]
+        : [
+            "> **没有「未展开的参数」了** —— R48 §6 每一条带数字的安装要求都进了第 12 章矩阵。",
+            "> 下面列的都不是要求：脚注号、图注、表格续行（它们没有第 6 章的条款号前缀）。",
+            "> D.3 仍逐条列出，供核对。",
+          ]),
     "",
     "---",
     "",
