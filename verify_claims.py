@@ -1042,6 +1042,56 @@ def _pdf_page_disagrees(label: str, page_label: str, excerpt: str) -> str:
     return f"第{n}页在源 PDF 中找不到该摘录"
 
 
+def _pdf_find_pages(label: str, excerpt: str) -> tuple:
+    """摘录可能**跨条款跨页** —— 按条款号切段，逐段定位。
+
+    返回 (页码列表, 说明)：
+      · 全部段都定位到 → ([p1, p2, ...], "")：读者按其中任一页都能看到对应部分
+      · 有段定位不到   → (None, "哪一段找不到")
+
+    单页查找对这种摘录无效：它在任何**单独**一页上都不是一段连续原文
+    （例：「5.5.9 闪光频率为(90±30)次/min… 5.23.7.1 a) 以(4.0±1.0)Hz…」，
+     前半在第33页、后半在第54页）。
+    """
+    pages = _source_pdf_pages(label)
+    if pages is None:
+        return None, ""
+    e = _flat_cn_alnum(excerpt or "")
+    if len(e) < 12:
+        return None, "摘录太短，无法定位"
+
+    # 按条款号切段：段首是「数字.数字…」或「表X.数字」
+    segs = re.split(r"(?=\d{1,2}\.\d{1,2}(?:\.\d{1,2}){0,3}\b)|(?=表[A-Z]?\d)", e)
+    segs = [x for x in segs if len(x) >= 12]
+    if not segs:
+        segs = [e]
+
+    found: list[int] = []
+    for seg in segs:
+        hit = None
+        for L in (24, 18, 14, 12):
+            if len(seg) < L:
+                continue
+            pages_hit = set()
+            for i, ptxt in enumerate(pages, 1):
+                for s2 in (0, len(seg) // 2, max(0, len(seg) - L)):
+                    if seg[s2 : s2 + L] in ptxt:
+                        pages_hit.add(i)
+                        break
+            if len(pages_hit) == 1:
+                hit = next(iter(pages_hit))
+                break
+            if pages_hit:
+                # 多页命中：取**最早**的一页（表格跨页时这才是表格的起始页）
+                hit = min(pages_hit)
+                break
+        if hit is None:
+            return None, "有一段在源 PDF 全文里找不到：%r" % seg[:24]
+        found.append(hit)
+    uniq = sorted(set(found))
+    return uniq, ""
+
+
 def _pdf_find_page(label: str, excerpt: str) -> tuple:
     """在源 PDF 全文里找这段摘录。
 
@@ -1271,6 +1321,8 @@ def build_topic_columns(cache_docs, texts):
     labels = [v for v in versions.KNOWN_VERSIONS if v in cache_docs] or list(cache_docs.keys())
     page_rejected: list[str] = []
     page_corrected: list[str] = []
+    page_found: list[str] = []
+    page_notfound: list[str] = []
     topic_names = []
     seen_keys = set()
     for lb in labels:
@@ -1417,6 +1469,22 @@ def build_topic_columns(cache_docs, texts):
                         actual_page = cand
                         break
             status = "verified" if actual_page else "missing"
+            if status == "missing":
+                # 从来没定位到页码的格子 —— 也去源 PDF 全文找一遍。
+                # 实测 7 条里有 6 条，摘录在原文里是**唯一命中**的。
+                # 「有原文、只是没定位到页」说成「原文里找不到」，
+                # 与把页码写错说成「原文里没有」是同一个错。
+                found_pages, amb = _pdf_find_pages(lb, excerpt)
+                if found_pages:
+                    actual_page = "第" + "、第".join(str(x) for x in found_pages) + "页"
+                    status = "verified"
+                    page_found.append(
+                        f"{lb}/{topic} → {actual_page}（源 PDF 全文定位"
+                        + ("，摘录跨页" if len(found_pages) > 1 else "，唯一命中")
+                        + "）"
+                    )
+                else:
+                    page_notfound.append(f"{lb}/{topic}（{amb or '源 PDF 全文找不到该摘录'}）")
             if status == "verified":
                 why = _pdf_page_disagrees(lb, actual_page, excerpt)
                 if why:
@@ -1432,13 +1500,13 @@ def build_topic_columns(cache_docs, texts):
                     # 不要把一条有原文的引用说成「原文里找不到」。
                     # 实测 11 条未核验里 9 条属于这种（例：B 灯具光色对应表
                     # 抽取给 p16，摘录实际在 p19）。
-                    fixed_page, amb = _pdf_find_page(lb, excerpt)
-                    if fixed_page:
+                    fixed_pages, amb = _pdf_find_pages(lb, excerpt)
+                    if fixed_pages:
                         # 与其它格的页码格式保持一致（「第N页」）
-                        actual_page = f"第{fixed_page}页"
+                        actual_page = "第" + "、第".join(str(x) for x in fixed_pages) + "页"
                         status = "verified"
                         page_corrected.append(
-                            f"{lb}/{topic} {claimed} → 第{fixed_page}页"
+                            f"{lb}/{topic} {claimed} → {actual_page}"
                         )
                     else:
                         status = "missing"
@@ -1465,6 +1533,14 @@ def build_topic_columns(cache_docs, texts):
         print(f"  ✓ 页码已更正：{len(page_corrected)} 条摘录在源 PDF 里找到（抽取给的页码指错）")
         for r in page_corrected:
             print(f"     - {r}")
+    if page_found:
+        print(f"  ✓ 全文定位：{len(page_found)} 条从未定位到页码的摘录，在源 PDF 里唯一命中")
+        for r in page_found:
+            print(f"     - {r}")
+    if page_notfound:
+        print(f"  ⚠ {len(page_notfound)} 条摘录在源 PDF 全文里找不到（或多处命中，无法判定）")
+        for r in page_notfound:
+            print(f"     - {r}")
     if page_rejected:
         print(f"  ⚠ {len(page_rejected)} 个 ✓ 被证伪并降级为未核验（页码指向的源 PDF 页面找不到该摘录）")
         for r in page_rejected:
@@ -1487,8 +1563,9 @@ def build_topic_columns(cache_docs, texts):
                 recheck_ok += 1
     print(
         f"  源 PDF 页码复核：{recheck_ok} 格 ✓ 逐格回源验过 · "
-        f"{len(page_corrected)} 条页码已更正 · {len(recheck_fail)} 格证伪 · "
-        f"{len(page_rejected)} 格降级为未核验"
+        f"{len(page_corrected)} 条页码已更正 · {len(page_found)} 条全文定位 · "
+        f"{len(recheck_fail)} 格证伪 · {len(page_rejected)} 格降级为未核验 · "
+        f"{len(page_notfound)} 条全文找不到"
     )
     for r in recheck_fail:
         print(f"     ✗ {r}")
