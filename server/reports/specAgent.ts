@@ -549,6 +549,15 @@ export async function runSpecAgent(
         content: JSON.stringify(out).slice(0, 6000),
       });
     }
+    // 倒数第二轮**模型还在调工具** —— 它没打算收口。
+    // 再问一句「别调了，直接给答案」，否则这一轮就白跑，
+    // 结果是「没有产出」—— 实测这是失败里最大的一类。
+    if (round === maxRounds - 2) {
+      messages.push({
+        role: "user",
+        content: "不要再调工具了。请直接输出最终 JSON（source/flags/why 或 absent）。",
+      });
+    }
   }
   // 轮次用完还没给出答案 —— 返回**模型最后的正文**（可能是空）。
   // 不能返回最后一条消息：那是工具结果，会被当成答案解析。

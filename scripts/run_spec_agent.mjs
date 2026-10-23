@@ -4,7 +4,7 @@
  * 用途：给 `data/parameter-specs.json` 里**缺某一版**的参数槽位，
  * 让 agent 从原文里提议一条条款锚定的正则，并**当场用抽取器的语义验一遍**。
  *
- * 产���写进 `data/parameter-specs-agent.json`（**提议**，不是 spec），
+ * 产物写进 `data/parameter-specs-agent.json`（**提议**，不是 spec），
  * 人工确认后才并进 `data/parameter-specs.json`。
  *
  * 跑法：
@@ -76,7 +76,7 @@ async function callModel(messages, tools) {
     // **M3 会先输出一整段 `<think>` 思考**，而思考和答案共用这个预算 ——
     // 8192 不够用时，模型思考完就被截断，JSON 根本没输出出来
     // （实测：思考用了预算的绝大部分，回答被砍在半路）。
-    max_tokens: Number(process.env.SPEC_AGENT_MAX_TOKENS ?? 20000),
+    max_tokens: Number(process.env.SPEC_AGENT_MAX_TOKENS ?? 40000),
     temperature: 0.1,
     stream: false,
   };

@@ -1,8 +1,8 @@
 {
  "_comment": "取值规格提议 agent 的**泛化率实测**（真模型，藏起已知答案重找）。这是记账，不是闸门 —— 它调模型、会花钱、会有抖动。",
- "sampleSize": 12,
- "passed": 12,
- "rate": 1,
+ "sampleSize": 30,
+ "passed": 22,
+ "rate": 0.733,
  "rows": [
   {
    "id": "adaptiveHighBeam.envLightOff",
@@ -24,8 +24,8 @@
      "7000"
     ]
    },
-   "source": "5\\.3\\.9\\.2\\.4[\\s\\S]{0,900}?当环境照明大于\\s*(7000)\\s*lx\\s*时，远光灯应关闭",
-   "why": "该条款 5.3.9.2.4（远光自适应功能传感器要求）第 c) 项明确规定「当环境照明大于7000lx时，远光灯应关闭」，正是自适应远光灯自动关闭的环境照明阈值，单位 lx 与参数一致。捕获组仅框住数值 7000，条款锚点 5.3.9.2.4 保证条款归属正确（其它候选如 5.3.9.2.6 的 430000cd 为最大发光强度之和、5.3.4.1 的尺寸限值均非本参数）。test_regex 验证通过：值 7000、条款 5.3.9.2.4、第34页。",
+   "source": "5\\.3\\.9\\.2\\.4[\\s\\S]{0,900}?当环境照明大于\\s*(7000)\\s*lx",
+   "why": "A 版（GB 4785 草案 V4.3.5）中，自适应远光灯的自动关闭环境照明阈值规定在 5.3.9.2.4 c)：『当环境照明大于7000lx 时，远光灯应关闭。』条款号锚定在 5.3.9.2.4，用窗口连接条款号与数值（值与条款锚点同在第34页），捕获组只框住数值 7000，单位 lx 留在组外。该条是远光自适应功能的传感器系统要求，与参数含义一致。已用 test_regex 验证：抽取值 7000，条款 5.3.9.2.4，第34页。",
    "validation": null,
    "pass": true
   },
@@ -50,7 +50,7 @@
     ]
    },
    "source": "5\\.3\\.4\\.1[\\s\\S]{0,900}?相邻发光单元最大水平距离应不大于\\s*(140)\\s*mm",
-   "why": "条款5.3.4.1 b) 为 AFS 同侧相邻发光单元最大水平距离的一般限值：'相邻发光单元最大水平距离应不大于140mm（见图2 中的E）'，图2 中 E≤140 印证。捕获组只框 140，正则以条款号5.3.4.1 锚定并用惰性窗口跨过条款开头文字，保证条款号与数值同页（第30页）。同款中的200mm仅适用于'两对均为对称安装'的放宽情形，非通用上限，故不采用。",
+   "why": "条款 5.3.4.1 b) 原文：「各自适应模式的同侧发光单元，相邻发光单元最大水平距离应不大于140mm（见图2 中的E）」，正是 AFS 同侧相邻发光单元水平距离上限值 140mm（与垂直距离 400mm、发光单元高度 250/1200/1500mm、纵向放宽值 200mm 等同条款其它数字区分开）。用条款号锚定后以惰性窗口连接，捕获组仅框住 140 并保留 mm，抽取器在第30页命中，条款归到 5.3.4.1。",
    "validation": null,
    "pass": true
   },
@@ -68,16 +68,14 @@
     ]
    },
    "got": {
-    "clause": "6.27.7.2.6",
-    "page": 96,
-    "nums": [
-     "2"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "6\\.27\\.7\\.2[\\s\\S]{0,900}?frequency shall not exceed\\s*(2\\.0)\\s*Hz",
-   "why": "以第6.27.7.2条为锚点，并逐字匹配应答信号闪烁频率上限的原文表述；捕获组仅包含限值2.0及其小数部分，Hz留在捕获组外。经test_regex验证，命中第96页，抽取值为2.0 Hz。",
-   "validation": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
   },
   {
    "id": "brakeLamp.heightStructureExemptMax",
@@ -93,16 +91,14 @@
     ]
    },
    "got": {
-    "clause": "5.7.4.2.1",
-    "page": 42,
-    "nums": [
-     "2100"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,900}?车型结构不能保证在\\s*1500\\s*㎜\\s*内[\\s\\S]{0,200}?可增至\\s*(2100)\\s*㎜",
-   "why": "参数是「制动灯高度上限（车型结构受限）」，对应 5.7.4.2.1 中 S1/S2 类制动灯离地高度一般不大于 1500mm，但「若未安装选装灯具，且车型结构不能保证在1500mm内，则可增至2100mm」这一句才是车型结构受限情形的上限值 2100mm，因此用条款锚点 5.7.4.2.1 加窗口连到「可增至 (2100)㎜」，捕获组只框数值。原文单位为 U+339C「㎜」，逐字照抄；1500mm 留在捕获组外作为条件。已用 test_regex 验证：条款号 5.7.4.2.1、页码 42、取值 2100 均正确。",
-   "validation": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
   },
   {
    "id": "conspicuityMarking.adjacentGapMax",
@@ -118,16 +114,14 @@
     ]
    },
    "got": {
-    "clause": "6.21.7.1",
-    "page": 81,
-    "nums": [
-     "1000"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "6\\.21\\.7\\.1[\\s\\S]{0,900}?it shall be as small as\\s*possible and not exceed\\s*(1[ ,]?000)\\s*mm",
-   "why": "锚定 UN R48-09（C）第6.21.7.1条；该条在无法满足相邻单元间距不超过最短单元长度50%的例外情形下，规定间距应尽可能小且不得超过1,000 mm。捕获组仅框住上限值1,000 mm，并兼容原文千分位逗号。",
-   "validation": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
   },
   {
    "id": "corneringLamp.horizontalAngle",
@@ -151,170 +145,611 @@
      "60"
     ]
    },
-   "source": "5\\.5\\.5[\\s\\S]{0,900}?水平方向角\\s*β\\s*角[^\\n]{0,60}?向外\\s*(30\\s*[º°]\\s*至\\s*60\\s*[º°])",
-   "why": "锚定条款 5.5.5（几何可见度，第37页），其原文为「水平方向角β角：向外30º至60º」，与参数「角灯水平方向角」一致；用 [\\\\s\\\\S]{0,900}? 窗口跨过同一句前面的「垂直方向角α角：向上、向下均为10º；」而仍只匹配到本行水平方向角；捕获组只框住区间值 30º至60º（含「至」字，逐字与原文一致），区间整体在第1捕获组内；单位符「º」按原文保留并同时允许「°」。",
+   "source": "5\\.5\\.5[\\s\\S]{0,900}?水平方向角[\\s\\S]{0,60}?向外\\s*(30\\s*º\\s*至\\s*60\\s*º)",
+   "why": "锚定条款号 5.5.5（几何可见度），条款原文为「垂直方向角α角：向上、向下均为10º；水平方向角β角：向外30º至60º。」。用窗口把「水平方向角」与「向外」连到值上（避免 β/空格的字面差异导致匹配失败），捕获组只框住区间值「30º 至 60º」，原文单位符号为 º（U+00BA），照抄不改。已用 test_regex 在版本A验证：命中第37页，条款号 5.5.5，抽取值为 30º至60º。",
    "validation": null,
    "pass": true
   },
   {
-   "id": "corneringLamp.horizontalAngle",
-   "name": "角灯水平方向角",
-   "version": "B",
-   "device": "corneringLamp",
+   "id": "courtesyLamp.maxIntensity",
+   "name": "礼貌灯（迎宾灯）单灯光强上限（替代验证）",
+   "version": "C",
+   "device": "courtesyLamp",
+   "unit": "cd",
+   "expected": {
+    "clause": "6.24.9.4",
+    "page": 92,
+    "nums": [
+     "0.5"
+    ]
+   },
+   "got": {
+    "clause": "6.24.9.4",
+    "page": 92,
+    "nums": [
+     "0.5"
+    ]
+   },
+   "source": "6\\.24\\.9\\.4\\.[\\s\\S]{0,900}?not more less than\\s*(0\\.5)\\s*cd per lamp",
+   "why": "条款 6.24.9.4 规定：在技术服务机构同意下，礼貌灯可用图纸/仿真验证，或若申请人能证明观测试验中直接发出的光强不超出每灯 0.5 cd，则视为满足 6.24.9.3（无直接可见性）要求。这正是「替代验证」的单灯光强上限，值为 0.5 cd/灯，捕获组只框住 0.5，单位 cd 与参数单位一致；条款锚点 6.24.9.4 与值同在第 92 页。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "das.keepOnSpeedMin",
+   "name": "驾驶员辅助投射·保持开启车速下限",
+   "version": "A",
+   "device": "das",
+   "unit": "km/h",
+   "expected": {
+    "clause": "6.1.8",
+    "page": 64,
+    "nums": [
+     "40"
+    ]
+   },
+   "got": {
+    "clause": "6.1.8",
+    "page": 64,
+    "nums": [
+     "40"
+    ]
+   },
+   "source": "6\\.1\\.8[\\s\\S]{0,900}?车速在\\s*(40)\\s*km/h\\s*以上时，允许保持开启",
+   "why": "参数「保持开启车速下限」对应 6.1.8 后半句「在驾驶员辅助投射已开启的情况下，车速在40km/h 以上时，允许保持开启状态」，下限即 40 km/h。同一条款前半句的 65km/h 是「不应开启」上限阈值，不是保持开启下限，故用「车速在…km/h 以上时，允许保持开启」作为紧邻字面量把 40 单独框住，避免误抓 65。条款号 6.1.8 与值同在第 64 页，test_regex 通过。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "dippedBeam.aimDownLabelAccuracy",
+   "name": "基础近光初始下倾度标注准确度",
+   "version": "A",
+   "device": "dippedBeam",
+   "unit": "%",
+   "expected": {
+    "clause": "5.2.6.1.1",
+    "page": 26,
+    "nums": [
+     "0.1"
+    ]
+   },
+   "got": {
+    "clause": "5.2.6.1.1",
+    "page": 26,
+    "nums": [
+     "0.1"
+    ]
+   },
+   "source": "5\\.2\\.6\\.1\\.1[\\s\\S]{0,300}?按\\s*(0\\.1)\\s*%\\s*的准确度",
+   "why": "条款 5.2.6.1.1 规定「制造商应按0.1%的准确度，在驾驶座上一名人员的空载车条件下，按5.2.6.1.2规定，确定明暗截止线的初始下倾度值」，并要求该初始下倾度值在每辆车靠近近光灯或制造商铭牌处按附录F清晰标明，即基础近光初始下倾度的标注/确定准确度为 0.1%。捕获组仅框住 0.1，条款锚点 5.2.6.1.1 落在第26页，值与锚点同页；表7 中的 -0.50 与 h 相关倾斜度是下倾度极限而非标注准确度，已排除。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "directionIndicator.gapMax_1b",
+   "name": "转向信号灯与相邻灯具间距上限（1b类）",
+   "version": "A",
+   "device": "directionIndicator",
+   "unit": "mm",
+   "expected": {
+    "clause": "5.6.3.1",
+    "page": 39,
+    "nums": [
+     "20"
+    ]
+   },
+   "got": {
+    "clause": "5.6.3.1",
+    "page": 39,
+    "nums": [
+     "20"
+    ]
+   },
+   "source": "5\\.6\\.3\\.1[\\s\\S]{0,900}?——\\s*1b\\s*类[\\s\\S]{0,80}?间距不大于\\s*(20)\\s*㎜",
+   "why": "条款 5.6.3.1（布局A）规定前转向灯与相邻近光灯/前雾灯的视表面边缘间距：1或1a或1b类不小于40㎜；1a或1b类可为大于20小于40㎜；1b类间距不大于20㎜。因此1b类的间距上限值为20。用条款号锚定并以窗口连接，捕获组只框住数值20，单位保留原文的『㎜』（U+339C）字面量；『1b 类』为类别编号，置于捕获组之外。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "drl.autoOffSpeed",
+   "name": "昼间行驶灯手动关闭车速阈值",
+   "version": "A",
+   "device": "drl",
+   "unit": "km/h",
+   "expected": {
+    "clause": "5.19.7.2",
+    "page": 57,
+    "nums": [
+     "15"
+    ]
+   },
+   "got": {
+    "clause": "5.19.7.2",
+    "page": 57,
+    "nums": [
+     "15"
+    ]
+   },
+   "source": "5\\.19\\.7\\.2[\\s\\S]{0,900}?车速不大于\\s*(15)\\s*km/h",
+   "why": "条款 5.19.7.2（第57页）规定昼间行驶灯可不点亮或手动熄灭的条件之一是「车速不大于15km/h」，正是昼间行驶灯手动关闭的车速阈值。以条款号 5.19.7.2 锚定，窗口允许跨行（原文为破折号列表项），捕获组仅框住数值 15，单位 km/h 与参数单位一致；已用 test_regex 验证抽取到值 15、条款 5.19.7.2、页 57，值与条款同页。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "emergencyBraking.speedThreshold",
+   "name": "紧急制动信号启动车速阈值",
+   "version": "A",
+   "device": "emergencyBraking",
+   "unit": "km/h",
+   "expected": {
+    "clause": "7.2.7.3",
+    "page": 70,
+    "nums": [
+     "50"
+    ]
+   },
+   "got": {
+    "clause": "7.2.7.3",
+    "page": 70,
+    "nums": [
+     "50"
+    ]
+   },
+   "source": "7\\.2\\.7\\.3[\\s\\S]{0,900}?紧急制动信号应仅在车速高于\\s*(50)\\s*km/h",
+   "why": "GB 4785 草案(A版) 7.2.7.3 a) 明确规定「紧急制动信号应仅在车速高于50km/h 并且制动系统发出GB 12676 或GB 21670 规定的紧急制动逻辑信号时启动」，即启动车速阈值为 50 km/h。条款号 7.2.7.3 作锚点，窗口用 [\\s\\S]{0,900}? 跨行连接（原文「紧急制\\n动逻辑信号」有换行），捕获组只框住 50；已用 test_regex 验证：clause=7.2.7.3，page=70，nums=[50]，无其他页误命中。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "endOutlineMarker.horizontalAngle",
+   "name": "示廓灯水平方向角",
+   "version": "A",
+   "device": "endOutlineMarker",
    "unit": "°",
    "expected": {
-    "clause": "5.20.5",
-    "page": 49,
+    "clause": "5.13.5",
+    "page": 51,
     "nums": [
-     "30",
-     "60"
+     "80"
     ]
    },
    "got": {
-    "clause": "5.20.5",
-    "page": 49,
+    "clause": "5.13.5",
+    "page": 51,
     "nums": [
-     "30",
-     "60"
+     "80"
     ]
    },
-   "source": "5\\.20\\.5[\\s\\S]{0,200}?向外[\\s\\S]{0,20}?(30\\s*°\\s*至\\s*60\\s*°)",
-   "why": "GB 4785-2019 第5.20.5条（角灯 几何可见度，第49页）规定「α 角:向上、向下均为10°; β 角:向外30°至60°」。水平方向角即向外的 β 角，值为区间 30°至60°，故整段放进同一个捕获组。α 角（10°）为垂直方向，不作为本参数值；用「向外」作为紧随条款锚点后的文字锚定，避免误取 α 角的 10°。",
+   "source": "5\\.13\\.5[\\s\\S]{0,900}?水平方向角[\\s\\S]{0,200}?向外\\s*(80)\\s*°",
+   "why": "条款 5.13.5「几何可见度」第51页原文为「水平方向角β：向外80°。垂直方向角α：水平向上5°，向下20°。」。正则以条款号 5.13.5 锚定，先用窗口匹配到「水平方向角」，再用小窗口跨过「β：」等字符，捕获组只框住水平方向角的值 80，竖直方向角的 5°/20° 被排除在外。已用 test_regex 验证：命中条款 5.13.5、第51页、取值 80，单位为°。",
    "validation": null,
    "pass": true
   },
   {
-   "id": "corneringLamp.horizontalAngle",
-   "name": "角灯水平方向角",
+   "id": "ess.flashFrequency",
+   "name": "紧急制动信号闪烁频率",
+   "version": "A",
+   "device": "ess",
+   "unit": "Hz",
+   "expected": {
+    "clause": "7.2.7.1",
+    "page": 70,
+    "nums": [
+     "4",
+     "1"
+    ]
+   },
+   "got": {
+    "clause": "7.2.7.1",
+    "page": 70,
+    "nums": [
+     "4",
+     "1"
+    ]
+   },
+   "source": "7\\.2\\.7\\.1[\\s\\S]{0,900}?以（\\s*(4\\.0\\s*±\\s*1\\.0)\\s*）\\s*Hz",
+   "why": "条款 7.2.7.1 规定紧急制动信号所有灯具「以（4.0±1.0）Hz 频率同相闪烁」，捕获组只框住数值 4.0±1.0，单位 Hz 在组外；b) 项为灯丝灯泡时的 4.0~1.0 Hz 范围（数值被打断在行间，未采用）。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "externalStatusIndicator.areaMax",
+   "name": "外部状态指示器视表面面积上限",
    "version": "C",
-   "device": "corneringLamp",
+   "device": "externalStatusIndicator",
+   "unit": "cm²",
+   "expected": {
+    "clause": "5.32",
+    "page": 35,
+    "nums": [
+     "20"
+    ]
+   },
+   "got": {
+    "clause": null,
+    "page": null,
+    "nums": []
+   },
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
+  },
+  {
+   "id": "externalStatusIndicator.areaMaxEachOfTwo",
+   "name": "外部状态指示器·两个时单个的视表面面积上限",
+   "version": "C",
+   "device": "externalStatusIndicator",
+   "unit": "cm²",
+   "expected": {
+    "clause": "5.32",
+    "page": 35,
+    "nums": [
+     "10"
+    ]
+   },
+   "got": {
+    "clause": "5.32",
+    "page": 35,
+    "nums": [
+     "10"
+    ]
+   },
+   "source": "5\\.32[\\s\\S]{0,900}?does not exceed\\s*(10)\\s*cm.{0,20}per indicator",
+   "why": "R48-09 §5.32 规定：一个外部状态指示器时视表面不大于 20 cm2；允许装设两个时，每个指示器的视表面不大于 10 cm2。参数为「两个时单个的视表面面积上限」，故取后一句的 10 cm2。条款锚定 5.32，用非贪婪窗口跨过 (a)(b)(c) 与单/双指示器两句，捕获组仅框住数值 10，单位与原文一致写作 cm（后接 '2 per indicator'），并以 'per indicator' 限定，避免误抓单指示器的 20 cm2。test_regex 验证：命中条款 5.32、第35页，取值 10。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "externalStatusIndicator.intensityMax",
+   "name": "外部状态指示器·各方向光强上限",
+   "version": "C",
+   "device": "externalStatusIndicator",
+   "unit": "cd",
+   "expected": {
+    "clause": "5.32",
+    "page": 35,
+    "nums": [
+     "0.5"
+    ]
+   },
+   "got": {
+    "clause": "5.32",
+    "page": 35,
+    "nums": [
+     "0.5"
+    ]
+   },
+   "source": "5\\.32\\.[\\s\\S]{0,900}?light intensity in any direction does not exceed\\s*(0\\.5)\\s*cd",
+   "why": "锚定 UN R48-09 §5.32（External status indicator），条款号后用窗口跨过标题与 (a) 引导句，捕获组只框住数值 0.5，单位 cd 放在捕获组外；该条正是「各方向光强上限（不超过 0.5 cd）」，其它候选句是发光面积限值（cm2），不是本参数。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "farBeam.aggregateIntensityMax",
+   "name": "远光灯总光强限值（以参考标记为基准的口径）",
+   "version": "C",
+   "device": "farBeam",
+   "unit": "cd",
+   "expected": {
+    "clause": "6.1.9.1",
+    "page": 38,
+    "nums": [
+     "100"
+    ]
+   },
+   "got": {
+    "clause": "6.1.9.1",
+    "page": 38,
+    "nums": [
+     "100"
+    ]
+   },
+   "source": "6\\.1\\.9\\.1[\\s\\S]{0,600}?shall not\\s+exceed\\s*(100)",
+   "why": "6.1.9.1规定可同时点亮远光灯的汇总最大光强参考值不得超过100；6.1.9.2进一步规定该最大值由各前照灯的单独参考标记相加取得，正对应“以参考标记为基准的远光灯总光强限值”。正则以条款号锚定，且捕获组仅框住数值100。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.aimDownAccuracy",
+   "name": "前雾灯初始下倾度标注准确度",
+   "version": "A",
+   "device": "frontFogLamp",
+   "unit": "%",
+   "expected": {
+    "clause": "5.4.6.1.2",
+    "page": 36,
+    "nums": [
+     "0.1"
+    ]
+   },
+   "got": {
+    "clause": "5.4.6.1.2",
+    "page": 36,
+    "nums": [
+     "0.1"
+    ]
+   },
+   "source": "5\\.4\\.6\\.1\\.2[\\s\\S]{0,900}?由制造商以不大于\\s*(0\\.1)\\s*%的精度",
+   "why": "5.4.6.1.2 b) 规定：车辆空载且驾驶座有一个乘员时的初始明暗截止线垂直倾斜度，由制造商以不大于0.1%的精度进行规定，并以清晰方式在每个前雾灯或制造商铭牌上注明——这正是「初始下倾度标注准确度」。用条款号 5.4.6.1.2 锚定，窗口允许跨行/跨句连接，捕获组只框住 0.1 这一数值（单位 % 置于组外），避免误取同条款内的 -1.0%～-3.0% 等倾斜度限值。test_regex 验证通过：值 0.1、条款 5.4.6.1.2、第36页。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.aimDownAccuracy",
+   "name": "前雾灯初始下倾度标注准确度",
+   "version": "B",
+   "device": "frontFogLamp",
+   "unit": "%",
+   "expected": {
+    "clause": "5.3.6.1.2",
+    "page": 28,
+    "nums": [
+     "0.1"
+    ]
+   },
+   "got": {
+    "clause": "5.3.6.1.2",
+    "page": 28,
+    "nums": [
+     "0.1"
+    ]
+   },
+   "source": "5\\.3\\.6\\.1\\.2[\\s\\S]{0,900}?初始明暗截止线向下倾斜度[\\s\\S]{0,200}?由制造商以不大于\\s*(0\\.\\s*1)\\s*%的精度进行规定",
+   "why": "以条款号5.3.6.1.2锚定F3前雾灯初始明暗截止线向下倾斜度的规定精度，仅捕获数值0.1。实测命中B版第28页，抽取值为0.1。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.horizontalAngle",
+   "name": "前雾灯水平方向角",
+   "version": "A",
+   "device": "frontFogLamp",
    "unit": "°",
    "expected": {
-    "clause": "6.20.5",
-    "page": 76,
+    "clause": "5.4.5",
+    "page": 35,
     "nums": [
-     "30",
-     "60"
+     "45",
+     "10"
     ]
    },
    "got": {
-    "clause": "6.20.5",
-    "page": 76,
-    "nums": [
-     "30",
-     "60"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "6\\.20\\.5[\\s\\S]{0,900}?β\\s*=\\s*(30\\s*°\\s*to\\s*60\\s*°)\\s*outwards",
-   "why": "UN R48-09 §6.20.5「Geometric visibility」以角 α、β 规定角灯的几何可见度：α = 10° upwards and downwards（竖直方向），β = 30° to 60° outwards（水平向外方向），故「角灯水平方向角」取 β 的区间 30°~60°。正则以条款号 6.20.5 锚定，用窗口连接条款与取值（原文 β 与取值同行），捕获组只框住区间值，区间两端在同一捕获组内。已用 test_regex 在 C 版第76页验证通过，取值 30~60。",
-   "validation": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
   },
   {
-   "id": "corneringLamp.maxHeight",
-   "name": "角灯最大离地高度",
-   "version": "A",
-   "device": "corneringLamp",
-   "unit": "mm",
-   "expected": {
-    "clause": "5.5.4.3",
-    "page": 37,
-    "nums": [
-     "900"
-    ]
-   },
-   "got": {
-    "clause": "5.5.4.3",
-    "page": 37,
-    "nums": [
-     "900"
-    ]
-   },
-   "source": "5\\.5\\.4\\.3[\\s\\S]{0,200}?离地高度不小于\\s*250\\s*mm[，,]\\s*不大于\\s*(900)\\s*mm",
-   "why": "条款 5.5.4.3「高度：离地高度不小于250mm，不大于900mm」正是角灯安装高度规定；最大离地高度取上限值 900 mm。捕获组只框住 900，单位 mm 与参数单位一致；下限 250 mm 留在组外以免误取，条款锚点 5.5.4.3 保证归入角灯章（5.5）。test_regex 验证通过：命中第37页、条款 5.5.4.3、值 900 mm。",
-   "validation": null,
-   "pass": true
-  },
-  {
-   "id": "corneringLamp.maxHeight",
-   "name": "角灯最大离地高度",
+   "id": "frontFogLamp.horizontalAngle",
+   "name": "前雾灯水平方向角",
    "version": "B",
-   "device": "corneringLamp",
-   "unit": "mm",
+   "device": "frontFogLamp",
+   "unit": "°",
    "expected": {
-    "clause": "5.20.4.3",
-    "page": 49,
+    "clause": "5.3.5",
+    "page": 28,
     "nums": [
-     "900"
+     "45",
+     "10"
     ]
    },
    "got": {
-    "clause": "5.20.4.3",
-    "page": 49,
-    "nums": [
-     "900"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "5\\.20\\.4\\.3[\\s\\S]{0,900}?最大值\\s*[:：]\\s*离地高度不大于\\s*(900)\\s*mm",
-   "why": "条款 5.20.4.3「高度」项下明确分列最小值（离地高度不小于250mm）与最大值（离地高度不大于900mm）。参数为「最大离地高度」，故取最大值行。用条款号锚定并以窗口连接，避免抓到同条款中的最小值250；捕获组只框住 900，mm 与「最大值/离地高度不大于」文字置于组外。已在 B 版第49页验证命中 900、条款 5.20.4.3。",
-   "validation": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
   },
   {
-   "id": "corneringLamp.maxHeight",
-   "name": "角灯最大离地高度",
+   "id": "frontFogLamp.horizontalAngle",
+   "name": "前雾灯水平方向角",
    "version": "C",
-   "device": "corneringLamp",
-   "unit": "mm",
+   "device": "frontFogLamp",
+   "unit": "°",
    "expected": {
-    "clause": "6.20.4.3",
-    "page": 76,
+    "clause": "6.3.5",
+    "page": 46,
     "nums": [
-     "900"
+     "45",
+     "10"
     ]
    },
    "got": {
-    "clause": "6.20.4.3",
-    "page": 76,
+    "clause": null,
+    "page": null,
+    "nums": []
+   },
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
+  },
+  {
+   "id": "frontFogLamp.lateralToVehicleEdgeMax",
+   "name": "前雾灯横向距车辆外缘端面上限",
+   "version": "A",
+   "device": "frontFogLamp",
+   "unit": "mm",
+   "expected": {
+    "clause": "5.4.4.1",
+    "page": 35,
     "nums": [
-     "900"
+     "400"
     ]
    },
-   "source": "6\\.20\\.4\\.3[\\s\\S]{0,600}?Not more than\\s*(900)\\s*mm above the ground",
-   "why": "角灯(UN R48 6.20)的安装高度上限在 6.20.4.3 'In height ... maximum: Not more than 900 mm above the ground'；下限 250 mm 为最小离地高度，不取。以条款号 6.20.4.3 锚定，窗口跨越同页的 minimum 行到 maximum 行，捕获组只框 900，数值来自原文，单位 mm。",
+   "got": {
+    "clause": "5.4.4.1",
+    "page": 35,
+    "nums": [
+     "400"
+    ]
+   },
+   "source": "5\\.4\\.4\\.1[\\s\\S]{0,900}?应不大于\\s*(400)\\s*mm",
+   "why": "条款5.4.4.1（GB 4785 草案 V4.3.5 第35页）规定前雾灯在基准轴线方向上，离车辆纵向对称平面最远的视表面上的点到车辆外缘端面的距离应不大于400mm，即「前雾灯横向距车辆外缘端面上限」。捕获组仅框住数值400，条目前缀用5\\.4\\.4\\.1锚定，窗口允许中间出现说明文字。已用 test_regex 验证：命中第35页，条款号5.4.4.1，抽取值400mm。",
    "validation": null,
    "pass": true
   },
   {
-   "id": "corneringLamp.minHeight",
-   "name": "角灯最小离地高度",
-   "version": "A",
-   "device": "corneringLamp",
+   "id": "frontFogLamp.lateralToVehicleEdgeMax",
+   "name": "前雾灯横向距车辆外缘端面上限",
+   "version": "B",
+   "device": "frontFogLamp",
    "unit": "mm",
    "expected": {
-    "clause": "5.5.4.3",
-    "page": 37,
+    "clause": "5.3.4.1",
+    "page": 28,
     "nums": [
-     "250"
+     "400"
     ]
    },
    "got": {
-    "clause": "5.5.4.3",
-    "page": 37,
+    "clause": "5.3.4.1",
+    "page": 28,
     "nums": [
-     "250"
+     "400"
     ]
    },
-   "source": "5\\.5\\.4\\.3[\\s\\S]{0,900}?离地高度不小于\\s*(250)\\s*mm",
-   "why": "锚定条款 5.5.4.3（高度：离地高度不小于250mm，不大于900mm），用宽松窗口连接字面量「离地高度不小于」，捕获组只框住下限值 250 并带单位 mm，与「最小离地高度」参数含义一致；同一句中的上限 900mm 未被框入。已用 test_regex 在版本 A 上验证通过，值 250、条款 5.5.4.3、第37页。",
+   "source": "5\\.3\\.4\\.1[\\s\\S]{0,900}?不大于\\s*(400)\\s*mm",
+   "why": "GB 4785-2019 前雾灯安装位置 5.3.4.1 规定横向最远视表面点到车辆外缘端面距离应不大于400mm；条款号锚定5.3.4.1，捕获组仅框住数值400（单位mm在组外），值与锚点同在第28页。5.3.4.2为离地高度、5.3.4.3为纵向、5.3.5为几何可见度，均非本参数。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.lateralToVehicleEdgeMax",
+   "name": "前雾灯横向距车辆外缘端面上限",
+   "version": "C",
+   "device": "frontFogLamp",
+   "unit": "mm",
+   "expected": {
+    "clause": "6.3.4.1",
+    "page": 45,
+    "nums": [
+     "400"
+    ]
+   },
+   "got": {
+    "clause": "6.3.4.1",
+    "page": 45,
+    "nums": [
+     "400"
+    ]
+   },
+   "source": "6\\.3\\.4\\.1[\\s\\S]{0,900}?shall not be\\s*more than\\s*(400)\\s*mm",
+   "why": "UN R48-09 §6.3.4.1（Position / In width）规定前雾灯在宽度方向上，其视表面距车辆外缘最远点不得大于 400 mm；§6.3.4.2 规定的是离地高度（250/800/1,200/1,500 mm），与本参数（横向位置）不符。捕获组仅框住 400，条款锚点 6.3.4.1 与值同在第45页，test_regex 验证通过（clause=6.3.4.1, page=45, nums=[400]）。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.maxHeightM1N1",
+   "name": "前雾灯最大离地高度（M1/N1 类车）",
+   "version": "A",
+   "device": "frontFogLamp",
+   "unit": "mm",
+   "expected": {
+    "clause": "5.4.4.2",
+    "page": 35,
+    "nums": [
+     "800"
+    ]
+   },
+   "got": {
+    "clause": null,
+    "page": null,
+    "nums": []
+   },
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "pass": false
+  },
+  {
+   "id": "frontFogLamp.maxHeightM1N1",
+   "name": "前雾灯最大离地高度（M1/N1 类车）",
+   "version": "B",
+   "device": "frontFogLamp",
+   "unit": "mm",
+   "expected": {
+    "clause": "5.3.4.2",
+    "page": 28,
+    "nums": [
+     "800"
+    ]
+   },
+   "got": {
+    "clause": "5.3.4.2",
+    "page": 28,
+    "nums": [
+     "800"
+    ]
+   },
+   "source": "5\\.3\\.4\\.2[\\s\\S]{0,900}?离地高度不大于\\s*(800)\\s*mm",
+   "why": "条款5.3.4.2明确区分车辆类别；按该条款中“最大值”的原文表述顺序，首次出现的“离地高度不大于800mm”即为M1和N1类车辆的前雾灯最大离地高度。捕获组仅框住数值800，单位mm置于组外；已用test_regex验证，命中条款5.3.4.2、第28页并抽取到800。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.maxHeightM1N1",
+   "name": "前雾灯最大离地高度（M1/N1 类车）",
+   "version": "C",
+   "device": "frontFogLamp",
+   "unit": "mm",
+   "expected": {
+    "clause": "6.3.4.2",
+    "page": 45,
+    "nums": [
+     "800"
+    ]
+   },
+   "got": {
+    "clause": "6.3.4.2",
+    "page": 45,
+    "nums": [
+     "800"
+    ]
+   },
+   "source": "6\\.3\\.4\\.2[\\s\\S]{0,900}?not more than\\s*(800)\\s*mm above the ground",
+   "why": "条款6.3.4.2规定前雾灯安装高度；该条款中的首个最大高度限值适用于M1和N1类车，为不大于800 mm。捕获组仅框住数值800，并已验证命中第45页的6.3.4.2条款。",
+   "validation": null,
+   "pass": true
+  },
+  {
+   "id": "frontFogLamp.maxHeightOffRoad",
+   "name": "前雾灯最大离地高度（越野车型）",
+   "version": "A",
+   "device": "frontFogLamp",
+   "unit": "mm",
+   "expected": {
+    "clause": "5.4.4.2",
+    "page": 35,
+    "nums": [
+     "1500"
+    ]
+   },
+   "got": {
+    "clause": "5.4.4.2",
+    "page": 35,
+    "nums": [
+     "1500"
+    ]
+   },
+   "source": "5\\.4\\.4\\.2[\\s\\S]{0,900}?越野[\\s\\S]{0,200}?不大于\\s*(1500)\\s*mm",
+   "why": "以5.4.4.2条款号锚定离地高度要求，并用“越野”限定越野车型；捕获组仅框住N3G（越野）车辆的最大离地高度1500，单位mm。已在版本A、frontFogLamp装置上验证通过，命中第35页并抽取1500。",
    "validation": null,
    "pass": true
   }
  ],
  "absentCheck": {
-  "sampleSize": 4,
-  "saidAbsent": 1,
-  "fabricated": 0,
+  "sampleSize": 10,
+  "saidAbsent": 5,
+  "fabricated": 2,
   "rows": [
    {
     "id": "dippedBeam.autoOffSpeed",
@@ -364,12 +799,100 @@
     "version": "C",
     "reason": "R48 §6.3.6.1 给的是前雾灯明暗截止线的**倾斜度限值**（总光通量 ≤2000lm 时 shall be -1.0 per cent or lower；超过时按安装高度查表），**没有「制造商标注准确度」这一要求**。GB 4785 草案 §5.4.6.1.1 要求的 0.1% 标注准确度在 R48 中无对应条款。",
     "saidAbsent": false,
+    "fabricated": true,
+    "kind": "wrong-quantity",
+    "source": "6\\.3\\.6\\.1\\.2\\.2[\\s\\S]{0,900}?accuracy of\\s*(one decimal place)",
+    "got": {
+     "clause": "6.3.6.1.2",
+     "nums": [
+      "1"
+     ]
+    }
+   },
+   {
+    "id": "manoeuvringLamp.adjacentGapMin",
+    "name": "操纵灯同侧相邻间距下限",
+    "version": "A",
+    "reason": "同上：GB 4785 草案无「操纵灯」装置。",
+    "saidAbsent": true,
+    "fabricated": false,
+    "kind": "said-absent",
+    "source": null,
+    "got": {
+     "clause": null,
+     "nums": []
+    }
+   },
+   {
+    "id": "manoeuvringLamp.adjacentGapMin",
+    "name": "操纵灯同侧相邻间距下限",
+    "version": "B",
+    "reason": "同上：GB 4785-2019 无「操纵灯」装置。",
+    "saidAbsent": true,
+    "fabricated": false,
+    "kind": "said-absent",
+    "source": null,
+    "got": {
+     "clause": null,
+     "nums": []
+    }
+   },
+   {
+    "id": "manoeuvringLamp.maxHeight",
+    "name": "操纵灯最大离地高度",
+    "version": "A",
+    "reason": "GB 4785 草案全文无「操纵灯 / 倒车辅助照明」这一装置（全文检索无命中）——该装置是 R48 §6.26 独有的。",
+    "saidAbsent": true,
+    "fabricated": false,
+    "kind": "said-absent",
+    "source": null,
+    "got": {
+     "clause": null,
+     "nums": []
+    }
+   },
+   {
+    "id": "manoeuvringLamp.maxHeight",
+    "name": "操纵灯最大离地高度",
+    "version": "B",
+    "reason": "GB 4785-2019 全文无「操纵灯 / 倒车辅助照明」这一装置 —— 该装置是 R48 §6.26 独有的。",
+    "saidAbsent": false,
     "fabricated": false,
     "kind": "no-conclusion",
     "source": null,
     "got": {
      "clause": null,
      "nums": []
+    }
+   },
+   {
+    "id": "manoeuvringLamp.speedMax",
+    "name": "操纵灯自动点亮车速上限",
+    "version": "A",
+    "reason": "同上：GB 4785 草案无「操纵灯」装置。",
+    "saidAbsent": true,
+    "fabricated": false,
+    "kind": "said-absent",
+    "source": null,
+    "got": {
+     "clause": null,
+     "nums": []
+    }
+   },
+   {
+    "id": "manoeuvringLamp.speedMax",
+    "name": "操纵灯自动点亮车速上限",
+    "version": "B",
+    "reason": "同上：GB 4785-2019 无「操纵灯」装置。",
+    "saidAbsent": false,
+    "fabricated": true,
+    "kind": "wrong-quantity",
+    "source": "5\\.25\\.7[\\s\\S]{0,900}?允许慢行灯在车辆慢速行驶时自动开启直至车速达到\\s*(10)\\s*km/h",
+    "got": {
+     "clause": "5.25.7",
+     "nums": [
+      "10"
+     ]
     }
    }
   ]

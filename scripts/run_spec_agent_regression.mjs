@@ -109,7 +109,7 @@ async function callModel(messages, tools) {
       model: process.env.MINIMAX_MODEL ?? "MiniMax-M3",
       messages,
       ...(tools && tools.length ? { tools, tool_choice: "auto" } : {}),
-      max_tokens: Number(process.env.SPEC_AGENT_MAX_TOKENS ?? 20000),
+      max_tokens: Number(process.env.SPEC_AGENT_MAX_TOKENS ?? 40000),
       temperature: 0.1,
       stream: false,
     }),
@@ -175,6 +175,9 @@ for (const [i, p] of picked.entries()) {
     source: proposal.source ?? null,
     why: proposal.why ?? proposal.absent ?? "",
     validation: v.reason ?? null,
+    // **错误也要记**：没有这一栏，失败只会显示成「没有产出正则」，
+    // 分不清是「被截断」「轮次用尽」还是「模型就是没答」。
+    error: proposal.error ?? null,
     pass,
   });
 
