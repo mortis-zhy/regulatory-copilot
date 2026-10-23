@@ -59,6 +59,9 @@ const ENTRIES = [
   ["server/reports/agentTools.ts", "dist/agentTools.js"],
   ["server/reports/agentLoop.ts", "dist/agentLoop.js"],
   ["server/reports/agentPrompt.ts", "dist/agentPrompt.js"],
+  // changeLedger 是「变化总清单」的唯一实现 ——
+  // 报告渲染它，闸门重算它。两边用同一份代码，才对得上账。
+  ["server/reports/changeLedger.ts", "dist/changeLedger.js"],
 ];
 
 const SHARED = {

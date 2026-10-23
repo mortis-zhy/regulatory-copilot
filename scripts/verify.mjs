@@ -439,10 +439,24 @@ check("decision-caliber counts match the audited buckets", () => {
   const vc = (k) =>
     Object.values(vd).filter((v) => (v?.verdict ?? "") === k).length;
 
+  // 第 1 条决策口径报的是**统一清单**（§11.0 变化总清单）的条数 ——
+  // 四套来源（数值级 / 人工补录 / 差值裁定 / 参数矩阵）合并去重后只有**一个**
+  // 数。以前这里报的是「数值级 + 人工补录」两个来源的和（14），与清单的
+  // 17 对不上 —— 读者无从知道差的那几条从哪来。
+  const ch11 = loadReport().chapters.find((c) => c.id === 11);
+  const md11 = ch11?.markdown ?? "";
+  const i110 = md11.indexOf("## 11.0");
+  assert(i110 > 0, "第 11 章里没有 §11.0 变化总清单");
+  const j111 = md11.indexOf("### 11.1", i110);
+  const ledgerRows = md11
+    .slice(i110, j111 > 0 ? j111 : undefined)
+    .split("\n")
+    .filter((l) => l.startsWith("| ") && !l.startsWith("| # ") && !l.startsWith("|---")).length;
+
   const expect = [
     {
-      re: /(\d+)\s*项参数在 A 草案中有实质变化/,
-      want: (facts.numericChanges?.length ?? 0) + (facts.manualFindings?.length ?? 0),
+      re: /\*\*(\d+)\s*条\*\*实质变化/,
+      want: ledgerRows,
       what: "实质变化项数",
     },
     {
@@ -581,6 +595,88 @@ check("附录 D 的条款号都能在源 PDF 里查到（客户拿着这个号�
   return `${rows.length} 行条款号全部可在源 PDF 查到`;
 });
 
+check("矩阵里每一个空格子都归了类，且没有「不知道」的格子", () => {
+  // 客户抱怨「数值有提取错误或空缺」—— 查下来是**呈现**问题：
+  // 144 个空格全部是「已核过该版确实无此规定」（absent 声明 + 依据），
+  // 但 12.1 总表曾把它们一律渲染成「未命中」，读起来像「抽取失败」。
+  // 这道闸门锁住两件事：
+  //   ① 每个空格都必须有明确归类（not-specified / no-pattern / no-match）
+  //   ② 「未建规则」「未命中」这类**取数失败**必须是 0 —— 有的话就是真 bug
+  const rows = loadReport().parameterMatrix ?? [];
+  assert(rows.length > 100, `矩阵只有 ${rows.length} 行`);
+  const counts = { "not-specified": 0, "no-pattern": 0, "no-match": 0, unclassified: 0 };
+  for (const r of rows) {
+    for (const v of Object.keys(r.cells ?? {})) {
+      const c = r.cells[v];
+      if (c?.status === "verified") continue;
+      const k = c?.miss ?? "unclassified";
+      counts[k] = (counts[k] ?? 0) + 1;
+    }
+  }
+  assert(
+    counts.unclassified === 0,
+    `有 ${counts.unclassified} 个空格没有归类（miss 字段缺失）—— 读者无从判断是「确实没有」还是「没抽到」`,
+  );
+  assert(
+    counts["no-pattern"] === 0 && counts["no-match"] === 0,
+    `有 ${counts["no-pattern"] + counts["no-match"]} 个格子是**取数失败**（未建规则/规则未命中）` +
+      `—— 这不是「该版无此规定」，是本报告的缺口，必须修`,
+  );
+  // 呈现层：总表里不能把「已核过」显示成「未命中」
+  const ch = loadReport().chapters.find((c) => c.id === 12);
+  const md = ch?.markdown ?? "";
+  assert(
+    !/\| 未命中 \|/.test(md),
+    "12.1 总表里出现了「未命中」—— 已核过「该版无此规定」的格子不得显示成取数失败",
+  );
+  assert(
+    /无此规定（已核）/.test(md),
+    "12.1 总表里没有「无此规定（已核）」标记",
+  );
+  assert(
+    /12\.3 缺一版取值的参数/.test(md) && !/12\.3 定位失败的参数/.test(md),
+    "12.3 的标题还是「定位失败的参数」—— 那些格子全部是「已核过确实没有」，不是定位失败",
+  );
+  return `${counts["not-specified"]} 格已核无规定 / 取数失败 0 格`;
+});
+
+check("报告各处报的变化条数一致（只有一份权威清单）", () => {
+  // 客户说「这版和之前差别不大」—— 很大一部分是**对不上账**：
+  // 执行摘要说 14、§11.3.3 说 6、第 12 章矩阵 changed 是 9、§11.3.1 是 11。
+  // 四个数都不是错的，但读者无从知道它们的关系。
+  // 现在 §11.0 是唯一一份权威清单，执行摘要只报它的条数。
+  const rep = loadReport();
+  const ch11 = rep.chapters.find((c) => c.id === 11);
+  const md = ch11?.markdown ?? "";
+  const i = md.indexOf("## 11.0");
+  assert(i > 0, "第 11 章里没有 §11.0 变化总清单");
+  const sec = md.slice(i, md.indexOf("### 11.1", i) > 0 ? md.indexOf("### 11.1", i) : undefined);
+
+  // 表里的行数（表格行，排除表头与分隔行）
+  const rows = sec
+    .split("\n")
+    .filter((l) => l.startsWith("| ") && !l.startsWith("| # ") && !l.startsWith("|---"));
+  const n = rows.length;
+  assert(n > 0, "§11.0 的清单里没有数据行");
+
+  // 清单自己声明的条数
+  const declared = Number(sec.match(/共\s*(\d+)\s*条/)?.[1] ?? -1);
+  assert(declared === n, `§11.0 声明「共 ${declared} 条」，表里却有 ${n} 行`);
+
+  // 执行摘要报的数字必须等于清单行数
+  const execMd = rep.chapters.find((c) => c.id === 0)?.markdown ?? "";
+  const execN = Number(execMd.match(/\*\*(\d+)\s*条\*\*实质变化/)?.[1] ?? -1);
+  assert(
+    execN === n,
+    `执行摘要说 ${execN} 条实质变化，§11.0 清单里是 ${n} 条 —— 两处对不上账`,
+  );
+
+  // §11.3 / 11.3.1 / 11.3.3 / 第12章 各自的条数必须能在清单的来源分解里对上
+  const bd = execMd.match(/共\s*(\d+)\s*条原始条目/)?.[1];
+  assert(!!bd, "执行摘要没有说明「原始条目共几条」，读者对不上账");
+  return `全报告只报 ${n} 条（原始 ${bd} 条去重后）`;
+});
+
 check("chapter 12 is a parameter matrix, not a table dump", () => {
   // It shipped as three consecutive raw dumps (A's table, B's, C's) under a
   // summary column reading 见下方表格内容 on all 492 rows — a listing, not a
@@ -594,10 +690,31 @@ check("chapter 12 is a parameter matrix, not a table dump", () => {
     "chapter 12 still carries the 见下方表格内容 placeholder column",
   );
 
-  // Only §12.1 (the summary table) carries one row per parameter; the detail
-  // blocks in §12.2 are 4-column version tables and are checked separately.
-  const summary = md.split("## 12.2 ")[0];
-  const rows = summary.split("\n").filter((l) => l.startsWith("| **"));
+  // §12.0 决策视图 + §12.1 分组总表 里有参数行；§12.2 起是逐参数明细块
+  // （4 列版本表，单独检查）。
+  //
+  // **必须按表分类**：§12.0 的「分组速览」表是 4 列的统计表
+  // （组 / 条数 / 含义 / 要做什么），它不是参数行。把全章的 `| **` 行
+  // 一律当参数行验，就会报「4 列，期望 >= 6」这种**假警** ——
+  // 闸门一旦开始喊狼来了，就没人再听它的。
+  const tables = [];
+  let cur = null;
+  for (const line of md.split("\n")) {
+    if (line.startsWith("|")) {
+      if (!cur) {
+        cur = { header: null, rows: [] };
+        tables.push(cur);
+      }
+      if (cur.header === null) cur.header = line;
+      else if (!/^\|[\s:|-]+\|$/.test(line.trim())) cur.rows.push(line);
+    } else {
+      cur = null;
+    }
+  }
+  const paramTables = tables.filter(
+    (t) => /参数/.test(t.header ?? "") && /判定/.test(t.header ?? ""),
+  );
+  const rows = paramTables.flatMap((t) => t.rows);
   assert(rows.length > 0, "chapter 12 has no parameter rows");
 
   // Every row must offer all three versions as columns.
@@ -628,7 +745,59 @@ check("chapter 12 is a parameter matrix, not a table dump", () => {
   // matrix is actually filled in.
   assert(/本版覆盖/.test(md), "chapter 12 does not state its coverage");
 
-  return `${rows.length} 个参数行 · 无未解释空缺 · 覆盖率已声明`;
+  // **分组不能丢行**：四个子组的行数之和必须等于矩阵的行数。
+  // 以前 305 行平铺，没有分组；现在分成「有变化 / 只有一版有 / 缺一版 / 三版一致」，
+  // 一旦分组逻辑有漏，参数就会**静默消失** —— 比显示错更糟。
+  const matrix = loadReport().parameterMatrix ?? [];
+  const groupCounts = {
+    changed: (md.match(/### 12\.1\.1 有变化（(\d+) 条）/) ?? [])[1],
+    single: (md.match(/### 12\.1\.2 只有一版有规定（(\d+) 条）/) ?? [])[1],
+    incomplete: (md.match(/### 12\.1\.3 缺一版取值（(\d+) 条）/) ?? [])[1],
+    same: (md.match(/### 12\.1\.4 三版一致（(\d+) 条）/) ?? [])[1],
+  };
+  for (const [k, v] of Object.entries(groupCounts)) {
+    assert(!!v, `第 12 章缺 ${k} 组的小标题 —— 分组结构不完整`);
+  }
+  const sumGroups = Object.values(groupCounts).reduce((a, b) => Number(a) + Number(b), 0);
+  assert(
+    sumGroups === matrix.length,
+    `四个分组的行数之和 ${sumGroups} ≠ 矩阵行数 ${matrix.length} —— 有参数被漏掉了`,
+  );
+  // 「三版一致」那一组必须能数出矩阵里 verdict=same 的行数
+  const sameInMatrix = matrix.filter((m) => m.verdict === "same").length;
+  assert(
+    Number(groupCounts.same) === sameInMatrix,
+    `「三版一致」组写了 ${groupCounts.same} 条，矩阵里实际 ${sameInMatrix} 条`,
+  );
+
+  // 「三版一致」的逐条明细挪到附录 G —— 一个都不能少
+  const appG = loadReport().appendices?.find((a) => a.id === "G");
+  assert(!!appG, "报告里没有附录 G（三版一致参数逐条明细）");
+  const gBlocks = (appG.markdown ?? "").split("\n").filter((l) => l.startsWith("#### "));
+  assert(
+    gBlocks.length === sameInMatrix,
+    `附录 G 有 ${gBlocks.length} 个明细块，「三版一致」的行有 ${sameInMatrix} 条 —— 对不上`,
+  );
+
+  // **§12.0 的分组速览表必须与 §12.1.x 的小标题对得上** ——
+  // 两处各写一遍条数，不交叉校验就等于有两个真相来源。
+  const groupTable = tables.find((t) => /^\|\s*组\s*\|/.test(t.header ?? ""));
+  assert(!!groupTable, "第 12 章没有「分组速览」表（§12.0 决策视图）");
+  const groupTableCounts = groupTable.rows.map((l) =>
+    Number(l.trim().replace(/^\||\|$/g, "").split("|")[1]?.trim() ?? NaN),
+  );
+  const headingCounts = [
+    Number(groupCounts.changed),
+    Number(groupCounts.single),
+    Number(groupCounts.incomplete),
+    Number(groupCounts.same),
+  ];
+  assert(
+    JSON.stringify(groupTableCounts) === JSON.stringify(headingCounts),
+    `§12.0 速览表的条数 ${groupTableCounts.join("/")} 与 §12.1.x 小标题的 ${headingCounts.join("/")} 对不上`,
+  );
+
+  return `${rows.length} 个参数行 · 四组合计 ${sumGroups} = 矩阵 ${matrix.length} · 附录 G 明细 ${gBlocks.length} 块 · 速览表与分组标题一致`;
 });
 
 check("no spec pattern spans a page boundary", () => {
@@ -966,15 +1135,17 @@ check("matrix covers every declared family", () => {
 });
 
 check("two-version chapters declare their scope", () => {
-  // Chapters 13 and 14 are A-vs-B AT THE CLAUSE level: UN R48's clause system is
-  // not isomorphic with GB's, so no sentence-level mapping exists. Shipping them
-  // under a "comparison" title without saying so is what the customer read as
-  // "the EU column is empty".
+  // Chapter 13 is still A-vs-B only: UN R48's clause system is not isomorphic
+  // with GB's, so no sentence-level mapping exists there, and the chapter has
+  // to say so.
   //
-  // Chapter 14 now carries a NARROWER truth instead of the old blanket "no C":
-  // it prints a chapter-level R48 pointer plus that lamp's three-version values,
-  // so the declaration has to say chapter-level and non-clause-level. Both forms
-  // point the reader at chapter 12 / appendix C.
+  // Chapter 14 is no longer A/B-only. The client read the old A/B-only table as
+  // 「仅有两版国标，无欧标」, so chapter 14 now carries a REAL third column:
+  // the corresponding UN R48-09 chapter's clause number, page and original
+  // text, taken from the verified GB-chapter → R48-chapter map
+  // (data/r48-chapters.json). What it must still declare is the LIMITS of
+  // that column: it is chapter-level (not clause-level), and the clause-level
+  // truth lives in chapter 12.
   const chapters = loadReport().chapters;
   const get = (id) => {
     const ch = chapters.find((c) => c.id === id);
@@ -987,24 +1158,31 @@ check("two-version chapters declare their scope", () => {
     c13.includes("本章范围：仅 A 与 B 两版"),
     "chapter 13 does not declare that it excludes C",
   );
+  assert(
+    /第 12 章|附录 C/.test(c13),
+    "chapter 13 does not point the reader at the three-version material",
+  );
 
   const c14 = get(14).markdown ?? "";
+  // The declaration has to name the third column and its caliber.
   assert(
-    /逐句对照只做 A \/ B 两版/.test(c14),
-    "chapter 14 must still declare that the clause-level diff is A/B only",
+    c14.includes("C 列是欧标原文"),
+    "chapter 14 must declare that its third column is real UN R48 text",
   );
   assert(
     c14.includes("章节级") && c14.includes("非条款级"),
     "chapter 14 must declare that its R48 pointers are chapter-level, not clause-level",
   );
-
-  for (const id of [13, 14]) {
-    const md = id === 13 ? c13 : c14;
-    assert(
-      /第 12 章|附录 C/.test(md),
-      `chapter ${id} does not point the reader at the three-version material`,
-    );
-  }
+  assert(
+    /第 12 章/.test(c14),
+    "chapter 14 does not point the reader at the clause-level three-version material",
+  );
+  // And it must say what happens where R48 genuinely has no counterpart,
+  // rather than leaving the reader to guess whether the cell was forgotten.
+  assert(
+    c14.includes("无对应章"),
+    "chapter 14 must say what it prints where UN R48 has no corresponding chapter",
+  );
 
   // Anti-rot: the scope marker must ride on EVERY pointer line, not just in the
   // preamble — a reader who lands on one clause block never sees the preamble.
@@ -1015,13 +1193,29 @@ check("two-version chapters declare their scope", () => {
     tagged === pointers,
     `only ${tagged}/${pointers} R48 pointers carry the 章节级/非条款级 marker`,
   );
-  // A pointer without a resolvable clause number is a dead end for the reader.
-  const withClause = (c14.match(/\*\*R48 对应章节（章节级，非条款级）\*\*：[^\n]*§\d/g) ?? []).length;
+  // A pointer that CLAIMS a counterpart must name a clause number; a pointer
+  // that says there is none must say WHY. Both are dead ends otherwise.
+  const pointerLines = c14
+    .split("\n")
+    .filter((l) => l.includes("**R48 对应章节（章节级，非条款级）**"));
   assert(
-    withClause === pointers,
-    `${pointers - withClause} R48 pointers print no §clause number`,
+    pointerLines.length === pointers,
+    `抽出 ${pointerLines.length} 条指针行，章里数到 ${pointers} 条`,
   );
-  return `ch13 声明排除 C · ch14 声明章节级口径 · ${pointers} 条 R48 指针全部带标记与条款号`;
+  for (const l of pointerLines) {
+    if (l.includes("→")) {
+      assert(
+        /→[^§]*§\d/.test(l),
+        `R48 指针声称有对应章却没有条款号：${l.slice(0, 80)}`,
+      );
+    } else {
+      assert(
+        /无对应章 —— \S/.test(l),
+        `R48 指针说「无对应章」却没有给理由：${l.slice(0, 80)}`,
+      );
+    }
+  }
+  return `ch13 声明排除 C · ch14 声明 C 列是欧标原文且为章节级 · ${pointers} 条 R48 指针全部带标记（有的给条款号、有的给理由）`;
 });
 
 check("chapter 14 clause diff is a real side-by-side table", () => {
@@ -1034,6 +1228,9 @@ check("chapter 14 clause diff is a real side-by-side table", () => {
   //    body as the page, then prints a "C 无对应条款行" card for a chapter that
   //    DOES have C. Only a header that is not 版本/来源/文档/文件/标准 and that
   //    carries all three of A/B/C reaches that layout.
+  //
+  // **三列，不是两列**：C 列是 UN R48-09 对应章的条款号 + 页码 + 原文摘录。
+  // 两列的 A|B 表正是客户说的「仅有两版国标，无欧标」。
   const ch = loadReport().chapters.find((c) => c.id === 14);
   assert(ch, "chapter 14 missing");
   const md = ch.markdown ?? "";
@@ -1044,13 +1241,21 @@ check("chapter 14 clause diff is a real side-by-side table", () => {
   for (const b of blocks) {
     const lines = b.split("\n");
     const hdr = lines.findIndex((l) => /^\|\s*\*\*A 草案\*\*（/.test(l));
-    assert(hdr >= 0, `clause block is not a side-by-side A|B table: ${lines[0] ?? ""}`);
+    assert(hdr >= 0, `clause block is not a side-by-side A|B|C table: ${lines[0] ?? ""}`);
     const row = lines[hdr + 2] ?? "";
     // header, separator, exactly one body row — nothing else in the table
     assert(/^\|[\s:|-]+\|$/.test(lines[hdr + 1] ?? ""), `no separator row under ${lines[hdr]}`);
     assert(row.startsWith("|") && row.trimEnd().endsWith("|"), `body row is not a closed table row`);
     const cells = row.slice(1, -1).split("|");
-    assert(cells.length === 2, `expected 2 columns, got ${cells.length}`);
+    assert(cells.length === 3, `expected 3 columns (A|B|C), got ${cells.length}`);
+    // The third column must carry something: either the R48 clause (§6.x) or an
+    // explicit statement that R48 has no counterpart. An empty cell is neither.
+    const c = cells[2].trim();
+    assert(c.length > 0, `the C column is empty in: ${lines[0] ?? ""}`);
+    assert(
+      /§[\d.]+/.test(c) || /无对应章/.test(c),
+      `the C column states neither an R48 clause nor why there is none: ${c.slice(0, 60)}`,
+    );
     sideBySide++;
   }
 
@@ -1066,7 +1271,7 @@ check("chapter 14 clause diff is a real side-by-side table", () => {
     !/\| 来源 \| 页码 \|/.test(md),
     "chapter 14 reverted to the 来源/页码/正文 table (triggers the triptych)",
   );
-  return `${sideBySide} 条条款均为 A|B 两列并排，无跨行单元格`;
+  return `${sideBySide} 条条款均为 A|B|C 三列并排，无跨行单元格`;
 });
 
 check("chapter 14 carries C at chapter level, and says so on every pointer", () => {
@@ -1080,6 +1285,95 @@ check("chapter 14 carries C at chapter level, and says so on every pointer", () 
   const pointers = md.match(/\*\*R48 对应章节（章节级，非条款级）\*\*/g) ?? [];
   assert(pointers.length > 0, "chapter 14 has no R48 chapter-level pointers");
   return `${tables.length} 张三版取值表 · ${pointers.length} 条带口径标记的 R48 指针`;
+});
+
+check("chapter 14's C column matches the verified GB→R48 chapter map", () => {
+  // The client read the old two-column table as 「仅有两版国标，无欧标」. The
+  // third column now carries UN R48-09's corresponding chapter — clause
+  // number, page and original text — from data/r48-chapters.json, which
+  // scripts/build_r48_chapters.py builds by checking every mapping back
+  // against the R48 corpus.
+  //
+  // Two failure modes this has to catch, and both shipped:
+  //  · **指错** — 「后位灯」 pointed at §6.9.4.1, the FRONT position lamp's
+  //    clause; the four retro-reflectors all pointed at §6.14.
+  //  · **漏指** — R48's §6.11 rear fog lamp / §6.12 parking lamp / §6.18
+  //    side-marker / §6.20 cornering lamp / §6.21 conspicuity markings /
+  //    §6.22 AFS / §6.23 emergency stop signal were printed as
+  //    「无同构章节」.
+  const map = JSON.parse(read("data/r48-chapters.json"));
+  const mapEntries = map?.map ?? {};
+  const gbOnly = map?.gbOnly ?? {};
+  assert(
+    Object.keys(mapEntries).length >= 20,
+    `the GB→R48 chapter map only has ${Object.keys(mapEntries).length} entries`,
+  );
+
+  // The map must still match the corpus — a stale map is a wrong map.
+  const res = runPy(["scripts/build_r48_chapters.py", "--check"]);
+  assert(
+    res.ok,
+    `data/r48-chapters.json is stale or contradicts the R48 corpus:\n        ${res.out
+      .trim()
+      .split("\n")
+      .slice(-6)
+      .join("\n        ")}`,
+  );
+
+  const ch = loadReport().chapters.find((c) => c.id === 14);
+  assert(ch, "chapter 14 missing");
+  const md = ch.markdown ?? "";
+  const blocks = md.split(/\n(?=## 14\.x 条款 )/).slice(1);
+
+  // B-side chapter number → the C cell it printed.
+  // A-only chapters have no B-side number (`— ↔ A 7（A 独有）`) — the whole
+  // clause string is the key there, exactly as the renderer derives it.
+  const cCellOf = new Map();
+  for (const b of blocks) {
+    const lines = b.split("\n");
+    const m = lines[0].match(/^## 14\.x 条款 (.+?) — /);
+    if (!m) continue;
+    const full = m[1].trim();
+    const bSide = full.split("↔")[0].trim();
+    const key = /^\d/.test(bSide) ? bSide : full;
+    const hdr = lines.findIndex((l) => /^\|\s*\*\*A 草案\*\*（/.test(l));
+    if (hdr < 0) continue;
+    const cells = (lines[hdr + 2] ?? "").slice(1, -1).split("|");
+    cCellOf.set(key, (cells[2] ?? "").trim());
+  }
+
+  for (const [gb, e] of Object.entries(mapEntries)) {
+    const c = cCellOf.get(gb);
+    assert(!!c, `chapter 14 has no block for GB ${gb}（${e.gbName}）`);
+    assert(
+      c.startsWith(`§${e.r48}`),
+      `GB ${gb}（${e.gbName}）的 C 列写的是「${c.slice(0, 40)}」，` +
+        `但对应表说它应是 §${e.r48}（${e.r48Name}）—— 指错装置了`,
+    );
+    // A chapter number without a page is not checkable by the reader.
+    assert(
+      /§[\d.]+（第\d+页）/.test(c),
+      `GB ${gb}（${e.gbName}）的 C 列没有页码：${c.slice(0, 50)}`,
+    );
+    // …and it has to be R48's own words, not a placeholder.
+    assert(
+      c.length > 60,
+      `GB ${gb}（${e.gbName}）的 C 列没有原文摘录（只有 ${c.length} 字）`,
+    );
+  }
+
+  for (const [gb, why] of Object.entries(gbOnly)) {
+    const c = cCellOf.get(gb);
+    assert(!!c, `chapter 14 has no block for GB ${gb}`);
+    assert(
+      /无对应章/.test(c),
+      `GB ${gb} 在对应表里登记为「R48 无对应章」（${String(why).slice(0, 30)}…），` +
+        `但报告的 C 列写的是「${c.slice(0, 40)}」—— 两处对不上`,
+    );
+  }
+
+  const real = [...cCellOf.values()].filter((c) => /§[\d.]+（第\d+页）/.test(c)).length;
+  return `${Object.keys(mapEntries).length} 条对应全部逐章对上（${real} 条有 R48 原文）+ ${Object.keys(gbOnly).length} 条 GB 独有已写明理由`;
 });
 
 check("the parameter matrix is still a MATRIX in the PDF, not three card columns", () => {
@@ -1769,12 +2063,17 @@ check("every requirement clause has a disposition", () => {
     `还有 ${weak} 条要求条款既没被引用、原文也不在报告里、也没登记进 E.5.1 —— ` +
       "这些是真缺口，必须逐条列出原文与页码",
   );
-  // 「附录逐条」的那些必须逐条登记了理由
+  // 「附录逐条」的那些必须逐条登记了理由。
+  //
+  // 用 `<=` 而不是 `===`：登记在 `requirement-gaps.json` 里的条款，
+  // 一旦它的**编号出现在报告里**（第 12 章矩阵、附录 G 的明细、章内引文），
+  // 台账就把它改判成「已覆盖」—— 它已经被报告讲了，不必再靠 E.5.1 兜底。
+  // 反过来（`listed > registered`）才是问题：有条款被列进了 E.5.1 却没有理由。
   const gapsFile = JSON.parse(read("data/requirement-gaps.json"));
   const registered = (gapsFile.gaps ?? []).filter((g) => String(g.reason ?? "").trim()).length;
   assert(
-    registered === listed,
-    `「附录逐条」${listed} 条，但只有 ${registered} 条登记了理由`,
+    listed <= registered,
+    `「附录逐条」${listed} 条，比登记了理由的 ${registered} 条还多 —— 有条款被列进 E.5.1 却没有理由`,
   );
   return `${req} 条要求条款全部有处置（已覆盖 ${cov} · 附录逐条 ${listed} · 已引原文 ${quoted} · 同章别处 ${weak} · 不适用 ${na} · 真缺口 ${gaps}）`;
 });
@@ -1927,6 +2226,8 @@ for (const t of [
   // 取证工具的回归用例：**不调模型**（用已知答案断言具体页码），
   // 但它是 agent 唯一的证据来源 —— 工具回源错了，agent 就会把错的东西当事实讲出去
   "_test_agent_tools.mjs",
+  // 变化清单的已知答案用例（classify 是本轮新增的判定）
+  "_test_change_ledger.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

@@ -2,12 +2,12 @@
  "generatedAt": null,
  "totals": {
   "requirements": 445,
-  "covered": 235,
-  "appendixListed": 94,
+  "covered": 266,
+  "appendixListed": 81,
   "weak": 0,
   "notApplicable": 45,
   "gaps": 0,
-  "quoted": 71
+  "quoted": 53
  },
  "rows": [
   {
@@ -138,8 +138,8 @@
    "page": 28,
    "excerpt": "水平方向 为了形成弯道照明，可以改变1只或2只近光灯的水平方向，但是当移动整个光束或明暗截止线弯曲 肘部时，明暗截止线弯曲肘部不得与离车辆前方的距离为相应近光灯安装高度100倍距离外的车辆重心 轨迹相交。",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "【GB 4785 草案 V4.3.5】5.2.6.4 —— 弯道照明的水平调节。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。弯道照明时明暗截止线弯曲肘部**不得与车辆重心轨迹相交**（距车前 100 倍安装高度处）—— 几何约束，无独立标量",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -435,9 +435,9 @@
    "page": 50,
    "excerpt": "电路连接 车辆同侧的驻车灯应独立于其他任何灯具而点亮。驻车灯以及若采用符合5.12.9要求的前位灯和 后位灯，应即使当发动机（推进系统）的点、熄火控制装置处于使发动机（推进系统）无法工作的状态 时，也应能进行操作。不应使用自动关闭这些灯具的装置（如计时关闭装置）。",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 24
+   "quotedMatch": 0
   },
   {
    "version": "A",
@@ -446,8 +446,8 @@
    "page": 50,
    "excerpt": "指示器 选装接通指示器。若安装，不应与前、后位灯的指示器混淆。",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "【GB 4785 草案 V4.3.5】5.12.8 —— 指示器。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。驻车灯的**接通指示器选装**，且不应与前、后位灯的指示器混淆 —— 功能性要求",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -545,9 +545,9 @@
    "page": 57,
    "excerpt": "其他要求 无。 醒目标志 汽车及挂车车身反光标识和车辆尾部标志板的安装按GB 11564要求。 倒车灯 5.21.1 配备 GB 4785—XXXX 54 汽车和O2、O3和O4类挂车应配备。O1类挂车选装。 5.21.2 数量 5.21.2.1 对于M1类和长度不大于6m 的所有其他车辆，应配备1 只或2 只（成对）。 5.21.2.2 除了M1 类车辆外，对于长度大于6m 的所有车辆应配备2 只（成对），选装2 只（成对）。 5.21.3 布局 无特殊要求。 5.21.4 安装位置 5.21.4.1 横向：无特殊要求。 5.21.4.2 高度：离地高度不小于250mm，不大于1200mm。对于N2G、N3G、M2G、M3G（越野…",
    "hasLimit": true,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 24
+   "quotedMatch": 0
   },
   {
    "version": "A",
@@ -919,8 +919,8 @@
    "page": 26,
    "excerpt": "水平方向 为了形成弯道照明,可以改变一只或两只近光灯的水平方向,但是当移动整个光束或明暗截止线弯 曲肘部时,明暗截止线弯曲肘部不得与离车辆前方的距离为相应近光灯安装高度100倍距离外的车辆 重心轨迹相交。 5. 2. 6.",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "【GB 4785-2019】5.2.6.4 —— 弯道照明的水平调节。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。弯道照明时明暗截止线弯曲肘部**不得与车辆重心轨迹相交**（距车前 100 倍安装高度处）—— 几何约束，无独立标量",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -930,8 +930,8 @@
    "page": 27,
    "excerpt": "其他要求 本标准4. 5b)要求不适用于近光灯。 当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。 对于下倾度,5. 2. 6. 2. 2规定的装置不应用于下述情况: ———单侧主近光光源或光源模块目标光通量大于2000lm。 上述“目标光通量”,以试验电压为准。 对于允许使用多个试验电压的灯丝灯泡,上述产生主近光的“目标光通量”以进行光源型式试验的 产品试验电压为准。 只有符合GB4599或GB21259或GB25991的近光灯才能用于实现弯道照明。 左转弯时,如果弯道照明是通过水平移动整个光束或明暗截止线弯曲肘部来实现,那么只有在车辆 前行时才能被…",
    "hasLimit": true,
-   "disposition": "附录逐条",
-   "reason": "【GB 4785-2019】5.2.9 —— 其他要求（含清洗装置）。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。近光灯的**其他要求**：单侧光通量超过 2000lm 时应配备符合 GB/T 21260 的前照灯清洗装置；对下倾度的例外 —— 数值 2000lm 已在矩阵，本条是**触发条件与例外**",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -1029,9 +1029,9 @@
    "page": 41,
    "excerpt": "电路连接 车辆同侧的驻车灯应可以独立于其他任何灯具而开启。驻车灯以及若采用符合5. 12. 9要求的前 位灯和后位灯,即使当发动机(推进系统)的点、熄火控制装置处于使发动机(推进系统)无法工作的状态 时,也应能进行操作。不应使用自动关闭这些灯具的装置(如计时关闭装置)。 5. 12.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 24
+   "quotedMatch": 0
   },
   {
    "version": "B",
@@ -1040,8 +1040,8 @@
    "page": 41,
    "excerpt": "指示器 接通指示器选装。若选装,不应与前、后位灯的指示器混淆。 5. 12.",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "【GB 4785-2019】5.12.8 —— 指示器。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。驻车灯的**接通指示器选装**，且不应与前、后位灯的指示器混淆 —— 功能性要求",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -2052,9 +2052,9 @@
    "page": 36,
    "excerpt": "It shall be always possible to manually deactivate and reactivate the system which operates the Driver Assistant Projection.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -2063,9 +2063,9 @@
    "page": 36,
    "excerpt": "The projected symbols and patterns shall no longer be projected when their associated underlying conditions allowing them to be shown do not exist anymore.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -2074,9 +2074,9 @@
    "page": 36,
    "excerpt": "The projected symbols and patterns shall stop flashing when their associated underlying conditions allowing them to flash do not exist anymore.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -2085,9 +2085,9 @@
    "page": 36,
    "excerpt": "The Driver Assistance Projection shall be deactivated automatically in case of an electrically detectable failure of the system that affects the visual information on the road given by the Driver Assistance Projection.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -2096,9 +2096,9 @@
    "page": 36,
    "excerpt": "The Driver Assistance Projection shall not interfere with information displayed by the Field of Vision Assistant as defined in UN Regulation No. 125.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -2701,8 +2701,8 @@
    "page": 48,
    "excerpt": "They shall be such that the lamp can be switched ON only if the reverse gear is engaged and if the device which controls the starting and stopping of the propulsion system is in such a position that operation of the propulsion system is possible. It shall not switch ON or remain ON if either of the above conditions is …",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "【UN R48-09 6.4.7.1】倒车灯的**电路连接** —— 倒车灯只有在挂入倒挡**且**装置所要求的条件满足时才可点亮 —— 属电路/条件要求，无标量。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -2899,9 +2899,9 @@
    "page": 55,
    "excerpt": "Number Two S1 or S2 category devices and one S3 or S4 category device on all categories of vehicles. 56 The devices shall be type-approved according to the 02 or subsequent series of amendments to UN Regulation No. 7, or to the 00 or subsequent series of amendments to UN Regulation No. 148.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -3086,8 +3086,8 @@
    "page": 63,
    "excerpt": "In width: if there is only one rear fog-lamp, it shall be on the opposite side of the median longitudinal plane of the vehicle to the direction of traffic prescribed in the country of registration, the centre of reference may also be situated on the median longitudinal plane of the vehicle.",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "R48 §6.11.4.1「宽度方向：若只装一盏后雾灯，它应位于车辆纵向对称平面的另一侧」—— 单灯后雾灯的**布置条件**，报告的 C 列只对照了后雾灯的定量条款（安装高度 §6.11.4.2 等），这条定性布置要求没有单列。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -3152,9 +3152,9 @@
    "page": 64,
    "excerpt": "Number According to the arrangement. The devices shall be type-approved according to the 00 or subsequent series of amendments to UN Regulation No. 77, or to the 02 or subsequent series of amendments to UN Regulation No. 7, or to the 00 or subsequent series of amendments to UN Regulation No. 148.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -3174,9 +3174,9 @@
    "page": 65,
    "excerpt": "Electrical connections The connection shall allow the parking lamp(s) on the same side of the vehicle to be switched ON independently of any other lamps. The parking lamp(s) and, if applicable, the front and rear position lamps according to paragraph 6.12.9. below, shall be able to operate even if the device which star…",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 24
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -3185,9 +3185,9 @@
    "page": 65,
    "excerpt": "Tell-tale Closed-circuit tell-tale optional. If there is one, it shall not be possible to confuse it with the tell-tale for the front and rear position lamps. However, a tell-tale indicating failure is mandatory if required by the component regulation.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -3306,8 +3306,8 @@
    "page": 70,
    "excerpt": "Number Such that the requirements for longitudinal positioning are complied with. These devices shall be type-approved according to the requirements concerning Class IA or IB retro-reflectors in the 02 or subsequent series of amendments to UN Regulation No. 3, or in the 00 or subsequent series of amendments to UN Regul…",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "R48 §6.17.2「侧标志灯的数量：应满足纵向位置规定」—— 侧标志灯的**数量/位置**规则，报告只对照了定量条款（可见度角 §6.17.4 等）。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -3328,8 +3328,8 @@
    "page": 71,
    "excerpt": "Presence Mandatory: On all vehicles the length of which exceeds 6 m, except for chassis-cabs. The SM1 type of side-marker lamp shall be used on all categories of vehicles; however the SM2 type of side-marker lamps may be used on the M1 category of vehicles. In addition, on M1 and N1 category vehicles less than 6 m in l…",
    "hasLimit": true,
-   "disposition": "附录逐条",
-   "reason": "R48 §6.18.1「SM1 型侧标志灯的配备：车长超过 6m 的车辆强制（底盘驾驶室除外）」—— **配备条件**（含 6m 车型门槛），报告只对照了定量条款。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -3383,8 +3383,8 @@
    "page": 72,
    "excerpt": "Other requirements When the rearmost side-marker lamp is combined with the rear position lamp reciprocally incorporated with the rear fog-lamp or stop lamp, the photometric characteristics of the side-marker lamp may be modified during the entire time of the rear fog lamp or stop lamp are switched ON. Rear side-marker …",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "R48 §6.18.9「其他要求：最后方侧标志灯与后位灯/后雾灯复合时的条件」—— **组合条件**，报告只对照了定量条款。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -3493,8 +3493,8 @@
    "page": 76,
    "excerpt": "In width: one cornering lamp shall be located on each side of the vehicle's median longitudinal plane.",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "R48 §6.20.4.1「宽度方向：每一侧应装一盏转向灯」—— 转向灯的**布置要求**，报告的 C 列只对照了定量条款（可见度角 §6.20.5 等）。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -3570,9 +3570,9 @@
    "page": 77,
    "excerpt": "In cases where the manufacturer, after verification by the Technical Service, can prove to the satisfaction of the Type Approval Authority that it is impossible, due to the operational requirements which may require special shape, structure or design of the vehicle, to comply with the requirements contained in paragrap…",
    "hasLimit": true,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -4065,8 +4065,8 @@
    "page": 88,
    "excerpt": "The applicant shall demonstrate with a concise description or other means acceptable to the Type Approval Authority: (a) The correspondence of the AFS control signals i) To the description required in paragraph 3.2.6. of this Regulation; and ii) To the respective AFS control signals specified in the AFS type approval d…",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "【UN R48-09 6.22.9.3.1】AFS 的**提交文件**要求 —— 申请人应提交简洁说明或检测机构认可的其他方式，证明 AFS 满足要求 —— 属文件要求，不是灯具参数。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -4164,8 +4164,8 @@
    "page": 90,
    "excerpt": "Presence Mandatory on motor vehicles. Optional on trailers. The emergency stop signal shall be given by the simultaneous operation of all the stop or direction-indicator lamps fitted as described in paragraph 6.23.7.",
    "hasLimit": false,
-   "disposition": "附录逐条",
-   "reason": "R48 §6.23.1「紧急制动信号的配备：乘用车强制、挂车选装；由全部符合 §6.23 规定的制动灯或转向灯同时工作发出」—— **配备与实现方式**。本报告只对照了它的**闪烁频率**（§6.23.7.1）与**作用时间**；**「用哪几盏灯实现」这一条对设计的影响不比频率小**，属本版未覆盖。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -4285,9 +4285,9 @@
    "page": 92,
    "excerpt": "The exterior courtesy lamp or lamps may vary in luminous intensity and/or vary in apparent surface. The photometric characteristics of the exterior courtesy lamp(s) may vary in relation to the position of vehicle users. No sharp variation of intensity shall be observed during transition.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -4296,9 +4296,9 @@
    "page": 92,
    "excerpt": "The exterior courtesy lamp(s) shall not flash.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -4406,9 +4406,9 @@
    "page": 94,
    "excerpt": "Number One or two (one per side) on vehicles not exceeding 6 m in length. A maximum of four (up to two per side) on vehicles above 6 m and up to and including 9 m in length. A maximum of six (up to three per side) on vehicles exceeding 9 m in length. However, installed lamps shall be type-approved according to the 00 o…",
    "hasLimit": true,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -4483,9 +4483,9 @@
    "page": 96,
    "excerpt": "The duration of the optical indication of the answer-back signal shall not exceed 3 seconds.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",
@@ -4494,9 +4494,9 @@
    "page": 96,
    "excerpt": "Compliance with the requirements of paragraphs 6.27.9.1. to 6.27.9.4. shall be demonstrated by the applicant, using test reports or other means of verification accepted by the Type Approval Authority. The information shall be indicated in item 10.9. of the communication form. 7. Modifications and extensions of approval…",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",

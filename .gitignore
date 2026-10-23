@@ -157,6 +157,7 @@ _t_*.md
 _t_*.pdf
 _verify_fonts.py
 _demo_*.png
+_gap_probe.json
 reports/_*.json
 reports/*.err
 server.err

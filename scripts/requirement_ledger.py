@@ -160,10 +160,19 @@ def collect_report_refs(rep, facts, audit) -> dict:
                 if cl:
                     refs.setdefault(v, set()).add(cl)
 
-    # 各章的原文摘录里的条款号 —— 版本分不开，就当三版都提到过
+    # 各章**与附录**的原文摘录里的条款号 —— 版本分不开，就当三版都提到过
+    #
+    # 附录**必须一起扫**：第 12 章的明细拆成了「§12.2 只讲需要动作的」
+    # +「附录 G 三版一致的逐条明细」两处，条款号落在**附录 G** 里。
+    # 只扫正文会把这些条款误判成「没覆盖」—— 客户在附录 G 里明明查得到。
+    # 附录 E 除外：它是这份台账自己的输出，扫它就是循环论证（见上）。
     any_refs = set()
     for ch in rep.get("chapters") or []:
         any_refs |= clause_refs(ch.get("markdown") or "")
+    for ap in rep.get("appendices") or []:
+        if str(ap.get("id") or "").upper() == "E":
+            continue
+        any_refs |= clause_refs(ap.get("markdown") or "")
     for v in refs:
         refs[v] |= any_refs
     return refs

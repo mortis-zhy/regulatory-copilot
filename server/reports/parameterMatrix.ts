@@ -968,7 +968,17 @@ const esc = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim();
 
 /** Compact cell for the scannable summary: the numbers, not the prose. */
 function short(cell: Cell): string {
-  if (cell.status !== "verified") return cell.miss === "no-pattern" ? "未建规则" : "未命中";
+  if (cell.status !== "verified") {
+    // **「该版无此规定（已核）」必须与「未命中」分开显示。**
+    // 144 个取值位是**人工逐条核过原文**的「该版确实没有这条规定」，
+    // 理由写在 12.2 明细里。旧代码把它们一律渲染成「未命中」——
+    // 于是 12.1 那张 305 行的总表里出现 144 个「未命中」，
+    // 读者读出来的结论是「抽取失败 / 数据不全」，
+    // 而事实是「这三版在这一条上确实没有规定，附依据」。
+    // 客户抱怨的「数值有空缺」就是这么来的 —— 不是数据缺，是**呈现把「已核过」说成了「没找到」**。
+    if (cell.miss === "not-specified") return "无此规定（已核）";
+    return cell.miss === "no-pattern" ? "未建规则" : "未命中";
+  }
   if (cell.nums.length) return cell.nums.join(" / ");
   return esc(cell.value).slice(0, 28) + "…";
 }
@@ -990,10 +1000,25 @@ export function verdictLabel(row: Row, versions: Version[]): string {
   if (v === "same") return `${v0}/${v1} 一致`;
   if (v === "incomplete") {
     const missing = versions.filter((k) => row.cells[k]?.status !== "verified");
-    return `不判定（${missing.join("/") || "—"} 未定位）`;
+    // **「未定位」与「该版无此规定（已核）」要分开说。**
+    // 判定列是读者扫过 305 行时唯一会看的字 —— 写「未定位」等于宣称
+    // 「我们没查到」，而 144 个这样的格子其实**人工核过原文、确认没有规定**。
+    // 混在一起的后果：客户把「已核过的空」当成「缺数据」——
+    // 这正是「数值有空缺」这个抱怨的来源。
+    const noSpec = missing.filter((k) => row.cells[k]?.miss === "not-specified");
+    const notLoc = missing.filter((k) => row.cells[k]?.miss !== "not-specified");
+    const parts: string[] = [];
+    if (noSpec.length) parts.push(`${noSpec.join("/")} 无此规定（已核）`);
+    if (notLoc.length) parts.push(`${notLoc.join("/")} 未定位`);
+    return `不判定（${parts.join("；") || "—"}）`;
   }
   const only = versions.find((k) => `${k.toLowerCase()}-only` === v);
-  return only ? `**${only} 未定位到**` : String(v);
+  if (!only) return String(v);
+  // 同样：「该版确实没有这条规定」是一个**结论**（已核原文），
+  // 「我们没定位到」是一个**缺口**。单边行的判定列必须说清是哪一种。
+  return row.cells[only]?.miss === "not-specified"
+    ? `**${only} 无此规定（已核）**`
+    : `**${only} 未定位到**`;
 }
 
 /**
@@ -1004,9 +1029,35 @@ export function verdictLabel(row: Row, versions: Version[]): string {
  * So: a compact scannable summary carrying only the numbers, then one detail
  * block per parameter carrying the full原文 quote, clause and page.
  */
-export function renderMatrixTable(rows: Row[], versions: Version[]): string {
+/**
+ * 一组参数的判定 —— 用来把 305 行按「读者要不要动手」分组。
+ *
+ * 顺序是刻意的：**要动手的排前面，不用动手的排后面**。
+ * 以前 305 行平铺，205 行「三版一致」和 9 行「变了」混在一起 ——
+ * 读者要自己扫才知道哪几行要他改设计。
+ */
+export interface MatrixGroups {
+  changed: Row[];
+  singleSide: Row[];
+  incomplete: Row[];
+  same: Row[];
+}
+
+export function groupRows(rows: Row[], versions: Version[]): MatrixGroups {
+  const g: MatrixGroups = { changed: [], singleSide: [], incomplete: [], same: [] };
+  for (const r of rows) {
+    if (r.verdict === "changed") g.changed.push(r);
+    else if (r.verdict === "incomplete") g.incomplete.push(r);
+    else if (/-only$/.test(String(r.verdict))) g.singleSide.push(r);
+    else g.same.push(r);
+  }
+  return g;
+}
+
+/** 一张参数总表（不含明细块）。 */
+export function renderMatrixSummaryTable(rows: Row[], versions: Version[]): string {
   const heads = versions.map((v) => esc(versionLabel(v)));
-  const summary = [
+  return [
     `| 参数 | 单位 | ${heads.join(" | ")} | 判定 |`,
     `|---|---|${versions.map(() => "---").join("|")}---|`,
     ...rows.map(
@@ -1016,8 +1067,11 @@ export function renderMatrixTable(rows: Row[], versions: Version[]): string {
           .join(" | ")} | ${verdictLabel(r, versions)} |`,
     ),
   ].join("\n");
+}
 
-  const details = rows
+/** 逐参数的原文明细块（每块一张三版小表 + 空值依据 + 判定）。 */
+export function renderMatrixDetails(rows: Row[], versions: Version[]): string {
+  return rows
     .map((r) => {
       const label = verdictLabel(r, versions);
       const line = (v: Version, c: Cell) =>
@@ -1049,22 +1103,45 @@ export function renderMatrixTable(rows: Row[], versions: Version[]): string {
       ].join("\n");
     })
     .join("\n\n");
+}
+
+export function renderMatrixTable(rows: Row[], versions: Version[]): string {
+  const summary = renderMatrixSummaryTable(rows, versions);
+  const details = renderMatrixDetails(rows, versions);
 
   const n = versions.length;
+  // **这三种空值在实际数据里各有几条** —— 说明表里写清楚，
+  // 别让读者以为「未命中」那一栏也是满的。
+  const missCount = (kind: "not-specified" | "no-pattern" | "no-match") =>
+    rows.reduce(
+      (acc, r) =>
+        acc +
+        versions.filter((v) => r.cells[v]?.status !== "verified" && r.cells[v]?.miss === kind)
+          .length,
+      0,
+    );
+  const cNoSpec = missCount("not-specified");
+  const cNoPattern = missCount("no-pattern");
+  const cNoMatch = missCount("no-match");
   return [
     "## 12.1 参数对照总表",
     "",
-    "**空值有三种，含义不同，格子里已分别标注**：",
+    "**空值分三类，含义完全不同，格子里已分别标注**：",
     "",
-    "| 标记 | 含义 | 读法 |",
-    "|---|---|---|",
-    "| `— 该版无此规定（已核）` | 已回该版原文逐条核对，**确认该版没有可比的数值规定**（确实没写，或写了但量值/口径不可比），理由见 12.2 明细 | 可直接采信：**该版给不出这个数**；少数行的理由会说明「有条款但不可比」 |",
-    "| `— 未建该版规则` | 本报告没有为该版本写抽取规则 | 该版**可能**有规定，本报告未覆盖 |",
-    "| `— 规则未命中` | 规则写了，但在原文语料里没匹配上 | 该版**很可能**有规定，但取数失败 |",
+    "| 标记 | 本版实有 | 含义 | 读法 |",
+    "|---|---|---|---|",
+    `| \`无此规定（已核）\` | ${cNoSpec} 格 | 已回该版原文逐条核对，**确认该版没有可比的数值规定**（确实没写，或转引他标，或写了但量值/口径不可比），理由见 12.2 明细 | **可直接采信**：该版给不出这个数。**空 ≠ 没抽到** |`,
+    `| \`未建规则\` | ${cNoPattern} 格 | 本报告没有为该版本写抽取规则 | 该版**可能**有规定，本报告未覆盖 |`,
+    `| \`未命中\` | ${cNoMatch} 格 | 规则写了，但在原文语料里没匹配上 | 该版**很可能**有规定，但取数失败 |`,
     "",
     "> 后两种都**不等于**「该版未规定」—— 从抽取失败推不出法规结论。原文表格 OCR 不可读是常见原因",
     "> （GB 4785-2019 的色度表文本层会把三列串成一行）。判定列已把这种情况标为「未定位」，不参与一致性判断。",
     "> 第一种不同：它是**核对过的事实**，理由逐条写在 12.2 的明细里，可以回原文复核。",
+    cNoSpec > 0
+      ? `> **本版的实际情况：${cNoSpec} 个空格全部属于第一种（已核「该版无此规定」），` +
+        `「未建规则」与「未命中」各 ${cNoPattern} / ${cNoMatch} 格。**` +
+        "所以矩阵里的每一个空格都有明确归类、可回原文复核 —— **没有「不知道」的格子**。"
+      : "",
     "",
     summary,
     "",

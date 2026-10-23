@@ -21,14 +21,18 @@ import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
 // Aliased: reportV6.ts already has a local buildParameterMatrix() that builds
 // the §11.3.3 A-vs-B matrix. Same name, different job — the import below is the
 // three-version matrix and would be shadowed by the local declaration.
-import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, loadSourceCorpus, verdictLabel } from "./parameterMatrix";
+import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel } from "./parameterMatrix";
 // 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
 import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
 import COVERAGE_AUDIT from "../../data/coverage-audit.json";
 import REQUIREMENT_LEDGER from "../../data/requirement-ledger.json";
 import REQUIREMENT_GAPS from "../../data/requirement-gaps.json";
 import APPENDIX_TABLES from "../../data/appendix-tables.json";
+// GB 章节 → UN R48-09 章节的对应表（scripts/build_r48_chapters.py 生成，
+// 每条都回 R48 原文验过）。第 14 章的 C 列用它。
+import R48_CHAPTERS from "../../data/r48-chapters.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
+import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
 import { diffRefs, buildRefSection } from "./refDiff";
@@ -718,6 +722,25 @@ interface ClauseBlock { clause: string; title: string; aText: string; aPage: num
  * This invents no correspondence of its own — a miss leaves the clause exactly
  * as it was (A/B only), which is the intended behaviour, not a gap.
  */
+/**
+ * 本节（某个 GB 条款/章节）在**变化总清单**里对应哪几条。
+ *
+ * 匹配口径：清单行的 topic 或 name 里含这个装置名。
+ * 清单的 topic 有两种形态 —— 差值/人工那几套是**装置名**（转向信号灯），
+ * 矩阵那几套是**参数类别**（闪烁频率 / 时间参数）而装置名在 name 里 ——
+ * 所以两处都查。
+ */
+function ledgerRowsForSection(ledger: ChangeRow[] | undefined, sectionTitle: string): ChangeRow[] {
+  if (!ledger?.length) return [];
+  const tok = topicDeviceToken(
+    String(sectionTitle ?? "")
+      .replace(/^\s*[\d.]+\s*/, "")
+      .replace(/[（(][^）)]*[）)]/g, ""),
+  );
+  if (!tok || tok.length < 2) return [];
+  return ledger.filter((r) => String(r.topic ?? "").includes(tok) || String(r.name ?? "").includes(tok));
+}
+
 function findTopicForClause(
   topicColumns: any[] | undefined,
   gbClause: string,
@@ -755,6 +778,17 @@ function findTopicForClause(
 }
 
 /**
+ * 第 14 章某一节的 **GB（B 版）章节号** —— C 列对应表与取值表都按它查。
+ *
+ * 条款串形如 `5.10 ↔ A 5.10`（B 驱动）或 `— ↔ A 7（A 独有）`（A 独有）。
+ * 后者没有编号，整串当 key。
+ */
+function gbChapterKey(clause: string): string {
+  const b = String(clause ?? "").split("↔")[0].trim();
+  return /^\d/.test(b) ? b : String(clause ?? "").trim();
+}
+
+/**
  * GB chapter name / topic name → the matrix rows for the same device.
  *
  * Chapter 14 titles look like `5.20 角灯(符合 GB/T30511要求的灯具)` — the
@@ -770,14 +804,18 @@ const MATRIX_NAME_ALIAS: Record<string, string> = {
   后牌照板照明装置: "牌照", // GB 5.8 wording; matrix rows would say 牌照灯
 };
 
-function matrixRowsForTopic(matrixRows: any[] | undefined, topic: string): any[] {
+function matrixRowsForTopic(matrixRows: any[] | undefined, topic: string, explicitToken?: string): any[] {
   if (!Array.isArray(matrixRows) || !matrixRows.length) return [];
   // Drop a leading clause number and any trailing `(符合 …)` standard reference.
   const name = String(topic ?? "")
     .replace(/^\s*[\d.]+\s*/, "")
     .replace(/[（(][^）)]*[）)]/g, "")
     .trim();
-  let tok = topicDeviceToken(name);
+  // An explicit token wins: the device names in the map are longer than the
+  // 5-character window `topicDeviceToken` takes, and truncating them picks the
+  // WRONG device's rows (「三角形后回复反射器」would match the 11 rows of
+  // 「非三角形后回复反射器」).
+  const tok = explicitToken && explicitToken.trim() ? explicitToken.trim() : topicDeviceToken(name);
   if (!tok) return [];
   const aliased = MATRIX_NAME_ALIAS[tok];
   return matrixRows
@@ -804,6 +842,7 @@ function build14_clauseTextDiff(
   data: Record<string, any>,
   topicColumns?: any[],
   matrixRows?: any[],
+  ledger?: ChangeRow[],
 ): string {
   const aFull: string = data.A?.fullText ?? "";
   const bFull: string = data.B?.fullText ?? "";
@@ -1004,23 +1043,30 @@ function build14_clauseTextDiff(
 
   // Render
   const out: string[] = [
-    "# 第 14 章 条款正文逐句 A vs B 对照（附 C 章节级对应与三版取值）",
+    "# 第 14 章 条款正文 A vs B 逐条对照（附 C UN R48-09 对应章节与实质变化判定）",
     "",
-    "> **本章逐句对照只做 A / B 两版。** UN R48 与 GB 的条款编号体系（§2 定义 / §5 通用 /",
-    "> §6 各灯具 / Annex）完全不同构，逐号对读会造出假对应 —— 例如 GB 5.4.5.1 与 R48",
-    "> 6.4.5.1 编号相似却不是同一条款。**逐参数的条款级对照以第 12 章为准。**",
+    "> **C 列是欧标原文，不是指针。** 每一行的第三列给出 UN R48-09 对应章节的条款号、页码与原文摘录。",
+    "> 数据来自 `data/r48-chapters.json`（GB 章节 → R48 章节对应表，",
+    `> **${Object.keys((R48_CHAPTERS as any)?.map ?? {}).length} 条对应关系逐条回 R48 原文验过**：英文标题原文必须在语料里、R48 章节号必须`,
+    "> 出现在该标题前后 400 字内、GB 章标题必须含该装置名）。",
     ">",
-    "> 但**章节级是能对应的**，而且这份对应不是新写的：`topicColumns` 里的 B 条款 → C 条款",
-    "> 已经过源 PDF 逐句核验（第 3.2 章那张表就是它的直接产物）。所以每条下面给出",
-    "> ① R48 对应章节与页码 ② 该灯具的三版取值表（取自第 12 章已核验矩阵）。",
+    "> **C 列的粒度是「同一盏灯」，不是「同一条款」**：UN R48 与 GB 的条款编号体系",
+    "> （§2 定义 / §5 通用 / §6 各灯具 / Annex）完全不同构，逐号对读会造出假对应 ——",
+    "> 例如 GB 5.4.5.1 与 R48 6.4.5.1 编号相似却不是同一条款。",
+    "> **逐参数的条款级对照以第 12 章为准**（那里 915 个取值位每个都带条款与页码）。",
     ">",
-    "> ① 标注为「章节级对应」：**同一盏灯，不是同一条款**，按它去 R48 里找量化条款仍须逐条核对。",
+    "> **R48 确实没有对应章的，报告写明「无对应章」并给出理由**（如 GB 的「检验规则」、",
+    "> 「实施日期」这类管理性章节，以及 GB 独有的「牵引杆挂车标志灯」），不硬凑。",
     ">",
-    "> **说明**：以 B 现行的完整章节结构为骨架，逐条映射到 A 对应条款（章节映射：B6→A8、B6.1→A9、B7→A10；装置节映射见 11.6.2），并排对照 A/B 条款正文（每条截断 600 字）。A 独有的第 6/7 章追加在末尾。",
+    "> **变化判定由 §11.0 变化总清单回答** —— 那一节是全报告唯一一份「改了什么」，",
+    "> 逐条回原文核验过。本章只回答一件事：**这一节有没有实质变化**；",
+    "> 有 → 列出是哪几条（编号 + B 值 → A 值），没有 → 明写「无实质数值变化」。",
+    ">",
+    "> **说明**：以 B 现行的完整章节结构为骨架，逐条映射到 A 对应条款（章节映射：B6→A8、B6.1→A9、B7→A10；装置节映射见 11.6.2），并排对照条款正文（每条截断 600 字）。A 独有的第 6/7 章追加在末尾。",
     "",
     `> 对比条目：${clauses.length}（B 驱动 ${clauses.length - aOnly.length} + A 独有 ${aOnly.length}）· A 侧定位成功 ${clauses.filter((c) => c.aPage).length} / ${clauses.length}`,
     "",
-    "**使用提示**：每行一对条款。`🔴 实质差异` 需逐字比对；`🔧 局部调整` 需确认语义；`📝 实质一致` 无需动作；`🆕/🗑` 对应新增/删除。",
+    "**使用提示**：`🔴 本节有 N 条实质变化` → 看下面列出的 chg 编号，到 §11.0 看完整依据与页码；`📝 无实质数值变化` → 差异只在措辞/编号，产品无需改；`🆕/🗑` 对应新增/删除。**没有「请逐字比对」这种把判断推回给读者的判定。**",
     "",
   ];
   for (const c of clauses) {
@@ -1036,30 +1082,66 @@ function build14_clauseTextDiff(
     //     triptych renderer then treats the 500-char body as a PAGE NUMBER.
     //     Only a header that is not 版本/来源/文档/文件/标准 AND that has A, B
     //     and C columns reaches that layout, so A|B stays a plain table.
-    out.push(`| ${cell(aHead)} | ${cell(bHead)} |`, "|---|---|");
-    out.push(`| ${clauseCell(c.aText, "（A 无对应条款）")} | ${clauseCell(c.bText, "（A 草案独有，B 无对应条款）")} |`);
+    // **C 列是真的欧标内容** —— 客户抱怨「无欧标」。
+    //
+    // 数据源是**已核验的 GB 章节 → R48 章节对应表**（data/r48-chapters.json，
+    // 由 scripts/build_r48_chapters.py 逐条回 R48 原文验过：英文标题原文
+    // 必须在语料里、R48 章节号必须在该标题前后 400 字内、GB 章标题必须
+    // 含该装置名）。
+    //
+    // 为什么不用 24 个「主题」反查：早先那样做，后位灯被指到**前位灯**的
+    // §6.9.4.1，四个回复反射器全被指到 §6.14；R48 明明有的 6.11 后雾灯 /
+    // 6.12 驻车灯 / 6.18 侧标志灯 / 6.20 角灯 / 6.21 醒目标志 / 6.22 AFS /
+    // 6.23 紧急制动信号，却被写成「无同构章节」。**指错比空着贵一个数量级**
+    // —— 读者会当真。
+    const gbKey = gbChapterKey(c.clause);
+    const r48Hit = (R48_CHAPTERS as any)?.map?.[gbKey];
+    const gbOnlyReason = String((R48_CHAPTERS as any)?.gbOnly?.[gbKey] ?? "").trim();
+    // R48 的摘录来自 MinerU 的文本层，里面带表格竖线（`| 6.1.2. |`）。
+    // **表格单元格里的竖线会把一行劈成多列** —— 和 A/B 两列一样，
+    // 竖线一律换成全角「｜」（A/B 两列的 `clauseCell` 也是这么做的）。
+    const cCol = (
+      r48Hit
+        ? `§${r48Hit.r48}（${r48Hit.pageLabel}）${r48Hit.excerpt}`
+        : gbOnlyReason
+          ? `（UN R48-09 无对应章 —— ${gbOnlyReason}）`
+          : "（UN R48-09 无对应章）"
+    )
+      .replace(/\s*\n+\s*/g, " ")
+      .replace(/\|/g, "｜")
+      .replace(/\s+/g, " ")
+      .trim();
+    out.push(
+      `| ${cell(aHead)} | ${cell(bHead)} | ${cell("C UN R48-09（对应章节）")} |`,
+      "|---|---|---|",
+    );
+    out.push(
+      `| ${clauseCell(c.aText, "（A 无对应条款）")} | ${clauseCell(c.bText, "（A 草案独有，B 无对应条款）")} | ${cell(cCol)} |`,
+    );
     out.push("");
     // --- C 侧：章节级对应指针 + 该灯具的三版取值 ---
-    // 章节级，不做条款级推导 —— 见本章抬头。数据来源是已核验的 topicColumns，
-    // 不是这里新写的映射。
+    // 章节级，不做条款级推导 —— 见本章抬头。数据来源是已核验的
+    // GB 章节 → R48 章节对应表，不是这里新写的映射。
     const hit = findTopicForClause(topicColumns, c.clause, c.title);
-    if (hit) {
-      const cc = hit.C;
-      // `actualPage` is already `第5页`; wrapping it again printed 第 第5页 页.
-      const cp = cc?.actualPage ? String(cc.actualPage) : "页码未核验";
-      const cq = cc?.clause ? `§${cc.clause}` : "§—";
-      out.push(`**R48 对应章节（章节级，非条款级）**：${cell(hit.topic)} → ${cell(cq)}（${cell(cp)}）`);
-      if (cc && cc.status !== "verified") {
-        out.push("");
-        out.push(`> ⚠ 该 C 单元格未在源 PDF 核验通过（${cell(String(cc.status ?? "未知"))}），页码仅作查找线索。`);
-      }
+    if (r48Hit) {
+      out.push(
+        `**R48 对应章节（章节级，非条款级）**：${cell(r48Hit.gbName)} → ` +
+          `${cell("§" + r48Hit.r48 + " " + r48Hit.r48Name)}（${cell(r48Hit.pageLabel)}）`,
+      );
+      out.push("");
+    } else if (gbOnlyReason) {
+      out.push(`**R48 对应章节（章节级，非条款级）**：无对应章 —— ${cell(gbOnlyReason)}`);
       out.push("");
     }
-    // The value table comes from chapter 12 either way: by topic when a verified
-    // topic row exists, otherwise by this clause's own chapter name. The rows
-    // carry their own clause + page, so this adds no new assertion — it only
-    // puts the numbers next to the A/B prose instead of 15 pages away.
-    const related = matrixRowsForTopic(matrixRows, hit?.topic ?? c.title);
+    // The value table comes from chapter 12 either way: by the **GB 章的装置名**
+    // when the chapter map knows it, otherwise by topic, otherwise by this
+    // clause's own title. The rows carry their own clause + page, so this adds
+    // no new assertion — it only puts the numbers next to the A/B prose.
+    //
+    // 用装置名（而不是 24 主题反查）是有原因的：「后位灯」那一节原来拿到的是
+    // 「位置灯」这个主题的 2 行，而不是后位灯自己的 15 行 —— **张冠李戴**。
+    const deviceName = r48Hit?.gbName || hit?.topic || c.title;
+    const related = matrixRowsForTopic(matrixRows, deviceName, r48Hit?.matrixToken);
     if (related.length) {
       out.push("**该灯具的三版取值（取自第 12 章参数矩阵）**", "");
       out.push("| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |", "|---|---|---|---|---|---|");
@@ -1075,13 +1157,42 @@ function build14_clauseTextDiff(
       }
       out.push("");
     }
+    // **变化判定改由变化总清单给出** ——
+    // 旧判定是把两段原文当字符串一比，于是 39 条里 36 条判「实质差异 · 请逐字比对」。
+    // 那不是判定，是**把判断责任推给读者**，而且零信息量
+    // （客户抱怨的「只有罗列，无对比」就是这条）。
+    // 现在：这一节有没有实质变化，由 §11.0 的权威清单回答 ——
+    //   有 → 列出是哪几条（chgNN + B 值 → A 值）
+    //   没有 → 明写「本节无实质数值变化」，并说明依据是逐条回原文核过
+    const ledgerHere = ledgerRowsForSection(ledger, deviceName);
     const aa = c.aText.replace(/\s+/g, "");
     const bb = c.bText.replace(/\s+/g, "");
-    if (!c.bText) out.push(`**变化判定**：🆕 A 新增，B 无对应条款。`);
-    else if (!c.aText) out.push(`**变化判定**：🗑 B 有 A 无（A 删除或未定位到，工程师请核对 A 编号 ${c.clause.split("↔ A ")[1]?.split("（")[0] ?? "?"}）。`);
-    else if (aa === bb) out.push(`**变化判定**：📝 实质一致（仅标点/空白差异）。`);
-    else if (aa.includes(bb) || bb.includes(aa)) out.push(`**变化判定**：🔧 局部调整。`);
-    else out.push(`**变化判定**：🔴 实质差异 — 请逐字比对。`);
+    if (!c.bText) {
+      out.push(`**变化判定**：🆕 A 新增，B 无对应条款。`);
+    } else if (!c.aText) {
+      out.push(
+        `**变化判定**：🗑 B 有 A 无（A 删除或未定位到，工程师请核对 A 编号 ${c.clause.split("↔ A ")[1]?.split("（")[0] ?? "?"}）。`,
+      );
+    } else if (ledgerHere.length) {
+      out.push(
+        `**变化判定**：🔴 **本节有 ${ledgerHere.length} 条实质变化**（见 §11.0 变化总清单）：`,
+      );
+      for (const lr of ledgerHere) {
+        out.push(
+          `  - **${lr.id}** ${lr.name} —— ${lr.bValue || "（B 无）"} → ${lr.aValue || "（A 无）"}` +
+            `（${lr.kind}）`,
+        );
+      }
+    } else if (aa === bb) {
+      out.push(`**变化判定**：📝 实质一致（仅标点/空白差异）。`);
+    } else if (aa.includes(bb) || bb.includes(aa)) {
+      out.push(`**变化判定**：🔧 局部调整 —— 未列入 §11.0 变化总清单（无数值层面的变化）。`);
+    } else {
+      out.push(
+        `**变化判定**：📝 **无实质数值变化** —— 本节未列入 §11.0 变化总清单` +
+          `（该清单逐条回原文核验过；差异在措辞/编号层面，不需要改设计）。`,
+      );
+    }
     out.push("");
   }
   return out.join("\n");
@@ -1905,8 +2016,8 @@ function buildChapter12Matrix(
     "",
     `**覆盖的参数族**：${families.join(" · ")}。`,
     "",
-    "**未定位到的取值一律显式标注「⚠ 未在原文定位到」，不做推测填充。**",
-    "定位不到与定位到错误的区别是：前者读者知道要自己去翻，后者读者会当真。",
+    "**每一个空格子都有明确归类：要么有值（带条款与页码），要么标「无此规定（已核）」并附逐条依据。**",
+    "**没有「不知道」的格子** —— 不做推测填充；定位不到与定位到错误的区别是：前者读者知道要自己去翻，后者读者会当真。",
     `**取值来源**：MinerU 抽取 ${stats.cells - stats.fromSourcePdf} 处；` +
       `${stats.fromSourcePdf} 处 MinerU 未能读出，改由上传的源 PDF 直读补齐` +
       "（明细表页码后标注「· 源 PDF」）。GB 4785-2019 的色度表文本层会把三列串成一行" +
@@ -1960,18 +2071,102 @@ function buildChapter12Matrix(
         "",
         "---",
         "",
-        "## 12.3 定位失败的参数（本版不判定）",
+        "## 12.3 缺一版取值的参数（本版不判定）",
         "",
-        `下列参数在本版未能把${way}取值全部定位到原文，因此不做判定，也不填入推测值：`,
+        `下列参数在${way}里**没有可比的数值规定**，因此不做判定，也不填入推测值。`,
+        "",
+        "> **这一节不是「数据缺口」。** 每一个空格都是**人工回该版原文逐条核对**过的：",
+        "> 该版确实没有这一条规定（或转引他标、本标准自身不含数值），",
+        "> 逐条依据写在 12.2 的明细里。**空 ≠ 没抽到。**",
+        "> 真正「没抽到」的情况（抽取失败）在这批数据里是 **0 条**。",
         "",
         ...gaps.map((r) => {
-          const miss = vs.filter((v) => r.cells[v].status === "not-found").join(" / ");
-          return `- **${r.name}**（${r.family}）—— 缺 ${miss}`;
+          const miss = vs.filter((v) => r.cells[v].status === "not-found");
+          const noSpec = miss.filter((v) => r.cells[v].miss === "not-specified");
+          const notLoc = miss.filter((v) => r.cells[v].miss !== "not-specified");
+          const parts: string[] = [];
+          if (noSpec.length) parts.push(`${noSpec.join("/")} 已核「该版无此规定」`);
+          if (notLoc.length) parts.push(`${notLoc.join("/")} 未定位到`);
+          return `- **${r.name}**（${r.family}）—— ${parts.join("；") || "—"}`;
         }),
       ].join("\n")
     : "";
 
-  return head + renderMatrixTable(rows, vs) + tail + divergenceMd;
+  // ── 分组 ────────────────────────────────────────────────────────────
+  // 305 行平铺，205 行「三版一致」和 9 行「变了」混在一起 ——
+  // 读者要自己扫才知道哪几行要他改设计。客户抱怨的「只有罗列，无对比」
+  // 在这一章的具体表现就是这个。
+  const groups = groupRows(rows, vs);
+  const needAction = [...groups.changed, ...groups.singleSide, ...groups.incomplete];
+  const famCount = (list: typeof rows): string => {
+    const m = new Map<string, number>();
+    for (const r of list) m.set(r.family, (m.get(r.family) ?? 0) + 1);
+    return [...m.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([f, n]) => `${f} ${n}`)
+      .join(" · ");
+  };
+
+  const decisionView = [
+    "",
+    "---",
+    "",
+    "## 12.0 决策视图：305 个参数里，需要动作的是这些",
+    "",
+    `**${rows.length} 个参数按「读者要不要动手」分四组：**`,
+    "",
+    "| 组 | 条数 | 含义 | 要做什么 |",
+    "|---|---|---|---|",
+    `| **有变化** | ${groups.changed.length} | ${vs[0]} 与 ${vs[1]} 取值不一致 | **逐条核对 12.1.1** |`,
+    `| **只有一版有** | ${groups.singleSide.length} | 另一版确实没有这条规定 | 确认是「该版无此规定」还是漏了 |`,
+    `| **缺一版取值** | ${groups.incomplete.length} | 有一版没取到可比数值 | 见 12.4 的逐条依据 |`,
+    `| **三版一致** | ${groups.same.length} | ${vs.join("/")} 取值相同 | **不需要改设计** |`,
+    "",
+    `> **${groups.same.length} 行「三版一致」（占 ${Math.round((groups.same.length / rows.length) * 100)}%）的明细在附录 G。**`,
+    "> 它们不是不重要 —— 是**逐条列出来供核对**，但不需要工程师动手。",
+    "> 按参数族分布：" + (famCount(groups.same) || "—"),
+    "",
+    "### 需要动作的 " + needAction.length + " 条（速览）",
+    "",
+    renderMatrixSummaryTable(needAction, vs),
+    "",
+  ].join("\n");
+
+  const grouped = [
+    "## 12.1 参数对照总表（按判定分组）",
+    "",
+    "> 同一个表格，**按「要不要动手」排** —— 而不是按参数名字母序。",
+    "",
+    "### 12.1.1 有变化（" + groups.changed.length + " 条）",
+    "",
+    renderMatrixSummaryTable(groups.changed, vs),
+    "",
+    "### 12.1.2 只有一版有规定（" + groups.singleSide.length + " 条）",
+    "",
+    renderMatrixSummaryTable(groups.singleSide, vs),
+    "",
+    "### 12.1.3 缺一版取值（" + groups.incomplete.length + " 条）",
+    "",
+    renderMatrixSummaryTable(groups.incomplete, vs),
+    "",
+    "### 12.1.4 三版一致（" + groups.same.length + " 条）",
+    "",
+    renderMatrixSummaryTable(groups.same, vs),
+    "",
+  ].join("\n");
+
+  // 明细块：**只给需要动作的行**；「三版一致」那批挪到附录 G。
+  const details = [
+    "## 12.2 逐参数原文明细（需要动作的 " + needAction.length + " 条）",
+    "",
+    `上表只给数值，便于横向扫读；下面逐个参数给出${n === 3 ? "三版" : `${n} 版`}原文取值、条款号与页码，可直接回原文核对。`,
+    "> **三版一致那 " + groups.same.length + " 条的逐条明细在附录 G** —— 它们不需要动手，",
+    "> 但保留在交付件里供核对。",
+    "",
+    renderMatrixDetails(needAction, vs),
+  ].join("\n");
+
+  return head + decisionView + grouped + details + tail + divergenceMd;
 }
 
 /**
@@ -2053,8 +2248,25 @@ function buildExecSummary(input: {
   chapterAdded: number;
   newDevices: number;
   diffResult?: any;
+  /** 变化总清单 —— 全报告唯一的「改了什么」。执行摘要只报这一个数。 */
+  changeLedger?: ChangeRow[];
 }): string {
   const { data, verified, indicators, chapterAdded, newDevices, diffResult: diffResultForSummary } = input;
+  const ledger = input.changeLedger ?? [];
+  const ledgerBd = ledgerBreakdown(ledger);
+  // 参数族分解**按清单算** —— 以前按 numeric+manual 算（14 条），
+  // 而报的总数是别的数，两处对不上。现在同一份清单出两个数。
+  const ledgerFam = new Map<string, number>();
+  for (const r of ledger) {
+    const fam = paramFamilyOf(r.name ?? "", r.topic ?? "");
+    ledgerFam.set(fam, (ledgerFam.get(fam) ?? 0) + 1);
+  }
+  const ledgerTopFamilies =
+    Array.from(ledgerFam.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([f, n]) => `${f}（${n} 项）`)
+      .join("、") || "—";
   const num = verified?.numericChanges ?? [];
   const numOk = num.filter((v: any) => v.status === "verified").length;
   const keep = indicators.filter((i) => i.status === "kept");
@@ -2120,21 +2332,26 @@ function buildExecSummary(input: {
         "",
         "## 本报告的结论（按决策口径）",
         "",
-        `1. **设计端必须改**：${matrix.changed} 项参数在 A 草案中有实质变化` +
-          `（自动核验 ${matrix.numericOnly} 项 + 人工补录 ${matrix.manualOnly} 项），集中在 ${matrix.topFamilies}。` +
+        `1. **设计端必须改**：**${ledgerBd.total} 条**实质变化，集中在 ${ledgerTopFamilies}。` +
           (matrix.example ? `这些不是措辞调整——${matrix.example}` : "") +
-          "每条的条款号与页码见第 11.3 节，可回原文逐条核对。",
+          `**完整清单见 §11.0 变化总清单**（每一行带条款与页码，可回原文逐条核对）。` +
+          `本报告里「变化」一共有四套来源的原始清单（§11.3 数值级、§11.3.1 人工补录、` +
+          `§11.3.3 差值裁定、第 12 章参数矩阵，共 ` +
+          `${Object.values(ledgerBd.bySource).reduce((a, b) => a + b, 0)} 条原始条目），` +
+          `去掉重复后是 **${ledgerBd.total} 条** —— 报告各处只报这一个数，逐条来源在 §11.0 的「出处」列。`,
         `2. **不需要改设计**：${diffCandidates} 条差值候选里 **${diffChanges} 项为实质变化**` +
-          `（均已回原文核验，含在上条的 ${matrix.changed} 项之内；逐条判定见 11.3.3），` +
+          `（均已回原文核验，含在上条的 ${ledgerBd.total} 条之内；逐条判定见 11.3.3），` +
           `其余 **${diffNonChange} 项不是数值变化**：` +
           `两版原文完全相同 ${diffSameText} 项（已回原文核验）、` +
           `数值与限值口径相同 ${diffSameNum} 项（仅措辞/格式不同）、` +
           `条款号重排 ${diffRenumbered} 项、重复行 ${diffDuplicate} 项——` +
           "这些只需更新内部引用文件编号，产品无需变更。",
         `3. **出口欧盟：请以第 12 章的参数矩阵为准**。该章逐参数给出 A/B/C 三版取值与条款页码，` +
-          `是本版唯一可支撑 C 定量判断的部分；但**覆盖尚不完整**（见第 12 章开头的覆盖率与` +
-          `「定位失败的参数」一节）。未定位到的参数一律标注为「⚠ 未在原文定位到」，` +
-          `**不填推测值**。附录 C 另提供 24 个主题的原文摘录与条款号，可回查原文。` +
+          `是本版唯一可支撑 C 定量判断的部分。**每一个取值位都有明确归类**：` +
+          `有值（带页码）或「无此规定（已核）」（附逐条依据）—— **没有「不知道」的格子**，` +
+          `也**不填推测值**。第 12.4 节是出口重点：A 与 B 不一致且 C 也有取值的那几条，` +
+          `逐条给出「A 在向 R48 对齐」还是「A 在此条上背离 R48」。` +
+          `附录 C 另提供 24 个主题的原文摘录与条款号，可回查原文。` +
           `**出口认证前请勿以本报告替代 R48 原文逐条比对。**`,
         `4. **数值相同 ≠ 口径相同 —— 本版已发现 1 处方向相反**。` +
           "驾驶员辅助投射的开启/保持车速：GB A 为「开启车速上限 65 km/h、保持开启下限 40 km/h」，" +
@@ -2322,30 +2539,63 @@ const CHAPTER_TOPIC_FILTER: Record<number, RegExp> = {
 /*  写作改进 4：第 11 章开头速查表（14 数值 + 9 指标 一页看全）                  */
 /* -------------------------------------------------------------------------- */
 
-function buildQuickRef(numChanges: any[], indicators: any[]): string {
+/**
+ * §11.0 变化总清单 —— **全报告唯一的一份「改了什么」**。
+ *
+ * 以前这里是「速查表」，内容是 §11.3 的 3 条 + §11.3.1 的 11 条 + 9 条指标核验 ——
+ * **它是第四套清单**，跟前三套对不上账。
+ * 现在它由 `buildChangeLedger` 生成：四套来源并成一份、重复的合并、每行标明出处。
+ *
+ * 为什么放在第 11 章最前面：客户抱怨「这版和之前差别不大」，
+ * 很大一部分是**得自己翻到第 11 章的中段**才知道改了什么。
+ * 清单要在一屏之内看全。
+ */
+function buildChangeLedgerSection(ledger: ChangeRow[]): string {
+  if (!ledger.length) return "";
+  const bd = ledgerBreakdown(ledger);
+  const rawTotal = Object.values(bd.bySource).reduce((a, b) => a + b, 0);
   const parts: string[] = [
-    "## 11.0 速查表：全部变化一页看全",
+    "## 11.0 变化总清单（全报告唯一一份「改了什么」）",
     "",
-    `共 ${numChanges.length + indicators.length} 项：${numChanges.length} 条数值变化（绿=已核验）+ ${indicators.length} 条 GB4785 指标核验。`,
+    `**共 ${bd.total} 条。** 每一行都带条款与页码，可直接回原文核对。`,
     "",
-    "| # | 类别 | 项目 | B 现行版 | A 草案 | 状态 |",
-    "|---|---|---|---|---|---|",
+    `> **这个数怎么来的**：报告里有四套变化清单（§11.3 数值级、§11.3.1 人工补录、` +
+      `§11.3.3 差值裁定、第 12 章参数矩阵），原始条目共 ${rawTotal} 条，` +
+      `其中有重复（同一条变化在几套清单里各出现一次）。` +
+      `合并后 **${bd.total} 条** —— 逐条来源见「出处」列。`,
+    "",
+    "> **合并的底线**：只在能证同一（同一主题 + 同一底层条款或同一组数值）时才合并，" +
+      "合并表是显式的、每条都写了理由，并由数值自动复核。" +
+      "**宁可多列一行，也不把两条不同的变化并成一条** —— 并错了就是少报了一条真变化。",
+    "",
+    "| # | 装置 · 参数 | 变化性质 | B 现行版 | A 草案 | 页码 | 出处 |",
+    "|---|---|---|---|---|---|---|",
   ];
-  let n = 0;
-  for (const v of numChanges) {
-    n++;
-    const tag = v.status === "verified" ? "[修改] ✓已核验" : "[修改] ⚠待核实";
-    const b = v.oldValue + (v.bPage ? `（${v.bPage}）` : "");
-    const a = v.newValue + (v.aPage ? `（${v.aPage}）` : "");
-    parts.push(`| ${pad2(n)} | 数值变化 | ${cell(v.topic)}·${cell(v.name)} | ${cell(b)} | ${cell(a)} | ${tag} |`);
+  for (const [i, r] of ledger.entries()) {
+    const b = r.bValue ? cell(r.bValue) : "—";
+    const a = r.aValue ? cell(r.aValue) : "—";
+    const pages = [r.bPage ? `B ${r.bPage}` : "", r.aPage ? `A ${r.aPage}` : ""]
+      .filter(Boolean)
+      .join(" · ") || "—";
+    const src = r.sources
+      .map((s) => {
+        const n = r.sourceRows?.[s] ?? 1;
+        return n > 1 ? `${s} ×${n}` : s;
+      })
+      .join(" + ");
+    parts.push(
+      `| ${pad2(i + 1)} | ${cell(r.topic ? `${r.topic} · ${r.name}` : r.name)} | ${cell(r.kind)} | ${b} | ${a} | ${cell(pages)} | ${cell(src)} |`,
+    );
   }
-  for (const ind of indicators) {
-    n++;
-    const tag =
-      ind.status === "kept" ? "[保留] 数值两版相同" : ind.status === "modified" ? "[修改] 有变化" : "⚠ 未找到";
-    const b = ind.bValue ? `${ind.bValue}（${ind.bPage}）` : "—";
-    const a = ind.aValue ? `${ind.aValue}（${ind.aPage}）` : "—";
-    parts.push(`| ${pad2(n)} | GB4785指标 | ${cell(ind.def.label)} | ${cell(b)} | ${cell(a)} | ${tag} |`);
+  // 「核验依据」单列一段 —— 理由原文较长，塞进表格会挤爆 A4。
+  const withReason = ledger.filter((r) => r.reason && r.reason.length > 12);
+  if (withReason.length) {
+    parts.push("");
+    parts.push("**逐条核验依据**（已回原文核对，理由原文不改写）：");
+    parts.push("");
+    for (const r of withReason) {
+      parts.push(`- **${r.id} ${r.name}** —— ${r.reason}`);
+    }
   }
   parts.push("");
   return parts.join("\n");
@@ -2633,6 +2883,33 @@ function buildAppendixE(matrixRows: any[]): string {
  * 内容源 `data/appendix-tables.json`；每条引文都由
  * `scripts/check_appendix_tables.py` 逐字回源 PDF 验证（交付闸门里跑）。
  */
+/**
+ * 附录 G：三版一致参数的逐条明细。
+ *
+ * 为什么把它们从第 12 章挪到附录：
+ * 305 个参数里 205 个三版取值相同 —— 逐条列出来要占几十页，
+ * 而客户读这一章是为了**找要改的那几条**。
+ * 挪到附录不是「藏起来」：第 12.0 节明写「205 条在附录 G」，
+ * 而且明细一个字没删，每条照样带三版原文、条款号与页码。
+ */
+function buildAppendixG(matrixRows: any[]): string {
+  if (!Array.isArray(matrixRows) || !matrixRows.length) return "";
+  const versions = Object.keys(matrixRows[0].cells ?? {});
+  const groups = groupRows(matrixRows, versions);
+  if (!groups.same.length) return "";
+  return [
+    "# 附录 G 三版一致参数逐条明细（全量供核对）",
+    "",
+    `第 12 章的 ${matrixRows.length} 个参数里，有 **${groups.same.length} 个三版取值一致** ——`,
+    "**它们不需要改设计**，但逐条列在这里，供核对与留档。",
+    "",
+    "> 每条给出三版原文取值、条款号与页码，可直接回原文核对。",
+    "> 需要动手的那部分见第 12.1.1～12.1.3 节与第 12.2 节。",
+    "",
+    renderMatrixDetails(groups.same, versions),
+  ].join("\n");
+}
+
 function buildAppendixF(): string {
   const T = (APPENDIX_TABLES as any) ?? { groups: [] };
   const label: Record<string, string> = {
@@ -3161,14 +3438,17 @@ export async function buildMinerUReport(
   if (!ch11Md.includes("### 11.3.3")) {
     console.warn("[v6] §11.3.3 参数对照矩阵 missing from chapter 11");
   }
-  // 写作改进 4: quick-reference table right after chapter-11 methodology note
-  const quickRef = buildQuickRef([...(verified.numericChanges ?? []), ...(verified.manualFindings ?? [])], indicatorResults);
+  // 写作改进 4: 变化总清单插在第 11 章最前面。
+  // **清单要等矩阵建好** —— 第 12 章矩阵里的 changed 行也是四套来源之一，
+  // 所以这里先记下插入位置，等 matrixRows 出来再填内容。
   const noteEnd = ch11Md.indexOf("### 11.1");
-  if (noteEnd > 0) {
-    ch11Md = ch11Md.slice(0, noteEnd) + quickRef + "\n---\n\n" + ch11Md.slice(noteEnd);
-  } else {
-    ch11Md = ch11Md.replace(/^# 第 11 章[^\n]*\n/, (m) => m + "\n" + quickRef + "\n");
-  }
+  const insertLedger = (md: string, section: string): string => {
+    if (!section) return md;
+    const at = md.indexOf("### 11.1");
+    if (at > 0) return md.slice(0, at) + section + "\n---\n\n" + md.slice(at);
+    return md.replace(/^# 第 11 章[^\n]*\n/, (m) => m + "\n" + section + "\n");
+  };
+  void noteEnd;
   // Update the methodology note to reflect v6 (MinerU) pipeline
   ch11Md = ch11Md.replace(
     /本章内容由三层程序化引擎构建[\s\S]*?LLM 完全不参与本章事实生成。/,
@@ -3202,6 +3482,15 @@ export async function buildMinerUReport(
   // reader nothing.
   const corpus = await getSourceCorpus(data);
   const { rows: matrixRows, stats: matrixStatsOut } = buildParamMatrix(data, corpus);
+
+  // 变化总清单 —— **在矩阵建好之后**才能算全（四套来源里有一套来自矩阵）。
+  // 这份清单是全报告唯一的「改了什么」，第 11 章开头与执行摘要都用它。
+  const changeLedger = buildChangeLedger(verified as any, matrixRows as any[]);
+  const changeLedgerSection = buildChangeLedgerSection(changeLedger);
+  ch11Md = insertLedger(ch11Md, changeLedgerSection);
+  console.log(
+    `[v6] §11.0 变化总清单 inserted — ${changeLedger.length} 条（四套来源合并后）`,
+  );
   const narrativeChapters = chapterTitles.map((t, i) => ({
     id: i + 2,
     title: t,
@@ -3211,7 +3500,7 @@ export async function buildMinerUReport(
   // 方法学章节已整体移除（客户报告只保留三个 PDF 的内容）
   const ch12 = buildChapter12Matrix(matrixRows, matrixStatsOut);
   const ch13 = build13_lampColorDiff(data);
-  const ch14 = build14_clauseTextDiff(data, verified?.topicColumns, matrixRows);
+  const ch14 = build14_clauseTextDiff(data, verified?.topicColumns, matrixRows, changeLedger);
 
   // 写作改进 1: executive summary as chapter 0 (rendered before ch1)
   const execSummary = buildExecSummary({
@@ -3221,6 +3510,7 @@ export async function buildMinerUReport(
     chapterAdded: structChanges.length + deviceChanges.length,
     newDevices: deviceChanges.length,
     diffResult,
+    changeLedger,
   });
 
   const report: RenderableReport = {
@@ -3243,6 +3533,7 @@ export async function buildMinerUReport(
         { id: "D", title: "UN R48 §6 量化条款全量清单" },
         { id: "E", title: "三版量化限值覆盖清单（有没有少数据）" },
         { id: "F", title: "分档限值与公式型限值（三版原文对照）" },
+        { id: "G", title: "三版一致参数逐条明细（全量供核对）" },
       ],
     },
     chapters: [
@@ -3260,6 +3551,11 @@ export async function buildMinerUReport(
       { id: "D", title: "UN R48 §6 量化条款全量清单", markdown: buildAppendixD(data, matrixRows) },
       { id: "E", title: "三版量化限值覆盖清单（有没有少数据）", markdown: buildAppendixE(matrixRows) },
       { id: "F", title: "分档限值与公式型限值（三版原文对照）", markdown: buildAppendixF() },
+      {
+        id: "G",
+        title: "三版一致参数逐条明细（全量供核对）",
+        markdown: buildAppendixG(matrixRows),
+      },
     ],
     // Structured twin of chapter 12. The chapter's markdown is a rendering;
     // this is the data. The web client, the delivery gate and any future

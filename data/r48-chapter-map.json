@@ -1,0 +1,217 @@
+{
+  "_comment": "**GB 4785（B 版）章节 → UN R48-09 章节** 的对应表。第 14 章的 C 列用它。",
+  "_why": "C 列原先靠 24 个「主题」的粗粒度反查（`findTopicForClause`），结果有两类错：**① 指错** —— 「后位灯」被指到前位灯的 §6.9.4.1，四个回复反射器全被指到 §6.14；**② 漏指** —— R48 明明有的 6.11 后雾灯 / 6.12 驻车灯 / 6.18 侧标志灯 / 6.20 角灯 / 6.21 醒目标志 / 6.22 AFS / 6.23 紧急制动信号，被写成「无同构章节」。客户说的「无欧标」就是这两类错。\n\n**对应关系只到「章节」级，不到「条款」级**：UN R48 按「一章一盏灯」组织，GB 按「一章一盏灯」组织，两边的编号体系不同构（GB 5.4.5.1 与 R48 6.4.5.1 编号相似却不是同一条款）。所以这里给的是**同一盏灯的对应章**，逐条的对照以第 12 章为准。\n\n**每条都带三个探针，缺一不可**（`scripts/build_r48_chapters.py` 会逐条回 R48 原文验）：\n  · `gb`     —— GB 的章节号（B 版）\n  · `gbName` —— GB 该章的中文装置名，必须出现在第 14 章该节的标题里（防 GB 改版重编号）\n  · `r48`    —— R48 的章节号\n  · `probe`  —— R48 该章的**英文标题原文**，必须出现在 R48 语料里\n  · `near`   —— R48 的章节号，必须出现在 `probe` 前后各 400 字内（防止 probe 命中的是别处的引文）",
+  "_scope": "只列**GB 独有的通用/管理性章节**以外的部分。GB 的第 1 章（范围）、第 2 章（规范性引用文件）、第 4 章（一般要求）、第 5 章（特殊规定，容器章）、第 6 章（检验规则）、第 7 章（实施日期）以及 5.24 牵引杆挂车标志灯，在 R48-09 里没有对应章 —— 报告里写明「无同构章节」并给出理由，不硬凑。",
+  "map": {
+    "3": {
+      "gbName": "术语和定义",
+      "r48": "2.1.1",
+      "probe": "The definitions given in this Regulation",
+      "near": "2.1.1",
+      "note": "R48 的定义在 §2（Definitions），§2.1.1 是通用定义条。",
+      "matrixToken": ""
+    },
+    "5.1": {
+      "gbName": "远光灯",
+      "r48": "6.1",
+      "probe": "Main-beam headlamp",
+      "near": "6.1",
+      "note": "R48 §6.1 的标题在 MinerU 抽取时并进了表格行（正文里是「Main-beam headlamp Presence Mandatory…」），编号只能从 §6.1.2 反推。",
+      "matrixToken": "远光灯"
+    },
+    "5.2": {
+      "gbName": "近光灯",
+      "r48": "6.2",
+      "probe": "Dipped-beam headlamp",
+      "near": "6.2",
+      "matrixToken": "近光灯"
+    },
+    "5.3": {
+      "gbName": "前雾灯",
+      "r48": "6.3",
+      "probe": "Front fog lamp",
+      "near": "6.3",
+      "matrixToken": "前雾灯"
+    },
+    "5.4": {
+      "gbName": "倒车灯",
+      "r48": "6.4",
+      "probe": "Reversing lamp",
+      "near": "6.4",
+      "matrixToken": "倒车灯"
+    },
+    "5.5": {
+      "gbName": "转向信号灯",
+      "r48": "6.5",
+      "probe": "Direction-indicator lamp",
+      "near": "6.5",
+      "matrixToken": "转向信号灯"
+    },
+    "5.6": {
+      "gbName": "危险警告信号",
+      "r48": "6.6",
+      "probe": "Hazard warning signal",
+      "near": "6.6",
+      "matrixToken": ""
+    },
+    "5.7": {
+      "gbName": "制动灯",
+      "r48": "6.7",
+      "probe": "Stop lamp",
+      "near": "6.7",
+      "matrixToken": "制动灯"
+    },
+    "5.8": {
+      "gbName": "后牌照板照明装置",
+      "r48": "6.8",
+      "probe": "Rear registration plate lamp",
+      "near": "6.8",
+      "matrixToken": ""
+    },
+    "5.9": {
+      "gbName": "前位灯",
+      "r48": "6.9",
+      "probe": "Front position lamp",
+      "near": "6.9",
+      "matrixToken": "前位灯"
+    },
+    "5.10": {
+      "gbName": "后位灯",
+      "r48": "6.10",
+      "probe": "Rear position lamp",
+      "near": "6.10",
+      "note": "**原表把后位灯指到 §6.9.4.1（前位灯的位置条款）** —— 那是错的：后位灯是 R48 §6.10。",
+      "matrixToken": "后位灯"
+    },
+    "5.11": {
+      "gbName": "后雾灯",
+      "r48": "6.11",
+      "probe": "Rear fog lamp",
+      "near": "6.11",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.11 Rear fog lamp。",
+      "matrixToken": "后雾灯"
+    },
+    "5.12": {
+      "gbName": "驻车灯",
+      "r48": "6.12",
+      "probe": "Parking lamp",
+      "near": "6.12",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.12 Parking lamp。",
+      "matrixToken": "驻车灯"
+    },
+    "5.13": {
+      "gbName": "示廓灯",
+      "r48": "6.13",
+      "probe": "End-outline marker lamp",
+      "near": "6.13",
+      "matrixToken": "示廓灯"
+    },
+    "5.14": {
+      "gbName": "非三角形后回复反射器",
+      "r48": "6.14",
+      "probe": "Rear retro-reflector, non-triangular",
+      "near": "6.14",
+      "matrixToken": "非三角形后回复反射器"
+    },
+    "5.15": {
+      "gbName": "三角形后回复反射器",
+      "r48": "6.15",
+      "probe": "Rear retro-reflector, triangular",
+      "near": "6.15",
+      "note": "**原表把四个回复反射器全指到 §6.14** —— 三角形/前/侧各自都有独立的 R48 章。",
+      "matrixToken": ""
+    },
+    "5.16": {
+      "gbName": "非三角形前回复反射器",
+      "r48": "6.16",
+      "probe": "Front retro-reflector, non-triangular",
+      "near": "6.16",
+      "matrixToken": "非三角形前回复反射器"
+    },
+    "5.17": {
+      "gbName": "非三角形侧回复反射器",
+      "r48": "6.17",
+      "probe": "Side retro-reflector, non-triangular",
+      "near": "6.17",
+      "matrixToken": "非三角形侧回复反射器"
+    },
+    "5.18": {
+      "gbName": "侧标志灯",
+      "r48": "6.18",
+      "probe": "Side-marker lamps",
+      "near": "6.18",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.18 Side-marker lamps。",
+      "matrixToken": "侧标志灯"
+    },
+    "5.19": {
+      "gbName": "昼间行驶灯",
+      "r48": "6.19",
+      "probe": "Daytime running lamp",
+      "near": "6.19",
+      "matrixToken": "昼间行驶灯"
+    },
+    "5.20": {
+      "gbName": "角灯",
+      "r48": "6.20",
+      "probe": "Cornering lamp",
+      "near": "6.20",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.20 Cornering lamp。",
+      "matrixToken": "角灯"
+    },
+    "5.21": {
+      "gbName": "醒目标志",
+      "r48": "6.21",
+      "probe": "Conspicuity markings",
+      "near": "6.21",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.21 Conspicuity markings（GB「醒目标志」即 R48 的 conspicuity marking）。",
+      "matrixToken": "醒目标志"
+    },
+    "5.22": {
+      "gbName": "自适应前照明系统",
+      "r48": "6.22",
+      "probe": "Adaptive front lighting system",
+      "near": "6.22",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.22 Adaptive front lighting system (AFS)。",
+      "matrixToken": "AFS"
+    },
+    "5.23": {
+      "gbName": "紧急制动信号",
+      "r48": "6.23",
+      "probe": "Emergency stop signal",
+      "near": "6.23",
+      "note": "**原表写「无同构章节」** —— R48-09 有 §6.23 Emergency stop signal。",
+      "matrixToken": "紧急制动信号"
+    },
+    "5.25": {
+      "gbName": "慢行灯",
+      "r48": "2.4.17.3",
+      "probe": "Slow moving vehicle (SMV) rear marking plate",
+      "near": "2.4.17.3",
+      "note": "R48-09 **只给了定义**（§2.4.17.3），没有慢行灯的安装章 —— C 列因此是定义原文，不是安装要求。这本身就是一条对客户有用的信息。",
+      "matrixToken": "慢行灯"
+    },
+    "5.26": {
+      "gbName": "追尾警告信号",
+      "r48": "6.25",
+      "probe": "Rear-end collision alert signal",
+      "near": "6.25",
+      "matrixToken": "追尾警告信号"
+    }
+  },
+  "gbOnly": {
+    "1": "GB 独有的「范围」章（写明本标准适用什么）",
+    "2": "GB 独有的「规范性引用文件」章（列 GB/T 3977 等引用标准）",
+    "4": "GB 独有的「一般要求」章（振动、基准轴线、允差 ±3° 等）",
+    "5": "GB 第 5 章是各灯具的容器章（下辖 5.1~5.26），R48 没有对应的容器章",
+    "5.24": "GB 独有的「牵引杆挂车标志灯」（图 4）—— R48-09 无对应装置",
+    "6": "GB 独有的「检验规则」章",
+    "6.1": "GB 独有的「同一型式判定及检验」",
+    "6.2": "GB 独有的「型式检验」",
+    "6.3": "GB 独有的「生产一致性检验」",
+    "6.4": "GB 独有的「车辆照明和光信号装置的变动和扩充」",
+    "7": "GB 独有的「实施日期」章",
+    "— ↔ A 6（A 独有）": "A 草案独有的第 6 章（从属功能）。R48-09 把同类内容拆在 §5.8~§5.35 各条（灯光信号控制、易混淆光等），没有一整章对应。",
+    "— ↔ A 7（A 独有）": "A 草案独有的第 7 章（扩展功能）。R48-09 的扩展功能是 §6.22 AFS / §6.23 紧急制动信号 / §6.24 礼貌灯等各自的独立章，没有一整章对应。"
+  },
+  "_matrixToken": "`matrixToken` 是**第 12 章矩阵里该装置行的名字片段**，用来给本节挂上「该灯具的三版取值」小表。必须显式写 —— 从中文名自动截 5 个字会抓错（「三角形后回复反射器」会抓到「非三角形后回复反射器」的 11 行，「后牌照板照明装置」抓不到任何行）。空串 = 这一章在矩阵里没有量化参数（危险警告信号、牌照灯、术语章、三角形回复反射器），不挂取值表。"
+}
