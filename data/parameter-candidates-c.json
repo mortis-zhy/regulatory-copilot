@@ -3779,7 +3779,7 @@
       "reason": "未能按名称/族归到任何 R48 章节 —— 下方候选句来自全部章节，请人工指认"
     },
     {
-      "id": "manoeuvringLamp.autoOnSpeedMax",
+      "id": "slowMovingLamp.autoOnSpeedMax",
       "name": "慢行灯自动点亮的的车速上限",
       "family": "试验条件 / 路段速度",
       "abValues": [

@@ -43,7 +43,7 @@ NEW = [
         },
     },
     {
-        "id": "manoeuvringLamp.autoOnSpeedMax",
+        "id": "slowMovingLamp.autoOnSpeedMax",
         "name": "慢行灯自动点亮的的车速上限",
         "family": "试验条件 / 路段速度",
         "unit": "km/h",

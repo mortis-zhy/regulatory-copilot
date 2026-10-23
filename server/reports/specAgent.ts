@@ -108,14 +108,46 @@ export interface Validation {
  * 再建一张表就是第二个真相来源。而且这张表是**自校准**的 ——
  * 手写正则改了，这里跟着变。
  */
+/**
+ * 这个装置的「通用名」—— 多数规格的中文名共有的那一段。
+ *
+ * 例：`manoeuvringLamp` 下有四条，其中三条叫「操纵灯…」，一条叫
+ * 「慢行灯自动点亮的的车速上限」—— 那一条其实是**别的灯**被归错了前缀。
+ * 取多数共有的那一段（「操纵灯」），就可以把那条**排除掉**。
+ *
+ * 没有这一层，派生出来的章号就会混进别的灯的章：
+ * agent 拿慢行灯的条文去答「操纵灯」，报出一个看着很真的 10 km/h。
+ */
+export function dominantDeviceToken(names: string[]): string {
+  const list = (names ?? []).map((n) => String(n ?? "")).filter(Boolean);
+  if (list.length < 2) return "";
+  const need = Math.ceil(list.length / 2);
+  for (let len = 6; len >= 2; len--) {
+    const counts = new Map<string, number>();
+    for (const n of list) {
+      const cn = n.match(/^[一-鿿]+/)?.[0] ?? "";
+      if (cn.length < len) continue;
+      const cand = cn.slice(0, len);
+      counts.set(cand, (counts.get(cand) ?? 0) + 1);
+    }
+    for (const [cand, n] of counts) {
+      if (n >= need && n >= 2) return cand;
+    }
+  }
+  return "";
+}
+
 export function deviceChapterPrefixes(
-  specs: Array<{ id: string; patterns?: Record<string, { source?: string }> }>,
+  specs: Array<{ id: string; name?: string; patterns?: Record<string, { source?: string }> }>,
   device: string,
   version: Version,
 ): string[] {
+  const mine = specs.filter((s) => s.id.split(".")[0] === device);
+  const token = dominantDeviceToken(mine.map((s) => s.name ?? ""));
   const counts = new Map<string, number>();
-  for (const s of specs) {
-    if (s.id.split(".")[0] !== device) continue;
+  for (const s of mine) {
+    // **名字对不上这个装置的，剔除** —— 它多半是被归错前缀的别的灯。
+    if (token && !String(s.name ?? "").includes(token)) continue;
     const src = s.patterns?.[version]?.source;
     if (!src) continue;
     // 正则源码里的条款锚点形如 `5\\.13\\.4\\.2`（点被转义了）

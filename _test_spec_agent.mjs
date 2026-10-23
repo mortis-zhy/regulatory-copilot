@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   deviceChapterPrefixes,
+  dominantDeviceToken,
   candidateSentences,
   validateProposal,
   proposeSpec,
@@ -52,6 +53,26 @@ const corpus = readJson("dist/mineru-v4-data.json", {});
   ok(
     prefixes[0] === "5.2",
     `近光灯在 A 版应落在 §5.2，实际「${prefixes[0]}」`,
+  );
+
+  // **被归错前缀的别的灯必须被剔除**。
+  // `dippedBeam.offRoadHeightOnly` 的中文名是「前雾灯越野车型放宽高度」，
+  // 锚在前雾灯的章 —— 算进近光灯的章，候选句就会混进前雾灯的条文。
+  const token = dominantDeviceToken(
+    specs.filter((s) => s.id.split(".")[0] === "dippedBeam").map((s) => s.name),
+  );
+  ok(token === "近光灯", `近光灯的通用名应是「近光灯」，实际「${token}」`);
+  ok(
+    !prefixes.includes("5.4"),
+    `近光灯在 A 版的章里混进了前雾灯的 5.4：${JSON.stringify(prefixes)}`,
+  );
+
+  // **GB 里根本没有的装置，推不出章号** —— 那是「数据不够」，
+  // 不是「agent 不会」，两类不能混在一个分母里。
+  const noSuchDevice = deviceChapterPrefixes(specs, "manoeuvringLamp", "B");
+  ok(
+    noSuchDevice.length === 0,
+    `操纵灯在 GB-2019 里不存在，章号应推不出来，实际 ${JSON.stringify(noSuchDevice)}`,
   );
 
   const cands = candidateSentences(clauseIndex, "A", prefixes, { unit: "mm", limit: 200 });
