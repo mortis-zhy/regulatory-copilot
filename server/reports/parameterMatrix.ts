@@ -247,7 +247,7 @@ function expandWordNumbers(s: string): string {
  * unit difference. The conversion is gated on the spec's unit so it can never
  * touch a speed (km/h), an intensity (cd) or an angle (°).
  */
-function numbersOf(s: string, unit?: string): string[] {
+export function numbersOf(s: string, unit?: string): string[] {
   const metric = unit === "mm"
     ? s.replace(/(\d+(?:\.\d+)?)\s*m(?![mA-Za-z])/g, (_m, n: string) => String(parseFloat(n) * 1000))
     : s;
@@ -646,7 +646,7 @@ export function paginate(doc: any): Array<[number, string]> {
 const CLAUSE_RE = /(?:^|[\s，,、（(])((\d+\.){1,4}\d+)(?=[\s．.、)）:：]|[a-z]\s*[)）])/g;
 
 /** Nearest preceding clause number in the page text, e.g. "5.2.4.2". */
-function nearestClause(text: string, idx: number): string {
+export function nearestClause(text: string, idx: number): string {
   CLAUSE_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
   let last = "";

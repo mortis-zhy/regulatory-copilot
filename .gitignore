@@ -158,6 +158,9 @@ _t_*.pdf
 _verify_fonts.py
 _demo_*.png
 _gap_probe.json
+# agent 的取值提议是**生成物**（跑 scripts/run_spec_agent.mjs 重新生成）；
+# 实测记录 reports/spec-agent-baseline.json 要进版本库。
+data/parameter-specs-agent.json
 reports/_*.json
 reports/*.err
 server.err

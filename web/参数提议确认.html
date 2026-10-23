@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>参数提议确认 · C 列（UN R48）</title>
+<title>参数提议确认 · C 列（UN R48）与 agent 提议</title>
 <style>
   :root {
     --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2b303b;
@@ -90,7 +90,7 @@
 </head>
 <body>
 <header>
-  <h1>参数提议确认 · C 列（UN R48）</h1>
+  <h1>参数提议确认 · C 列（UN R48）· agent 提议</h1>
   <span class="sub" id="hstat">载入中…</span>
   <span class="sub">宁可空着，不可错着 —— 采纳前请回原文核对条款号</span>
 </header>
@@ -98,6 +98,8 @@
   <div id="list">
     <div class="filters" id="filters"></div>
     <div id="rows"></div>
+    <div class="filters" id="agenthead"></div>
+    <div id="agentrows"></div>
   </div>
   <div id="detail"><div class="empty">选择左侧一行开始裁定。</div></div>
 </main>
@@ -112,7 +114,9 @@ const $ = (s) => document.querySelector(s);
 let DATA = null;
 let cur = null;          // 当前行
 let filter = "all";
-const picked = new Map(); // id -> {id, source, flags, why, section}
+const picked = new Map(); // key -> {id, version, source, flags, why, section, fromAgent}
+/** 待采纳的 key：同一个参数在不同版本上是两条独立的规则。 */
+const keyOf = (id, v) => id + "@" + (v || "C");
 
 /** 从候选句生成一条正则。
  *  锚点取句子自己前半段的 7 个词，值单独用捕获组框住 —— 两条硬约束：
@@ -170,7 +174,7 @@ function renderList() {
   $("#rows").innerHTML = show.map((r) => {
     const done = DATA.specs.find((s) => s.id === r.id)?.patterns?.C;
     const cls = done ? "done" : r.candidates.length ? "cand" : "none";
-    const mark = picked.has(r.id) ? " ★" : "";
+    const mark = picked.has(keyOf(r.id, "C")) ? " ★" : "";
     return `<div class="rowitem ${cur && cur.id === r.id ? "on" : ""}" data-id="${esc(r.id)}">
       <span class="nm">${esc(r.name)}${mark}</span>
       <span class="tag ${cls}">${done ? "已有 C" : r.candidates.length ? r.candidates.length + " 条候选" : "无候选"}</span>
@@ -185,7 +189,7 @@ function renderList() {
 function renderDetail() {
   const r = cur;
   if (!r) return;
-  const pk = picked.get(r.id);
+  const pk = picked.get(keyOf(r.id, "C"));
   const opts = (r.sectionOptions || []).map(
     (s) => `<option value="${s.no}" ${s.no === r.section ? "selected" : ""}>§${s.no} ${esc(s.name)}</option>`
   ).join("");
@@ -238,14 +242,14 @@ function renderDetail() {
       const v = c.overlap[0] || c.values[0];
       const src = makeSource(c.sentence, v);
       if (!src) { msg("无法从这句构造锚点，请手写", true); return; }
-      picked.set(r.id, {
-        id: r.id, source: src, flags: "i", section: $("#sec").value,
+      picked.set(keyOf(r.id, "C"), {
+        id: r.id, version: "C", source: src, flags: "i", section: $("#sec").value,
         why: `人工确认页采纳：R48 §${c.clause || "?"}，原文「${c.sentence.slice(0, 60)}…」`,
       });
       msg("已生成正则，请核对后「加入待采纳」");
       $("#detail").querySelectorAll(".cand").forEach((el) => el.classList.toggle("pick", +el.dataset.i === i));
       $("#src").value = src;
-      $("#why").value = picked.get(r.id).why;
+      $("#why").value = picked.get(keyOf(r.id, "C")).why;
       renderList();
     };
   });
@@ -253,20 +257,96 @@ function renderDetail() {
   $("#stage").onclick = () => {
     const source = $("#src").value.trim();
     if (!source) return msg("正则不能为空", true);
-    picked.set(r.id, { id: r.id, source, flags: "i", section: $("#sec").value, why: $("#why").value.trim() });
+    picked.set(keyOf(r.id, "C"), { id: r.id, version: "C", source, flags: "i", section: $("#sec").value, why: $("#why").value.trim() });
     msg(`已加入待采纳：${r.name}`);
     renderList();
   };
-  $("#unstage").onclick = () => { picked.delete(r.id); msg("已移除"); renderList(); };
+  $("#unstage").onclick = () => { picked.delete(keyOf(r.id, "C")); msg("已移除"); renderList(); };
 }
 
 function msg(t, bad) { $("#msg").innerHTML = `<span class="${bad ? "bad" : "ok"}">${esc(t)}</span>`; }
 
-$("#clear").onclick = () => { picked.clear(); msg("已清空"); renderList(); };
+/**
+ * **agent 的取值提议**（scripts/run_spec_agent.mjs 的产物）。
+ *
+ * agent 自己找条款、自己写正则、自己用 `test_regex` 验过 —— 但**它说的不算数**：
+ * 采纳时服务端会用**抽取器同一套语义**再验一遍，不过就拒。
+ * 这一栏把「验过的」和「没验过的」都摆出来：没通过的也显示，
+ * 人要能看见 agent 试过了、卡在哪，而不是只看见成功的那几条。
+ */
+function renderAgent() {
+  const rows = DATA.agent?.rows ?? [];
+  const okCount = rows.filter((r) => r.ok).length;
+  $("#agenthead").innerHTML =
+    `<b style="font-size:12px;color:var(--accent)">agent 提议 ${rows.length} 条 · 通过校验 ${okCount}</b>` +
+    (rows.length ? `<span style="font-size:11px;color:var(--dim)">（node scripts/run_spec_agent.mjs 生成）</span>` : "");
+  $("#agentrows").innerHTML = rows.map((r, i) => {
+    const mark = picked.has(keyOf(r.id, r.version)) ? " ★" : "";
+    const state = r.ok ? "通过" : r.absent ? "判定无此规定" : "未通过";
+    const cls = r.ok ? "cand" : r.absent ? "none" : "";
+    const why = r.why || r.validation || "";
+    return `<div class="rowitem" data-ag="${i}">
+      <span class="nm">${esc(r.name)}${mark} <span style="color:var(--dim)">${esc(r.version)}</span></span>
+      <span class="tag ${cls}">${state}</span>
+    </div>
+    <div class="fam" style="padding:2px 12px 8px" data-agw="${i}">${esc(why.slice(0, 220))}</div>`;
+  }).join("") || `<div class="empty">还没有 agent 提议。跑 <code>node scripts/run_spec_agent.mjs</code> 生成。</div>`;
+
+  $("#agentrows").querySelectorAll("[data-ag]").forEach((el) => {
+    el.onclick = () => showAgentDetail(+el.dataset.ag);
+  });
+}
+
+function showAgentDetail(i) {
+  const r = (DATA.agent?.rows ?? [])[i];
+  if (!r) return;
+  const v = r.validation || {};
+  $("#detail").innerHTML = `
+    <h2>${esc(r.name)}</h2>
+    <div class="fam"><code>${esc(r.id)}</code> · 版本 <b>${esc(r.version)}</b> · 单位 ${esc(r.unit || "—")}
+      · 装置 ${esc(r.device || "—")}</div>
+
+    <section>
+      <h3>agent 给出的正则</h3>
+      <textarea id="asrc" rows="3" spellcheck="false">${esc(r.source || "")}</textarea>
+      <label>why（采纳后写进 spec 的 why —— 留给下一个人）</label>
+      <textarea id="awhy" rows="3">${esc(r.why || "")}</textarea>
+    </section>
+
+    <section>
+      <h3>校验结果（抽取器语义）</h3>
+      <div class="fam">
+        ${r.ok
+          ? `通过 · 条款 §${esc(v.clause ?? "?")} · 第${esc(v.page ?? "?")}页 · 取到 ${esc((v.nums ?? []).join(" / "))}`
+          : `未通过 —— ${esc(v.reason || r.error || "（无）")}`}
+      </div>
+      ${r.source ? `<div class="txt" style="font-family:Consolas,monospace;font-size:12px;color:#cfd4e0">${esc(r.source)}</div>` : ""}
+    </section>
+
+    <div class="acts" style="margin-top:10px">
+      <button class="act" id="astage" ${r.ok ? "" : "disabled"}>加入待采纳</button>
+      <button class="act" id="aunstage">从待采纳移除</button>
+    </div>`;
+  $("#astage").onclick = () => {
+    const source = $("#asrc").value.trim();
+    if (!source) return msg("正则不能为空", true);
+    picked.set(keyOf(r.id, r.version), {
+      id: r.id, version: r.version, source, flags: r.flags || "i",
+      why: $("#awhy").value.trim(), fromAgent: true,
+    });
+    msg(`已加入待采纳：${r.name}（${r.version}）`);
+    renderList(); renderAgent();
+  };
+  $("#aunstage").onclick = () => {
+    picked.delete(keyOf(r.id, r.version)); msg("已移除"); renderList(); renderAgent();
+  };
+}
+
+$("#clear").onclick = () => { picked.clear(); msg("已清空"); renderList(); renderAgent(); };
 $("#save").onclick = async () => {
   const items = [...picked.values()];
   if (!items.length) return msg("待采纳列表为空", true);
-  if (!confirm(`将写入 ${items.length} 条 C 模式到 data/parameter-specs.json。\n服务端会先用真实语料逐条校验，通过才落盘（原文件自动备份）。继续？`)) return;
+  if (!confirm(`将写入 ${items.length} 条模式到 data/parameter-specs.json。\n服务端会先用真实语料逐条校验，通过才落盘（原文件自动备份）。继续？`)) return;
   msg("校验中…");
   const res = await fetch("/api/parameters/proposals", {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -292,6 +372,7 @@ async function load() {
   DATA = await res.json();
   $("#hstat").textContent = `待裁定 ${DATA.c.rows.length} 行 · 已有 C ${DATA.specs.filter((s) => s.patterns?.C).length} 条 · 语料${DATA.corpusLoaded ? "已载入" : "缺失"}`;
   renderList();
+  renderAgent();
   if (cur) { cur = DATA.c.rows.find((r) => r.id === cur.id); renderDetail(); }
 }
 load();

@@ -1287,6 +1287,52 @@ check("chapter 14 carries C at chapter level, and says so on every pointer", () 
   return `${tables.length} 张三版取值表 · ${pointers.length} 条带口径标记的 R48 指针`;
 });
 
+check("agent 的取值提议全部过了抽取器语义的校验", () => {
+  // agent 产出的正则要能被采纳，必须先过**抽取器同一套语义**的校验
+  // （逐页扫描 · 第一页命中 · 只读第 1 个捕获组 · 落在对的章）。
+  // 这条闸门保证「采纳页面上摆出来的东西」不会有一半是坏的。
+  const p = resolve(ROOT, "data/parameter-specs-agent.json");
+  if (!existsSync(p)) {
+    return "还没有 agent 提议（跑 node scripts/run_spec_agent.mjs 生成）—— 本次跳过";
+  }
+  const doc = JSON.parse(readFileSync(p, "utf-8"));
+  const rows = doc.rows ?? [];
+  const script = `
+import fs from "node:fs";
+import { deviceChapterPrefixes, validateProposal } from "./dist/specAgent.js";
+const specs = JSON.parse(fs.readFileSync("data/parameter-specs.json", "utf8")).specs;
+const corpus = JSON.parse(fs.readFileSync("dist/mineru-v4-data.json", "utf8"));
+const doc = JSON.parse(fs.readFileSync("data/parameter-specs-agent.json", "utf8"));
+const bad = [];
+let checked = 0;
+for (const r of doc.rows ?? []) {
+  if (!r.source) continue;          // absent / 出错的，没有正则可验
+  checked++;
+  const prefixes = deviceChapterPrefixes(specs, r.device, r.version);
+  if (!prefixes.length) { bad.push(r.id + "@" + r.version + "：章号推不出来，没法验"); continue; }
+  const v = validateProposal(
+    { id: r.id, version: r.version, device: r.device, name: r.name, source: r.source, flags: r.flags },
+    corpus[r.version], prefixes, { unit: r.unit });
+  if (!v.ok) bad.push(r.id + "@" + r.version + "：" + v.reason);
+  else if (r.validation && r.validation.ok === false) bad.push(r.id + "@" + r.version + "：落盘时已标为不过");
+}
+console.log(JSON.stringify({ checked, bad }));
+`;
+  const r = spawnSync("node", ["--input-type=module", "-e", script], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  assert(r.status === 0, `校验 agent 提议的片段跑不起来：${(r.stderr || "").slice(-400)}`);
+  const out = JSON.parse(r.stdout.trim().split("\n").pop());
+  assert(
+    out.bad.length === 0,
+    `${out.bad.length} 条 agent 提议没过抽取器语义的校验（不能采纳）：\n        ${out.bad
+      .slice(0, 5)
+      .join("\n        ")}`,
+  );
+  return `${out.checked} 条带正则的提议全部通过校验`;
+});
+
 check("chapter 14's C column matches the verified GB→R48 chapter map", () => {
   // The client read the old two-column table as 「仅有两版国标，无欧标」. The
   // third column now carries UN R48-09's corresponding chapter — clause
@@ -2228,6 +2274,11 @@ for (const t of [
   "_test_agent_tools.mjs",
   // 变化清单的已知答案用例（classify 是本轮新增的判定）
   "_test_change_ledger.mjs",
+  // 取值规格提议 agent 的**确定性**用例：候选层 / 校验层 / 解析层。
+  // **不调模型**（假模型）—— 真模型的泛化率由
+  // scripts/run_spec_agent_regression.mjs 单独测，记账在
+  // reports/spec-agent-baseline.json。
+  "_test_spec_agent.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

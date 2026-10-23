@@ -62,6 +62,10 @@ const ENTRIES = [
   // changeLedger 是「变化总清单」的唯一实现 ——
   // 报告渲染它，闸门重算它。两边用同一份代码，才对得上账。
   ["server/reports/changeLedger.ts", "dist/changeLedger.js"],
+  // specAgent 是「取值规格提议 agent」：候选层 + 模型选择层 + 校验层。
+  // 单独成模块，是为了让它的校验层能被已知答案用例直接驱动 ——
+  // 校验层是这一层唯一有资格说「对」的地方。
+  ["server/reports/specAgent.ts", "dist/specAgent.js"],
 ];
 
 const SHARED = {

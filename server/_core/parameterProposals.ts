@@ -18,6 +18,10 @@
 import { Router } from "express";
 import fs from "node:fs";
 import path from "node:path";
+// 取值规格提议 agent 的两层：**章号推导**（从兄弟参数已有的正则反推）
+// 与**抽取器语义校验**（逐页扫描 + 第一页命中 + 只读第 1 个捕获组）。
+// agent 的提议必须过这一层才允许落盘 —— 页面是录入界面，不是后门。
+import { deviceChapterPrefixes, validateProposal } from "../reports/specAgent";
 
 /**
  * 项目根 —— 从本文件向上找，认 `data/parameter-specs.json` 为准。
@@ -43,6 +47,7 @@ const ROOT = PROJECT_ROOT;
 const CANDIDATES_C = path.join(ROOT, "data", "parameter-candidates-c.json");
 const CANDIDATES_AB = path.join(ROOT, "data", "parameter-candidates.json");
 const SPECS = path.join(ROOT, "data", "parameter-specs.json");
+const AGENT_PROPOSALS = path.join(ROOT, "data", "parameter-specs-agent.json");
 const REPORT = path.join(ROOT, "reports", "last-report.json");
 const MINERU = path.join(ROOT, "dist", "mineru-v4-data.json");
 
@@ -99,6 +104,10 @@ interface AcceptedItem {
   flags?: string;
   why?: string;
   section?: string;
+  /** 标准代号（A / B / C）。缺省按 C 处理（老的页面只填 C）。 */
+  version?: string;
+  /** 来自 agent 的提议 —— 走**更严**的那套校验 */
+  fromAgent?: boolean;
 }
 
 export function registerParameterProposalRoutes(router: Router) {
@@ -107,15 +116,36 @@ export function registerParameterProposalRoutes(router: Router) {
     const candidatesAB = readJson<any>(CANDIDATES_AB, { groups: [] });
     const specs = readJson<any>(SPECS, { specs: [] });
     const report = readJson<any>(REPORT, { parameterMatrix: [] });
+    const agent = readJson<any>(AGENT_PROPOSALS, { rows: [] });
 
     const cells: Record<string, any> = {};
     for (const r of report.parameterMatrix ?? []) cells[r.id] = r.cells ?? {};
+
+    // **agent 的提议**（scripts/run_spec_agent.mjs 的产物）——
+    // 只把**通过了校验**的摆到人面前；没过校验的连同拒绝理由一起给出来，
+    // 人要能看见「agent 试过了，但没成」，而不是「agent 什么都没说」。
+    const agentRows = (agent.rows ?? []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      family: r.family,
+      unit: r.unit,
+      version: r.version,
+      device: r.device,
+      source: r.source ?? null,
+      flags: r.flags ?? null,
+      why: r.why ?? "",
+      absent: r.absent ?? null,
+      error: r.error ?? null,
+      validation: r.validation ?? null,
+      ok: !!r.source && !!r.validation?.ok,
+    }));
 
     res.json({
       c: candidatesC,
       ab: candidatesAB,
       specs: specs.specs ?? [],
       cells,
+      agent: { rows: agentRows, generatedBy: agent.generatedBy ?? null },
       corpusLoaded: fs.existsSync(MINERU),
     });
   });
@@ -141,13 +171,18 @@ export function registerParameterProposalRoutes(router: Router) {
     const rejected: Array<{ id: string; source: string; reason: string }> = [];
 
     for (const it of items) {
+      const version = String(it.version ?? "C");
       const spec = specs.find((s) => s.id === it.id);
       if (!spec) {
         rejected.push({ id: it.id, source: it.source, reason: "spec 里没有这个 id" });
         continue;
       }
-      if (spec.patterns?.C) {
-        rejected.push({ id: it.id, source: it.source, reason: "该行已经有 C 模式，先删掉旧的再改" });
+      if (spec.patterns?.[version]) {
+        rejected.push({
+          id: it.id,
+          source: it.source,
+          reason: `该行已经有 ${version} 模式，先删掉旧的再改`,
+        });
         continue;
       }
 
@@ -159,9 +194,19 @@ export function registerParameterProposalRoutes(router: Router) {
         continue;
       }
 
-      const m = re.exec(cText);
+      // 正则要在**这一版**的语料上验 —— A/B/C 的条文完全不同。
+      const vText = String(mineru?.[version]?.fullText ?? "");
+      if (!vText) {
+        rejected.push({ id: it.id, source: it.source, reason: `没有 ${version} 版的语料` });
+        continue;
+      }
+      const m = re.exec(vText);
       if (!m) {
-        rejected.push({ id: it.id, source: it.source, reason: "在 R48 语料里匹配不到 —— 锚点多半写错了" });
+        rejected.push({
+          id: it.id,
+          source: it.source,
+          reason: `在 ${version} 版语料里匹配不到 —— 锚点多半写错了`,
+        });
         continue;
       }
 
@@ -187,9 +232,45 @@ export function registerParameterProposalRoutes(router: Router) {
         continue;
       }
 
-      spec.patterns = { ...(spec.patterns ?? {}), C: { source: it.source, flags: it.flags ?? "i" } };
-      spec.why = { ...(spec.why ?? {}), C: it.why?.trim() || "经人工确认页采纳；见 data/parameter-candidates-c.json 的候选句" };
-      accepted.push({ id: it.id, nums, at: m.index });
+      // **agent 的提议走更严的那套校验** ——
+      // 抽取器是**逐页扫描、取第一页命中**的，所以「能在更早的别的章命中」
+      // 的正则会**静默产出错值**。`validateProposal` 用**同一套语义**
+      // （paginate + numbersOf + nearestClause）复刻这一点。
+      // 装置的章号从**兄弟参数已有的正则**里反推（自校准，不另建映射表）。
+      if (it.fromAgent) {
+        const device = String(it.id).split(".")[0];
+        const prefixes = deviceChapterPrefixes(specs, device, version);
+        if (prefixes.length) {
+          const val = validateProposal(
+            { id: it.id, version, device, name: spec.name ?? it.id, source: it.source, flags: it.flags ?? "i" },
+            mineru[version],
+            prefixes,
+            { unit: spec.unit },
+          );
+          if (!val.ok) {
+            rejected.push({
+              id: it.id,
+              source: it.source,
+              reason: `抽取器语义下不成立：${val.reason}`,
+            });
+            continue;
+          }
+        }
+      }
+
+      spec.patterns = {
+        ...(spec.patterns ?? {}),
+        [version]: { source: it.source, flags: it.flags ?? "i" },
+      };
+      spec.why = {
+        ...(spec.why ?? {}),
+        [version]:
+          it.why?.trim() ||
+          (it.fromAgent
+            ? "由取值规格提议 agent 产出，经抽取器语义校验后由人工确认页采纳"
+            : "经人工确认页采纳；见 data/parameter-candidates-c.json 的候选句"),
+      };
+      accepted.push({ id: it.id, version, nums, at: m.index });
     }
 
     if (accepted.length === 0) {
