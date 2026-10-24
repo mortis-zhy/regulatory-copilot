@@ -1696,6 +1696,40 @@ check("A 草案的条款索引没有被「无编号小节」截断", () => {
   return need.map(([p, n]) => `${n} ${p}.x`).join(" · ");
 });
 
+check("appendix H — every quoted A/B passage is in the source PDF", () => {
+  // 附录 H 是客户第一句抱怨（「仍然只有法规中，有具体数值的内容的比较」）的
+  // 直接答复 —— 条款级的定性并排对照。**它引的每一句都必须来自原文**。
+  //
+  // 这条闸门抓到过一个真问题：清洗正文时把 PDF 拆行造成的
+  // 「宽度大于2.\\n10m」当成了条款号碎片删掉，**2.10m 变成 10m** ——
+  // 宽度门槛差一个数量级，而它会原样印在客户手里。
+  const { ok, out } = runPy(["scripts/check_qualitative_diff.py"], "check_qualitative_diff");
+  assert(ok, `附录 H 的引文有对不上的：\n        ${out.slice(-600)}`);
+  return out.match(/命中 \d+ 条/)?.[0] ?? "ok";
+});
+
+check("appendix H — the row count equals the data it is built from", () => {
+  const app = loadReport().appendices?.find((a) => a.id === "H");
+  assert(!!app, "报告里没有附录 H（A/B 定性条款并排对照）");
+  const md = app.markdown ?? "";
+  const data = JSON.parse(read("data/qualitative-diff.json"));
+  const s = data.summary ?? {};
+  const diffRows = (md.match(/^\| B \d+(\.\d+)* \/ A /gm) ?? []).length;
+  assert(
+    diffRows === (s.differentText ?? 0),
+    `附录 H.2 列了 ${diffRows} 行，数据里是 ${s.differentText ?? 0} 条「文字不同」`,
+  );
+  assert(
+    md.includes(`可并排 **${s.comparable}**`),
+    `附录 H.1 汇总里的「可并排」数与数据不符（应为 ${s.comparable}）`,
+  );
+  assert(
+    md.includes(`## H.3 归一化后同文的条款（${s.sameText} 条）`),
+    `附录 H.3 的条数与数据不符（应为 ${s.sameText}）`,
+  );
+  return `H.2 ${diffRows} 行 · 同文 ${s.sameText} · 不可并排 ${s.notComparable}`;
+});
+
 check("every reported value is in the clause it cites", () => {
   // 不变式：矩阵报出的取值必须就在**它引用的那条条款**里（含祖先/后代条款）。
   // 这是「值对、条款错」那一类错的克星 —— 引用 4.25 却报 5°、引用 6.14.4.1

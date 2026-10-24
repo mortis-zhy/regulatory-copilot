@@ -31,6 +31,10 @@ import APPENDIX_TABLES from "../../data/appendix-tables.json";
 // GB 章节 → UN R48-09 章节的对应表（scripts/build_r48_chapters.py 生成，
 // 每条都回 R48 原文验过）。第 14 章的 C 列用它。
 import R48_CHAPTERS from "../../data/r48-chapters.json";
+// A 草案 ↔ B 现行的**定性条款**并排对照（scripts/build_qualitative_diff.py 生成）。
+// 客户抱怨的「仍然只有法规中有具体数值的内容的比较」——这一份是条款级的
+// 定性对照，数值那一半在第 12 章。
+import QUALITATIVE_DIFF from "../../data/qualitative-diff.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
@@ -2916,6 +2920,169 @@ function buildAppendixG(matrixRows: any[]): string {
   ].join("\n");
 }
 
+/**
+ * 附录 H：A 草案 ↔ B 现行的**定性条款**并排对照（条款级）。
+ *
+ * 为什么需要这一节
+ * ----------------
+ * 客户看完 ㉖ 说：「仍然只有法规中，有具体数值的内容的比较」。
+ * 第 12 章的矩阵全是标量；第 14 章是**章级**的整段原文并排 ——
+ * 但**条款级**的定性差异（「后位灯首次点亮可用顺序点亮」这类要求）
+ * 在整份报告里只是**罗列**在附录 E.5.1 的清单里，**没有并排对比**。
+ *
+ * 这一节把 A、B 两版**同一装置的同一条款**拉到一起，逐条给出两版原文，
+ * **差异处用粗体标出来**。
+ *
+ * 安全边界（数据源 scripts/build_qualitative_diff.py，规则写在那边）
+ * ---------------------------------------------------------------
+ * 1. **同号 ≠ 同条款。** A 把 B 平铺的 5.1~5.26 按主/从属/扩展功能重新归位，
+ *    A 的 5.4 是**前雾灯**、B 的 5.4 是**倒车灯**。配对先过**装置级重排表**
+ *    （`DEVICE_RENUMBERING`，11 条，已回原文核验）。
+ * 2. 光有装置对应还不够，**"款"也必须一致**（配备/数量/高度/…）才配对；
+ *    款不一致 → 判为编号重排，**不并排**（列在 H.4）。
+ * 3. 无款的散文条款只有在**前 10 个归一化字符完全相同**时才配对。
+ *    保守方向：宁可漏，不错。
+ *
+ * 判定只给两种：**同文** / **文字不同**。
+ * **不判「实质变化」** —— 那是工程判断，报告不替读者下结论；
+ * 差异片段直接标出来，读者一眼能分清「整段新增」和「换个词」。
+ */
+function buildAppendixH(): string {
+  const D: any = (QUALITATIVE_DIFF as any) ?? {};
+  const pairs: any[] = Array.isArray(D.pairs) ? D.pairs : [];
+  if (!pairs.length) return "";
+  const sum = D.summary ?? {};
+  const diffs = pairs.filter((p) => !p.same);
+  const sames = pairs.filter((p) => p.same);
+  const unpaired: any[] = Array.isArray(D.unpaired) ? D.unpaired : [];
+
+  const lines: string[] = [
+    "# 附录 H A 草案 ↔ B 现行 定性条款并排对照（条款级）",
+    "",
+    "> **这一节回答的是客户那句「仍然只有法规中，有具体数值的内容的比较」。**",
+    "> 第 12 章的矩阵是**标量**（安装高度、响应时间、光强…）；",
+    "> 第 14 章是**章级**的整段原文并排；",
+    "> **这一节是条款级的定性对照** —— 逐条给出 A、B 两版的原文，**差异处用粗体标出**。",
+    "",
+    "> **判定只有两种：同文 / 文字不同。**",
+    "> 报告**不判「实质变化」** —— 那是工程判断（同样的两个数，方向可以相反），",
+    "> 报告不替读者下结论；差异片段标出来，读者自己判。",
+    "",
+    "> **C（UN R48-09）侧不在这一节。**",
+    "> UN R48 与 GB 的条款编号体系**完全不同构**（§2 定义 / §5 通用 / §6 各灯具 / Annex），",
+    "> 逐号对读会造出假对应 —— GB 5.4.5.1 与 R48 6.4.5.1 编号相似却不是同一条款。",
+    "> R48 的对照在**章节级**（第 14 章，26 条对应逐条回原文验过）与",
+    "> **参数级**（第 12 章，319 个取值位）。**不硬凑条款级对照。**",
+    "",
+    "## H.1 这一节怎么来的（配对规则与安全边界）",
+    "",
+    "| 步骤 | 规则 | 为什么 |",
+    "|---|---|---|",
+    "| 1 | 先过**装置级重排表**再配对 | A 把 B 平铺的 5.1~5.26 重新归位：A 的 5.4 是**前雾灯**，B 的 5.4 是**倒车灯**。只按编号配对，会把两条不相干的条款说成「改了」 |",
+    "| 2 | **款**（配备/数量/布局/高度/几何可见度/电路连接/指示器/其他要求…）必须一致 | 装置对了、款不对，说明这一条在 A/B 之间**重排过**，不是同一件事 |",
+    "| 3 | 无款的散文条款：**前 10 个归一化字符完全相同**才配对 | 保守方向 —— 宁可漏，不错 |",
+    "| 4 | 归一化（去空白/标点、中文数字→阿拉伯数字、㎜→mm）后逐字相同 = **同文** | 避免「，vs,」「2只vs两只」被算成差异 |",
+    "",
+    "> **引文里的交叉引用编号仍是各版自己的编号** —— A 的「按 5.6.5 规定」与",
+    "> B 的「按 5.5.5 规定」指的是**同一条**（A 的 5.6 与 B 的 5.5 都是转向信号灯）。",
+    "> 装置级编号重排见 §11.6.2。",
+    "",
+    `**结果**：可并排 **${sum.comparable ?? pairs.length}** 条（同号同款）·`,
+    `**同文 ${sum.sameText ?? sames.length}** · **文字不同 ${sum.differentText ?? diffs.length}** ·`,
+    `**编号不可直接对读 ${sum.notComparable ?? unpaired.length}**（列在 H.4，不并排）。`,
+    "",
+    "---",
+    "",
+    `## H.2 文字不同的条款（${diffs.length} 条）—— 逐条并排`,
+    "",
+    "> 每一行给出**条款号 + 款 + 两版原文 + 页码**。",
+    "> **粗体是差异处**（逐字比对得出），一眼能分清「整段新增」和「换个词」。",
+    "> 两版原文都超过 320 字时截断并标出「原文续见第 N 页」——",
+    "> **截断只在这一节发生**，条款全文在第 14 章与附录 F。",
+    "",
+    "| 条款 | 款 | A 草案原文 | B 现行原文 |",
+    "|---|---|---|---|",
+  ];
+
+  const clip = (s: string, n = 320): string => {
+    let t = s;
+    if (t.length > n) {
+      const cut = t.slice(0, n);
+      const idx = Math.max(cut.lastIndexOf("。"), cut.lastIndexOf("；"), cut.lastIndexOf("，"));
+      t = (idx > n * 0.6 ? cut.slice(0, idx + 1) : cut) + "……";
+    }
+    // 截断可能把一对 `**…**` 切开 —— PDF 里就会剩下**一个裸的 `**`**。
+    // （闸门「built PDF has no unrendered markdown」抓到过这个。）
+    if (((t.match(/\*\*/g) ?? []).length % 2) === 1) {
+      const i = t.lastIndexOf("**");
+      t = t.slice(0, i) + t.slice(i + 2);
+    }
+    return t;
+  };
+
+  for (const p of diffs) {
+    const a = clip(String(p.aMarked ?? p.aText ?? ""));
+    const b = clip(String(p.bMarked ?? p.bText ?? ""));
+    const aTag = a.length < String(p.aText ?? "").length ? `（原文续见 A 第 ${p.aPage} 页）` : "";
+    const bTag = b.length < String(p.bText ?? "").length ? `（原文续见 B 第 ${p.bPage} 页）` : "";
+    // 引出条款：正文只有一个标题，实质内容在子条款里。
+    // 不标出来，读者会以为「A 这条没内容」—— 而事实是 A **拆得更细**。
+    const aLead = p.aLead
+      ? `（**本条是引出条款**，实质内容见 A ${(p.aKids ?? []).join(" / ") || "子条款"}）`
+      : "";
+    const bLead = p.bLead
+      ? `（**本条是引出条款**，实质内容见 B ${(p.bKids ?? []).join(" / ") || "子条款"}）`
+      : "";
+    lines.push(
+      `| B ${p.bClause} / A ${p.aClause} | ${esc(String(p.label ?? ""))} | ` +
+        `**A 第 ${p.aPage} 页**：${esc(a)}${aTag}${aLead} | ` +
+        `**B 第 ${p.bPage} 页**：${esc(b)}${bTag}${bLead} |`,
+    );
+  }
+
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push(`## H.3 归一化后同文的条款（${sames.length} 条）`);
+  lines.push("");
+  lines.push(
+    "这些条款两版**逐字相同**（归一化后），**不需要改设计** —— 列出来是为了让人能核对「确实没改」。",
+  );
+  lines.push("");
+  const byDevice = new Map<string, string[]>();
+  for (const p of sames) {
+    const d = String(p.device ?? "").trim() || "（未归装置）";
+    if (!byDevice.has(d)) byDevice.set(d, []);
+    byDevice.get(d)!.push(`${p.bClause}`);
+  }
+  for (const [d, cs] of [...byDevice.entries()].sort((x, y) => x[0].localeCompare(y[0], "zh"))) {
+    lines.push(`- **${d}**（${cs.length} 条）：${cs.join("、")}`);
+  }
+
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push(`## H.4 编号不可直接对读的条款（${unpaired.length} 条）—— 不并排`);
+  lines.push("");
+  lines.push(
+    "这些条款**同号但款不同**（或无款且开头对不上），说明它们在 A/B 之间**重排过**。",
+    "**摆在一起对比就是造出来的假变化**，所以这里只登记、不并排。",
+    "装置级编号重排见 §11.6.2。",
+    "",
+  );
+  const un = new Map<string, string[]>();
+  for (const p of unpaired) {
+    const d = String(p.device ?? "").trim() || "（未归装置）";
+    if (!un.has(d)) un.set(d, []);
+    un.get(d)!.push(`B ${p.bClause}（款「${p.bLabel || "—"}」）↔ A ${p.aClause}（款「${p.aLabel || "—"}」）`);
+  }
+  for (const [d, cs] of [...un.entries()].sort((x, y) => x[0].localeCompare(y[0], "zh"))) {
+    lines.push(`- **${d}**：${cs.join("；")}`);
+  }
+
+  return lines.join("\n");
+}
+
 function buildAppendixF(): string {
   const T = (APPENDIX_TABLES as any) ?? { groups: [] };
   const label: Record<string, string> = {
@@ -3561,6 +3728,11 @@ export async function buildMinerUReport(
         id: "G",
         title: "三版一致参数逐条明细（全量供核对）",
         markdown: buildAppendixG(matrixRows),
+      },
+      {
+        id: "H",
+        title: "A/B 定性条款并排对照（条款级，差异处标出）",
+        markdown: buildAppendixH(),
       },
     ],
     // Structured twin of chapter 12. The chapter's markdown is a rendering;
