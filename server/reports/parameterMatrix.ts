@@ -834,8 +834,20 @@ function judge(
   const b = cells[v1];
   if (!a || !b) return { verdict: "incomplete", note: "版本数不足 2，无法判定" };
   if (a.status === "not-found" || b.status === "not-found") {
-    const n = [a, b].filter((c) => c.status === "not-found").length;
-    return { verdict: "incomplete", note: `${v0}/${v1} 有 ${n} 版未定位到，暂不判定` };
+    // **「未定位」与「该版无此规定（已核）」要分开说** —— 判定列
+    // (verdictLabel) 早就分开了，明细行里的这句话却一直混着：
+    // 草案新增装置（ADS 标志灯）的 B/C 两格是**人工核过原文、确认没有规定**，
+    // 明细却写「B 未定位到，暂不判定」—— 读者会读成「数据没查到」，
+    // 于是把一条**结论**当成**缺口**。这正是客户说的「数值有空缺」。
+    const miss = ([v0, v1] as const)
+      .filter((k) => cells[k]?.status !== "verified")
+      .map((k) => ({ k, cell: cells[k] }));
+    const noSpec = miss.filter((m) => m.cell?.miss === "not-specified").map((m) => m.k);
+    const notLoc = miss.filter((m) => m.cell?.miss !== "not-specified").map((m) => m.k);
+    const parts: string[] = [];
+    if (noSpec.length) parts.push(`${noSpec.join("/")} 无此规定（已核）`);
+    if (notLoc.length) parts.push(`${notLoc.join("/")} 未定位到`);
+    return { verdict: "incomplete", note: parts.join("；") || `${v0}/${v1} 暂不判定` };
   }
   // Versions beyond the pair are cross-reference, not gate. They only decide
   // whether a "changed" row can point the reader at somewhere to check it —

@@ -1637,6 +1637,65 @@ check("the coverage checklist is not stale", () => {
   return (out.match(/覆盖清单与现算一致：.*/) ?? ["一致"])[0].trim();
 });
 
+check("覆盖审计没有真漏，也没有别装置顶替", () => {
+  // 这是「数据完整」最硬的一条：**三版原文里每一个带单位的标量限值，
+  // 都能在参数矩阵里找到一条真的覆盖它的行**。
+  //
+  // 「真漏」= 矩阵里根本没有对应行（读者拿不到这个数）。
+  // 「别装置顶替」= 矩阵里有同值的行，但属于**别的装置**（读者会拿到一个
+  //   数值相等但口径不同的答案 —— 比空着更坏）。
+  //
+  // 2026-10-24 之前这条是 20 个「别装置顶替」+ 2 个「真漏」，
+  // 根因是条款切分器把 A 草案 5.20（无编号小节）之后的条款整段丢了，
+  // 于是 A 的 ADS 标志灯 / 慢行灯 / 倒车灯在覆盖审计里**根本不存在**。
+  const { ok, out } = runPy(["scripts/coverage_audit.py"], "coverage_audit");
+  assert(ok, `coverage_audit.py 跑不起来：\n        ${out.slice(-600)}`);
+  const lines = out.split("\n").filter((l) => /同条款覆盖/.test(l));
+  assert(lines.length >= 3, `覆盖审计没有输出三版统计：\n        ${out.slice(-400)}`);
+  const bad = [];
+  for (const l of lines) {
+    const ver = (l.match(/【(.+?)版】/) ?? [])[1] ?? "?";
+    const other = Number((l.match(/\*\*别装置顶替 (\d+)\*\*/) ?? [])[1] ?? "0");
+    const miss = Number((l.match(/\*\*真漏 (\d+)\*\*/) ?? [])[1] ?? "0");
+    if (other || miss) bad.push(`${ver}: 别装置顶替 ${other} · 真漏 ${miss}`);
+  }
+  assert(
+    bad.length === 0,
+    `覆盖审计有未被真正覆盖的限值 —— ${bad.join("；")}\n` +
+      "        （要么矩阵缺行，要么 data/table-clauses.json 里的「不是限值」登记被漏了）",
+  );
+  const total = (out.match(/三版合计：.*/) ?? [""])[0];
+  return total.replace("三版合计：", "") || "三版 真漏 0 · 别装置顶替 0";
+});
+
+check("A 草案的条款索引没有被「无编号小节」截断", () => {
+  // A 的 5.20「醒目标志」是**无编号小节**（正文里没有 5.20.x 子条款），
+  // 于是条款序列从 5.19.x 直接跳到 5.21.x。
+  // 条款切分器的「节推进必须 +1」曾经把这之后的条款整段丢掉 ——
+  // 倒车灯(5.21.x)、慢行灯(5.22.x)、牵引杆挂车标志灯(5.23.x)、
+  // **ADS 标志灯(5.24.x)** 共 71 条条款在索引里消失，
+  // 而索引是**要求台账与覆盖审计的唯一输入**：
+  // 「445 条要求条款全部有处置、真缺口 0」当时是在**一个缺了 4 个装置的集合**上说的。
+  const idx = JSON.parse(read("data/clause-index.json"));
+  const A = idx._clauses?.A ?? {};
+  const need = [
+    ["5.21", "倒车灯"],
+    ["5.22", "慢行灯"],
+    ["5.23", "牵引杆挂车标志灯"],
+    ["5.24", "ADS 标志灯"],
+  ];
+  const missing = [];
+  for (const [pre, name] of need) {
+    const n = Object.keys(A).filter((k) => k === pre || k.startsWith(pre + ".")).length;
+    if (n < 8) missing.push(`${name}(${pre}.x) ${n} 条`);
+  }
+  assert(
+    missing.length === 0,
+    `A 的条款索引缺这些装置：${missing.join("、")} —— 条款切分器又把无编号小节后的条款吞掉了`,
+  );
+  return need.map(([p, n]) => `${n} ${p}.x`).join(" · ");
+});
+
 check("every reported value is in the clause it cites", () => {
   // 不变式：矩阵报出的取值必须就在**它引用的那条条款**里（含祖先/后代条款）。
   // 这是「值对、条款错」那一类错的克星 —— 引用 4.25 却报 5°、引用 6.14.4.1

@@ -3,10 +3,10 @@
   "versions": {
     "A": {
       "label": "GB 4785 草案 V4.3.5",
-      "clauses": 107,
-      "limits": 309,
-      "same": 215,
-      "otherChapter": 36,
+      "clauses": 124,
+      "limits": 340,
+      "same": 243,
+      "otherChapter": 39,
       "general": 58,
       "otherDevice": 0,
       "otherDeviceItems": [],
@@ -90,32 +90,7 @@
           "page": 57,
           "note": "昼间行驶灯配光表（测试点网格），不是标量限值。",
           "appendixF": "",
-          "values": [
-            "0.5 m",
-            "1 m",
-            "10 m",
-            "10 °",
-            "1200 mm",
-            "1400 mm",
-            "15 km/h",
-            "15 °",
-            "150 mm",
-            "1500 mm",
-            "20 mm",
-            "250 mm",
-            "3 m",
-            "30 °",
-            "300 mm",
-            "3000 mm",
-            "400 mm",
-            "45 °",
-            "5 °",
-            "6 m",
-            "60 °",
-            "750 mm",
-            "80 °",
-            "9 m"
-          ]
+          "values": []
         }
       ],
       "outOfScope": [
@@ -152,6 +127,10 @@
           "note": "配备条款里的车长门槛，不是安装限值。"
         },
         {
+          "clause": "5.22.9.1",
+          "note": "慢行灯目视检测的**观察区域**（距车前/车后/两侧各 10m、高度 1m~3m）—— 规定的是检验员站在哪，属试验条件。与 B §5.25.9.1 同一条。"
+        },
+        {
           "clause": "7.1.7.3",
           "note": "危险警告信号的配备条件按车长分档，6m 是**车辆长度门槛**。"
         },
@@ -176,6 +155,35 @@
             "6 m",
             "7 m"
           ]
+        },
+        {
+          "clause": "5.22.2",
+          "note": "慢行灯的**配备数量按车长分档**（车长不大于 6m：1 只或 2 只；大于 6m 不大于 9m：不超过 4 只；大于 9m：不超过 6 只）。6m / 9m 是**车辆长度的适用范围门槛**，不是灯具的安装限值；数量本身是「只」，不是标量限值。",
+          "skip": [
+            "6 m",
+            "9 m"
+          ]
+        },
+        {
+          "clause": "5.24.2",
+          "note": "ADS 标志灯的数量按车长分档（车长不小于 6m 的车辆每侧再装 1 只 AV3b）。6m 是**车辆长度门槛**，不是安装限值。",
+          "skip": [
+            "6 m"
+          ]
+        },
+        {
+          "clause": "5.24.3",
+          "note": "ADS 标志灯布局按车长分档（车长小于 6m 允许简化布置）。6m 是**车辆长度门槛**，不是安装限值。",
+          "skip": [
+            "6 m"
+          ]
+        },
+        {
+          "clause": "5.24.4.3",
+          "note": "侧 ADS 标志灯的纵向安装位置：距车辆前端/尾端不大于 3m、相邻间距不大于 3m 是**真实安装限值**（照常算覆盖）；6m 是**车长分档门槛**（车长小于 6m 允许前部二分之一范围），列在 skip 里。",
+          "skip": [
+            "6 m"
+          ]
         }
       ]
     },
@@ -183,8 +191,8 @@
       "label": "GB 4785-2019",
       "clauses": 105,
       "limits": 287,
-      "same": 217,
-      "otherChapter": 41,
+      "same": 218,
+      "otherChapter": 40,
       "general": 29,
       "otherDevice": 0,
       "otherDeviceItems": [],
@@ -364,8 +372,8 @@
       "label": "UN R48-09",
       "clauses": 142,
       "limits": 342,
-      "same": 255,
-      "otherChapter": 51,
+      "same": 256,
+      "otherChapter": 50,
       "general": 36,
       "otherDevice": 0,
       "otherDeviceItems": [],
@@ -572,11 +580,11 @@
     }
   },
   "totals": {
-    "same": 687,
-    "otherChapter": 128,
+    "same": 717,
+    "otherChapter": 129,
     "general": 123,
     "otherDevice": 0,
     "missing": 0,
-    "limits": 938
+    "limits": 969
   }
 }
