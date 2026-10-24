@@ -27,7 +27,7 @@ import {
   extractClosureCounts as extractClosureCountsFromMd,
   reportMarkdown,
 } from "./trustChecks";
-import { buildLedger, ledgerToCounts } from "./closureLedger";
+import { buildLedger, ledgerToCounts, extractAuthoritativeChanges, type AuthoritativeChanges } from "./closureLedger";
 import { orderVersions } from "./parameterMatrix";
 import { checkConsistency } from "./consistency";
 import type { ReportOutline } from "./reportGenerator";
@@ -727,14 +727,17 @@ function surfaceTerminologyGuard(tableText: string): string {
   // One surface alone is unambiguous — only warn when two DIFFERENT ones mix,
   // which is exactly the comparison a reader is about to make in their head.
   if (terms.size < 2) return "";
+  // **只印一行指针，不印整段说明。**
+  //
+  // 整段说明（约 300 字）以前在**每张提到这三个面的表前面各来一遍** ——
+  // 全文 33 次。翻报告的客户会看到「满篇 ⚠」，结论是「这报告到处都是不确定」，
+  // 而那 33 段**是同一段话**。
+  //
+  // 完整说明在前言的「术语对照 · 三个『面』不是同义词」里（renderGlossary），
+  // 那里本来就是它该待的地方 —— 一处说清，表里给个指引。
   return `<aside class="term-guard">
-    <strong>⚠ 测量基准提示 — 本表出现 ${[...terms].join(" / ")}。</strong>
-    三者在标准中是<strong>定义不同的物理面</strong>：透光面＝光线穿过的透镜外表面；
-    发光面＝反射镜口径／透镜横截面；视表面＝观察者看到的表观区域。
-    B 版 3.9 原注：<em>「对于牌照灯和第 5、6 类转向信号灯，本定义中的视表面替换为透光面」</em>——
-    该定义<strong>在同一版本内即随装置类型变化</strong>。
-    因此不同版本、不同装置的发光面／视表面数值<strong>不可直接等价对标</strong>，
-    几何可见度与安装位置的差异分析会失真。请按各行标注的条款号分别核对原文基准。
+    <strong>⚠ 测量基准：</strong>本表出现 ${[...terms].join(" / ")} —— 三者<strong>不是同一个测量面</strong>，
+    跨版本对标前请先看<strong>前言「术语对照 · 三个『面』不是同义词」</strong>。
   </aside>`;
 }
 
@@ -1109,7 +1112,11 @@ function renderGlossary(): string {
     </table>
     <p class="gl-warn">⚠ 跨版本比较时，「B 版视表面」与「A 版发光面」在部分条款中指同一功能面，
     但<b>测量基准与判定阈值可能不同</b>。涉及几何可见度 / 安装位置的差异，必须回原文逐条比对，
-    不可按名称相近直接对应。</p>
+    不可按名称相近直接对应。<br>
+    <b>B 版 3.9 原注</b>：<em>「对于牌照灯和第 5、6 类转向信号灯，本定义中的视表面替换为透光面」</em> ——
+    也就是说<strong>这个定义在同一版本内就随装置类型变化</strong>。
+    因此不同版本、不同装置的发光面／视表面数值<b>不可直接等价对标</b>，
+    几何可见度与安装位置的差异分析会失真。请按各行标注的条款号分别核对原文基准。</p>
   </div>`;
 }
 
@@ -1216,7 +1223,11 @@ function renderTransitionTable(rows: ReturnType<typeof extractTransitionDates>):
 </section>`;
 }
 
-function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>, discrepancies: string[] = []): string {
+function renderClosureDashboard(
+  counts: ReturnType<typeof extractClosureCounts>,
+  discrepancies: string[] = [],
+  auth?: AuthoritativeChanges | null,
+): string {
   const total =
     counts.confirmed + (counts.manual ?? 0) + counts.candidate +
     counts.errata + counts.renum + counts.format;
@@ -1303,9 +1314,16 @@ function renderClosureDashboard(counts: ReturnType<typeof extractClosureCounts>,
     <b>两套口径不可相加</b>：§11.3 的「候选差异条目」只统计"看起来像变更的参数"；
     上表的「待复核」统计的是全文所有 <code>⚠未找到 / 未核验</code> 标记行（含 §11.0 的 9 条网传指标）。
     二者成员不同、相交但不等价。<br>
-    上表的 <b>✅ 已双源核验 + 🧾 人工核验补录 = ${counts.confirmed + (counts.manual ?? 0)} 项</b>，
-    与执行摘要第 1 条「${counts.confirmed + (counts.manual ?? 0)} 项参数在 A 草案中有实质变化」
-    是<b>同一批事实</b>（自动核验 ${counts.confirmed} 项 + 人工补录 ${counts.manual ?? 0} 项）。
+    ${
+      auth
+        ? `上表的 <b>✅ 已双源核验 (${counts.confirmed}) + 🧾 人工核验补录 (${counts.manual ?? 0}) = ${counts.confirmed + (counts.manual ?? 0)} 项</b>，
+    是 <b>§11.0 变化总清单 ${auth.total} 条</b>里的 ${auth.withEarly} 条（出处涉及 §11.3 数值级 / §11.3.1 人工补录）；
+    另外 <b>${auth.onlyMatrix} 条</b>只出现在第 12 章参数矩阵里（矩阵判为 changed，但不在那两套清单中），
+    去重后并入。<b>全报告的「实质变化」总数以 §11.0 的 ${auth.total} 条为准</b>
+    —— 执行摘要第 1 条报的就是这个数${auth.raw ? `（合并前原始条目 ${auth.raw} 条）` : ""}。`
+        : `上表的 <b>✅ 已双源核验 + 🧾 人工核验补录 = ${counts.confirmed + (counts.manual ?? 0)} 项</b>
+    是变化清单里经自动核验与人工补录的部分；<b>全报告的「实质变化」总数以第 11 章 §11.0 变化总清单为准</b>。`
+    }
   </p>
 ${discrepancies.length ? `<div class="reconcile-box">
     <p class="reconcile-title">⚠ 账目对账：报告自述与台账实算不一致（${discrepancies.length} 项）</p>
@@ -2713,6 +2731,9 @@ export async function buildHtml(
   const closureDashboardHtml = renderClosureDashboard(
     ledgerToCounts(ledger) as ReturnType<typeof extractClosureCounts>,
     ledger.discrepancies,
+    // **权威数现算**：§11.0 的表行数。前言不再自己写死一个数
+    // —— 写死过一次，就留下过「第 3 页说 14、第 20 页说 17」。
+    extractAuthoritativeChanges(chapters),
   );
   const transitionHtml = renderTransitionTable(extractTransitionDates(chapters));
   const worklistHtml = renderCandidateWorklist(ledger);

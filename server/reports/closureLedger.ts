@@ -554,3 +554,56 @@ export function ledgerToCounts(ledger: Ledger) {
     referenced: c.referenced ?? 0,
   };
 }
+
+/**
+ * §11.0 变化总清单 —— **全报告「实质变化」的唯一权威数**。
+ *
+ * 前言的闭环统计（按标记分 6 桶）和它**不是同一套口径**，两者必须说清关系：
+ *   · 闭环统计数的是「66 条候选差异按标记怎么分」—— 答「有多少还没核完」；
+ *   · §11.0 数的是「改了什么」—— 答「客户要动手的有几条」。
+ *
+ * 以前前言写的是「✅+🧾 = 14 项，与执行摘要第 1 条『14 项参数在 A 草案中有实质变化』
+ * 是同一批事实」。执行摘要改成 17 条之后，**这句话留在那儿说谎了** ——
+ * 同一份报告，第 3 页说 14、第 20 页说 17。客户一对就发现对不上账，
+ * 而「对不上账」正是这份报告被嫌「和之前差别不大」的直接原因。
+ *
+ * 现在这段话**从 §11.0 的表里现算**：总数、其中有多少条来自 §11.3/§11.3.1
+ * 那两套（也就是闭环统计的 ✅+🧾）、有多少条只来自第 12 章矩阵。
+ * 两边同源，漂不了。
+ */
+export interface AuthoritativeChanges {
+  /** §11.0 的总行数 */
+  total: number;
+  /** 其中出处涉及 §11.3 数值级 / §11.3.1 人工补录 的行数 */
+  withEarly: number;
+  /** 其中出处只涉及第 12 章矩阵 的行数 */
+  onlyMatrix: number;
+  /** 合并前的原始条目数（「原始条目共 N 条」） */
+  raw: number;
+}
+
+export function extractAuthoritativeChanges(
+  src: string | Array<{ markdown?: string }>,
+): AuthoritativeChanges | null {
+  const md = Array.isArray(src) ? src.map((c) => c?.markdown ?? "").join("\n") : String(src ?? "");
+  const i = md.indexOf("## 11.0");
+  if (i < 0) return null;
+  const j = md.indexOf("### 11.1", i);
+  const sec = md.slice(i, j > 0 ? j : undefined);
+  const rows = sec
+    .split("\n")
+    .filter((l) => l.startsWith("| ") && !l.startsWith("| # ") && !l.startsWith("|---"));
+  if (!rows.length) return null;
+  let withEarly = 0;
+  let onlyMatrix = 0;
+  for (const l of rows) {
+    const cells = l.trim().replace(/^\||\|$/g, "").split("|");
+    const src_ = (cells[cells.length - 1] ?? "").trim();
+    const early = /§11\.3(\s|$)|§11\.3\.1/.test(src_);
+    const matrix = /第\s*12\s*章/.test(src_);
+    if (early) withEarly++;
+    else if (matrix) onlyMatrix++;
+  }
+  const raw = Number(sec.match(/原始条目共\s*(\d+)\s*条/)?.[1] ?? 0);
+  return { total: rows.length, withEarly, onlyMatrix, raw };
+}

@@ -1371,8 +1371,12 @@ function buildNarrativeFromHeadings(
       {
         label: "同一型式判定",
         cn: /同一型式/,
-        en: /same type|identical type/i,
-        note: "决定一族产品的型式试验覆盖范围。GB 按「同一型式」判定；R48 以 UN R10（整车型式认证）承载，判定口径不同，不可直接对读。",
+        // R48 的对应条款**不叫「同一型式」** —— 它是 §10「Modifications and
+        // extensions of approval of the vehicle type」（p97），配套 §3「Application
+        // for approval」（p22）/ §4「Approval」（p23）。
+        // 关键词只写 `same type` 时这一行永远是 0，客户看到的是「R48 没有这一档」。
+        en: /same type|identical type|modifications and extensions of approval|application for approval/i,
+        note: "决定一族产品的型式试验覆盖范围。GB 按「同一型式」判定；R48 以 §10「Modifications and extensions of approval of the vehicle type」（p97）配合 UN R10（整车型式认证）承载，判定口径不同，不可直接对读。",
       },
       {
         label: "实施日期 / 过渡期",
@@ -1409,7 +1413,9 @@ function buildNarrativeFromHeadings(
       parts.push("| 文档 | 匹配条款数 | 页码 | 标题（最多 4 条） |", "|---|---|---|---|");
       for (const [k, list] of [["A 草案", A], ["B 现行", B], ["C UN R48-09", C]] as const) {
         if (!list.length) {
-          parts.push(`| ${k} | 0 | — | 未检索到对应标题 |`);
+          // **不写「0」**。客户读到「条款 0 页码 —」只会以为这一版没有这一档，
+          // 而真相是「关键词没命中」—— 那是**检索口径**的问题，不是法规事实。
+          parts.push(`| ${k} | — | — | 本主题关键词在该版未命中（见上方说明：各版措辞不同） |`);
           continue;
         }
         const pages = [...new Set(list.map((h: any) => `p${h.page}`))].slice(0, 6).join(" ");

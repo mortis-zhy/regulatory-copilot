@@ -18,6 +18,10 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+// The closure ledger is the single authority for "how many changes does this
+// report claim". Import it from the built dist so the gate compares the PDF
+// against the SAME code path the renderer used (never a re-implementation).
+import { extractAuthoritativeChanges } from "../dist/closureLedger.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf-8");
@@ -1997,6 +2001,119 @@ const r = spawnSync("python", ["-c", py], {
     `闭环统计的已核验 + 人工补录 = ${total}，与执行摘要的实质变化数对不上`,
   );
   return `已核验 ${m.confirmed} + 人工补录 ${m.manual} = ${total}，与执行摘要一致`;
+});
+
+// ---------------------------------------------------------------------------
+// 2026-10-24 交付件㉖ 终审三处缺陷的防再犯闸
+//
+// 交付前我逐页读了㉖ 号 PDF，发现三处客户一眼能看见的自相矛盾：
+//   ① 第 3 页仪表盘还写着「14 项参数在 A 草案中有实质变化」，而第 20 页
+//      §11.0 变化总清单已经是 17 条 —— 同一份报告两个数。
+//   ② 「⚠ 测量基准提示」整段说明在全文 **33 张表**前面各印一遍（33×300 字），
+//      翻报告的客户只会得出「到处都是不确定」。
+//   ③ 第 10 章有一张空表印着「条款 0 页码 — 未检索到对应标题」，
+//      而该标题在 C 版里其实存在（措辞是英文）。
+//
+// 三处都修了，但**修了不加闸**就会在下一次改动里回来。三条闸门分别把
+// 「总数只有一个来源」「整段只出现一次」「空表不许印成缺失」钉死。
+// ---------------------------------------------------------------------------
+
+let _gatePdfText = null;
+/** Full text of the gate PDF, whitespace-normalised, cached. */
+function gatePdfFlat() {
+  if (!GATE_PDF) return null;
+  if (_gatePdfText !== null) return _gatePdfText;
+  const py =
+    "import sys,io,json,base64,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path); t='\\n'.join(p.get_text() for p in d)\n" +
+    "t=''.join(t.split())\n" +
+    "print(json.dumps({'t':t},ensure_ascii=False))";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    input: Buffer.from(GATE_PDF, "utf-8").toString("base64"),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  assert(
+    r.status === 0,
+    `取 PDF 全文失败（不能"跳过"—— 跳过的闸门等于没有闸门）：${(r.stderr || "").trim().split("\n").pop().slice(0, 200)}`,
+  );
+  _gatePdfText = JSON.parse(r.stdout.trim().split("\n").pop()).t;
+  return _gatePdfText;
+}
+
+check("the closure dashboard's change total is §11.0's number, not a second opinion", () => {
+  // ① 第 3 页 vs 第 20 页：两个数必须同源。
+  // 旧文案是「与执行摘要第 1 条『14 项参数在 A 草案中有实质变化』是同一批事实」——
+  // 执行摘要改成 17 条之后，这句话留在那儿说谎。
+  const flat = gatePdfFlat();
+  if (flat === null) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+  assert(
+    !flat.includes("项参数在A草案中有实质变化"),
+    "PDF 里还留着旧断言「…项参数在 A 草案中有实质变化」—— 它与 §11.0 的权威数会打架",
+  );
+  const rep = loadReport();
+  const auth = extractAuthoritativeChanges(rep.chapters);
+  assert(auth, "报告里找不到「## 11.0 变化总清单」");
+  assert(auth.total > 0, "§11.0 变化总清单解析出 0 行 —— 提取器坏了，不是报告为空");
+  const m = flat.match(/是§11\.0变化总清单(\d+)条里的(\d+)条/);
+  assert(
+    m,
+    "PDF 仪表盘里找不到「是 §11.0 变化总清单 N 条里的 M 条」这句对账（全文扁平化后匹配）",
+  );
+  const only = flat.match(/另外(\d+)条只出现在第12章参数矩阵里/);
+  assert(only, "PDF 仪表盘里找不到「另外 N 条只出现在第 12 章参数矩阵里」");
+  assert(
+    Number(m[1]) === auth.total,
+    `仪表盘说 §11.0 是 ${m[1]} 条，报告里数出来是 ${auth.total} 条`,
+  );
+  assert(
+    Number(m[2]) === auth.withEarly,
+    `仪表盘说其中 ${m[2]} 条来自 §11.3/§11.3.1，报告里数出来是 ${auth.withEarly} 条`,
+  );
+  assert(
+    Number(only[1]) === auth.onlyMatrix,
+    `仪表盘说 ${only[1]} 条只来自第 12 章矩阵，报告里数出来是 ${auth.onlyMatrix} 条`,
+  );
+  return `仪表盘 ${m[1]} 条 = §11.0 的 ${auth.total} 条（${m[2]} 条来自 §11.3/§11.3.1，${only[1]} 条只来自矩阵）`;
+});
+
+check("the 测量基准 explanation appears once, with pointers in the tables", () => {
+  // ② 整段说明只在前言的术语对照里印一次；表里只给一行指针。
+  const flat = gatePdfFlat();
+  if (flat === null) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+  const oldBlock = (flat.match(/测量基准提示/g) ?? []).length;
+  assert(
+    oldBlock === 0,
+    `「⚠ 测量基准提示」整段说明仍出现 ${oldBlock} 次 —— 它是前言那一份的复制粘贴`,
+  );
+  const full = (flat.match(/不可直接等价对标/g) ?? []).length;
+  assert(
+    full === 1,
+    `完整说明「…不可直接等价对标」出现 ${full} 次 —— 应恰好 1 次（前言术语对照）`,
+  );
+  const pointers = (flat.match(/不是同一个测量面/g) ?? []).length;
+  assert(pointers > 0, "表里连一行指针都没有 —— 术语警告被整段删掉了");
+  return `整段 ${full} 次 · 指针 ${pointers} 次`;
+});
+
+check("no chapter prints an empty clause table as 'not found'", () => {
+  // ③ 「条款 0 页码 — 未检索到对应标题」是**渲染缺陷**，不是数据缺失：
+  // 那张表的三版都有条款，措辞不同而已（英文 vs 中文），所以之前空了一格。
+  const flat = gatePdfFlat();
+  if (flat === null) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
+  const bad = (flat.match(/未检索到对应标题/g) ?? []).length;
+  assert(
+    bad === 0,
+    `PDF 里出现 ${bad} 次「未检索到对应标题」—— 那是把"措辞不同"印成了"没找到"`,
+  );
+  const md = loadReport()
+    .chapters.map((c) => c.markdown ?? "")
+    .join("\n");
+  assert(!md.includes("未检索到对应标题"), "报告正文里还留着「未检索到对应标题」");
+  return "没有把措辞差异印成缺失";
 });
 
 check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
