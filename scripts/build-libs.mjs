@@ -66,6 +66,11 @@ const ENTRIES = [
   // 单独成模块，是为了让它的校验层能被已知答案用例直接驱动 ——
   // 校验层是这一层唯一有资格说「对」的地方。
   ["server/reports/specAgent.ts", "dist/specAgent.js"],
+  // export.ts 的 renderWordHtml 是 Word 导出的实现。它必须能扛住
+  // 「只有 content、没有 changes/parameters/evidence」的负载 ——
+  // 以前会崩在 `.map` 上，表现为一个裸的 500 HTML 页。
+  // 单独成模块，好让闸门用半个负载直接驱动它。
+  ["server/reports/export.ts", "dist/export.js"],
 ];
 
 const SHARED = {

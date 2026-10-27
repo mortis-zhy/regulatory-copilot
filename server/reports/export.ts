@@ -13,20 +13,24 @@ export type ReportPayload = {
   /** Full prose answer (markdown-ish). Rendered ahead of the structured tables. */
   content?: string;
   summary?: string;
-  changes: Array<{ id: string; title: string; type: string; severity: string; oldText: string; newText: string; impact: string; source: string }>;
-  parameters: Array<{ name: string; oldValue: string; newValue: string; unit: string; impact: string; source: string }>;
-  evidence: Array<{ title: string; source: string; url?: string; retrievedAt: string }>;
+  changes?: Array<{ id: string; title: string; type: string; severity: string; oldText: string; newText: string; impact: string; source: string }>;
+  parameters?: Array<{ name: string; oldValue: string; newValue: string; unit: string; impact: string; source: string }>;
+  evidence?: Array<{ title: string; source: string; url?: string; retrievedAt: string }>;
 };
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char] ?? char));
+function escapeHtml(value: string | undefined | null) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char] ?? char));
 }
 
 export function renderWordHtml(report: ReportPayload) {
+  // Every list is optional. The browser always sends all three, but this
+  // endpoint is also a public API — a payload carrying only `content` used
+  // to crash with "Cannot read properties of undefined (reading 'map')"
+  // and surface a raw 500 HTML page instead of a document.
   const docs = (report.sourceDocuments ?? []).map(doc => `<li>${escapeHtml(doc.name)} · ${escapeHtml(doc.version)}</li>`).join("");
-  const changes = report.changes.map(change => `<tr><td>${escapeHtml(change.id)}</td><td>${escapeHtml(change.title)}</td><td>${escapeHtml(change.type)}</td><td>${escapeHtml(change.severity)}</td><td>${escapeHtml(change.oldText)}</td><td>${escapeHtml(change.newText)}</td><td>${escapeHtml(change.impact)}</td><td>${escapeHtml(change.source)}</td></tr>`).join("");
-  const parameters = report.parameters.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.oldValue)}</td><td>${escapeHtml(item.newValue)}</td><td>${escapeHtml(item.unit)}</td><td>${escapeHtml(item.impact)}</td><td>${escapeHtml(item.source)}</td></tr>`).join("");
-  const evidence = report.evidence.map(item => `<li><strong>${escapeHtml(item.title)}</strong> · ${escapeHtml(item.source)} · ${escapeHtml(item.retrievedAt)}${item.url ? ` · ${escapeHtml(item.url)}` : ""}</li>`).join("");
+  const changes = (report.changes ?? []).map(change => `<tr><td>${escapeHtml(change.id)}</td><td>${escapeHtml(change.title)}</td><td>${escapeHtml(change.type)}</td><td>${escapeHtml(change.severity)}</td><td>${escapeHtml(change.oldText)}</td><td>${escapeHtml(change.newText)}</td><td>${escapeHtml(change.impact)}</td><td>${escapeHtml(change.source)}</td></tr>`).join("");
+  const parameters = (report.parameters ?? []).map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.oldValue)}</td><td>${escapeHtml(item.newValue)}</td><td>${escapeHtml(item.unit)}</td><td>${escapeHtml(item.impact)}</td><td>${escapeHtml(item.source)}</td></tr>`).join("");
+  const evidence = (report.evidence ?? []).map(item => `<li><strong>${escapeHtml(item.title)}</strong> · ${escapeHtml(item.source)} · ${escapeHtml(item.retrievedAt)}${item.url ? ` · ${escapeHtml(item.url)}` : ""}</li>`).join("");
   const prose = report.content ? `<h2>分析正文</h2><div class="summary">${escapeHtml(report.content).replace(/\n/g, "<br>")}</div>` : "";
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(report.title)}</title><style>body{font-family:Arial,"Microsoft YaHei",sans-serif;color:#202020;line-height:1.6}h1{color:#10283f}h2{border-bottom:1px solid #ddd;padding-bottom:4px}table{border-collapse:collapse;width:100%;font-size:10pt}th,td{border:1px solid #bbb;padding:6px;vertical-align:top}th{background:#eef3f6}small{color:#666}.summary{background:#f7f8ff;padding:12px;border-left:4px solid #5968cc;white-space:pre-wrap}</style></head><body><h1>${escapeHtml(report.title)}</h1><p><small>生成时间：${new Date().toLocaleString("zh-CN")}</small></p>${docs ? `<h2>一、对比范围</h2><ul>${docs}</ul>` : ""}${prose}${report.summary ? `<h2>二、结论摘要</h2><div class="summary">${escapeHtml(report.summary).replace(/\n/g, "<br>")}</div>` : ""}<h2>三、变化点总表</h2><table><thead><tr><th>编号</th><th>变化点</th><th>类型</th><th>影响等级</th><th>原文</th><th>新文</th><th>产品影响</th><th>证据定位</th></tr></thead><tbody>${changes}</tbody></table><h2>四、专业参数</h2><table><thead><tr><th>参数</th><th>旧值</th><th>新值</th><th>单位</th><th>影响</th><th>证据</th></tr></thead><tbody>${parameters}</tbody></table><h2>五、联网调研证据</h2><ul>${evidence}</ul><h2>六、审阅说明</h2><p>本报告由法规智能体生成，所有结论应结合原文定位和专业人员审核后使用。冻结后如输入文件、规则或模型版本变化，应生成新的报告版本。</p></body></html>`;
 }
@@ -222,10 +226,10 @@ export async function renderPdf(report: ReportPayload) {
   }
 
   // ---- Structured findings ----
-  if (report.changes.length) {
+  if (report.changes?.length) {
     y -= 8;
     addText("三、变化点总表", 13, rgb(0.06, 0.16, 0.25), 20);
-    for (const c of report.changes) {
+    for (const c of report.changes ?? []) {
       addText(`${c.id}｜${c.title}`, 10, rgb(0.06, 0.16, 0.25), 15);
       addText(`  类型：${c.type}｜影响：${c.severity}${c.impact ? `｜产品影响：${c.impact}` : ""}`, 8.5, rgb(0.35, 0.35, 0.35), 13);
       if (c.oldText || c.newText) addText(`  原文：${c.oldText || "—"}`, 8.5, rgb(0.45, 0.2, 0.2), 13);
@@ -234,21 +238,21 @@ export async function renderPdf(report: ReportPayload) {
     }
   }
 
-  if (report.parameters.length) {
+  if (report.parameters?.length) {
     y -= 8;
     addText("四、专业参数", 13, rgb(0.06, 0.16, 0.25), 20);
     const rows = [
       ["参数", "旧值", "新值", "单位", "影响"],
-      ...report.parameters.map(p => [p.name, p.oldValue || "—", p.newValue || "—", p.unit || "—", p.impact || "—"]),
+      ...(report.parameters ?? []).map(p => [p.name, p.oldValue || "—", p.newValue || "—", p.unit || "—", p.impact || "—"]),
     ];
     const r = drawTable(page, font, rows, y, ensurePage);
     page = r.page; y = r.y;
   }
 
-  if (report.evidence.length) {
+  if (report.evidence?.length) {
     y -= 8;
     addText("五、联网调研证据", 13, rgb(0.06, 0.16, 0.25), 20);
-    for (const e of report.evidence) {
+    for (const e of report.evidence ?? []) {
       addText(`• ${e.title}`, 9.5, rgb(0.2, 0.2, 0.2), 15);
       addText(`  来源：${e.source}｜时间：${e.retrievedAt}${e.url ? `｜${e.url}` : ""}`, 8.5, rgb(0.4, 0.4, 0.4), 15);
     }

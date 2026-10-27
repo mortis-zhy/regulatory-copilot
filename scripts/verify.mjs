@@ -2525,6 +2525,9 @@ for (const t of [
   // scripts/run_spec_agent_regression.mjs 单独测，记账在
   // reports/spec-agent-baseline.json。
   "_test_spec_agent.mjs",
+  // Word 导出的**已知答案用例**：缺 changes/parameters/evidence 时
+  // 必须是空表，不是崩溃。以前它崩在 `.map` 上，吐一个裸的 500 HTML 页。
+  "_test_word_export.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

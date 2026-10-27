@@ -228,9 +228,31 @@ export function registerAgentRoutes(router: Router) {
   });
 
   router.post("/api/agent/report/word", (req, res) => {
-    const report = req.body as ReportPayload;
-    const html = renderWordHtml(report);
-    res.status(200).set({ "Content-Type": "application/msword; charset=utf-8", "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.doc` }).send(html);
+    try {
+      const report = (req.body ?? {}) as ReportPayload;
+      if (!report || typeof report !== "object") {
+        return res.status(400).json({ error: "请求体必须是 JSON 对象", code: "bad_payload" });
+      }
+      const hasContent = typeof report.content === "string" && report.content.trim().length > 0;
+      const hasFindings = Array.isArray(report.changes)
+        || Array.isArray(report.parameters)
+        || Array.isArray(report.evidence);
+      if (!hasContent && !hasFindings) {
+        return res.status(400).json({
+          error: "请求体缺少可导出内容（需要 content 或 changes/parameters/evidence）",
+          code: "empty_payload",
+        });
+      }
+      const html = renderWordHtml(report);
+      res.status(200).set({ "Content-Type": "application/msword; charset=utf-8", "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.doc` }).send(html);
+    } catch (error) {
+      // Without this the express default handler answers with a raw 500 HTML
+      // page — the client shows "报告生成失败" with no idea what went wrong.
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Word generation failed",
+        code: "word_render_failed",
+      });
+    }
   });
 
   router.post("/api/agent/report/pdf", async (req, res) => {
