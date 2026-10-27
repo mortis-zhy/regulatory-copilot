@@ -308,9 +308,49 @@ function isTraceabilityRow(row: string[]): boolean {
   return pageCells.length >= 2;
 }
 
+/**
+ * 「已逐条裁定」的表格的行文本集合。
+ *
+ * 判据是**表头里有没有「核验状态」这一列** —— §11.4 的网传指标表有，
+ * 它的每一行都带 [保留] / [单边] / [未找到] 的结论与查证依据。
+ * 别的表（§11.3 数值变化表等）用的是 [已核验] / [待核实]，
+ * 那一列叫「核验状态」的没有 —— 所以不会误伤真正待核的行。
+ */
+function adjudicatedTableRows(md: string): Set<string> {
+  const out = new Set<string>();
+  const lines = md.split("\n");
+  let headerHasStatus = false;
+  for (const raw of lines) {
+    const l = raw.trim();
+    if (!l.startsWith("|")) {
+      headerHasStatus = false;
+      continue;
+    }
+    if (isSeparatorRow(l)) continue;
+    if (!headerHasStatus) {
+      // 表头行：含「核验状态」的表，其数据行都已裁定
+      headerHasStatus = /核验状态/.test(l);
+      continue;
+    }
+    out.add(cells(l).join(" "));
+  }
+  return out;
+}
+
 function harvestCandidates(md: string): LedgerEntry[] {
   const out: LedgerEntry[] = [];
   // Rows whose verdict cell is ⚠ / 未找到 / manual-audit.
+  //
+  // **但 §11.4「网传指标核验」表要排除** —— 那张表的 9 行**每一行都给了结论**
+  // （[保留] 两版相同 / [单边] 仅一版提到 / [未找到] 并附逐条查证依据），
+  // 里面的 ⚠ 表示的是「**GB4785 声称值与原文不一致**」，
+  // 不是「待复核」。把它算进待复核桶，仪表盘就会说
+  // 「10 条仍处于待复核状态」—— 而 §11.4 的结论明明写着
+  // 「9 条中 4 条在原文找到…5 条当前文档未找到」，
+  // 执行摘要也写着「0 项仍待人工裁定」。**同一个报告里三个数打架。**
+  //
+  // 判据用**表头**而不是行内容：那张表有一列叫「核验状态」。
+  const adjudicated = adjudicatedTableRows(md);
   for (const block of md.match(/((?:\|[^\n]*\n){2,})/g) ?? []) {
     for (const row of tableRows(block)) {
       const joined = row.join(" ");
@@ -322,6 +362,8 @@ function harvestCandidates(md: string): LedgerEntry[] {
       if (isIndexRow(row)) continue;
       // §11.0.2 traceability rows: A/B located, C not applicable → not ⚠.
       if (isTraceabilityRow(row)) continue;
+      // §11.4 网传指标表：已逐条裁定完毕，不是待复核项。
+      if (adjudicated.has(joined)) continue;
       // 摘录 = 行里最长的一格（原文那一格），待复核条目没有页码时它是唯一线索
       const detail = row
         .map((c) => c.replace(/\*\*/g, "").trim())

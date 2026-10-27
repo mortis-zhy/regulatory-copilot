@@ -21,7 +21,7 @@ import { spawnSync } from "node:child_process";
 // The closure ledger is the single authority for "how many changes does this
 // report claim". Import it from the built dist so the gate compares the PDF
 // against the SAME code path the renderer used (never a re-implementation).
-import { extractAuthoritativeChanges } from "../dist/closureLedger.js";
+import { extractAuthoritativeChanges, buildLedger } from "../dist/closureLedger.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf-8");
@@ -1728,6 +1728,42 @@ check("appendix H — the row count equals the data it is built from", () => {
     `附录 H.3 的条数与数据不符（应为 ${s.sameText}）`,
   );
   return `H.2 ${diffRows} 行 · 同文 ${s.sameText} · 不可并排 ${s.notComparable}`;
+});
+
+check("§11.4 网传指标不计入待复核桶（已裁定的不是待办）", () => {
+  // 台账的 candidate（⚠ 待复核）桶收的是「⚠未找到 / 未核验」的行。
+  // **§11.4 的 9 条网传指标也带 ⚠**，但那里的 ⚠ 是
+  // 「GB4785 声称值与原文不一致」—— 那一行行的**结论已经给了**
+  // （3 条两版相同 [保留] · 1 条仅一版提到 [单边] · 5 条查过原文确实没有），
+  // 逐条依据写在表下。
+  //
+  // 算进去的后果：仪表盘说「10 条 (15%) 仍处于待复核状态」，
+  // 而 §11.4 的结论说「9 条中 4 条在原文找到、5 条未找到」，
+  // 执行摘要说「0 项仍待人工裁定」—— **同一份报告里三个数打架**。
+  // 这正是客户说的「两个数」。
+  const md = reportText();
+  const L = buildLedger(md);
+  const rumors = [
+    "DRL 转向冲突时减光后最大光强", "ESS 紧急制动信号闪烁频率", "ESS 光度",
+    "DRL 可见度角度", "侧标志灯间距", "LED 寿命", "光通维持率",
+    "预热点灯时间", "AFS 切换时间",
+  ];
+  // ① 那 9 行确实在报告里，且都带「核验状态」列（说明已逐条裁定）
+  const missing = rumors.filter((r) => !md.includes(`| ${r} |`));
+  assert(missing.length === 0, `§11.4 的网传指标行不见了：${missing.join("、")}`);
+  assert(
+    /核验状态/.test(md),
+    "报告里找不到「核验状态」列 —— §11.4 的逐条裁定表不见了",
+  );
+  // ② 任何一条都**不许**出现在待复核桶里
+  const cands = L.entries.filter((e) => e.category === "candidate");
+  const wrongly = cands.filter((c) => rumors.some((r) => String(c.topic ?? "").includes(r)));
+  assert(
+    wrongly.length === 0,
+    `已裁定的网传指标被算进了待复核桶：${wrongly.map((c) => c.topic).join("、")} —— ` +
+      "§11.4 的 ⚠ 表示「声称值与原文不一致」，不是「待复核」",
+  );
+  return `9 条网传指标已逐条裁定 · 待复核桶剩 ${cands.length} 条`;
 });
 
 check("every reported value is in the clause it cites", () => {

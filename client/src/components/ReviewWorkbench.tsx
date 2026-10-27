@@ -196,11 +196,12 @@ export default function ReviewWorkbench() {
               审阅工作台 · Report Trust Workbench
             </h1>
             <p className="mt-1 text-xs" style={{ color: MUTED }}>
-              把 PDF 第 10–11 章深处的可信度结论抬到这里：{stats.total} 条候选差异中{" "}
+              把 PDF 第 10–11 章深处的可信度结论抬到这里：{stats.total} 条闭环条目里{" "}
               <strong style={{ color: highRisk ? "#c9542a" : "#3a6b4f" }}>
-                {data.dashboard.counts.candidate} 条（{stats.candidateShare}%）尚未完成双源核验
+                {data.dashboard.counts.candidate} 条（{stats.candidateShare}%）带 ⚠ 标记
               </strong>
-              。所有结论由 agent 自动核验，可随时重新核验。
+              —— 原文摘录不全 / 单源 / 缺页码（判定已给，但引文或页码不完整）。
+              §11.4 的 9 条网传指标<strong>已逐条裁定</strong>，不计入待复核。所有结论由 agent 自动核验，可随时重新核验。
             </p>
           </div>
           <button
@@ -242,7 +243,7 @@ export default function ReviewWorkbench() {
             className="mt-4 rounded-lg px-3 py-2 text-xs leading-relaxed"
             style={{ background: "#fbede2", color: "#c9542a", borderLeft: "3px solid #c9542a" }}
           >
-            ⚠ <strong>风险提示</strong>：{stats.candidateShare}% 的差异尚未完成双源核验 —— 切勿直接采信任何 ⚠ 条目结论。
+            ⚠ <strong>风险提示</strong>：{stats.candidateShare}% 的条目带 ⚠ 标记（摘录不全 / 缺页码）—— 采信前请回原文补齐。
             ✅ 与 🧾 计入「实质技术变化」总数，🟡 / 🔢 / ✍ 不计入。合规判定必须查阅官方原始标准文本。
           </p>
         )}
@@ -324,7 +325,7 @@ export default function ReviewWorkbench() {
                           >
                             {c.status === "fail" ? "✗" : "!"}
                           </span>
-                          <b>{c.label}</b> — {c.detail}
+                          <b>{c.label}</b> — {c.detail.replace(/\*\*/g, "")}
                         </li>
                       ))}
                   </ul>
@@ -369,7 +370,7 @@ export default function ReviewWorkbench() {
               <tbody>
                 {([
                   ["✅", "已双源核验", data.dashboard.counts.confirmed, "A、B 原文与页码均已定位，可作为变更依据", "#3a6b4f"],
-                  ["⚠", "待复核", data.dashboard.counts.candidate, "单源 / 缺页码 —— 使用前必须人工核对原始 PDF", highRisk ? "#c9542a" : "#b9a173"],
+                  ["⚠", "待复核", data.dashboard.counts.candidate, "原文摘录不全 / 单源 / 缺页码 —— 判定已给但引文不完整，使用前必须回原文补齐", highRisk ? "#c9542a" : "#b9a173"],
                   ["🟡", "同文勘误", data.dashboard.counts.errata, "文本差异但实质内容相同（常见于 B 列摘录截断）", "#9c8b6c"],
                   ["🔢", "仅编号重排", data.dashboard.counts.renum, "章节号变更但技术内容不变，不计入技术变化", "#c0b89c"],
                   ["✍", "格式同义改写", data.dashboard.counts.format, "标点 / 措辞差异，技术含义一致", "#d9cfb6"],
@@ -420,14 +421,14 @@ export default function ReviewWorkbench() {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold" style={{ color: INK }}>{w.label}</p>
-                        <p className="mt-1 text-[11px] leading-relaxed" style={{ color: MUTED }}>{w.detail}</p>
+                        <p className="mt-1 text-[11px] leading-relaxed" style={{ color: MUTED }}>{w.detail.replace(/\*\*/g, "")}</p>
                         {w.evidence && (
                           <p
                             className="mt-1.5 truncate rounded px-2 py-1 text-[10px]"
                             style={{ background: "#fbf6f0", color: "#8a7a5c", fontFamily: "ui-monospace, monospace" }}
-                            title={w.evidence}
+                            title={w.evidence.replace(/\*\*/g, "")}
                           >
-                            {w.evidence}
+                            {w.evidence.replace(/\*\*/g, "")}
                           </p>
                         )}
                       </div>
@@ -457,6 +458,13 @@ export default function ReviewWorkbench() {
               {data.errata.map((e) => {
                 const id = `errata:${e.no}`;
                 const isOpen = expanded[id];
+                // **「重复行」不是「假差异」。**
+                // §11.3.0 第 09 行「转向信号灯首次熄灭时间」的降级依据是
+                // 「与前一条同参数、同页码（重复行）」——
+                // 它的**真实判定在 §11.3.3 第 16 行，是「有变化」**。
+                // 挂「假差异 · 勿提变更单」的牌子，工程师就会把
+                // 报告第一条真变化（chg01）划掉。
+                const isDup = /重复行/.test(e.reason ?? "");
                 return (
                   <li key={id} className="border-b last:border-b-0" style={{ borderColor: "#f0eada" }}>
                     <button
@@ -482,7 +490,7 @@ export default function ReviewWorkbench() {
                         className="shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold"
                         style={{ background: "#fdf3df", color: "#a17334" }}
                       >
-                        假差异 · 勿提变更单
+                        {isDup ? "重复行 · 真实判定见 11.3.3" : "假差异 · 勿提变更单"}
                       </span>
                       {isOpen ? (
                         <ChevronUp className="h-4 w-4 shrink-0" style={{ color: MUTED }} />
@@ -513,8 +521,18 @@ export default function ReviewWorkbench() {
                         <p className="mt-3 rounded-lg px-3 py-2 text-[11px] leading-relaxed"
                            style={{ background: "#f4f1ea", color: "#5e5240" }}>
                           <b>如何核实这一条</b>：按上方页码打开 A / B 两版原文，逐字比对同一条款的完整表述。
-                          本条属 {e.reason?.includes("截断") ? "「B 列摘录被截断」" : "「双版同文」"}
-                          所致的<b>假差异</b>，<b>不应据此提出产品变更</b>。
+                          {isDup ? (
+                            <>
+                              本行是<b>重复行</b>（与 §11.3.3 里的另一行同参数、同页码）——
+                              <b>真实判定在 §11.3.3</b>，那一行可能判为「有变化」。
+                              <b>不要因为这一行就跳过这个参数。</b>
+                            </>
+                          ) : (
+                            <>
+                              本条属 {e.reason?.includes("截断") ? "「B 列摘录被截断」" : "「双版同文」"}
+                              所致的<b>假差异</b>，<b>不应据此提出产品变更</b>。
+                            </>
+                          )}
                         </p>
                       </div>
                     )}

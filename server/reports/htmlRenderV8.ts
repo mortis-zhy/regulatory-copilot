@@ -1268,7 +1268,7 @@ function renderClosureDashboard(
   return `
 <section class="closure-dashboard">
   <h1 class="dashboard-title">候选差异闭环统计 · Closure Dashboard</h1>
-  <p class="dashboard-intro">对第 11 章「关键变化点总结」与第 10 章「新增/删除/重大修订」逐项扫描后，按 6 类差异标记分类计数。${total} 条候选差异中，<strong>${counts.candidate} 条 (${candidateShare}%) 仍处于待复核状态</strong>${isHighRisk ? " — 比例偏高，工程师在采信前必须人工逐条核对原始 PDF。" : "。"}</p>
+  <p class="dashboard-intro">对第 11 章「关键变化点总结」与第 10 章「新增/删除/重大修订」逐项扫描后，按 6 类差异标记分类计数。${total} 条闭环条目里，<strong>${counts.candidate} 条 (${candidateShare}%) 带 ⚠ 标记</strong>（原文摘录不全 / 单源 / 缺页码 —— 判定已给，但引文或页码不完整，采信前请回原文补齐）${isHighRisk ? "；比例偏高，工程师在采信前必须人工逐条核对原始 PDF。" : "。"}</p>
 
   <figure class="claim-figure">
     ${bar}
@@ -1289,7 +1289,7 @@ function renderClosureDashboard(
     <tbody>
       ${row("row-confirmed", "✅", "已双源核验", counts.confirmed, "A、B 原文与页码均已定位，可作为变更依据")}
       ${row("row-manual", "🧾", "人工核验补录", counts.manual ?? 0, "18 个固定对比主题之外的条款，人工对照 A/B 原文，页码齐备（11.3.1）")}
-      ${row("row-candidate", "⚠", "待复核", counts.candidate, "单源 / 缺页码 — 仅供工程师参考，输入合规判定前必须人工确认")}
+      ${row("row-candidate", "⚠", "待复核", counts.candidate, "原文摘录不全 / 单源 / 缺页码 — 判定已给但引文不完整，输入合规判定前必须回原文补齐")}
       ${row("row-errata", "🟡", "同文勘误", counts.errata, "之前误判为变化的文本差异，实质内容相同")}
       ${row("row-renum", "🔢", "仅编号重排", counts.renum, "章节号变更但技术内容不变 — 不计入技术变化")}
       ${row("row-format", "✍", "格式同义改写", counts.format, "标点 / 措辞差异（如「两只」→「2只」）— 不计入技术变化")}
@@ -1312,7 +1312,10 @@ function renderClosureDashboard(
     §11.3.0 同文勘误表 ·
     §11.6.1 章节重排表 · §11.8 表述复核清单 · 各章 ⚠ 未找到 / manual-audit 行。<br>
     <b>两套口径不可相加</b>：§11.3 的「候选差异条目」只统计"看起来像变更的参数"；
-    上表的「待复核」统计的是全文所有 <code>⚠未找到 / 未核验</code> 标记行（含 §11.0 的 9 条网传指标）。
+    上表的「待复核」统计的是全文所有 <code>⚠未找到 / 未核验</code> 标记行。
+    <br><b>§11.4 的 9 条网传指标不计入待复核</b> —— 那一行行的 ⚠ 表示
+    「GB4785 声称值与原文不一致」，<b>结论已给</b>（3 条两版相同 [保留] ·
+    1 条仅一版提到 [单边] · 5 条查过原文确实没有），逐条依据见 §11.4。
     二者成员不同、相交但不等价。<br>
     ${
       auth
