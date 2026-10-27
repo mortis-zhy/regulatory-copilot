@@ -46,3 +46,7 @@ comparison_agent-mineru/
 
 # 内层代码仓库自带 git(上游历史),外层不嵌套跟踪
 comparison_agent-main/
+
+# ── 浏览器验收截图 + 一次性清理脚本(自测产物,不进版本库)──
+_demo_*.png
+_cleanup_stale_*.ps1
