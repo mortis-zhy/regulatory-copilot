@@ -293,6 +293,20 @@ check("条款索引与 python 现算一致（agent 的条款证据不会脱节�
   return out.trim().split("\n").slice(-1)[0].slice(0, 70);
 });
 
+check("讲稿里的闸门数来自机器，不是手写", () => {
+  const src = read("scripts/render_briefing.mjs");
+  assert(
+    src.includes("verify-summary.json"),
+    "讲稿没有从 dist/verify-summary.json 读闸门数量 —— 数字得来自机器",
+  );
+  const hard = src.match(/\b\d{2,3}\s*项(?:闸门|检查)/g) || [];
+  assert(
+    hard.length === 0,
+    `讲稿里还手写着闸门数：${hard.join("、")} —— 加了新闸门就会过期（已踩过一次）`,
+  );
+  return "闸门数由 dist/verify-summary.json 注入";
+});
+
 console.log("\n=== 4. python verification layer ===");
 check("GB4785 表 11.6 的 9 条指标回源核验（直接读源 PDF，绕开 MinerU）", () => {
   const r = spawnSync("python", ["scripts/verify_indicators.py"], { cwd: ROOT, encoding: "utf-8" });
@@ -2573,6 +2587,22 @@ for (const t of [
 // so including it would make this gate billable and flaky.
 
 console.log(`\n=== ${checks - failures}/${checks} checks passed ===`);
+
+// ── 把本次闸门结果落成机器产物 ───────────────────────────────────────────
+// 讲稿（scripts/render_briefing.mjs）里那句「N 项闸门」从这份文件读，
+// **不在稿子里手写数字** —— 手写的数字一定会过期。本项目已经踩过一次：
+// 加了一道新闸门（参数查询对空格不敏感），稿子还写着旧的 97，交付件里
+// 的数字就与当场跑出来的结果对不上。这正是「宁可空着，不可错着」要防的。
+try {
+  writeFileSync(
+    resolve(ROOT, "dist", "verify-summary.json"),
+    JSON.stringify({ at: new Date().toISOString(), total: checks, passed: checks - failures, failed: failures }, null, 2) + "\n",
+    "utf-8",
+  );
+} catch (e) {
+  console.warn(`[verify] 写 dist/verify-summary.json 失败（讲稿将拒绝出稿）：${e.message}`);
+}
+
 if (failures) {
   console.log(`${failures} FAILED\n`);
   process.exit(1);

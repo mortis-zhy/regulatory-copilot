@@ -38,6 +38,27 @@ const C = {
 };
 
 /**
+ * 闸门数量 —— **从机器产物读，不在稿子里手写**。
+ *
+ * 手写的数字一定会过期：本项目加了一道新闸门（参数查询对空格不敏感）之后，
+ * 稿子还写着旧的「97 项」，交付件里报的数字与当场跑出来的 98 对不上。
+ * 宁可空着，不可错着 —— 所以这里读不到就**拒绝出稿**，不拿一个猜的数糊过去。
+ */
+const GATES = (() => {
+  const p = path.join(ROOT, "dist", "verify-summary.json");
+  if (!fs.existsSync(p)) {
+    throw new Error(
+      `读不到 ${p} —— 闸门数量必须来自机器。先跑一次 \`npm run verify\`，再出讲稿。`,
+    );
+  }
+  const s = JSON.parse(fs.readFileSync(p, "utf-8"));
+  if (!s.total || s.failed) {
+    throw new Error(`verify-summary.json 内容异常（total=${s.total} failed=${s.failed}）—— 先把闸门跑绿。`);
+  }
+  return String(s.total);
+})();
+
+/**
  * 用**系统字体**，不内嵌 base64。
  *
  * 内嵌四套中文字体（msyh.ttc 19MB + msyhbd 16MB + simsun 17MB + simsunb 21MB）
@@ -200,7 +221,7 @@ const FIG = {
       <tr><td>把每个参数在三个版本里的值抄进表里</td><td>spec 驱动 + 机器校验</td><td>957 个取值位</td></tr>
       <tr><td>判断"哪些差异是真变化"</td><td>差值裁定 + 勘误表逐条回原文</td><td>57 条闭环条目 → 17 条真实变化</td></tr>
       <tr><td>把定性条款挑出来给客户看</td><td>装置感知的 A/B 自动配对</td><td>326 条可比 + 86 条只登记</td></tr>
-      <tr><td>逐条核对自己印出来的数字有没有错</td><td>97 项闸门，改坏就红</td><td>每一条结论都带页码</td></tr>
+      <tr><td>逐条核对自己印出来的数字有没有错</td><td>${GATES} 项闸门，改坏就红</td><td>每一条结论都带页码</td></tr>
     </table>
     <div class="note">人工没被替代 —— 人工被挪到了<b>该由人判断的地方</b>（方向相反的条件句、工程影响、编号重排）。</div>
   </div>`,
@@ -264,7 +285,7 @@ const FIG = {
   <div class="fig">
     <table class="tbl cmd">
       <tr><th style="width:34%">命令</th><th>干什么</th></tr>
-      <tr><td><code>npm run verify</code></td><td><b>交付闸门</b> —— 97 项检查。改完必跑，绿了才准交付</td></tr>
+      <tr><td><code>npm run verify</code></td><td><b>交付闸门</b> —— ${GATES} 项检查。改完必跑，绿了才准交付</td></tr>
       <tr><td><code>npm run build</code></td><td>构建（vite + 15 个可加载模块）</td></tr>
       <tr><td><code>node rebuild_report.mjs</code></td><td>重建 <code>reports/last-report.json</code>（14 章 + 8 附录）</td></tr>
       <tr><td><code>node render_to_pdfdir.mjs</code></td><td>出交付 PDF → <code>PDF对比/</code></td></tr>
@@ -492,7 +513,7 @@ function buildDeck(figData) {
       交付件 249 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
     <div class="cards">
       <div class="card"><div class="v">319</div><div class="l">参数 × 3 版 = 957 个取值位</div></div>
-      <div class="card"><div class="v">97</div><div class="l">项交付闸门（改坏就红）</div></div>
+      <div class="card"><div class="v">${GATES}</div><div class="l">项交付闸门（改坏就红）</div></div>
       <div class="card"><div class="v">0</div><div class="l">真缺口 · 别装置顶替</div></div>
       <div class="card"><div class="v">517/517</div><div class="l">定性引文回源命中</div></div>
     </div>
@@ -517,7 +538,7 @@ function buildDeck(figData) {
         <li><b>数值对比</b>：319 个参数 × 3 版，每个取值带条款号、页码、原文摘录</li>
         <li><b>定性并排</b>：附录 H 把 184 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
         <li><b>欧标第三列</b>：UN R48-09 的条款号 + 页码 + 原文，26 条章节级对应逐条回源验过</li>
-        <li><b>可追责</b>：97 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
+        <li><b>可追责</b>：${GATES} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
       </ul>`,
     endline: `这四条合起来才是「能交给客户」—— <b>不是一份更厚的报告，是一条会自己证明自己没取错数的产线</b>。`,
     note: `开场先说这四条，不展开。领导如果只关心一件事，多半是「凭什么信」—— 直接跳到第 10 页（闸门）比讲功能有用。`,
@@ -551,7 +572,7 @@ function buildDeck(figData) {
         <li><b>一份报告里两个数打架</b> —— 首页说「10 条待复核」，§11.0 说「0 条」。根因：§11.4 那 9 条是<b>已裁定</b>项，不是待办</li>
       </ul>
       <p style="margin-top:14px">这三条全部是被<b>机器闸门</b>抓住的，不是靠人眼看出来的。</p>`,
-    endline: `所以这个项目的核心资产不是那份 PDF，<b>是那 97 项闸门</b> —— 它们让下一版不可能再犯同样的错。`,
+    endline: `所以这个项目的核心资产不是那份 PDF，<b>是那 ${GATES} 项闸门</b> —— 它们让下一版不可能再犯同样的错。`,
     note: `这一页的作用是<b>建立可信度</b>：不是辩解「我们已经很小心」，而是「我们踩过坑，而且坑现在有闸门盯着」。如果领导问「那你们怎么保证不会再犯」，直接翻到第 10 页。`,
   }));
 
@@ -602,7 +623,7 @@ function buildDeck(figData) {
 
   // 9 闸门
   pages.push(page({
-    sec: "可信度", num: "09", title: "97 项闸门：改坏就红，不靠人盯",
+    sec: "可信度", num: "09", title: "${GATES} 项闸门：改坏就红，不靠人盯",
     sub: "npm run verify —— 交付前的唯一判据",
     fig: F("gates"), layout: "fig",
     body: "",
@@ -705,7 +726,7 @@ function buildDeck(figData) {
       </ul>
       <h3 style="margin-top:12px">命令行（我们自己）</h3>
       <ul>
-        <li><code>npm run verify</code> —— <b>交付闸门，97 项。改完必跑</b></li>
+        <li><code>npm run verify</code> —— <b>交付闸门，${GATES} 项。改完必跑</b></li>
         <li><code>node rebuild_report.mjs</code> → <code>node render_to_pdfdir.mjs</code> —— 重建并出 PDF</li>
       </ul>`,
     endline: `红线只有一条：<b>verify 红了就不许交付</b>。其余都可以商量。`,
@@ -744,7 +765,14 @@ function buildDeck(figData) {
   return pages.join("\n");
 }
 
+// ── 作为库被复用 ──────────────────────────────────────────────────────────
+// 精简版讲稿（render_briefing_15min.mjs）借这里的图表 HTML、样式与 page()
+// 骨架，避免两套脚本各抄一份图 —— 抄一份就多一处会悄悄走样的地方。
+// 设 BRIEFING_AS_LIB=1 导入本模块时，下面那段主流程不会执行。
+export { C, SYSTEM_FONT_CSS, BASE_CSS, FIG, FIG_CSS, DECK_CSS, page, img, S, OUT, ASSETS, FIGDIR };
+
 // ── 主流程 ────────────────────────────────────────────────────────────────
+if (process.env.BRIEFING_AS_LIB !== "1") {
 // 只检查系统字体在不在（不内嵌 —— 内嵌 97MB 会把 Chromium 撑爆）
 const sysFonts = ["C:/Windows/Fonts/msyh.ttc", "C:/Windows/Fonts/simsun.ttc"];
 const missingFonts = sysFonts.filter((f) => !fs.existsSync(f));
@@ -802,4 +830,5 @@ try {
   console.log(`\n[briefing] ✅ ${outFile}`);
 } finally {
   await browser.close();
+}
 }
