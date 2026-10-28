@@ -26,6 +26,7 @@
  * 中间还要把「我正在查 XX」给用户看。流式是必须的。
  */
 import { type ChatMessage } from "../integrations/minimax";
+import { withKeyRotation } from "../_core/minimaxPool";
 import { runAgentTool, toolSchemas } from "./agentTools";
 
 /**
@@ -94,50 +95,56 @@ async function callWithTools(
 }> {
   const base = (process.env.MINIMAX_BASE_URL ?? "https://api.minimax.cn").replace(/\/$/, "");
   const url = `${base}/v1/chat/completions`;
-  const key = process.env.MINIMAX_API_KEY ?? "";
-  if (!key) throw new Error("MINIMAX_API_KEY 未配置");
 
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-    body: JSON.stringify({
-      model: opts.model ?? process.env.MINIMAX_MODEL ?? "MiniMax-M3",
-      messages,
-      // **tools 为空时整个字段不发出去** —— 发了空数组模型也会当成「有工具」。
-      // 收口轮靠这个真正断掉工具。
-      ...(tools && tools.length ? { tools, tool_choice: opts.toolChoice ?? "auto" } : {}),
-      max_tokens: opts.maxTokens ?? 8192,
-      temperature: opts.temperature ?? 0.2,
-      stream: false,
-    }),
-  });
-  if (!r.ok) {
-    const errTxt = await r.text();
-    if (process.env.AGENT_DEBUG) {
-      const body = JSON.stringify({ model: opts.model, messages, tools });
-      const m = /index (\d+)/.exec(errTxt);
-      const at = m ? Number(m[1]) : -1;
-      console.log("[DEBUG api 400]", errTxt.slice(0, 400));
-      if (at > 0) console.log("[DEBUG payload around]", body.slice(Math.max(0, at - 400), at + 200));
+  // **多把 key 依次试**：主 key 撞「Token Plan 用量上限」就自动切兜底 key。
+  // 否则配额一用完，整个 agent 问答链路就断了 —— 而报告生成、闸门、参数取值
+  // 全是确定性管线，不该被一把 key 卡住。
+  return withKeyRotation(async (key) => {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: opts.model ?? process.env.MINIMAX_MODEL ?? "MiniMax-M3",
+        messages,
+        // **tools 为空时整个字段不发出去** —— 发了空数组模型也会当成「有工具」。
+        // 收口轮靠这个真正断掉工具。
+        ...(tools && tools.length ? { tools, tool_choice: opts.toolChoice ?? "auto" } : {}),
+        max_tokens: opts.maxTokens ?? 8192,
+        temperature: opts.temperature ?? 0.2,
+        stream: false,
+      }),
+    });
+    if (!r.ok) {
+      const errTxt = await r.text();
+      if (process.env.AGENT_DEBUG) {
+        const body = JSON.stringify({ model: opts.model, messages, tools });
+        const m = /index (\d+)/.exec(errTxt);
+        const at = m ? Number(m[1]) : -1;
+        console.log("[DEBUG api 400]", errTxt.slice(0, 400));
+        if (at > 0) console.log("[DEBUG payload around]", body.slice(Math.max(0, at - 400), at + 200));
+      }
+      return { ok: false as const, status: r.status, body: errTxt };
     }
-    throw new Error(`MiniMax ${r.status}: ${errTxt.slice(0, 200)}`);
-  }
-  const j: any = await r.json();
-  const msg = j?.choices?.[0]?.message ?? {};
-  const toolCalls = (msg.tool_calls ?? []).map((tc: any) => {
-    let args: Record<string, unknown> = {};
-    try {
-      args = JSON.parse(tc?.function?.arguments ?? "{}");
-    } catch {
-      args = {};
-    }
-    return { id: tc?.id ?? "", name: tc?.function?.name ?? "", args };
-  });
-  return {
-    content: String(msg.content ?? ""),
-    reasoning: String(msg.reasoning_content ?? ""),
-    toolCalls,
-  };
+    const j: any = await r.json();
+    const msg = j?.choices?.[0]?.message ?? {};
+    const toolCalls = (msg.tool_calls ?? []).map((tc: any) => {
+      let args: Record<string, unknown> = {};
+      try {
+        args = JSON.parse(tc?.function?.arguments ?? "{}");
+      } catch {
+        args = {};
+      }
+      return { id: tc?.id ?? "", name: tc?.function?.name ?? "", args };
+    });
+    return {
+      ok: true as const,
+      value: {
+        content: String(msg.content ?? ""),
+        reasoning: String(msg.reasoning_content ?? ""),
+        toolCalls,
+      },
+    };
+  }, { label: "agent-loop" });
 }
 
 /** 从模型输出里剥掉 <think>…</think>（MiniMax-M3 会输出思维链）。 */

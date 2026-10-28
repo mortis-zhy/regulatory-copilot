@@ -78,6 +78,65 @@ function audit(): Json {
   if (!_audit) _audit = readJson("data/coverage-audit.json") ?? {};
   return _audit;
 }
+/**
+ * 归一化：去所有空白 + 全角转半角 + 小写。
+ *
+ * 为什么要有：「ADS 标志灯最小离地高度」在库里带空格，
+ * 但用户和模型多半打成「ADS标志灯」。`includes` 对空格敏感，
+ * 于是明明有的参数被判成「查不到」—— 一次**假阴性**。
+ */
+function normalizeText(s: string): string {
+  return String(s ?? "")
+    .replace(/[　]/g, "")
+    .replace(/[\s ]+/g, "")
+    .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/（/g, "(").replace(/）/g, ")")
+    .toLowerCase();
+}
+
+/** 二元组 Dice 相似度（0~1）。中文短串上比编辑距离稳。 */
+function diceSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const grams = (s: string) => {
+    const out = new Set<string>();
+    for (let i = 0; i < s.length - 1; i++) out.add(s.slice(i, i + 2));
+    if (s.length === 1) out.add(s);
+    return out;
+  };
+  const ga = grams(a);
+  const gb = grams(b);
+  let inter = 0;
+  for (const g of ga) if (gb.has(g)) inter++;
+  return (2 * inter) / (ga.size + gb.size);
+}
+
+/**
+ * 找最接近的 N 个候选。
+ *
+ * 存在的意义：**查不到 ≠ 不存在**。把近似候选一并返回，
+ * 调用方（agent 或人）能立刻改用正确的名字，而不是把拼写错误
+ * 读成「这条数据我们没有」。
+ */
+function nearMatches(
+  items: Array<{ id: string; name: string }>,
+  q: string,
+  limit = 5,
+): Array<{ id: string; name: string; score: number }> {
+  const nq = normalizeText(q);
+  if (!nq) return [];
+  return items
+    .map((it) => {
+      const nn = normalizeText(`${it.name}${it.id}`);
+      // 一方完整包含另一方 → 强信号（0.9 起）
+      const contain = nn.includes(nq) || nq.includes(nn) ? 0.9 : 0;
+      return { id: it.id, name: it.name, score: Math.max(contain, diceSimilarity(nq, nn)) };
+    })
+    .filter((x) => x.score >= 0.34)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
 function specs(): Json {
   if (!_specs) {
     const raw = readJson("data/parameter-specs.json");
@@ -545,15 +604,28 @@ export async function runAgentTool(name: string, args: Json): Promise<ToolResult
     case "lookup_parameter": {
       const q = String(args.name ?? "").trim();
       const list = Array.isArray(specs().list) ? specs().list : [];
-      const lower = q.toLowerCase();
+      const nq = normalizeText(q);
       const hit =
-        list.find((s: Json) => String(s.id).toLowerCase() === lower) ??
-        list.find((s: Json) => String(s.name ?? "").includes(q)) ??
-        list.find((s: Json) => lower && String(s.name ?? "").toLowerCase().includes(lower));
+        list.find((s: Json) => normalizeText(String(s.id)) === nq) ??
+        list.find((s: Json) => normalizeText(String(s.name ?? "")).includes(nq)) ??
+        list.find((s: Json) => nq && normalizeText(String(s.name ?? "")).includes(nq));
       if (!hit) {
+        // **查不到时必须给出近似候选。**
+        // 没有这一步，agent 会把「我拼错了名字」当成「数据不存在」——
+        // 一次假阴性就能让它写下"查不到"的结论，而数据其实就在库里。
+        // 真实踩过的例子：agent 查「ADS标志灯」（少一个空格），
+        // 库里叫「ADS 标志灯最小离地高度」，includes 匹配失败 →
+        // agent 连查两次无果，直接回答"我未能核实到任何条款号"。
         return {
           ok: false,
-          data: { error: `参数矩阵里没有「${q}」`, hint: "参数名用中文，如「近光灯最大离地高度」" },
+          data: {
+            error: `参数矩阵里没有「${q}」`,
+            hint: "参数名用中文，如「近光灯最大离地高度」。**空格不影响匹配**（ADS标志灯 = ADS 标志灯）。",
+            candidates: nearMatches(
+              list.map((s: Json) => ({ id: String(s.id), name: String(s.name ?? "") })),
+              q,
+            ),
+          },
         };
       }
       const f = facts();
@@ -591,13 +663,34 @@ export async function runAgentTool(name: string, args: Json): Promise<ToolResult
       const q = String(args.name ?? "").trim();
       const vd = facts().diffVerdicts ?? {};
       const entries = Object.entries(vd as Record<string, Json>);
+      const nq = normalizeText(q);
+      // 键的形态是「主题|参数名」（如「倒车灯|最大离地高度」）。
+      // 匹配时**两边都归一化**，并且把分隔符「|」也去掉 ——
+      // agent 常写成「倒车灯最大离地高度」，那个竖线不该让它查不到。
+      const flat = (k: string) => normalizeText(String(k).replace(/[|｜]/g, ""));
       const hit =
         entries.find(([k]) => k === q) ??
-        entries.find(([k]) => k.endsWith(`|${q}`)) ??
-        entries.find(([k]) => k.split("|")[1] === q) ??
-        entries.find(([k]) => k.includes(q));
+        entries.find(([k]) => flat(k) === nq) ??
+        entries.find(([k]) => flat(k.split("|")[1] ?? "") === nq) ??
+        entries.find(([k]) => flat(k.split("|")[0] ?? "") === nq) ??
+        entries.find(([k]) => flat(k).includes(nq)) ??
+        entries.find(([k]) => nq && flat(k).includes(nq));
       if (!hit) {
-        return { ok: false, data: { error: `差值表里没有「${q}」`, hint: "用「主题|参数名」或参数名" } };
+        // 同样：**查不到 ≠ 不存在**，把近似键返回去。
+        return {
+          ok: false,
+          data: {
+            error: `差值表里没有「${q}」`,
+            hint: "用「主题|参数名」或参数名；**空格不影响匹配**。",
+            candidates: nearMatches(
+              entries.map(([k, v]) => ({
+                id: k,
+                name: `${v.topic ?? k.split("|")[0] ?? ""}|${v.name ?? k.split("|")[1] ?? ""}`,
+              })),
+              q,
+            ),
+          },
+        };
       }
       const [key, v] = hit;
       return {
@@ -685,7 +778,11 @@ export async function runAgentTool(name: string, args: Json): Promise<ToolResult
     case "get_topic_excerpts": {
       const q = String(args.topic ?? "").trim();
       const cols = facts().topicColumns ?? [];
-      const hit = cols.find((t: Json) => String(t.topic).includes(q) || q.includes(String(t.topic)));
+      const nq = normalizeText(q);
+      const hit =
+        cols.find((t: Json) => String(t.topic).includes(q)) ??
+        cols.find((t: Json) => normalizeText(String(t.topic)).includes(nq)) ??
+        cols.find((t: Json) => nq.includes(normalizeText(String(t.topic))));
       if (!hit) {
         const names = cols.map((t: Json) => t.topic);
         return {

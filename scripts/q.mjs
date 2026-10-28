@@ -78,6 +78,12 @@ function printResult(name, res) {
     if (Array.isArray(d.available) && d.available.length) {
       console.log(`  可用主题：${d.available.slice(0, 30).join("、")}${d.available.length > 30 ? " …" : ""}`);
     }
+    if (Array.isArray(d.candidates) && d.candidates.length) {
+      console.log(`  近似候选（很可能就是你要找的）：`);
+      for (const c of d.candidates) {
+        console.log(`    · ${c.name ?? c.id}${c.id && c.name !== c.id ? `   (${c.id})` : ""}${c.score ? `  相似度 ${c.score.toFixed(2)}` : ""}`);
+      }
+    }
     console.log("");
     return;
   }

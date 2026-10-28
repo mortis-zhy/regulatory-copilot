@@ -253,6 +253,36 @@ check("agent 工具全部只读（没有写盘/删文件的入口）", () => {
   return `${names.length} 个工具，全部只读`;
 });
 
+check("参数查询对空格不敏感（查不到 ≠ 不存在）", () => {
+  // **这条闸门是被一次真实假阴性逼出来的。**
+  // 浏览器演示时 agent 查「ADS标志灯」（少一个空格），
+  // 库里叫「ADS 标志灯最小离地高度」—— includes 对空格敏感 → 未找到 →
+  // agent 连查两次无果，直接写下「我未能核实到任何条款号、页码或数值」。
+  // 数据明明在，它却回答"查不到"。这跟「宁可空着，不可错着」正好相反：
+  // 这里不是空着，是**错着**（把拼写错误读成数据缺失）。
+  const src = read("server/reports/agentTools.ts");
+  assert(/function normalizeText/.test(src), "agentTools.ts 必须有 normalizeText（去空格 + 全角转半角 + 小写）");
+  assert(/function nearMatches/.test(src), "agentTools.ts 必须有 nearMatches（查不到时给近似候选）");
+  assert(
+    /candidates:\s*nearMatches/.test(src),
+    "lookup_parameter / get_diff_verdict 查不到时必须返回 candidates —— " +
+      "没有它，agent 会把「我拼错了」当成「这条数据没有」",
+  );
+  // 真跑一遍：带空格 / 不带空格必须命中同一条
+  const r = spawnSync("node", ["scripts/q.mjs", "param", "ADS标志灯"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(
+    out.includes("ADS 标志灯最小离地高度"),
+    `「ADS标志灯」（无空格）应当命中「ADS 标志灯最小离地高度」，实际输出：
+        ${out.slice(-300)}`,
+  );
+  assert(!out.includes("没有「"), "「ADS标志灯」被判成查不到 —— 空格敏感的老毛病又回来了");
+  return "空格无关 + 查不到给候选";
+});
+
 check("条款索引与 python 现算一致（agent 的条款证据不会脱节）", () => {
   const r = spawnSync("python", ["scripts/export_clause_index.py", "--check"], {
     cwd: ROOT,
