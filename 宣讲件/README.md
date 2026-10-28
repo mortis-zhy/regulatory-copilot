@@ -44,8 +44,16 @@
 
 ```bash
 cd comparison_agent-main
+npm run verify          # 必须先跑 —— 讲稿里的闸门数是从这里读的
 node scripts/render_briefing.mjs
 ```
+
+> **为什么必须先跑 verify**：讲稿里那句「N 项闸门」**不在稿子里手写**，
+> 而是从 `dist/verify-summary.json` 读的（verify 每次跑完写一份）。
+> 读不到就**拒绝出稿** —— 宁可空着，不可错着。
+> 起因是真实踩过一次：加了一道新闸门（参数查询对空格不敏感），
+> 稿子还写着旧的「97 项」，交付件里的数字与当场跑出来的结果对不上。
+> `npm run verify` 里有一道闸门专门盯这件事（"讲稿里的闸门数来自机器，不是手写"）。
 
 素材（`assets/`、`figures/`）已 gitignore —— 它们都能重新生成：
 
