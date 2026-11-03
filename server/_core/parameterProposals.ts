@@ -59,15 +59,28 @@ function readJson<T>(file: string, fallback: T): T {
   }
 }
 
-/** 复制品的章节区间 —— 与 `propose_parameters_c.py` 的 R48_SECTIONS 同源。 */
-function sectionSpans(fullText: string) {
-  const NOS = [
-    "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.10", "6.11", "6.12",
-    "6.13", "6.14", "6.15", "6.16", "6.17", "6.18", "6.19", "6.20", "6.21", "6.22",
-    "6.23", "6.24", "6.25", "6.26",
-  ];
+/**
+ * 复制品的章节区间。
+ *
+ * ## 章节表从哪来（这一段改过）
+ *
+ * 原来这里**手抄**了一份 25 个章节号，注释写着「与 propose_parameters_c.py
+ * 的 R48_SECTIONS 同源」—— **「同源」不等于「同源」**：
+ * 那是一份拷贝。Python 侧加了 6.27，这边不会跟着动；
+ * 漏掉的后果是「章节区间算错 → 提议落到别的章里也不报错」。
+ *
+ * 现在改成**读同一个文件**：`data/parameter-candidates-c.json` 的 `sections`
+ * 数组由 `propose_parameters_c.py` 从 `R48_SECTIONS` 生成，
+ * 于是链条是 **R48_SECTIONS（唯一手写处）→ candidates-c.json → 这里**，
+ * 中间没有第二份拷贝。
+ *
+ * 读不到就**抛错**，不退回任何内置副本 ——
+ * 「宁可空着，不可错着」：没有章节表时，
+ * 条款区间这道校验根本没法做，那就**不许落盘**。
+ */
+function sectionSpans(fullText: string, nos: string[]) {
   const marks: Array<{ start: number; no: string }> = [];
-  for (const no of NOS) {
+  for (const no of nos) {
     const n = no.replace(/\./g, "\\.");
     // 与 Python 侧同一形态：行首、允许表格竖线、排除子条款的数字后缀。
     const re = new RegExp(`^[|\\s]*${n}(?!\\d)(?:\\.\\s|\\.(?=${n})|\\s|$)`, "m");
@@ -80,6 +93,26 @@ function sectionSpans(fullText: string) {
     spans[mk.no] = [mk.start, i + 1 < marks.length ? marks[i + 1].start : fullText.length];
   });
   return spans;
+}
+
+/**
+ * 复制品的章节号 —— **唯一来源**是 `data/parameter-candidates-c.json` 的
+ * `sections` 数组（由 `propose_parameters_c.py` 从 `R48_SECTIONS` 生成）。
+ *
+ * 读不到就抛错，**不退回任何内置副本**。
+ */
+function cSectionNumbers(): string[] {
+  const doc = readJson<any>(CANDIDATES_C, null);
+  const secs = Array.isArray(doc?.sections) ? doc.sections : [];
+  const nos = secs.map((s: any) => String(s?.no ?? "").trim()).filter(Boolean);
+  if (!nos.length) {
+    throw new Error(
+      "data/parameter-candidates-c.json 里没有 sections —— " +
+        "章节区间这道校验做不了，不许落盘。" +
+        "先跑 `python scripts/propose_parameters_c.py` 重新生成候选池。",
+    );
+  }
+  return nos;
 }
 
 /**
@@ -163,7 +196,15 @@ export function registerParameterProposalRoutes(router: Router) {
         error: "dist/mineru-v4-data.json 读不到或没有 C 版语料 —— 不校验就无法安全落盘",
       });
     }
-    const spans = sectionSpans(cText);
+    let spans: Record<string, [number, number]>;
+    try {
+      spans = sectionSpans(cText, cSectionNumbers());
+    } catch (e) {
+      return res.status(503).json({
+        error: e instanceof Error ? e.message : String(e),
+        hint: "章节表缺失时**不做**条款区间校验 —— 那等于放行一切，所以这里必须停。",
+      });
+    }
     const specsDoc = readJson<any>(SPECS, { specs: [] });
     const specs: any[] = specsDoc.specs ?? [];
 
@@ -223,13 +264,31 @@ export function registerParameterProposalRoutes(router: Router) {
       }
 
       // 坑 1：条款归属。页面上选的章节必须真的罩住这次命中。
-      if (it.section && spans[it.section] && (m.index < spans[it.section][0] || m.index >= spans[it.section][1])) {
-        rejected.push({
-          id: it.id,
-          source: it.source,
-          reason: `命中位置不在所选的 R48 §${it.section} 区间内 —— 抓到的是别的章的条文`,
-        });
-        continue;
+      //
+      // **选了但章节表里没有 → 拒绝**（原来写成 `spans[it.section] && …`，
+      // 章节不存在时整道检查被**静默跳过** —— 于是「§6.99」这种
+      // 不存在的章节可以直接落盘，一个字都不报错）。
+      // 「宁可空着，不可错着」：校验做不了的时候，正确答案是**不放行**。
+      if (it.section) {
+        const span = spans[it.section];
+        if (!span) {
+          rejected.push({
+            id: it.id,
+            source: it.source,
+            reason:
+              `所选的 R48 §${it.section} 不在章节表里 —— ` +
+              `章节归属这道校验做不了，不放行。（章节表来自 data/parameter-candidates-c.json）`,
+          });
+          continue;
+        }
+        if (m.index < span[0] || m.index >= span[1]) {
+          rejected.push({
+            id: it.id,
+            source: it.source,
+            reason: `命中位置不在所选的 R48 §${it.section} 区间内 —— 抓到的是别的章的条文`,
+          });
+          continue;
+        }
       }
 
       // **agent 的提议走更严的那套校验** ——

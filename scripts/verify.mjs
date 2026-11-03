@@ -2954,6 +2954,100 @@ check("the report panel does not call the verified path stream-generated", () =>
   return "面板抬头按管线分支：MinerU 说回源复核，草稿才说流式生成";
 });
 
+// 版本识别对账探针：两个脚本各自认一遍版本，结果必须一致且完整。
+// 写成常量而不是内联字符串 —— 内联的 Python 里有引号与缩进，转义容易出错。
+const PY_FINGERPRINT_PROBE = [
+  "import importlib.util, os, sys",
+  "ROOT = os.getcwd()",
+  "def load(name, path):",
+  "    s = importlib.util.spec_from_file_location(name, os.path.join(ROOT, path))",
+  "    m = importlib.util.module_from_spec(s)",
+  "    s.loader.exec_module(m)",
+  "    return m",
+  "cs = load('clause_split', 'scripts/clause_split.py')",
+  "ci = load('clause_index_src', 'scripts/clause_index_src.py')",
+  "a = cs.pick_docs()",
+  "b = ci.pick_docs()",
+  "print('clause_split     :', {k: os.path.basename(v) for k, v in sorted(a.items())})",
+  "print('clause_index_src:', {k: os.path.basename(v) for k, v in sorted(b.items())})",
+  "if a == b and len(a) >= 3 and len(set(a.values())) == len(a):",
+  "    print('SAME')",
+  "else:",
+  "    print('DIFFERENT')",
+  "    sys.exit(1)",
+].join("\n");
+
+check("one source of truth for the version fingerprints and the section list", () => {
+  // 「两份真相来源」是这个项目反复治的病。
+  // 2026-11-04 逐行盘点时又挖出两处：
+  //
+  //   ① **版本指纹**：`clause_split.py` 的 VERSION_FINGERPRINTS（声明式）
+  //      与 `clause_index_src.py` 里手抄的一份 if/elif ——
+  //      两个脚本各认各的。换标准时改了一处忘了另一处，
+  //      **条款索引与条款切分就对不上是哪一版**（页码归属错位，不报错）。
+  //
+  //   ② **R48 章节表**：`propose_parameters_c.py` 的 R48_SECTIONS（唯一手写处）
+  //      与 `server/_core/parameterProposals.ts` 里手抄的一份 25 个章节号。
+  //      漏改的后果是「章节区间算错 → 提议落到别的章里也不报错」。
+  //
+  // 判据：**副本不许存在**。
+  const split = read("scripts/clause_split.py");
+  const indexSrc = read("scripts/clause_index_src.py");
+  assert(
+    /VERSION_FINGERPRINTS/.test(split),
+    "clause_split.py 里找不到 VERSION_FINGERPRINTS —— 版本指纹表没了",
+  );
+  // 索引脚本必须**引用**那一份，而不是自己再写一遍
+  assert(
+    /clause_split\.pick_docs/.test(indexSrc),
+    "clause_index_src.py 没有引用 clause_split.pick_docs —— " +
+      "它自己抄了一份版本识别逻辑，改一处忘另一处就会让条款索引认错版本。",
+  );
+  // 索引脚本里不许再出现手写的版本指纹
+  const fingerprints = ["4785XXXX", "47852019", "UnitedNationsRegulations"];
+  const leaked = fingerprints.filter((f) => indexSrc.includes(f));
+  assert(
+    !leaked.length,
+    `clause_index_src.py 里又出现了手写的版本指纹 ${leaked.join("、")} —— ` +
+      `版本识别只能有一处（clause_split.py 的 VERSION_FINGERPRINTS）。`,
+  );
+
+  // 章节表：TS 侧不许再手抄章节号
+  const pp = read("server/_core/parameterProposals.ts");
+  const nosBlock = /const NOS = \[([\s\S]*?)\]/.exec(pp);
+  assert(
+    !nosBlock,
+    "server/_core/parameterProposals.ts 里又手抄了一份章节号（const NOS = [...]）—— " +
+      "章节表只能有一处手写处（propose_parameters_c.py 的 R48_SECTIONS），" +
+      "其余从 data/parameter-candidates-c.json 的 sections 读。",
+  );
+  assert(
+    /cSectionNumbers\(\)/.test(pp) && /parameter-candidates-c\.json/.test(pp),
+    "parameterProposals.ts 没有从 data/parameter-candidates-c.json 读章节表",
+  );
+  // 章节表读不到时必须**停**，不许退回内置副本
+  assert(
+    /cSectionNumbers[\s\S]{0,900}throw new Error/.test(pp),
+    "章节表读不到时没有抛错 —— 缺了章节表还继续落盘，等于放行一切。",
+  );
+  // 未知章节必须被**拒绝**，不许静默跳过章节区间校验
+  assert(
+    !/it\.section && spans\[it\.section\] &&/.test(pp),
+    "parameterProposals.ts 里还有 `it.section && spans[it.section] && …` —— " +
+      "章节不存在时整道检查被静默跳过（选一个不存在的章节就能落盘）。",
+  );
+
+  // 还要**真的**验一遍：两个脚本认出来的版本必须一致
+  const r = spawnSync("python", ["-c", PY_FINGERPRINT_PROBE], { cwd: ROOT, encoding: "utf-8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(r.status === 0, `版本识别对账脚本跑失败:\n        ${out.slice(-500)}`);
+  assert(
+    /SAME/.test(out),
+    `两个脚本认出来的版本不一致:\n        ${out.slice(-500)}`,
+  );
+  return "版本指纹与 R48 章节表各只有一处手写；两个脚本认出来的版本一致";
+});
+
 check("no orphan module is left under server/reports", () => {
   // 死代码不会自己报错，但它会让「换一套标准要改多少东西」这个数**虚高** ——
   // 每一版旧渲染器都写死了 GB 4785 的名字、章节号、指标值。

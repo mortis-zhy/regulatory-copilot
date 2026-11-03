@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""条款级清点 —— **以源 PDF 的文本层为准**，MinerU 只作兜底。
+r"""条款级清点 —— **以源 PDF 的文本层为准**，MinerU 只作兜底。
 
 为什么换底本
 ------------
@@ -30,45 +30,41 @@ MinerU 的表格抽取把 R48 的条款表整行揉坏：
     python scripts/clause_index_src.py --clause 6.14.4.1 --ver C
 """
 import io, json, os, re, sys, glob
+import importlib.util
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "uploaded-docs")
+
+# ── 版本识别**只有一处** ────────────────────────────────────────────────
+# 声明式指纹表在 `clause_split.py` 的 VERSION_FINGERPRINTS 里（换标准 = 加一行）。
+#
+# 原来这个文件自己抄了一份 if/elif —— 两个脚本各认各的：
+# 换标准时改了一处忘了另一处，**条款索引与条款切分就会对不上是哪一版**
+# （页码归属错位、条款归错章，而且没有任何报错）。
+#
+# 用 importlib 按路径载入 —— 与 clause_split.py 载入 versions.py 同一手法
+# （同目录的模块在打包/换工作目录时不一定能按名字 import）。
+_cs_spec = importlib.util.spec_from_file_location(
+    "clause_split", os.path.join(os.path.dirname(os.path.abspath(__file__)), "clause_split.py"))
+clause_split = importlib.util.module_from_spec(_cs_spec)
+_cs_spec.loader.exec_module(clause_split)
+pick_docs = clause_split.pick_docs
+# 按封面内容认版本 —— 指纹表见 clause_split.py 的 VERSION_FINGERPRINTS：
+#
+#     - A 草案：封面写「GB 4785—XXXX」
+#     - B 2019：封面写「GB4785—2019」（**没有空格** —— 草案那份有空格：GB 4785—XXXX）
+#     - C R48：封面是「Agreement … United Nations Regulations」
+#
+#     注意：不能靠「含 UN R48 字样」判断 —— GB 两版的规范性引用文件里都写着
+#     UN R37/R48，会把中国标准认成 R48。
+#
+# 认不出来版本的 PDF **不静默丢弃**：clause_split.pick_docs() 会打印
+# 「有 N 份 PDF 没有被识别成任何版本」并列出文件名。
 
 # 条款号：行首（允许表格竖线），至少两段
 CLAUSE_HEAD = re.compile(r"^\|?\s*(\d+(?:\.\d+)+)\.?(?=\s|[^\d.]|$)")
 # 目录行：「- 5.9 前位灯.... 40」
 TOC_LINE = re.compile(r"\.{3,}\s*\d+\s*$")
-
-
-def pick_docs():
-    """按封面内容认版本。
-
-    - A 草案：封面写「GB 4785—XXXX」
-    - B 2019：封面写「GB4785—2019」（**没有空格** —— 草案那份有空格：GB 4785—XXXX）
-    - C R48：封面是「Agreement … United Nations Regulations」
-
-    注意：不能靠「含 UN R48 字样」判断 —— GB 两版的规范性引用文件里都写着
-    UN R37/R48，会把中国标准认成 R48。
-    """
-    out = {}
-    for p in sorted(glob.glob(os.path.join(DOCS, "*.pdf"))):
-        try:
-            import fitz
-            d = fitz.open(p)
-            head = "".join(d[i].get_text() for i in range(min(3, d.page_count)))
-            d.close()
-        except Exception:
-            continue
-        flat = re.sub(r"\s+", "", head)
-        # 破折号有三种写法（— U+2014 / – U+2013 / -），先把所有破折号去掉再比
-        nodash = re.sub(r"[—–‐‑‒−-]", "", flat)
-        if "UnitedNationsRegulations" in nodash or "AgreementConcerning" in nodash:
-            out["C"] = p
-        elif "4785XXXX" in nodash:
-            out["A"] = p          # 草案封面也写着「代替 GB 4785-2019」，所以 XXXX 要先判
-        elif "47852019" in nodash:
-            out["B"] = p
-    return out
 
 
 def doc_pages(path):
