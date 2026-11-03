@@ -4040,8 +4040,18 @@ ${msg}`);
     } else {
       console.warn("[v6] no chapter page numbers resolved — PDF will ship without bookmarks");
     }
-  } catch (e) {
-    console.warn("[v6] bookmark step skipped:", String(e).slice(0, 300));
+  } catch (e: any) {
+    // **把 stderr 打出来** —— `execFileSync` 的 String(e) 是
+    // 「Command failed: <整条命令> + <stderr>」，而命令本身就有 300 多字符，
+    // slice(0,300) 恰好把真正有用的 stderr 切掉了 ——
+    // 现场只看到「Command failed」，看不到原因。
+    const stderr = (e?.stderr ?? e?.stdout ?? "").toString().slice(0, 400);
+    const firstLine = String(e?.message ?? e).split(/\r?\n/)[0];
+    console.warn(
+      "[v6] bookmark step skipped:",
+      firstLine,
+      stderr ? ` | stderr: ${stderr}` : "",
+    );
   }
   return pdf;
 }

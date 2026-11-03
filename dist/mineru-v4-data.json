@@ -3194,7 +3194,8 @@
     "level": 2,
     "title": "J.1.6 配备、数量、颜色、布局和类别"
    }
-  ]
+  ],
+  "sourceSha256": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7"
  },
  "B": {
   "fileName": "源文件_B_GB4785-2019_81页.pdf",
@@ -6170,7 +6171,8 @@
     "level": 1,
     "title": "自动切换前照灯近光"
    }
-  ]
+  ],
+  "sourceSha256": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085"
  },
  "C": {
   "fileName": "源文件_C_UN-R48-09_147页.pdf",
@@ -7102,6 +7104,7 @@
     "level": 2,
     "title": "Annex 15"
    }
-  ]
+  ],
+  "sourceSha256": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
  }
 }

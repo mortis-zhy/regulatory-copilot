@@ -30,6 +30,16 @@ PDFS = {
     "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
 }
 
+def sha256_file(path) -> str:
+    """源 PDF 的 SHA-256 —— 语料与源文件之间的钥匙。"""
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def extract_one(label, pdf_path):
     print(f"\n[mineru-v4] {label}: {pdf_path.name}")
     if not pdf_path.exists():
@@ -86,6 +96,11 @@ def extract_one(label, pdf_path):
 
         return {
             "fileName": pdf_path.name,
+            # **语料自述来源** —— 有了它，sidecar 才能在缓存缺失时
+            # 认出「这就是仓库里那份已入库的语料对应的源文件」，
+            # 而不是重新抽一遍得到一个**内容略有不同**的副本。
+            # （LaTeX 花括号位置会差一位，报告就不逐字节相同了。）
+            "sourceSha256": sha256_file(pdf_path),
             "extractionTime": elapsed,
             "markdown": md,
             "fullText": "\n".join(full_text_parts),

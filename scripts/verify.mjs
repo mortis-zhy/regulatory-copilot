@@ -671,6 +671,56 @@ check("定性义务清单逐条回原文核验（条款/页码/原文/缺失结�
   return `${n} 条 —— ${out.split("\n").filter((l) => l.includes("核验")).join(" / ").trim()}`;
 });
 
+// ---------------------------------------------------------------------------
+// 繁拔层的单一真相源
+//
+// 可以只用一个解析器，但不能用两个。事实上曾经有两份：
+//   dist/mineru-v4-data.json      —— 已入库，CLI 管线用
+//   dist/sidecar-cache/*.json     —— 在 .gitignore 里，网站用
+// 同样三份源 PDF，两份产物长度一致（2769868 字符）却内容不同
+// （LaTeX 花括号位置差一位）——结果是**网站出的报告 ≠ 交付给同事的报告**，
+// 差异小到内容指标都测不出来。
+//
+// 现在：语料**自述来源**（sourceSha256），sidecar 在自己的缓存缺失时
+// **先查已入库的语料**，对得上就直接用。一份真相，其余都是它的缓存。
+// ---------------------------------------------------------------------------
+check("语料自述来源，且 sidecar 优先用已入库的那份", () => {
+  const corpus = JSON.parse(read("dist/mineru-v4-data.json"));
+  const srcDir = resolve(ROOT, "delivery", "PDF对比");
+  const files = readdirSync(srcDir).filter((f) => f.startsWith("源文件_") && f.endsWith(".pdf"));
+  assert(files.length >= 3, `delivery/PDF对比 里只有 ${files.length} 份源 PDF`);
+  const byHash = new Map();
+  for (const f of files) byHash.set(sha256(resolve(srcDir, f)), f);
+  const checked = [];
+  for (const ver of ["A", "B", "C"]) {
+    const e = corpus[ver];
+    assert(!!e, `语料里没有 ${ver} 版`);
+    const h = e.sourceSha256;
+    assert(!!h, `${ver} 版语料没有 sourceSha256 —— 它不能证明自己是哪份文件抽的`);
+    assert(
+      byHash.has(h),
+      `${ver} 版的 sourceSha256 与任何一份源 PDF 都对不上 —— ` +
+        `语料与源文件不对应`,
+    );
+    checked.push(`${ver}=${byHash.get(h)}`);
+  }
+  // sidecar 必须在读自己的缓存**之前**先查已入库的语料。
+  const sidecar = read("python_service/main.py");
+  const atTracked = sidecar.indexOf("tracked_corpus_entry(label, file_hash)");
+  const atCache = sidecar.indexOf("if cache_file.exists()");
+  assert(atTracked > 0, "sidecar 的 /extract 没有查已入库的语料");
+  assert(
+    atTracked < atCache,
+    "sidecar 的 /extract 先读自己的缓存、后查语料 —— 优先级错了，" +
+      "语料会被缓存里的另一份抽取结果顶掉",
+  );
+  assert(
+    /sourceSha256/.test(read("extract_mineru_v4_sdk.py")),
+    "extract_mineru_v4_sdk.py 没写 sourceSha256 —— 下次重新抽取就会丢掉这个钥匙",
+  );
+  return checked.join(" · ");
+});
+
 check("第 11.9 节进了交付件，且条目数与数据源一致", () => {
   const qo = JSON.parse(read("data/qualitative-obligations.json"));
   const md = loadReport()

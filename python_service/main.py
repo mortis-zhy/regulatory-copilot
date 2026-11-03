@@ -124,6 +124,46 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+_TRACKED_CORPUS = None
+_TRACKED_MTIME = None
+
+
+def tracked_corpus_path() -> Path:
+    return ROOT / "dist" / "mineru-v4-data.json"
+
+
+def load_tracked_corpus() -> dict:
+    """读**仓库里已入库**的语料（dist/mineru-v4-data.json）。
+
+    按 mtime 缓存 —— 11 MB，每请求重读太慢；但语料被重新生成时要能看到。
+    """
+    global _TRACKED_CORPUS, _TRACKED_MTIME
+    p = tracked_corpus_path()
+    if not p.exists():
+        return {}
+    try:
+        mt = p.stat().st_mtime
+    except OSError:
+        return {}
+    if _TRACKED_CORPUS is None or mt != _TRACKED_MTIME:
+        try:
+            _TRACKED_CORPUS = json.loads(p.read_text(encoding="utf-8"))
+            _TRACKED_MTIME = mt
+        except Exception:
+            return {}
+    return _TRACKED_CORPUS or {}
+
+
+def tracked_corpus_entry(label: str, file_hash: str):
+    """语料里有没有「版本 == label 且源文件 sha256 相同」的那一份？"""
+    entry = load_tracked_corpus().get(label)
+    if not isinstance(entry, dict):
+        return None
+    if entry.get("sourceSha256") != file_hash:
+        return None
+    return entry
+
+
 def cache_path(label: str, file_hash: str, suffix: str) -> Path:
     return CACHE_DIR / f"{label}__{file_hash[:16]}{suffix}"
 
@@ -186,6 +226,43 @@ def extract_endpoint(payload: dict) -> ExtractResponse:
 
     file_hash = sha256(Path(file_path))
     cache_file = cache_path(label, file_hash, ".extracted.json")
+
+    # ── 仓库里已入库的语料优先 ────────────────────────────────────────
+    # 为什么：**曾经有过两份抽取产物**（`dist/mineru-v4-data.json` 与
+    # `dist/sidecar-cache/*.json`），同样三份源 PDF，两份长度一样但内容差在
+    # LaTeX 花括号的位置 —— 于是**网站出的报告 ≠ 交付给同事的报告**，
+    # 差异小到内容指标都测不出来。而 `dist/sidecar-cache/` 在 .gitignore 里，
+    # 新克隆跑网站会重新抽一份，语料又不一样。
+    #
+    # 现在：**已入库的语料是唯一真相来源**，sidecar 缓存只是它的缓存。
+    # 按 **源文件的 sha256** 认（不是按文件名 —— 换一份同名的 PDF 进来
+    # 必须重新抽，不能拿旧的糊弄）。
+    tracked = tracked_corpus_entry(label, file_hash)
+    if tracked is not None:
+        # 顺手把缓存写成语料的内容 —— 缓存永远不与语料分叉。
+        try:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            cache_file.write_text(json.dumps(tracked, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
+        return ExtractResponse(
+            label=label,
+            fileName=file_name,
+            fileHash=file_hash,
+            pages=len(tracked.get("fullText", "").split("[第")),
+            markdownLen=len(tracked.get("markdown", "")),
+            fullTextLen=len(tracked.get("fullText", "")),
+            blockCounts=tracked.get("blockTypes", {}),
+            tableCount=len(tracked.get("tables", [])),
+            figureCount=len(tracked.get("figures", [])),
+            equationCount=len(tracked.get("equations", [])),
+            headingCount=len(tracked.get("headings", [])),
+            extractionSeconds=0.0,
+            cached=True,
+            content_list_summary=None,
+            label_inferred=label_inferred,
+            data=tracked,
+        )
 
     if cache_file.exists():
         data = json.loads(cache_file.read_text(encoding="utf-8"))
