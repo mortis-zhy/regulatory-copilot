@@ -3018,6 +3018,41 @@ check("the download button never drops a field the renderer needs", () => {
   return `主索引：有 parameterMatrix ${withMatrix.length} 行 · 无 ${without.length} 行 —— 客户端必须带着它`;
 });
 
+check("the welcome message is never exported as if it were an answer", () => {
+  // 顶栏的「Word」按钮导出最近一条 assistant 消息。
+  //
+  // 原来挑消息只按 `role === "assistant" && m.text` ——
+  // 而**欢迎语**正好满足这两条（`kind: "welcome"`，role=assistant，有 text）。
+  // 于是「还没有任何分析结果」时点一下，导出的是**一句寒暄**，
+  // 文件标题却写着「法规对比报告」，而且 toast 说「WORD 报告已下载」——
+  // **假成功**：用户拿到一个 2 KB 的 .doc，以为导出了分析结果。
+  //
+  // 同一份顾虑在**单条消息的下载按钮**上早就处理了
+  // （渲染处 `message.kind !== "welcome"`）——
+  // 同一个顾虑两处实现，就一定会漂移。这一关把两处**钉在一起**。
+  const home = read("client/src/pages/Home.tsx");
+  // ① 导出挑消息的地方必须排除欢迎语
+  const pick = home.slice(home.indexOf("const lastAssistant"), home.indexOf("const lastAssistant") + 600);
+  assert(pick.length > 0, "找不到导出时挑消息的地方");
+  assert(
+    /kind\s*!==\s*"welcome"/.test(pick),
+    "导出时挑消息没有排除欢迎语（kind === \"welcome\"）—— " +
+      "「还没有分析结果」时点 Word 会导出一句寒暄，却 toast「已下载」。",
+  );
+  // ② 按钮的禁用判据要跟导出用**同一句**
+  const dis = home.slice(home.indexOf("disabled={"), home.indexOf("disabled={") + 400);
+  assert(
+    /kind\s*!==\s*"welcome"/.test(dis),
+    "顶栏按钮的禁用判据没有排除欢迎语 —— 按钮亮着，但点出来是假成功。",
+  );
+  // ③ 单条消息的下载入口（早就有的那道）不许被删掉
+  assert(
+    /kind\s*!==\s*"welcome"/.test(home.slice(home.indexOf("message.kind !== \"welcome\""))),
+    "单条消息的下载入口不再排除欢迎语了 —— 三处判据必须一致。",
+  );
+  return "欢迎语在三处判据里都被排除：导出挑消息 · 按钮禁用 · 单条消息入口";
+});
+
 check("a draft can never wear the deliverable's name", () => {
   // 「快速草稿（未经核验）」与交付件走**同一个渲染器、同一套版式**，
   // 渲染出来的东西一模一样 —— 于是草稿下载下来，

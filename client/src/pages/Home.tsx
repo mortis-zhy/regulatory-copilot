@@ -943,7 +943,19 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       }
 
       // Word still exports the latest chat answer (export.ts renderer).
-      const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.text);
+      //
+      // **欢迎语（kind === "welcome"）不算答案** ——
+      // 原来这里只按 role/text 挑，于是「还没有任何分析结果」时，
+      // 顶栏的「Word」按钮会把**欢迎语**当报告导出去，
+      // 而且还 toast「WORD 报告已下载」—— **假成功**：
+      // 用户拿到一个只有两句寒暄、标题却写着「法规对比报告」的 .doc。
+      //
+      // 同一份顾虑在单条消息的下载按钮上早就处理了
+      // （`message.kind !== "welcome"`，见渲染处）——
+      // 这里漏了。**同一个顾虑，两处实现，就一定会漂移。**
+      const lastAssistant = [...messages]
+        .reverse()
+        .find((m) => m.role === "assistant" && m.text && m.kind !== "welcome");
       // Prefer the synchronously-captured full text (set at onDone) so we
       // don't read a half-rendered m.text if the user clicks immediately.
       const fallbackText = lastAssistant ? fullTextRef.current[lastAssistant.id] : undefined;
@@ -993,7 +1005,12 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
         // full V8 report from reports/last-report.json and must stay enabled
         // even on a fresh session with no chat history — the server answers
         // 409 "尚未生成报告" if nothing has been generated yet.
-        disabled={!messages.some((m) => m.role === "assistant" && m.text)}
+        //
+        // 判据与导出处**同一句**：欢迎语（kind === "welcome"）不是答案 ——
+        // 否则按钮一亮，用户就能导出一个只有寒暄的「法规对比报告」。
+        disabled={
+          !messages.some((m) => m.role === "assistant" && m.text && m.kind !== "welcome")
+        }
       />
       <main className="mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-5 pb-44 pt-8 md:px-8 md:pt-10">
         {currentView === "settings" ? (
