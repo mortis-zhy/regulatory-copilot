@@ -39,7 +39,10 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 MINERU = ROOT / "dist" / "mineru-v4-data.json"
 SPECS = ROOT / "data" / "parameter-specs.json"
-OUT = ROOT / "data" / "parameter-candidates.json"
+# 输出路径可以被 PROPOSE_OUT 覆盖。
+# 闸门要用它：跑到临时文件上，再与**入库的那份**逐字节比 ——
+# 不然「现跑出来的」与「仓库里躺着的」永远是同一个文件，比了个寂寞。
+OUT = Path(os.environ.get("PROPOSE_OUT") or (ROOT / "data" / "parameter-candidates.json"))
 VERSIONS = ["A", "B", "C"]
 
 # --- 值的形态 -----------------------------------------------------------

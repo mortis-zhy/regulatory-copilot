@@ -543,6 +543,16 @@ function runNode(args, label) {
   return { ok: r.status === 0, out: (r.stdout || "") + (r.stderr || ""), r };
 }
 
+/** 跑 python，并额外注入环境变量（提议器要靠它把输出写到临时文件）。 */
+function runPyEnv(args, label, extraEnv) {
+  const r = spawnSync("python", args, {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1", ...(extraEnv ?? {}) },
+  });
+  return { ok: r.status === 0, out: (r.stdout || "") + (r.stderr || ""), r };
+}
+
 check("verify_claims.py candidate partition closes", () => {
   const { ok, out } = runPy(["verify_claims.py"], "verify_claims");
   assert(ok, `verify_claims.py exited non-zero:\n        ${out.slice(-600)}`);
@@ -2488,6 +2498,53 @@ check("every matrix cell's value is corroborated against the source PDF", () => 
     );
   }
   return `${st.onPage}/${verified} 个取值格回源 PDF 复核通过（引文 ${ev.excerpt ?? 0} · 标签+取值 ${ev.match ?? 0} · 取值+条款 ${ev["value+clause"] ?? 0} · 取值 ${ev.value ?? 0}），查不到 0、页码不符 0`;
+});
+
+check("the parameter proposer still finds what the specs found", () => {
+  // 「换个标准还要人工写 813 条 spec」这件事能不能压下去，全看**提议层**的召回。
+  // 召回自检是 `scripts/propose_parameters.py` 自带的（拿已有 spec 反撞候选池），
+  // 但它只是**打印**——抽取器一变、语料一换，召回掉了没人知道。
+  //
+  // 这一关把它变成判据：
+  //   ① 召回率不得低于地板（当前 648/813 = 79.7%，地板 75%）；
+  //   ② **入库的候选池文件必须与现语料现出来的结果一致** ——
+  //      否则仓库里躺着一份过期的候选清单，而它正是人工裁定的工作入口。
+  //
+  // 提议器是**确定性**的（同样输入必同样输出），所以第 ② 条可以逐字节比。
+  const { ok, out } = runPyEnv(["scripts/propose_parameters.py"], "propose_parameters", {
+    PROPOSE_OUT: resolve(ROOT, "reports", ".parameter-candidates.fresh.json"),
+  });
+  assert(ok, `参数提议跑失败:\n        ${out.slice(-600)}`);
+  const m = out.match(/召回自检：(\d+)\/(\d+)/);
+  assert(m, `propose_parameters 没有给出召回自检行:\n        ${out.slice(-600)}`);
+  const recalled = Number(m[1]);
+  const anchors = Number(m[2]);
+  const rate = recalled / anchors;
+  const FLOOR = 0.75;
+  assert(
+    rate >= FLOOR,
+    `提议层召回率掉了：${recalled}/${anchors} = ${(rate * 100).toFixed(1)}%（地板 ${FLOOR * 100}%）—— ` +
+      `要么抽取器退化了，要么 spec 的写法变了。提议层一退化，换标准时的内容工作量就回来了。`,
+  );
+
+  // 入库的候选池必须与现语料现出来的一致。
+  // 上面那次运行已经写到临时文件上了（PROPOSE_OUT）——
+  // 不然「现跑出来的」与「入库的」是同一个文件，比了个寂寞。
+  const tmp = resolve(ROOT, "reports", ".parameter-candidates.fresh.json");
+  const freshText = existsSync(tmp) ? readFileSync(tmp, "utf8") : "";
+  const committedText = read("data/parameter-candidates.json");
+  assert(
+    committedText === freshText,
+    `data/parameter-candidates.json 与现语料现出来的不一致 —— ` +
+      `仓库里躺着一份过期候选清单，而它是人工裁定的工作入口。` +
+      `重跑 \`python scripts/propose_parameters.py\` 并把新文件提交。`,
+  );
+  const c = JSON.parse(committedText);
+  assert(
+    c.recall === `${recalled}/${anchors}`,
+    `候选池文件里记的召回（${c.recall}）与刚跑出来的（${recalled}/${anchors}）对不上`,
+  );
+  return `提议层召回 ${recalled}/${anchors} = ${(rate * 100).toFixed(1)}%（地板 ${FLOOR * 100}%）· 候选池 ${c.candidateCount} 条，与现语料一致`;
 });
 
 check("a changed version set never degrades silently", () => {
