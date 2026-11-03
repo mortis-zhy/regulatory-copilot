@@ -2884,6 +2884,55 @@ check("the download filename is derived from the report, not hardcoded", () => {
   return `文件名从报告派生：现在 → ${now}；换标准 → ${other}`;
 });
 
+check("the report's page counts come from the corpus, not from literals", () => {
+  // 页数是**语料的事实**，不是声明。
+  //
+  // 原来三处写死：第 2 章概况表、执行摘要的「对照范围」、源文档清单
+  // （`{ label: "A", name: "GB 4785 草案 V4.3.5（103 页）" }`）。
+  // 换一套标准、或源 PDF 换了版，这三个数**全是错的** ——
+  // 而且**不报错**：报告照出，只是页数在骗人。
+  //
+  // 源文档清单尤其要紧：**下载文件名是从它派生的**
+  // （server/reports/reportFileName.ts）——
+  // 名字写死，就等于「换了标准，下载下来的文件名还在讲 GB 4785」。
+  //
+  // 判据两条：
+  //   ① **源码里不许再出现写死的页数**；
+  //   ② **功能**：交付件里写的页数必须等于语料实际的页数。
+  const v6 = read("server/reports/reportV6.ts");
+  // 先剥注释 —— 注释里说明「原来写死的是 103 页」是合理的，不是交付内容。
+  const v6Code = v6.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const literals = [...v6Code.matchAll(/(\d{2,3})\s*页/g)]
+    .map((m) => m[1])
+    .filter((n) => ["103", "81", "147"].includes(n));
+  assert(
+    !literals.length,
+    `reportV6.ts 里又出现了写死的页数 ${[...new Set(literals)].join("、")} —— ` +
+      `页数是语料的事实，必须从分页文本数出来（pageCountsOf）。`,
+  );
+
+  // ② 功能：交付件里的页数 == 语料的页数
+  const mineru = JSON.parse(read("dist/mineru-v4-data.json"));
+  const report = JSON.parse(read("reports/last-report.json"));
+  const docs = report.sourceDocuments ?? [];
+  assert(docs.length > 0, "交付件里没有 sourceDocuments");
+  for (const d of docs) {
+    const text = String(mineru?.[d.label]?.fullText ?? "");
+    assert(text.trim(), `语料里没有 ${d.label} 版`);
+    const marks = (text.match(/\[第\d+页\]/g) ?? []).length;
+    const m = new RegExp(`（(\\d+)\\s*页）`).exec(d.name ?? "");
+    assert(m, `源文档清单里 ${d.label} 没有页数：${d.name}`);
+    assert(
+      Number(m[1]) === marks,
+      `交付件说 ${d.label} 是 ${m[1]} 页，语料里数出来是 ${marks} 页 —— ` +
+        `其中一个已经过期了（源 PDF 换了版，或页数是写死的）。`,
+    );
+  }
+  return `${docs.length} 个源文档的页数与语料一致（${docs
+    .map((d) => `${d.label} ${/（(\d+)\s*页）/.exec(d.name)?.[1]} 页`)
+    .join(" · ")}）`;
+});
+
 check("a draft can never wear the deliverable's name", () => {
   // 「快速草稿（未经核验）」与交付件走**同一个渲染器、同一套版式**，
   // 渲染出来的东西一模一样 —— 于是草稿下载下来，

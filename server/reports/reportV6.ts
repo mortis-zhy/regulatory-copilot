@@ -21,7 +21,7 @@ import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
 // Aliased: reportV6.ts already has a local buildParameterMatrix() that builds
 // the §11.3.3 A-vs-B matrix. Same name, different job — the import below is the
 // three-version matrix and would be shadowed by the local declaration.
-import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel } from "./parameterMatrix";
+import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel, versionsOf, versionDoc, versionStd, versionStatus, versionLabel } from "./parameterMatrix";
 // 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
 import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
 import COVERAGE_AUDIT from "../../data/coverage-audit.json";
@@ -1320,9 +1320,13 @@ function buildNarrativeFromHeadings(
   if (chapterId === 2) {
     parts.push("## 2.1 三份法规概况", "");
     parts.push("| 文档 | 标准号 | 状态 | 页数 |", "|---|---|---|---|");
-    parts.push(`| A | GB 4785—XXXX | 草案 V4.3.5（代替 GB 4785-2019） | 103 |`);
-    parts.push(`| B | GB 4785—2019 | 现行（代替 GB 4785—2007，2020-07-01 实施） | 81 |`);
-    parts.push(`| C | UN R48-09 + Suppl.1 | 国际法规（2025-09-26 生效，作参照） | 147 |`);
+    // 标准号/状态来自声明式的 VERSION_META；**页数从语料数出来**。
+    // 原来三行整行写死 —— 换一套标准就全是错的，而且不报错。
+    const counts = pageCountsOf(data);
+    for (const v of versionsOf(data)) {
+      const n = counts[v];
+      parts.push(`| ${v} | ${versionStd(v)} | ${versionStatus(v)} | ${n ?? "—"} |`);
+    }
     parts.push("", "## 2.2 A 草案的适用范围（原文）", "");
     const scope = (a.find((h: any) => /范围/.test(h.title)) || {}).title;
     parts.push(`A 第 1 章「范围」位于 ${(a.find((h: any) => /范围/.test(h.title)) || {}).page ?? "?"}。完整原文见第 11 章数据溯源。`);
@@ -1985,6 +1989,51 @@ function buildAppendixB(data: Record<string, any>): string {
 }
 
 /* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------- page counts */
+
+/**
+ * 每一版的**页数** —— 数出来的，不是写死的。
+ *
+ * 原来三处写死 103 / 81 / 147（第 2 章概况表、执行摘要的「对照范围」、
+ * 源文档清单）。换一套标准、或源 PDF 换了版，这三个数**全是错的** ——
+ * 而且**不报错**：报告照出，只是页数在骗人。
+ *
+ * 数法（两级）：
+ *   ① 源 PDF 语料（`CORPUS_CACHE.pages[v].length`）—— 权威，就是 PDF 的页数；
+ *   ② MinerU 分页文本里的 `[第N页]` 标记 —— 源语料不可用时的退路
+ *      （实测与源 PDF 完全一致：A 103 / B 81 / C 147）。
+ *
+ * 数不出来就**不写页数**，不拿别的数凑 ——
+ * 「宁可空着，不可错着」。
+ */
+function pageCountsOf(data: Record<string, any>): Record<string, number> {
+  const out: Record<string, number> = {};
+  const corpusPages = (CORPUS_CACHE?.pages ?? {}) as Record<string, Array<[number, string]>>;
+  for (const [v, arr] of Object.entries(corpusPages)) {
+    if (Array.isArray(arr) && arr.length) out[v] = arr.length;
+  }
+  for (const [v, d] of Object.entries(data ?? {})) {
+    if (out[v]) continue;
+    const text = String((d as any)?.fullText ?? "");
+    if (!text.trim()) continue;
+    const marks = text.match(/\[第\d+页\]/g);
+    if (marks?.length) out[v] = marks.length;
+  }
+  return out;
+}
+
+/** 「A 草案 103 页 / B 现行 81 页」这样的一行 —— 从语料派生。 */
+function pageCountPhrase(data: Record<string, any>, counts: Record<string, number>): string {
+  const parts: string[] = [];
+  for (const v of versionsOf(data)) {
+    const n = counts[v];
+    if (!n) continue;
+    parts.push(`${versionLabel(v)} ${n} 页`);
+  }
+  return parts.join(" / ");
+}
+
+/* -------------------------------------------------------------------------- */
 /* --------------------------------------------------------- source corpus */
 
 let CORPUS_CACHE: any = null;
@@ -2566,7 +2615,7 @@ function buildExecSummary(input: {
     "",
     `**4. 三版本主题对照**：${topics.length} 个核心主题做了 A|B|C 三列原文摘录对照，每条均标注原文页码，可直接回查。`,
     "",
-    `**5. 对照范围**：A 草案 103 页 / B 现行 81 页 / C UN R48-09 147 页；三份文件共含 ${totalTables} 个参数表格、${["A", "B", "C"].reduce((a, k) => a + (data[k]?.figures?.length ?? 0), 0)} 处插图对象（明细见附录 B.2，逐行可回查）、${["A", "B", "C"].reduce((a, k) => a + (data[k]?.equations?.length ?? 0), 0)} 个公式、${["A", "B", "C"].reduce((a, k) => a + (data[k]?.headings?.length ?? 0), 0)} 条标题条目。`,
+    `**5. 对照范围**：${pageCountPhrase(data, pageCountsOf(data))}；三份文件共含 ${totalTables} 个参数表格、${["A", "B", "C"].reduce((a, k) => a + (data[k]?.figures?.length ?? 0), 0)} 处插图对象（明细见附录 B.2，逐行可回查）、${["A", "B", "C"].reduce((a, k) => a + (data[k]?.equations?.length ?? 0), 0)} 个公式、${["A", "B", "C"].reduce((a, k) => a + (data[k]?.headings?.length ?? 0), 0)} 条标题条目。`,
     "",
     "---",
     "",
@@ -3965,11 +4014,21 @@ export async function buildMinerUReport(
     // "核心参数总表" ended up with 49 源数据未提供 cards).
     parameterMatrix: matrixRows,
     parameterMatrixStats: matrixStatsOut,
-    sourceDocuments: [
-      { label: "A", name: "GB 4785 草案 V4.3.5（103 页）", meta: "原文 PDF" },
-      { label: "B", name: "GB 4785-2019（81 页）", meta: "原文 PDF" },
-      { label: "C", name: "UN R48-09（147 页）", meta: "国际法规原文" },
-    ],
+    // 源文档清单 —— **从语料派生**：
+    // 文档显示名来自声明式的 VERSION_META，页数从语料数出来。
+    //
+    // 这份清单不只是「显示用」——**下载文件名是从它派生的**
+    // （server/reports/reportFileName.ts）。原来这里整块写死
+    // 「GB 4785 草案 V4.3.5（103 页）」，换一套标准后
+    // **下载下来的文件名还在讲 GB 4785** —— 文件名会骗人。
+    sourceDocuments: versionsOf(data).map((v) => {
+      const n = pageCountsOf(data)[v];
+      return {
+        label: v,
+        name: n ? `${versionDoc(v)}（${n} 页）` : versionDoc(v),
+        meta: v === "C" ? "国际法规原文" : "原文 PDF",
+      };
+    }),
     generatedAt: new Date().toISOString(),
   };
 
