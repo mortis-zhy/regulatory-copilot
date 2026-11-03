@@ -317,14 +317,14 @@
   "5.25": {
    "gb": "5.25",
    "gbName": "慢行灯",
-   "r48": "2.4.17.3",
-   "r48Name": "Slow moving vehicle (SMV) rear marking plate",
-   "page": 9,
-   "pageLabel": "第9页",
-   "excerpt": "Slow moving vehicle (SMV) rear marking plate\" means a triangular plate with truncated corners with a characteristic pattern faced with retro-reflectors or retro-reflective materials and retro-reflective or fluorescent material. 2.4.17.4. \"Sample unit\" means a complete retro-reflective device ready to be mounted on a vehicle and representative of current production. 2.4.17.5. \"Fluorescence\" means when certain substanc…",
-   "hits": 1,
+   "r48": "6.26",
+   "r48Name": "Manoeuvring lamps",
+   "page": 93,
+   "pageLabel": "第93页",
+   "excerpt": "Manoeuvring lamps 6.26.1. Presence [第94页] | | Optional on motor vehiclesand trailers. | | --- | --- | | 6.26.2. | Number One or two (one per side)on vehicles not exceeding 6 m in length. A maximum of four (up to two per side) on vehicles above 6 m and up to and including 9 m in length. A maximum of six (up to three per side) on vehicles exceeding 9 m in length. However, installed lamps shall be type-approved accordin…",
+   "hits": 2,
    "matrixToken": "慢行灯",
-   "note": "R48-09 **只给了定义**（§2.4.17.3），没有慢行灯的安装章 —— C 列因此是定义原文，不是安装要求。这本身就是一条对客户有用的信息。",
+   "note": "R48 §6.26 **Manoeuvring lamps 就是 GB 的「慢行灯」** —— GB 3.3.21（A p13）/ 3.9.29（B p11）的术语原文就写作「慢行灯 manoeuvring lamp」，与 R48 §2.5.19 的定义逐字对应。原表指到 §2.4.17.3，那只是「Slow moving vehicle (SMV) rear marking plate」的**定义**（标记板），不是安装章 —— 把一盏灯对到一条定义上是范畴错配，已改正。",
    "verified": true
   },
   "5.26": {

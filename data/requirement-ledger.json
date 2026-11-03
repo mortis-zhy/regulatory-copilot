@@ -3,11 +3,11 @@
  "totals": {
   "requirements": 448,
   "covered": 285,
-  "appendixListed": 66,
+  "appendixListed": 65,
   "weak": 0,
   "notApplicable": 45,
   "gaps": 0,
-  "quoted": 52
+  "quoted": 53
  },
  "rows": [
   {
@@ -2197,7 +2197,7 @@
    "hasLimit": false,
    "disposition": "已引原文",
    "reason": "",
-   "quotedMatch": 30
+   "quotedMatch": 40
   },
   {
    "version": "C",
@@ -2604,7 +2604,7 @@
    "hasLimit": false,
    "disposition": "已引原文",
    "reason": "",
-   "quotedMatch": 30
+   "quotedMatch": 40
   },
   {
    "version": "C",
@@ -4087,8 +4087,8 @@
    "page": 88,
    "excerpt": "An AFS shall be permitted only in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4516 for at least those lighting units, which are indicated under item 9.2.2.3. of the communication form conforming to the model in Annex 1 to UN Regulation No. 149, if the total objective …",
    "hasLimit": true,
-   "disposition": "附录逐条",
-   "reason": "【UN R48-09 6.22.9.1】AFS 必须配套**前照灯清洗装置** —— AFS 只有在配有符合规定的前照灯清洗装置时才允许使用 —— 属**配套条件**要求，无标量。本版对照了**同族的定量条款**（见第 12 章矩阵），但这一条是定性要求，没有可压缩的标量，故不进参数矩阵；在此逐条列出原文与页码供回查。",
+   "disposition": "已覆盖",
+   "reason": "",
    "quotedMatch": 0
   },
   {
@@ -4472,9 +4472,9 @@
    "page": 95,
    "excerpt": "The Technical Service shall, to the satisfaction of the Type Approval Authority, perform a visual test to verify that there is no direct visibility of the apparent surface of these lamps, if viewed by an observer moving on the boundary of a zone on a transverse plane 10 m from the front of the vehicle, a transverse pla…",
    "hasLimit": true,
-   "disposition": "已覆盖",
+   "disposition": "已引原文",
    "reason": "",
-   "quotedMatch": 0
+   "quotedMatch": 40
   },
   {
    "version": "C",

@@ -754,9 +754,9 @@
         }
       },
       "why": {
-        "A": "与开启上限同一条款但语义相反（开启 ≤65 / 保持 ≥40），两者必须分成两行，否则读者会以为 40 是限制而它其实是放宽。",
+        "A": "A §6.1.8（p64）后半：「在驾驶员辅助投射已开启的情况下，车速在40km/h 以上时，允许保持开启状态。」—— 40 是**保持开启的下限**，不是限制。与开启那一档同在一条，但语义相反，两行必须分开。",
         "B": "无对应条款（草案新增）。",
-        "C": "R48 §5.35.10 p36 后半「it may remain switched ON as long as the vehicle speed remains above 40 km/h」。同样与 GB「保持开启车速下限 40」方向相反。整段在 p36 的 §5.35.10 表行里，**正则不能锚条款号** —— MinerU 把条款号单独放在表格列，正文里它前面隔着 5.35.9 的整句。"
+        "C": "R48 §5.35.10（p36）后半：「it may remain switched ON as long as the vehicle speed remains above 40 km/h」—— 与 A 的「40km/h 以上允许保持开启」**方向一致**。整段在 p36 的 §5.35.10 表行里，**正则不能锚条款号** —— MinerU 把条款号单独放在表格列，正文里它前面隔着 5.35.9 的整句。"
       },
       "absent": {
         "B": "同 §6.1：驾驶员辅助投射功能为草案新增，2019 版无此功能。"
@@ -788,7 +788,7 @@
     },
     {
       "id": "das.speedOnMax",
-      "name": "驾驶员辅助投射·开启车速上限",
+      "name": "驾驶员辅助投射·开启车速下限（低于该速不得开启）",
       "family": "试验条件 / 路段速度",
       "unit": "km/h",
       "patterns": {
@@ -802,9 +802,9 @@
         }
       },
       "why": {
-        "A": "同一条里还有「40km/h 以上允许保持开启」，是**保持**阈值不是**开启**阈值。按「车速低于」锚定才不会与 40 那档混。",
+        "A": "A §6.1.8（p64）：「车速低于65km/h 时，不应开启驾驶员辅助投射。然而，在驾驶员辅助投射已开启的情况下，车速在40km/h 以上时，允许保持开启状态。」—— **65 是「低于此速不得开启」的下限，不是上限**。同一条里还有 40 那一档（保持开启的下限），按「车速低于」锚定才不会与 40 混。",
         "B": "无对应条款（草案新增）。",
-        "C": "R48 §5.35.10 p36 有 DAS，所以这一行**不是国标专有**。**但条件方向与 GB 相反**：R48 是「低于 65 km/h 不得开启」，GB 是「开启车速上限 65」。数值相同、语义相反，判定列会显示与 GB 不同 —— 这正是要交给客户核的冲突，不是可以抹平的匹配。"
+        "C": "C §5.35.10（p36）：「Driver Assistance Projection shall not be switched ON when the vehicle speed is below 65 km/h. However, when the projection is already switched ON, it may remain switched ON as long as the vehicle speed remains above 40 km/h.」—— **A 与 C 的条件方向完全一致**（都是「低于此速不得开启」）。先前把本行行名写成「开启车速上限」，据此推出的「A 与 C 条件方向相反」是**假的法规冲突**，行名与理由已改正。"
       },
       "absent": {
         "B": "同 §6.1：驾驶员辅助投射功能为草案新增，2019 版无此功能。"
@@ -2744,60 +2744,6 @@
       },
       "why": {
         "A": "低于这个高度，水平面以下的垂直方向角可由 15° 减至 5°（R48 6.5.5.1 (a) 同）。A 用 ㎜、B 用 mm，正则两边都收。"
-      }
-    },
-    {
-      "id": "manoeuvringLamp.adjacentGapMin",
-      "name": "操纵灯同侧相邻间距下限",
-      "family": "位置 / 间距限值",
-      "unit": "m",
-      "patterns": {
-        "C": {
-          "source": "6\\.26\\.4\\.3[\\s\\S]{0,320}?not be less than (0\\.5\\s*m)",
-          "flags": "i"
-        }
-      },
-      "absent": {
-        "A": "同上：GB 4785 草案无「操纵灯」装置。",
-        "B": "同上：GB 4785-2019 无「操纵灯」装置。"
-      }
-    },
-    {
-      "id": "manoeuvringLamp.maxHeight",
-      "name": "操纵灯最大离地高度",
-      "family": "安装高度 / 离地距离",
-      "unit": "mm",
-      "patterns": {
-        "C": {
-          "source": "6\\.26\\.4\\.2[\\s\\S]{0,140}?Above the ground, not more than (1[ ,]500\\s*mm)",
-          "flags": "i"
-        }
-      },
-      "why": {
-        "C": "R48 §6.26 Manoeuvring lamps（倒车辅助照明）是**欧标独有装置**，GB 4785 无对应章。判 `c-only`。"
-      },
-      "absent": {
-        "A": "GB 4785 草案全文无「操纵灯 / 倒车辅助照明」这一装置（全文检索无命中）——该装置是 R48 §6.26 独有的。",
-        "B": "GB 4785-2019 全文无「操纵灯 / 倒车辅助照明」这一装置 —— 该装置是 R48 §6.26 独有的。"
-      }
-    },
-    {
-      "id": "manoeuvringLamp.speedMax",
-      "name": "操纵灯自动点亮车速上限",
-      "family": "试验条件 / 路段速度",
-      "unit": "km/h",
-      "patterns": {
-        "C": {
-          "source": "6\\.26\\.7[\\s\\S]{0,320}?slow manoeuvres up to (15\\s*km\\s*/\\s*h)",
-          "flags": "i"
-        }
-      },
-      "why": {
-        "C": "§6.26.7 的自动点亮条件写成「up to 15 km/h」，与 GB 的慢行灯/倒车灯车速阈值（10 / 15 km/h）是**不同装置的不同档位**，不能混为一谈 —— 单列一行。"
-      },
-      "absent": {
-        "A": "同上：GB 4785 草案无「操纵灯」装置。",
-        "B": "同上：GB 4785-2019 无「操纵灯」装置。"
       }
     },
     {
@@ -5338,14 +5284,20 @@
         "A": {
           "source": "5\\.3\\.4\\.1[\\s\\S]{0,700}?不高于\\s*(1200)\\s*mm",
           "flags": "i"
+        },
+        "B": {
+          "source": "5\\.2\\.4\\.2[\\s\\S]{0,200}?不大于\\s*(1200)\\s*mm",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.2\\.4\\.2[\\s\\S]{0,220}?not more than\\s*(1\\s*,\\s*200)\\s*mm",
+          "flags": "i"
         }
       },
       "why": {
-        "A": "A §5.3.4.1 c)（p30）：「各自适应模式的发光单元，安装高度均应不低于250mm，不高于1200mm（见图2 中的G），对于N3G 类（越野）车辆，可增加到1500mm。」"
-      },
-      "absent": {
-        "B": "B §5.22.4.1 c)（p49）**不自己写数**：「c) 5.22.4.1b)提及的附加照明单元,安装高度不应低于250mm,符合5.2.4.2的最大离地高度要求」—— 也就是把上限**指向近光灯的高度条款 §5.2.4.2**。本行只记自写数值的版本；B 的实际取值请看「近光灯最大离地高度」那一行。",
-        "C": "R48 §6.22.4.1.3（p82）同样不自己写数：「shall be positioned lower than 250 mm nor higher than indicated in paragraph 6.2.4.2 of this Regulation」—— 指向近光灯高度条款 §6.2.4.2。本行只记自写数值的版本。"
+        "A": "A §5.3.4.1 c)（p30）：「各自适应模式的发光单元，安装高度均应不低于250mm，不高于1200mm（见图2 中的G），对于N3G 类（越野）车辆，可增加到1500mm。」",
+        "B": "B §5.22.4.1 c)（p49）**不自己写数**：「安装高度不应低于250mm，**符合5.2.4.2的最大离地高度要求**」—— 指向近光灯高度条款 §5.2.4.2（p24）「离地高度不小于 500mm，不大于 1200mm」。所以 B 的上限也是 **1200 mm**，不是「B 无此规定」。",
+        "C": "C §6.22.4.1.3（p82）同样不自己写数：「nor higher than indicated in **paragraph 6.2.4.2**」—— 指向 §6.2.4.2（p40）「not less than 500 mm and not more than 1,200 mm」。所以 C 的上限也是 **1200 mm**。"
       }
     },
     {
@@ -5811,9 +5763,9 @@
     },
     {
       "id": "farBeam.aggregateIntensityMax",
-      "name": "远光灯总光强限值（以参考标记为基准的口径）",
+      "name": "远光灯总光强限值（以参考标记为基准的口径 · 仅 C 采用）",
       "family": "光强 / 照度限值",
-      "unit": "cd",
+      "unit": "参考标记（无量纲）",
       "patterns": {
         "C": {
           "source": "6\\.1\\.9\\.1[\\s\\S]{0,300}?aggregate maximum intensity[^.]{0,80}?shall not exceed\\s*(100)",
@@ -5821,11 +5773,11 @@
         }
       },
       "why": {
-        "C": "R48 §6.1.9.1（p37）：「The reference value corresponding to an aggregate maximum intensity of the main-beam headlamps which can be switched ON simultaneously shall not exceed 100.」—— **口径与 A/B 不同**：R48 给的是「以参考标记为单位」的 100，A/B 给的是绝对值 430000 cd。两个数不能直接比，所以单列一行（矩阵里另有一行是 A/B 的 430000 cd 绝对值口径）。"
+        "C": "R48 §6.1.9.1（p37）：「The reference value corresponding to an aggregate maximum intensity of the main-beam headlamps which can be switched ON simultaneously shall not exceed 100.」—— **口径与 A/B 不同**：R48 给的是「以参考标记为单位」的 100，A/B 给的是绝对值 430000 cd。两个数不能直接比，所以单列一行（矩阵里另有一行是 A/B 的 430000 cd 绝对值口径）。 —— **单位不是 cd**：6.1.9.2 说这个最大值是「把几只前照灯各自的 reference mark 加起来」得到的，R48 全文没给这个数定义 cd；A/B 的绝对值口径（430 000 cd）在「同时点亮远光灯最大发光强度之和」那一行。"
       },
       "absent": {
-        "A": "A §5.1.9.1（p24）用的是**绝对值口径**：「所有可同时点亮的远光灯，其最大发光强度之和应不超过430 000 cd」—— 已在「同时点亮远光灯最大发光强度之和」那一行记，本行是 C 专用的另一种口径。",
-        "B": "B §5.1.9.1（p23）同样是绝对值口径：「所有可同时开启的远光灯,其最大发光强度之和应不超过430000cd」。"
+        "A": "**口径不同，不是「A 没有远光总强要求」**：A §5.1.9.1（p24）给的是绝对值口径「所有可同时点亮的远光灯，其最大发光强度之和应不超过430 000 cd」—— 已在「同时点亮远光灯最大发光强度之和」那一行记。本行记的是 R48 §6.1.9.1 的**参考标记口径**（以 reference mark 为单位），两版的数不能直接比。",
+        "B": "**口径不同，不是「B 没有远光总强要求」**：B §5.1.9.1（p23）同样是绝对值口径「所有可同时开启的远光灯,其最大发光强度之和应不超过430000cd」—— 见「同时点亮远光灯最大发光强度之和」那一行。"
       }
     },
     {
@@ -5856,7 +5808,7 @@
     },
     {
       "id": "slowMovingLamp.autoOnSpeedMax",
-      "name": "慢行灯自动点亮的的车速上限",
+      "name": "慢行灯自动点亮的车速上限",
       "family": "试验条件 / 路段速度",
       "unit": "km/h",
       "patterns": {
@@ -5867,15 +5819,18 @@
         "B": {
           "source": "5\\.25\\.7[\\s\\S]{0,300}?自动开启直至车速达到\\s*(10)\\s*km/h",
           "flags": "i"
+        },
+        "C": {
+          "source": "6\\.26\\.7[\\s\\S]{0,400}?slow manoeuvres up to\\s*(15\\s*km/h)",
+          "flags": "i"
         }
       },
       "why": {
         "A": "A §5.22.7.1（p59）：「符合以下任一条件时，慢行灯应在车辆慢速行驶时自动点亮直至车速达到15km/h。」—— **A 是 15 km/h、B 是 10 km/h**，这是草案与 2019 版之间的实质差异之一。",
-        "B": "B §5.25.7（p57）：「符合以下任一条件时,允许慢行灯在车辆慢速行驶时自动开启直至车速达到10km/h。」"
+        "B": "B §5.25.7（p57）：「符合以下任一条件时,允许慢行灯在车辆慢速行驶时自动开启直至车速达到10km/h。」",
+        "C": "C §6.26.7（p94）：「The manoeuvring lamp(s) shall be switched ON automatically for slow manoeuvres **up to 15 km/h** … shall be automatically switched OFF if the forward speed of the vehicle **exceeds 15 km/h**」—— **C 也有这个门槛**，值与 A 相同（15 km/h），B 是 10 km/h。原先「§6.26.7 没有车速门槛」的说法与原文矛盾，已删。"
       },
-      "absent": {
-        "C": "R48 §6.26（操纵灯）的电气连接条款 §6.26.7 **没有**车速门槛（只要求「不得在远光/近光未点亮时点亮」，以及 §6.26.9.1 的目视检测区）。属版本差异，不是抽取失败。"
-      }
+      "absent": {}
     },
     {
       "id": "afs.vModeUrbanSpeedMax",
@@ -6187,21 +6142,27 @@
     },
     {
       "id": "afs.unitHeightN3G",
-      "name": "AFS 各模式发光单元最大安装高度（N3G 越野车放宽）",
+      "name": "AFS 各模式发光单元最大安装高度（越野类车辆放宽）",
       "family": "安装高度 / 离地距离",
       "unit": "mm",
       "patterns": {
         "A": {
-          "source": "5\\.3\\.4\\.1[\\s\\S]{0,700}?对于N3G\\s*类（越野）车辆，可增加到\\s*(1500)\\s*mm",
+          "source": "5\\.3\\.4\\.1[\\s\\S]{0,700}?对于\\s*N(?:<sub>)?3(?:</sub>)?\\s*G\\s*类（越野）车辆[，,]\\s*可增加到\\s*(1500)\\s*mm",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.2\\.4\\.2[\\s\\S]{0,240}?最大高度可增加到\\s*(1500)\\s*mm",
+          "flags": "i"
+        },
+        "C": {
+          "source": "6\\.2\\.4\\.2[\\s\\S]{0,240}?increased to\\s*(1\\s*,\\s*500)\\s*mm",
           "flags": "i"
         }
       },
       "why": {
-        "A": "A §5.3.4.1 c)（p30）：「各自适应模式的发光单元，安装高度均应不低于250mm，不高于1200mm（见图2 中的G），对于N3G 类（越野）车辆，可增加到1500mm。」—— 越野车的放宽上限是**另一条限值**，主值 1200mm 在「AFS 各模式发光单元最大安装高度」那一行。"
-      },
-      "absent": {
-        "B": "B §5.22.4.1 c) 把发光单元的高度上限**指向近光灯高度条款 §5.2.4.2**，不单写数值。属版本差异。",
-        "C": "R48 §6.22.4.1.3 同样指向 §6.2.4.2。属版本差异。"
+        "A": "A §5.3.4.1 c)（p30）：「各自适应模式的发光单元，安装高度均应不低于250mm，不高于1200mm（见图2 中的G），对于N3G 类（越野）车辆，可增加到1500mm。」—— 越野车的放宽上限是**另一条限值**，主值 1200mm 在「AFS 各模式发光单元最大安装高度」那一行。",
+        "B": "B §5.2.4.2（p24）：「对于 N<sub>3</sub>G 类（越野）车辆,最大高度可增加到 1500mm」—— B 经 §5.22.4.1 c) 的交叉引用指向本条，所以 B 的放宽上限也是 **1500 mm**，不是「B 无此规定」。",
+        "C": "C §6.2.4.2（p40）：「For category **N2G, N3G M2G, M3G** (off-road) vehicles the maximum height may be increased to 1,500 mm」—— C 的上限同样是 **1500 mm**；但**适用车型类别比 A/B 宽**（A/B 只给 N3G 一类，C 给四类）—— 这是**定性**差异，见定性义务变化清单。"
       }
     },
     {
@@ -6232,14 +6193,46 @@
         "C": {
           "source": "6\\.2\\.9\\.2[\\s\\S]{0,300}?exceeds\\s*(2\\s*,?\\s*000)\\s*lumens",
           "flags": "i"
+        },
+        "A": {
+          "source": "5\\.2\\.9[\\s\\S]{0,320}?超过\\s*(2000)\\s*lm",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\.2\\.9[\\s\\S]{0,320}?超过\\s*(2000)\\s*lm",
+          "flags": "i"
         }
       },
       "why": {
-        "C": "R48 §6.2.9.2（p44）：「Dipped-beam headlamps with light source(s) and/or light source module(s) producing the principal dipped-beam having a total objective luminous flux for at least one headlamp which exceeds 2,000 lumens shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511.」—— 这是**近光灯特有的一条要求**（不是限值而是「必须加装」）。"
+        "C": "R48 §6.2.9.2（p44）：「Dipped-beam headlamps with light source(s) and/or light source module(s) producing the principal dipped-beam having a total objective luminous flux for at least one headlamp which exceeds 2,000 lumens shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511.」—— 这是**近光灯特有的一条要求**（不是限值而是「必须加装」）。",
+        "A": "A §5.2.9 其他要求（p29）：「当任一侧近光灯光源光通量或用于产生主近光的光源模块光通量之和超过2000lm时，**两侧**近光灯均应配备符合GB/T 21260的前照灯清洗装置。……对于使用**塑料配光镜**的灯具，**禁止使用机械式**的前照灯清洗装置。」—— 三版都有这条；A 引 GB/T 21260，C 引 UN R4511。口径差别（A 任一侧之和→两侧均配备 / B 单侧→该侧 / C 至少一只→须配）属**定性**差异，见定性义务变化清单。",
+        "B": "B §5.2.9 其他要求（p27）：「当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。」—— 与 A 同一条，B 引 GB/T 21260。"
+      }
+    },
+    {
+      "id": "afs.cleaningDeviceThreshold",
+      "name": "AFS 须配装前照灯清洗器的光通量门槛（合计/单侧）",
+      "family": "光强 / 照度限值",
+      "unit": "lm",
+      "patterns": {
+        "A": {
+          "source": "5\\.3\\.9\\.1[\\s\\S]{0,200}?总目标光通量之和超过\\s*(4000\\s*lm[^\\n]{0,60}?单侧超过\\s*2000\\s*lm)",
+          "flags": "i"
+        },
+        "B": {
+          "source": "5\\s*\\.\\s*22\\s*\\.\\s*9\\s*\\.\\s*1[\\s\\S]{0,400}?总目标光通量之和超过\\s*(4000)\\s*lm",
+          "flags": "i",
+          "clause": "5.22.9.1"
+        },
+        "C": {
+          "source": "6\\.22\\.9\\.1[\\s\\S]{0,700}?exceeds\\s*(2\\s*,\\s*000)\\s*lm",
+          "flags": "i"
+        }
       },
-      "absent": {
-        "A": "GB 4785 草案的近光章没有「总光通量超过 2000 lm 须配装清洗装置」这一条（该要求源自 UN R4511，GB 4785-2019 未引入）。属版本差异，不是抽取失败。",
-        "B": "GB 4785-2019 无此要求。属版本差异。"
+      "why": {
+        "A": "A §5.3.9.1（p34）：「车辆基础模式的主近光所有发光单元，**总目标光通量之和超过4000lm或单侧超过2000lm**时，应配备符合GB/T 21260 要求的前照灯清洗器。对于使用**塑料配光镜**的灯具，**禁止使用机械式**的前照灯清洗装置。」—— A 有**两个**触发条件（合计 4000 lm **或** 单侧 2000 lm）。本行捕获组同时框住两个值（捕获组只框值，框不住就只会留下第一个）。",
+        "B": "B §5.22.9.1（p53）：「……车辆两侧提供的基础主近光的AFS照明单元，包括所有提供基础主近光的照明单元，其**左右两侧光源总目标光通量之和超过4000lm**时，AFS应配备符合GB21260要求的前照灯清洗器。」—— B **只有合计 4000 lm 一个触发条件**，没有单侧条件。条款号在 MinerU 里被拆成「5. 22. 9. 1」，正则锚不上，所以**显式声明**条款号（闸门会拿它回原文验）。",
+        "C": "C §6.22.9.1（p88）：「An AFS shall be permitted only in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4516 … if the total objective luminous flux of the light source(s) and/or light source module(s) of these units **exceeds 2,000 lm at least on one side**」—— C **只有单侧 2000 lm 一个触发条件**，**没有 A/B 的「合计 4000 lm」那个条件**。所以 A 的 4000 在 C 这一列没有对应值，这是**版本口径差**，不是抽取漏了。"
       }
     },
     {
@@ -7158,14 +7151,18 @@
         "A": {
           "source": "5\\.22\\.4\\.2[\\s\\S]{0,140}?离地高度应不大于\\s*(1500)\\s*mm",
           "flags": "i"
+        },
+        "C": {
+          "source": "6\\.26\\.4\\.2[\\s\\S]{0,140}?Above the ground, not more than (1[ ,]500\\s*mm)",
+          "flags": "i"
         }
       },
       "absent": {
-        "B": "B §5.25.4「位置」为「无特殊要求」，B 版慢行灯**全文无离地高度与相邻间距限值**（慢行灯的安装位置要求是 A 草案新增的）。",
-        "C": "UN R48-09 **无慢行灯（slow-moving lamp）装置**（§2.5.19 / §6.26 的 slow 是操纵灯 Manoeuvring lamp，不是慢行灯），R48-09 不规定该装置。"
+        "B": "B §5.25.4「位置」为「无特殊要求」，B 版慢行灯**全文无离地高度与相邻间距限值**（慢行灯的安装位置要求是 A 草案新增的）。"
       },
       "why": {
-        "A": "A §5.22.4.2（p59）：「对于安装在侧面的灯具，离地高度应不大于 1500mm；对于安装在后面的灯具，不应高于车辆。」**只约束侧面安装的那种** —— 后面安装的写法是「不应高于车辆」，没有标量，所以只取 1500mm。"
+        "A": "A §5.22.4.2（p59）：「对于安装在侧面的灯具，离地高度应不大于 1500mm；对于安装在后面的灯具，不应高于车辆。」**只约束侧面安装的那种** —— 后面安装的写法是「不应高于车辆」，没有标量，所以只取 1500mm。",
+        "C": "C §6.26.4.2（p94）：「In height: Above the ground, not more than 1,500 mm」—— **R48 §6.26 Manoeuvring lamps 就是 GB 的「慢行灯」**：GB 3.3.21（A p13）/ 3.9.29（B p11）的术语原文就是「慢行灯 manoeuvring lamp」，与 R48 §2.5.19 的定义逐字对应。所以 A 的 1500mm 与 C 逐字一致。"
       }
     },
     {
@@ -7177,14 +7174,18 @@
         "A": {
           "source": "5\\.22\\.4\\.3[\\s\\S]{0,200}?间距[，,]\\s*应不小于\\s*(0\\.5)\\s*m",
           "flags": "i"
+        },
+        "C": {
+          "source": "6\\.26\\.4\\.3[\\s\\S]{0,320}?not be less than (0\\.5\\s*m)",
+          "flags": "i"
         }
       },
       "absent": {
-        "B": "B §5.25.4「位置」为「无特殊要求」，B 版慢行灯**全文无离地高度与相邻间距限值**（慢行灯的安装位置要求是 A 草案新增的）。",
-        "C": "UN R48-09 **无慢行灯（slow-moving lamp）装置**（§2.5.19 / §6.26 的 slow 是操纵灯 Manoeuvring lamp，不是慢行灯），R48-09 不规定该装置。"
+        "B": "B §5.25.4「位置」为「无特殊要求」，B 版慢行灯**全文无离地高度与相邻间距限值**（慢行灯的安装位置要求是 A 草案新增的）。"
       },
       "why": {
-        "A": "A §5.22.4.3（p59）：「同侧相邻的慢行灯间距，应不小于 0.5m」。**单位是 m 不是 mm** —— 写成 0.5 会被读成 0.5mm，差一千倍；矩阵里这一格的单位列写的是 m。"
+        "A": "A §5.22.4.3（p59）：「同侧相邻的慢行灯间距，应不小于 0.5m」。**单位是 m 不是 mm** —— 写成 0.5 会被读成 0.5mm，差一千倍；矩阵里这一格的单位列写的是 m。",
+        "C": "C §6.26.4.3（p94）：「The distance between two adjacent manoeuvring lamps on the same side shall not be less than 0.5 m」—— 与 A §5.22.4.3 的 0.5m 逐字一致（R48 §6.26 = GB 的慢行灯，见 §2.5.19 定义）。"
       }
     },
     {

@@ -111,12 +111,16 @@ export interface Validation {
 /**
  * 这个装置的「通用名」—— 多数规格的中文名共有的那一段。
  *
- * 例：`manoeuvringLamp` 下有四条，其中三条叫「操纵灯…」，一条叫
- * 「慢行灯自动点亮的的车速上限」—— 那一条其实是**别的灯**被归错了前缀。
- * 取多数共有的那一段（「操纵灯」），就可以把那条**排除掉**。
+ * 下面是这一层的来历：原先 `manoeuvringLamp` 下混着四条 —— 三条叫「操纵灯…」，
+ * 一条叫「慢行灯自动点亮的的车速上限」，后者其实是**另一盏灯**被归错了前缀。
+ * 取多数共有的那一段（「操纵灯」），就能把那条**排除掉**。
  *
  * 没有这一层，派生出来的章号就会混进别的灯的章：
  * agent 拿慢行灯的条文去答「操纵灯」，报出一个看着很真的 10 km/h。
+ *
+ * 2026-11-03 起那三条「操纵灯」行已删除（R48 §6.26 Manoeuvring lamps 就是 GB 的
+ * 慢行灯，GB 3.3.21/3.9.29 的术语原文即「慢行灯 manoeuvring lamp」），
+ * 慢行灯这一族现在名实相符，取 token 不再靠排除。
  */
 export function dominantDeviceToken(names: string[]): string {
   const list = (names ?? []).map((n) => String(n ?? "")).filter(Boolean);

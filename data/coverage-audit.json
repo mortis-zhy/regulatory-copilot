@@ -3,11 +3,11 @@
   "versions": {
     "A": {
       "label": "GB 4785 草案 V4.3.5",
-      "clauses": 124,
-      "limits": 340,
-      "same": 243,
+      "clauses": 126,
+      "limits": 344,
+      "same": 246,
       "otherChapter": 39,
-      "general": 58,
+      "general": 59,
       "otherDevice": 0,
       "otherDeviceItems": [],
       "missing": 0,
@@ -63,7 +63,8 @@
           "note": "前雾灯下倾度（单侧总光通量 ≤2000lm 一档）。",
           "appendixF": "同组 5.4.6.1.2（档位定义在该条）",
           "values": [
-            "1 %"
+            "1 %",
+            "2000 lm"
           ]
         },
         {
@@ -79,6 +80,7 @@
             "1.5 %",
             "2 %",
             "2.5 %",
+            "2000 lm",
             "3 %",
             "3.5 %"
           ]
@@ -189,9 +191,9 @@
     },
     "B": {
       "label": "GB 4785-2019",
-      "clauses": 105,
-      "limits": 287,
-      "same": 218,
+      "clauses": 107,
+      "limits": 289,
+      "same": 220,
       "otherChapter": 40,
       "general": 29,
       "otherDevice": 0,
@@ -260,6 +262,7 @@
             "1.5 %",
             "2 %",
             "2.5 %",
+            "2000 lm",
             "3 %",
             "3.5 %"
           ]
@@ -370,9 +373,9 @@
     },
     "C": {
       "label": "UN R48-09",
-      "clauses": 142,
-      "limits": 342,
-      "same": 256,
+      "clauses": 143,
+      "limits": 343,
+      "same": 257,
       "otherChapter": 50,
       "general": 36,
       "otherDevice": 0,
@@ -580,11 +583,11 @@
     }
   },
   "totals": {
-    "same": 717,
+    "same": 723,
     "otherChapter": 129,
-    "general": 123,
+    "general": 124,
     "otherDevice": 0,
     "missing": 0,
-    "limits": 969
+    "limits": 976
   }
 }

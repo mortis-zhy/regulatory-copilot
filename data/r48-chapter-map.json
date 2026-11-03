@@ -184,10 +184,10 @@
     },
     "5.25": {
       "gbName": "慢行灯",
-      "r48": "2.4.17.3",
-      "probe": "Slow moving vehicle (SMV) rear marking plate",
-      "near": "2.4.17.3",
-      "note": "R48-09 **只给了定义**（§2.4.17.3），没有慢行灯的安装章 —— C 列因此是定义原文，不是安装要求。这本身就是一条对客户有用的信息。",
+      "r48": "6.26",
+      "probe": "Manoeuvring lamps",
+      "near": "6.26",
+      "note": "R48 §6.26 **Manoeuvring lamps 就是 GB 的「慢行灯」** —— GB 3.3.21（A p13）/ 3.9.29（B p11）的术语原文就写作「慢行灯 manoeuvring lamp」，与 R48 §2.5.19 的定义逐字对应。原表指到 §2.4.17.3，那只是「Slow moving vehicle (SMV) rear marking plate」的**定义**（标记板），不是安装章 —— 把一盏灯对到一条定义上是范畴错配，已改正。",
       "matrixToken": "慢行灯"
     },
     "5.26": {

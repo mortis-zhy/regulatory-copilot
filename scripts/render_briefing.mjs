@@ -14,6 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { extractAuthoritativeChanges } from "../dist/closureLedger.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // 讲稿输出在**仓库内**的 delivery/宣讲件 —— 不再写到仓库外的一个「工作台」目录。
@@ -61,6 +62,44 @@ const GATES = (() => {
 })();
 
 /**
+ * 报告里的数 —— **同样从机器产物读**。
+ *
+ * 闸门数已经机器化了，稿子里的另外几个数却还是手写的：参数行数、取值位数、
+ * 有值格数、§11.0 的变化条数。2026-11-03 改了一轮规格之后，稿子还在说
+ * 「319 参数 · 957 取值位 · 17 条真实变化」，而报告已经是 317 / 951 / 18 ——
+ * **交付件里两个数打架**，正是这个项目一直在治的病。
+ *
+ * 这里读 `reports/last-report.json`，用**报告自己的提取器**数 ——
+ * 不重新实现一遍口径（那是第二个真相来源）。
+ */
+const REPORT = (() => {
+  const p = path.join(ROOT, "reports", "last-report.json");
+  if (!fs.existsSync(p)) {
+    throw new Error(`读不到 ${p} —— 稿子里的数字必须来自报告本身。先跑 node rebuild_report.mjs。`);
+  }
+  const r = JSON.parse(fs.readFileSync(p, "utf-8"));
+  const rows = r.parameterMatrix ?? [];
+  if (!rows.length) throw new Error("报告里没有 parameterMatrix —— 稿子里的参数数会变成 0");
+  const versions = Object.keys(rows[0].cells ?? {});
+  let hits = 0;
+  let cells = 0;
+  for (const row of rows) {
+    for (const v of versions) {
+      cells++;
+      if (row.cells?.[v]?.status === "verified") hits++;
+    }
+  }
+  const auth = extractAuthoritativeChanges(r.chapters ?? []);
+  if (!auth?.total) throw new Error("报告里解析不出 §11.0 的变化条数 —— 稿子里的条数会变成 0");
+  return { params: rows.length, cells, hits, empty: cells - hits, changes: auth.total };
+})();
+const PARAMS = String(REPORT.params);
+const CELLS = String(REPORT.cells);
+const HITS = String(REPORT.hits);
+const EMPTY = String(REPORT.empty);
+const CHANGES = String(REPORT.changes);
+
+/**
  * 用**系统字体**，不内嵌 base64。
  *
  * 内嵌四套中文字体（msyh.ttc 19MB + msyhbd 16MB + simsun 17MB + simsunb 21MB）
@@ -100,7 +139,7 @@ const FIG = {
     </div>
     <div class="arrow">↓</div>
     <div class="lane"><span class="lname">参数层</span>
-      <div class="box hi">319 参数 × 3 版 · 957 取值位<br><span class="dim">每条带 patterns + why + absent</span></div>
+      <div class="box hi">${PARAMS} 参数 × 3 版 · ${CELLS} 取值位<br><span class="dim">每条带 patterns + why + absent</span></div>
     </div>
     <div class="arrow">↓</div>
     <div class="lane"><span class="lname">判定层</span>
@@ -191,7 +230,7 @@ const FIG = {
       <div class="m"><span class="v">100<span class="u">%</span></span><span class="l">三版条款覆盖</span><span class="d">A 124 条款 / B 105 / C 142<br>missing 0 · 别装置顶替 0</span></div>
       <div class="m"><span class="v">0</span><span class="l">真缺口</span><span class="d">448 条要求里<br>285 已覆盖 · 66 附录逐条列出<br>52 已引原文 · 45 非产品要求</span></div>
       <div class="m"><span class="v">969</span><span class="l">定量限值被覆盖</span><span class="d">A 340 · B 287 · C 342</span></div>
-      <div class="m"><span class="v">787<span class="u">/957</span></span><span class="l">参数取值位有值</span><span class="d">319 参数 × 3 版<br>其余 170 格是<b>有理由的空</b>（该版确实没规定）</span></div>
+      <div class="m"><span class="v">${HITS}<span class="u">/${CELLS}</span></span><span class="l">参数取值位有值</span><span class="d">${PARAMS} 参数 × 3 版<br>其余 ${EMPTY} 格是<b>有理由的空</b>（该版确实没规定）</span></div>
       <div class="m"><span class="v">184</span><span class="l">定性条款逐条并排</span><span class="d">附录 H · 另 142 条同文<br>86 条编号不可对读 → 只登记不并排</span></div>
       <div class="m"><span class="v">517<span class="u">/517</span></span><span class="l">引文回源命中</span><span class="d">附录 H 每条引文<br>逐条回源 PDF 验过</span></div>
     </div>
@@ -220,8 +259,8 @@ const FIG = {
     <table class="tbl">
       <tr><th style="width:26%">过去要人工做的事</th><th style="width:34%">现在</th><th>量级</th></tr>
       <tr><td>把三份 PDF 的条款逐条读出来建索引</td><td>脚本切条款，机器回源</td><td>A 124 + B 105 + C 142 = 371 条</td></tr>
-      <tr><td>把每个参数在三个版本里的值抄进表里</td><td>spec 驱动 + 机器校验</td><td>957 个取值位</td></tr>
-      <tr><td>判断"哪些差异是真变化"</td><td>差值裁定 + 勘误表逐条回原文</td><td>57 条闭环条目 → 17 条真实变化</td></tr>
+      <tr><td>把每个参数在三个版本里的值抄进表里</td><td>spec 驱动 + 机器校验</td><td>${CELLS} 个取值位</td></tr>
+      <tr><td>判断"哪些差异是真变化"</td><td>差值裁定 + 勘误表逐条回原文</td><td>57 条闭环条目 → ${CHANGES} 条真实变化</td></tr>
       <tr><td>把定性条款挑出来给客户看</td><td>装置感知的 A/B 自动配对</td><td>326 条可比 + 86 条只登记</td></tr>
       <tr><td>逐条核对自己印出来的数字有没有错</td><td>${GATES} 项闸门，改坏就红</td><td>每一条结论都带页码</td></tr>
     </table>
@@ -239,7 +278,7 @@ const FIG = {
           <li><b>Word 导出只导最近一条问答</b>，不是整份报告；PDF 按钮才是 249 页全文</li>
           <li><b>欧标只到章节级 + 参数级</b>，条款级刻意不做 —— R48 与 GB 编号体系不同构，逐号对读会造假对应</li>
           <li><b>差值方向相反的条件句</b>（如"低于 65 不得开启" vs "开启上限 65"）无法从数值矩阵自动检出，要人工过一遍</li>
-          <li>参数取值位 957 里 787 有值，其余 170 格是"该版确实没规定"，<b>不是</b>抽取失败 —— 但也确实没填</li>
+          <li>参数取值位 ${CELLS} 里 ${HITS} 有值，其余 ${EMPTY} 格是"该版确实没规定"，<b>不是</b>抽取失败 —— 但也确实没填</li>
         </ul>
       </div>
       <div class="gcol">
@@ -275,7 +314,7 @@ const FIG = {
       <div class="ncard">
         <span class="tag">方向三</span>
         <h4>把 170 个「有理由的空」补上</h4>
-        <p>957 个取值位里 787 有值。剩下的分三类：该版没规定 / 抽不到 / 还没挖。</p>
+        <p>${CELLS} 个取值位里 ${HITS} 有值。剩下的分三类：该版没规定 / 抽不到 / 还没挖。</p>
         <p class="dim">可做：用取值规格提议 agent 跑一轮候选，人工确认后补齐 —— 流程已跑通（/proposals 现存 48 行待裁定）。</p>
         <p class="cost">成本：低。已有 agent + 校验层 + 人工确认页，只差产能</p>
       </div>
@@ -514,7 +553,7 @@ function buildDeck(figData) {
     <div class="sub">A 草案 V4.3.5　·　B 现行 GB 4785-2019　·　C UN R48-09<br/>
       交付件 249 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
     <div class="cards">
-      <div class="card"><div class="v">319</div><div class="l">参数 × 3 版 = 957 个取值位</div></div>
+      <div class="card"><div class="v">${PARAMS}</div><div class="l">参数 × 3 版 = ${CELLS} 个取值位</div></div>
       <div class="card"><div class="v">${GATES}</div><div class="l">项交付闸门（改坏就红）</div></div>
       <div class="card"><div class="v">0</div><div class="l">真缺口 · 别装置顶替</div></div>
       <div class="card"><div class="v">517/517</div><div class="l">定性引文回源命中</div></div>
@@ -537,7 +576,7 @@ function buildDeck(figData) {
       </div>
       <h3 style="margin-top:16px">四条能当场验的能力</h3>
       <ul>
-        <li><b>数值对比</b>：319 个参数 × 3 版，每个取值带条款号、页码、原文摘录</li>
+        <li><b>数值对比</b>：${PARAMS} 个参数 × 3 版，每个取值带条款号、页码、原文摘录</li>
         <li><b>定性并排</b>：附录 H 把 184 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
         <li><b>欧标第三列</b>：UN R48-09 的条款号 + 页码 + 原文，26 条章节级对应逐条回源验过</li>
         <li><b>可追责</b>：${GATES} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
@@ -552,7 +591,7 @@ function buildDeck(figData) {
     sub: "引号里是客户原话（原文见 delivery/PDF对比/feedback.md）",
     body: `
       <div class="qbox">① 「这一版和之前的差别不大，仍然只有法规中，有具体数值的内容的比较，例如安装高度，响应时间，光强等。」</div>
-      <div class="abox">→ <b>差别就在新增的三块</b>：附录 H 把<b>无数值</b>的定性条款也逐条并排（184 条）；第 14 章补上真正的<b>欧标第三列</b>（26 条章节级对应）；§11.0 一份权威变化清单（17 条真实变化）。参数也从 305 补到 319。</div>
+      <div class="abox">→ <b>差别就在新增的三块</b>：附录 H 把<b>无数值</b>的定性条款也逐条并排（184 条）；第 14 章补上真正的<b>欧标第三列</b>（26 条章节级对应）；§11.0 一份权威变化清单（${CHANGES} 条真实变化）。参数也从 305 补到 ${PARAMS}。</div>
       <div class="qbox">② 「前段是数值摘取进行罗列对比。数值有提取错误或空缺。」</div>
       <div class="abox">→ ① <b>完整性保证本身的洞</b>被修掉（条款索引曾吞掉 A 草案 4 个装置共 71 条，我们曾在一个缺了四个装置的集合上宣称「真缺口 0」）<br/>
         ② 空缺必须是<b>有理由的空</b>（该版确实没规定），与「抽取失败」在报告里措辞不同；每个取值带条款号与页码，可逐条回源</div>
@@ -640,7 +679,7 @@ function buildDeck(figData) {
     fig: F("metrics"), layout: "fig",
     body: "",
     lead: "数据取自 data/coverage-audit.json 与 data/requirement-ledger.json",
-    note: `数字都在 data/ 下的机器产物里，可以现场打开给对方看。特别说明最后一块：957 个取值位里 787 有值，<b>剩下 170 格是「有理由的空」而不是抽取失败</b> —— 这正是「宁可空着，不可错着」的落地形态。诚实讲清楚，比报一个 100% 更站得住。`,
+    note: `数字都在 data/ 下的机器产物里，可以现场打开给对方看。特别说明最后一块：${CELLS} 个取值位里 ${HITS} 有值，<b>剩下 ${EMPTY} 格是「有理由的空」而不是抽取失败</b> —— 这正是「宁可空着，不可错着」的落地形态。诚实讲清楚，比报一个 100% 更站得住。`,
   }));
 
   // 11 客户抱怨兑现表
@@ -660,8 +699,8 @@ function buildDeck(figData) {
     body: `
       <h3>结构</h3>
       <ul>
-        <li><b>第 11 章 变化点总结</b>：§11.0 一份权威变化清单（17 条），全报告各处只报这一个数</li>
-        <li><b>第 12 章 参数矩阵</b>：319 参数 × 3 版，每格带条款号 + 页码 + 原文，是唯一能支撑 C 定量判断的部分</li>
+        <li><b>第 11 章 变化点总结</b>：§11.0 一份权威变化清单（${CHANGES} 条），全报告各处只报这一个数</li>
+        <li><b>第 12 章 参数矩阵</b>：${PARAMS} 参数 × 3 版，每格带条款号 + 页码 + 原文，是唯一能支撑 C 定量判断的部分</li>
         <li><b>第 14 章 欧标对照</b>：UN R48-09 的条款号 + 页码 + 原文摘录</li>
         <li><b>附录 H 定性条款并排</b>：客户第一句抱怨的直接答复</li>
         <li><b>附录 E.5 要求台账</b>：448 条要求逐条归类，真缺口 0</li>
