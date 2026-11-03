@@ -55,6 +55,10 @@ const ENTRIES = [
   // reportFileName 派生下载文件名（换标准时自动跟着变）。
   // 单独列出来：闸门要**直接调用**它，验「派生结果里不含报告里没有的标准名」。
   ["server/reports/reportFileName.ts", "dist/reportFileName.js"],
+  // reportMeta 组装报告的标题层（封面 / 章节 / 附录标题）。
+  // 单独列出来：闸门要**直接调用**它，验「标题与附录标题真的来自声明，
+  // 而不是 reportV6.ts 里又写死了一遍」。
+  ["server/reports/reportMeta.ts", "dist/reportMeta.js"],
   // projectRoot 是服务端**唯一**的项目根解析器。
   // 单独列出来：闸门要直接 import 它，验「服务端解析到的路径 == 仓库根的路径」。
   ["server/_core/projectRoot.ts", "dist/projectRoot.js"],
@@ -102,10 +106,49 @@ const sha256 = (relPath) =>
 mkdirSync(resolve(ROOT, "dist"), { recursive: true });
 
 const sources = {};
+/**
+ * 被**内联**进包里的数据文件也要记进清单。
+ *
+ * ## 为什么
+ *
+ * esbuild 会把 `import ... from "../../data/xxx.json"` **内联**进产物 ——
+ * 于是 `dist/parameterMatrix.js` 里存的是**打包那一刻**的 spec。
+ *
+ * 原来的清单只记 .ts 源文件，于是：
+ *   改 data/parameter-specs.json → 不重建 → 包里还是旧的 spec
+ *   → 闸门全绿（.ts 没变），但**改动根本没生效**
+ * 那正是这份清单当初要防的失败模式（「改了源码没重建」），
+ * 只是**源码**包括数据文件 —— 而 spec 是这个项目最要紧的数据。
+ *
+ * 所以这里让 esbuild 告诉我们**每个包实际读了哪些文件**
+ * （metafile.inputs），逐一记哈希 —— 不用手维护清单，
+ * 也就不会漏。改数据不重建 → 清单对不上 → 闸门红。
+ */
+const dataInputs = new Set();
 for (const [entry, outfile] of ENTRIES) {
-  await build({ ...SHARED, entryPoints: [resolve(ROOT, entry)], outfile: resolve(ROOT, outfile) });
+  const result = await build({
+    ...SHARED,
+    entryPoints: [resolve(ROOT, entry)],
+    outfile: resolve(ROOT, outfile),
+    metafile: true,
+  });
   sources[entry] = sha256(entry);
+  // 记录这次打包**真正读进去**的每一个输入（含被内联的 data/*.json）
+  for (const abs of Object.keys(result.metafile?.inputs ?? {})) {
+    const rel = relative(ROOT, abs).replace(/\\/g, "/");
+    if (!rel || rel.startsWith("..")) continue;
+    if (rel.startsWith("node_modules/")) continue;
+    dataInputs.add(rel);
+  }
   console.log(`[build-libs] ${entry} → ${outfile}`);
+}
+for (const rel of [...dataInputs].sort()) {
+  if (sources[rel]) continue; // 入口 .ts 已经记过了
+  try {
+    sources[rel] = sha256(rel);
+  } catch {
+    /* 文件在打包后消失（临时文件）：不记 */
+  }
 }
 
 // closureLedger is imported by no script today; build it anyway so the set does

@@ -22,6 +22,19 @@ import { spawnSync } from "node:child_process";
 // report claim". Import it from the built dist so the gate compares the PDF
 // against the SAME code path the renderer used (never a re-implementation).
 import { extractAuthoritativeChanges, buildLedger } from "../dist/closureLedger.js";
+// 报告的**标题层**组装器。闸门要**直接调用**它，
+// 验「交付件里的封面/章节/附录标题真的来自 data/report-meta.json 的声明」，
+// 而不是 reportV6.ts 里又悄悄写死了一遍。
+import {
+  REPORT_META,
+  composeTitle,
+  composeChapterTitle,
+  composeChapter11Sections,
+  composeAppendixTitle,
+  titleSlots,
+} from "../dist/reportMeta.js";
+// 版本清单/展示名/文档名 —— 标题槽位全靠这三个推导。
+import { versionsOf, versionLabel, versionDoc } from "../dist/parameterMatrix.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf-8");
@@ -977,10 +990,11 @@ check("11.4 的 9 条指标判定与回源核验一致（报告不得与已核�
 check("附录 D 的条款号都能在源 PDF 里查到（客户拿着这个号翻得到）", () => {
   const idx = JSON.parse(read("data/clause-index.json"));
   const known = new Set(Object.keys(idx._clauses?.C ?? {}));
-  const app = loadReport().appendices?.find((a) =>
-    (a.title ?? "").includes("R48 §6 量化条款全量清单"),
-  );
-  assert(!!app, "报告里没有附录 D（R48 §6 量化条款全量清单）");
+  // 按 **id** 找附录，不按标题找 —— 标题现在是声明出来的，
+  // 换个标准它就会变（「UN R48 §6 …」→「XX §4 …」），
+  // 按标题找的闸门会跟着一起失效 —— 那正是这道闸门本来要防的那类退化。
+  const app = loadReport().appendices?.find((a) => a.id === "D");
+  assert(!!app, "报告里没有附录 D");
   const md = app.markdown ?? "";
   const i = md.indexOf("## D.3");
   assert(i > 0, "附录 D 里没有 D.3 全量清单");
@@ -3053,6 +3067,146 @@ check("the welcome message is never exported as if it were an answer", () => {
   return "欢迎语在三处判据里都被排除：导出挑消息 · 按钮禁用 · 单条消息入口";
 });
 
+check("the report names no standard the corpus does not contain", () => {
+  // 换一套标准时，报告里的**散文**是手写的，不跟着语料走 ——
+  // 于是新标准的报告里会**继续讲 GB 4785 的事**，
+  // 而那不是「空着」，是**说错了**（读者会以为那是新标准的规定）。
+  //
+  // 这一关抓的就是这个形状：报告里出现的标准号，
+  // 语料里必须找得到（或者明确登记为「背景引用」）。
+  //
+  // 实测就抓到一处：报告的「解读」栏写「UN R13 / R131」，
+  // 而**同一行的原文摘录**写的是「UN Regulations Nos. 13 and 13-H」——
+  // 解读与引文对不上，而引文是对的（R131 是另一部法规）。
+  // 已改（data/requirement-gaps.json）。
+  //
+  // 顺带逼出两个更值钱的修复：
+  // ① 台账的 `--check` 原来**只比总数** —— 内容变了它说「一致」（假信心）；
+  // ② 构建清单**只跟踪 .ts** —— 被 esbuild 内联进包的 data/*.json
+  //    （spec、台账…）改了不重建，**改动根本不生效**，而闸门全绿。
+  const { ok, out } = runPy(["scripts/check_standard_names.py"], "check_standard_names");
+  assert(
+    ok,
+    `报告里出现了语料里没有的标准 —— 换标准后那些就是**假声明**:\n        ${out.slice(-900)}`,
+  );
+  const m = /标准号 (\d+) 个；语料里找不到的 (\d+) 个/.exec(out);
+  assert(m, `check_standard_names.py 没给出汇总行:\n        ${out.slice(-400)}`);
+  return `报告里 ${m[1]} 个标准号都能在语料里找到（或已登记为背景引用）`;
+});
+
+check("the report's title layer comes from the declaration, not from literals", () => {
+  // 封面标题、章节标题、附录标题里**点了标准的名**（「GB 4785」「UN R48-09 §6」）。
+  // 以前它们是 reportV6.ts 里的字面量 —— 换一套标准，机制照样跑，
+  // 闸门照样全绿，而**封面会一本正经地讲错标准**。
+  //
+  // 现在它们声明在 data/report-meta.json 里，由 reportMeta.ts 组装。
+  // 判据（三条都要）：
+  //   ① reportV6.ts 里**不许**再出现这些字面量 —— 不许偷偷写死第二份；
+  //   ② 交付件里的标题必须**逐字等于**声明组装出来的结果；
+  //   ③ 声明里的标准名必须**语料里真有它** —— 否则声明本身就是假的。
+  const corpusData = JSON.parse(read("dist/mineru-v4-data.json"));
+  const vKeys = versionsOf(corpusData);
+  const slots = titleSlots(
+    vKeys,
+    vKeys.map((v) => versionLabel(v)),
+    vKeys.map((v) => versionDoc(v)),
+  );
+
+  // ① 源码里不许有字面量
+  const src = read("server/reports/reportV6.ts");
+  const literals = [
+    "GB 4785 多版本横向对比研究报告",
+    "A/B/C 原始表格汇编",
+    "UN R48 §6 量化条款全量清单",
+    "UN R48-09 §6 量化条款全量清单",
+    "A|B|C 三版本主题对照",
+  ];
+  const found = literals.filter((t) => src.includes(t));
+  assert(
+    found.length === 0,
+    `reportV6.ts 里又写死了标题：${found.join(" / ")} —— 标题要来自 data/report-meta.json`,
+  );
+
+  // ② 交付件里的标题 == 声明组装的结果
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const expectTitle = composeTitle(slots);
+  assert(
+    rep.outline.title === expectTitle,
+    `封面标题与声明不符：\n        交付件：${rep.outline.title}\n        声明组装：${expectTitle}`,
+  );
+  for (const id of [0, 11, 12, 13, 14]) {
+    const got = (rep.outline.chapters.find((c) => c.id === id) || {}).title;
+    const want = composeChapterTitle(id, slots);
+    assert(got === want, `第 ${id} 章标题与声明不符：交付件「${got}」/ 声明组装「${want}」`);
+  }
+  const ch11 = rep.outline.chapters.find((c) => c.id === 11) || { sections: [] };
+  const wantSections = composeChapter11Sections(slots);
+  assert(
+    JSON.stringify(ch11.sections) === JSON.stringify(wantSections),
+    `第 11 章目录项与声明不符：\n        交付件：${JSON.stringify(ch11.sections)}\n        声明组装：${JSON.stringify(wantSections)}`,
+  );
+  for (const a of rep.appendices || []) {
+    const want = composeAppendixTitle(a.id, slots);
+    assert(
+      a.title === want,
+      `附录 ${a.id} 标题与声明不符：交付件「${a.title}」/ 声明组装「${want}」`,
+    );
+    // 目录里写的和正文里写的必须是**同一句** ——
+    // 以前是两句（目录「图片、公式与标题索引」/ 正文「图片、公式与数据溯源」），
+    // 读者会以为有两个附录。
+    const first = String(a.markdown || "").split("\n")[0].trim();
+    assert(
+      first === `# 附录 ${a.id} ${want}`,
+      `附录 ${a.id} 的正文标题与目录不一致：正文「${first}」/ 目录「# 附录 ${a.id} ${want}」`,
+    );
+  }
+
+  // ③ 声明里的标准名必须语料里真有
+  //
+  // 比的不是**逐字** —— 语料里写的是「UN Regulation No. 48」，
+  // 声明里写的是「UN R48-09」。所以认几种等价写法：
+  //   「UN R48-09」 ⇄「UN R48」 ⇄「UN Regulation No. 48」 ⇄「Regulation No. 48」
+  //   「GB 4785」  ⇄「GB4785」
+  // 判据：至少有一种写法在语料里出现。
+  const flat = (s) => String(s || "").replace(/[^0-9A-Za-z一-鿿]/g, "").toUpperCase();
+  const corpusText = flat(
+    Object.values(corpusData)
+      .map((d) => `${d?.fullText || ""}\n${d?.markdown || ""}`)
+      .join("\n"),
+  );
+  /** 一个标准名在语料里可能的写法。 */
+  const spellings = (name) => {
+    const raw = String(name || "").trim();
+    const out = new Set([flat(raw)]);
+    const m = /^([A-Za-z]{1,6})\s*([A-Za-z]?)\s*R?\s*(\d{1,5})(?:\s*[-–—]\s*(\d{1,4}))?$/.exec(raw);
+    if (m) {
+      const [, prefix, letter, num] = m;
+      const p = prefix.toUpperCase();
+      if (p === "UN" || p === "ECE" || p === "UNECE") {
+        out.add(`${p}R${num}`);
+        out.add(`${p}REGULATIONNO${num}`);
+        out.add(`REGULATIONNO${num}`);
+      } else {
+        out.add(`${p}${num}`);
+        out.add(`${p}${letter}${num}`);
+      }
+    }
+    return [...out].filter(Boolean);
+  };
+  const declared = [
+    REPORT_META.standardFamily,
+    REPORT_META.standardFamilyShort,
+    versionDoc(vKeys[vKeys.length - 1]),
+  ];
+  const missing = declared.filter((n) => !spellings(n).some((s) => corpusText.includes(s)));
+  assert(
+    missing.length === 0,
+    `data/report-meta.json 声明的标准名在语料里不存在：${missing.join(" / ")} —— 声明本身就是假的`,
+  );
+
+  return `封面/章节/附录标题全部来自声明（${vKeys.length} 版：${vKeys.join(",")}）；声明的标准名语料里都有`;
+});
+
 check("a draft can never wear the deliverable's name", () => {
   // 「快速草稿（未经核验）」与交付件走**同一个渲染器、同一套版式**，
   // 渲染出来的东西一模一样 —— 于是草稿下载下来，
@@ -3881,6 +4035,20 @@ check("every requirement clause has a disposition", () => {
   // 现在每一条要求条款都要有处置，四档合计必须等于总数。
   const { ok, out } = runPy(["scripts/requirement_ledger.py"], "requirement_ledger");
   assert(ok, `有要求条款没有处置（未登记理由）:\n        ${out.slice(-900)}`);
+  // 台账**文件本身**必须与现算的一致 ——
+  // 上面那行只验「现算的账目闭合」，**没验入库的那份是不是现算的**。
+  // 差在哪儿：改一句登记理由（比如把写错的法规号改对），
+  // 总数一个没动，账目照样闭合 —— 而报告里印的是**旧的那句**。
+  //
+  // `--check` 比的是**整份输出**（不是只比总数），
+  // 所以「内容变了但分类没变」也能抓到。
+  const chk = runPy(["scripts/requirement_ledger.py", "--check"], "requirement_ledger --check");
+  assert(
+    chk.ok,
+    `入库的要求台账与现算的不一致 —— 报告附录 E.5.1 印的是台账里那份，不是现算的:\n` +
+      `        ${chk.out.slice(-600)}\n` +
+      `        跑一次 \`python scripts/requirement_ledger.py --write\` 更新。`,
+  );
   const m = out.match(
     /合计：要求条款 (\d+) · 已覆盖 (\d+) · 附录逐条 (\d+) · 已引原文 (\d+) · 同章别处 (\d+) · 不适用 (\d+) · 真缺口 (\d+)/,
   );

@@ -4264,7 +4264,7 @@
    "excerpt": "The emergency stop signal shall be automatically switched OFF if the emergency braking logic signal as defined in UN Regulations Nos. 13 and 13- H is no longer provided or if the hazard warning signal is activated.",
    "hasLimit": false,
    "disposition": "附录逐条",
-   "reason": "R48 §6.23.7.3.2「紧急制动信号应在紧急制动逻辑信号（UN R13 / R131）消失时自动关闭」—— **与制动系统的信号接口**要求，本版未覆盖。",
+   "reason": "R48 §6.23.7.3.2「紧急制动信号应在紧急制动逻辑信号（UN Regulations Nos. 13 and 13-H）消失时自动关闭」—— **与制动系统的信号接口**要求，本版未覆盖。",
    "quotedMatch": 0
   },
   {

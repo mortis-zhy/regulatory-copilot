@@ -36,6 +36,10 @@ import R48_CHAPTERS from "../../data/r48-chapters.json";
 // 定性对照，数值那一半在第 12 章。
 import QUALITATIVE_DIFF from "../../data/qualitative-diff.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
+// 报告**标题层**的声明（data/report-meta.json）。
+// 封面标题、章节标题、附录标题里点名的标准名全从这里来 ——
+// 以前是本文件里的字面量，换标准时**封面会讲错标准**。
+import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, type TitleSlots } from "./reportMeta";
 import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
 // 第 11.9 节 —— 定性义务变化清单（配备 / 禁止 / 适用范围 / 控制逻辑）。
 // 参数矩阵（第 12 章）只装得下数值；这一节装矩阵装不下的那半边，
@@ -1230,73 +1234,6 @@ function build14_clauseTextDiff(
   return out.join("\n");
 }
 
-function buildMethodChapter(data: Record<string, any>, verified?: any): string {
-  const rows = ["A", "B", "C"].map((k) => {
-    const d = data[k];
-    if (!d) return "";
-    return `| ${k} | ${esc(d.fileName)} | ${Object.values(d.blockTypes ?? {}).reduce((a: number, b: any) => a + (b as number), 0)} blocks | ${d.tables.length} 表 | ${d.figures.length} 图 | ${d.equations.length} 式 | ${d.headings.length} 标题 | ${Math.round(d.extractionTime)}s |`;
-  }).filter(Boolean);
-
-  // Verification statistics (machine check results)
-  const vRows: string[] = [];
-  if (verified?.stats) {
-    const n = verified.stats.numeric ?? {};
-    const e = verified.stats.excerpts ?? {};
-    const okN = n.verified ?? 0;
-    const totN = Object.values(n).reduce((a: number, b: any) => a + b, 0);
-    const okE = e.verified ?? 0;
-    const totE = e.total ?? 0;
-    vRows.push(
-      "",
-      "| 核验对象 | 总数 | 机器核验通过 | 通过率 | 失败处理 |",
-      "|---|---|---|---|---|",
-      `| 条款级数值变化（第 11.3 节） | ${totN} | ${okN} | ${totN ? ((okN / totN) * 100).toFixed(0) : "-"}% | 标注 [待核实]，不作为确定事实 |`,
-      `| 三版本主题摘录（附录 C） | ${totE} | ${okE} | ${totE ? ((okE / totE) * 100).toFixed(0) : "-"}% | 标注 ⚠，使用前人工复核 |`,
-      `| GB4785 表 11.6 九条指标（第 11.4 节） | 9 | 9（3[保留]+1[单边]+5[未找到]） | 100% 逐条核验 | 未找到者附「查过哪里、那里有什么」，不推测引用 |`,
-    );
-  }
-
-  return [
-    "# 附录 D 方法学说明与数据可信度（审计翻查用）",
-    "",
-    "## D.1 版本演进",
-    "",
-    "| 版本 | 方法 | 问题 |",
-    "|---|---|---|",
-    "| v1-v2 | LLM 直接阅读 PDF 撰写变化点 | 页码系统性错位、原文被改写、遗漏 60+ 条核心变化 |",
-    "| v3 | LLM 过度抽取 | 364 条变更 80%+ 是噪音、99 页失控 |",
-    "| v4 | PyMuPDF 纯文本 | 表格/图片/公式丢失、9 条指标仅命中 1 条 |",
-    "| v6 | MinerU 4.0.6 多模态（本地部署） | Layout 模型 + VLM + 公式识别 + OCR 全链路 |",
-    "| **v6.1（本版）** | **v6 + 机器核验层** | **每条数值变化回原文定位页码，噪音自动过滤** |",
-    "",
-    "## D.2 管线（RAG-Anything 结构 + 核验闭环）",
-    "",
-    "1. **MinerU 多模态提取**（`extract_mineru_v4_sdk.py`）：PP-DocLayoutV2 版面模型 + Qwen-VL 视觉语言模型 + PP-FormulaNet 公式识别 + PaddleOCR，本地推理（模型权重 ~854 MB 已下载至 `.mineru-models/`）",
-    "2. **结构化 diff**（`diffEngine` 家族）：条款级同名参数差值提取 → 同义改写/提取噪音过滤",
-    "3. **机器核验**（`verify_claims.py`，本版新增）：每条数值变化回 MinerU 原文定位 B 页 + A 页；定位成功标 [已核验]，失败标 [待核实]；三主题摘录逐条回原文验证",
-    "4. **9 指标核验**（`reportV6.ts`）：GB4785 表 11.6 的 9 条指标逐条与 A/B 原文正则核验，输出 [修改]/[保留]/[未找到]",
-    "5. **Playwright 渲染**：Markdown → HTML → PDF",
-    "",
-    "## D.3 提取统计",
-    "",
-    "| 文档 | 文件 | 块 | 表格 | 图 | 公式 | 标题 | 提取耗时 |",
-    "|---|---|---|---|---|---|---|---|",
-    ...rows,
-    "",
-    "## D.4 核验统计（v6.1 新增）",
-    ...(vRows.length ? vRows : ["", "（核验数据未找到，请先运行 verify_claims.py）"]),
-    "",
-    "## D.5 数据可信度声明",
-    "",
-    "- 所有原文引用来自 MinerU 的 Layout+VLM+OCR 联合提取，非 LLM 自由生成",
-    "- 第 11.3 / 11.4 节每条数据均标注原文页码，可直接对照 PDF 验证",
-    "- GB4785 声称但原文中不存在的数值，如实标注 [未找到]，不做推测性引用",
-    "- 未通过机器核验的条目一律标注 [待核实]/⚠，不冒充已验证事实",
-    "",
-    "> 本报告为法规对比技术研究用途；具体产品合规判定以官方发布法规原文为准。",
-  ].join("\n");
-}
-
 function buildNarrativeFromHeadings(
   data: Record<string, any>,
   chapterId: number,
@@ -1495,9 +1432,9 @@ function htmlTableToText(html: string): string {
   return lines.join("\n");
 }
 
-function buildAppendixA(data: Record<string, any>): string {
+function buildAppendixA(data: Record<string, any>, slots: TitleSlots): string {
   const parts: string[] = [
-    "# 附录 A A/B/C 原始表格汇编",
+    `# 附录 A ${composeAppendixTitle("A", slots)}`,
     "",
     "本附录汇编三份 PDF 中的全部表格原文。表格内容逐字来自原文，未改写。",
     "",
@@ -1913,9 +1850,9 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
   return parts.join("\n");
 }
 
-function buildAppendixB(data: Record<string, any>): string {
+function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
   const parts: string[] = [
-    "# 附录 B 图片、公式与数据溯源",
+    `# 附录 B ${composeAppendixTitle("B", slots)}`,
     "",
     "## B.1 公式（原文公式，LaTeX 形式）",
     "",
@@ -2846,7 +2783,7 @@ function buildChangeLedgerSection(ledger: ChangeRow[]): string {
  * 数据来自 `data/coverage-audit.json`，由 `scripts/coverage_audit.py` 生成：
  * 它读的是**源 PDF 的文本层**（条款号可靠），矩阵的取值来自 `reports/last-report.json`。
  */
-function buildAppendixE(matrixRows: any[]): string {
+function buildAppendixE(matrixRows: any[], slots: TitleSlots): string {
   const A = (COVERAGE_AUDIT as any) ?? { versions: {}, totals: {} };
   const vs = A.versions ?? {};
   const order = ["A", "B", "C"];
@@ -2903,7 +2840,7 @@ function buildAppendixE(matrixRows: any[]): string {
   const totalLimits = t0.limits ?? 0;
   const totalMiss = t0.missing ?? 0;
   const lines = [
-    "# 附录 E 三版量化限值覆盖清单（有没有少数据）",
+    `# 附录 E ${composeAppendixTitle("E", slots)}`,
     "",
     "> **这一节是为了让「有没有漏」可以被核对，而不是让读者相信报告作者没漏。**",
     "> 附录 D 只覆盖 UN R48-09 的 §6；GB 4785 草案与 2019 版此前**没有**任何覆盖清单。",
@@ -3118,13 +3055,13 @@ function buildAppendixE(matrixRows: any[]): string {
  * 挪到附录不是「藏起来」：第 12.0 节明写「205 条在附录 G」，
  * 而且明细一个字没删，每条照样带三版原文、条款号与页码。
  */
-function buildAppendixG(matrixRows: any[]): string {
+function buildAppendixG(matrixRows: any[], slots: TitleSlots): string {
   if (!Array.isArray(matrixRows) || !matrixRows.length) return "";
   const versions = Object.keys(matrixRows[0].cells ?? {});
   const groups = groupRows(matrixRows, versions);
   if (!groups.same.length) return "";
   return [
-    "# 附录 G 三版一致参数逐条明细（全量供核对）",
+    `# 附录 G ${composeAppendixTitle("G", slots)}`,
     "",
     `第 12 章的 ${matrixRows.length} 个参数里，有 **${groups.same.length} 个三版取值一致** ——`,
     "**它们不需要改设计**，但逐条列在这里，供核对与留档。",
@@ -3163,7 +3100,7 @@ function buildAppendixG(matrixRows: any[]): string {
  * **不判「实质变化」** —— 那是工程判断，报告不替读者下结论；
  * 差异片段直接标出来，读者一眼能分清「整段新增」和「换个词」。
  */
-function buildAppendixH(): string {
+function buildAppendixH(slots: TitleSlots): string {
   const D: any = (QUALITATIVE_DIFF as any) ?? {};
   const pairs: any[] = Array.isArray(D.pairs) ? D.pairs : [];
   if (!pairs.length) return "";
@@ -3173,7 +3110,7 @@ function buildAppendixH(): string {
   const unpaired: any[] = Array.isArray(D.unpaired) ? D.unpaired : [];
 
   const lines: string[] = [
-    "# 附录 H A 草案 ↔ B 现行 定性条款并排对照（条款级）",
+    `# 附录 H ${composeAppendixTitle("H", slots)}`,
     "",
     "> **这一节回答的是客户那句「仍然只有法规中，有具体数值的内容的比较」。**",
     "> 第 12 章的矩阵是**标量**（安装高度、响应时间、光强…）；",
@@ -3347,7 +3284,7 @@ function buildAppendixH(): string {
   return lines.join("\n");
 }
 
-function buildAppendixF(): string {
+function buildAppendixF(slots: TitleSlots): string {
   const T = (APPENDIX_TABLES as any) ?? { groups: [] };
   const label: Record<string, string> = {
     A: "GB 4785 草案 V4.3.5",
@@ -3355,7 +3292,7 @@ function buildAppendixF(): string {
     C: "UN R48-09",
   };
   const lines = [
-    "# 附录 F 分档限值与公式型限值（三版原文对照）",
+    `# 附录 F ${composeAppendixTitle("F", slots)}`,
     "",
     "> 第 12 章的参数矩阵收的是**标量**限值。有一类要求不是标量：",
     "> 限值随安装高度分档、或者写成 h 的线性公式。",
@@ -3403,7 +3340,7 @@ function buildAppendixF(): string {
   return lines.join("\n");
 }
 
-function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
+function buildAppendixD(data: Record<string, any>, matrixRows: any[], slots: TitleSlots): string {
   const full = String(data?.C?.fullText ?? "");
   if (!full) return "";
 
@@ -3613,7 +3550,7 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
 
   const pct = items.length ? Math.round((100 * covered) / items.length) : 0;
   return [
-    "# 附录 D UN R48-09 §6 量化条款全量清单",
+    `# 附录 D ${composeAppendixTitle("D", slots)}`,
     "",
     "> **这一节是为了让「有没有漏」可以被核对，而不是让读者相信报告作者没漏。**",
     "> 下表把 UN R48-09 §6 里**每一条带数字的法规陈述**都列出来：条款号、页码、",
@@ -3682,10 +3619,10 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[]): string {
   ].join("\n");
 }
 
-function buildAppendixC(topicColumns: any[]): string {
+function buildAppendixC(topicColumns: any[], slots: TitleSlots): string {
   if (!topicColumns.length) return "_(待生成：请先运行 verify_claims.py)_";
   const parts: string[] = [
-    "# 附录 C A|B|C 三版本主题对照（逐条摘录核验）",
+    `# 附录 C ${composeAppendixTitle("C", slots)}`,
     "",
     "本附录为 **三份文档同一主题的横向对照**：每格给出条款号 + 原文摘录（≥30 字）+ 页码。每条摘录均标注页码，状态 [已核验] = 已定位到原文页码，[未核验] = 未定位成功。",
     "",
@@ -3958,53 +3895,57 @@ export async function buildMinerUReport(
     matrixRows,
   });
 
+  // 标题层的槽位 —— 全部由**语料**推导（版本清单、版本展示名、版本文档名），
+  // 再用 data/report-meta.json 的模板组装。
+  // 以前这里是字面量：换一套标准，机制照样跑，闸门照样绿，
+  // 而**封面会讲错标准**。
+  const vKeys = versionsOf(data);
+  const slots: TitleSlots = titleSlots(
+    vKeys,
+    vKeys.map((v) => versionLabel(v)),
+    vKeys.map((v) => versionDoc(v)),
+  );
+  const appTitle = (id: string) => composeAppendixTitle(id, slots);
+
   const report: RenderableReport = {
     outline: {
-      title: "GB 4785 多版本横向对比研究报告（A 草案 / B 现行 / C UN R48 三版本对照）",
+      title: composeTitle(slots),
       chapters: [
-        { id: 0, title: "执行摘要", sections: ["核心结论", "使用指引"] },
+        { id: 0, title: composeChapterTitle(0, slots), sections: ["核心结论", "使用指引"] },
         // 方法学说明降级为附录 D —— 客户不应被内部管线细节挡路
         // (product feedback: "客户为什么要看方法学说明").
         ...narrativeChapters.map((c) => ({ id: c.id, title: c.title, sections: [] })),
-        { id: 11, title: "关键变化点总结", sections: ["速查表", "新增条款", "删除条款", "重大修订(数值级·机器核验)", "数据指标变化(GB4785 表11.6 核验)", "新概念", "修订重点", "影响分析", "表述/术语候选差异（工程师复核清单）", "定性义务变化清单（配备/禁止/适用范围/控制逻辑）"] },
-        { id: 12, title: "A/B/C 量化参数表横向对比", sections: TABLE_CATEGORIES.map((c) => c.label) },
-        { id: 13, title: "灯具光色分配逐行 A vs B 对比", sections: ["A 新增灯具", "B 独有灯具", "光色发生变化", "完整对照表"] },
-        { id: 14, title: "条款正文逐句 A vs B 对照（附 C 章节级对应与三版取值）", sections: [] },
+        { id: 11, title: composeChapterTitle(11, slots), sections: composeChapter11Sections(slots) },
+        { id: 12, title: composeChapterTitle(12, slots), sections: TABLE_CATEGORIES.map((c) => c.label) },
+        { id: 13, title: composeChapterTitle(13, slots), sections: ["A 新增灯具", "B 独有灯具", "光色发生变化", "完整对照表"] },
+        { id: 14, title: composeChapterTitle(14, slots), sections: [] },
       ],
-      appendices: [
-        { id: "A", title: "A/B/C 原始表格汇编" },
-        { id: "B", title: "图片、公式与标题索引" },
-        { id: "C", title: "A|B|C 三版本主题对照（逐条核验）" },
-        { id: "D", title: "UN R48 §6 量化条款全量清单" },
-        { id: "E", title: "三版量化限值覆盖清单（有没有少数据）" },
-        { id: "F", title: "分档限值与公式型限值（三版原文对照）" },
-        { id: "G", title: "三版一致参数逐条明细（全量供核对）" },
-      ],
+      appendices: ["A", "B", "C", "D", "E", "F", "G", "H"].map((id) => ({ id, title: appTitle(id) })),
     },
     chapters: [
-      { id: 0, title: "执行摘要", markdown: execSummary },
+      { id: 0, title: composeChapterTitle(0, slots), markdown: execSummary },
       ...narrativeChapters,
-      { id: 11, title: "关键变化点总结", markdown: ch11Md },
-      { id: 12, title: "A/B/C 量化参数表横向对比", markdown: ch12 },
-      { id: 13, title: "灯具光色分配逐行 A vs B 对比", markdown: ch13 },
-      { id: 14, title: "条款正文逐句 A vs B 对照（附 C 章节级对应与三版取值）", markdown: ch14 },
+      { id: 11, title: composeChapterTitle(11, slots), markdown: ch11Md },
+      { id: 12, title: composeChapterTitle(12, slots), markdown: ch12 },
+      { id: 13, title: composeChapterTitle(13, slots), markdown: ch13 },
+      { id: 14, title: composeChapterTitle(14, slots), markdown: ch14 },
     ],
     appendices: [
-      { id: "A", title: "A/B/C 原始表格汇编", markdown: buildAppendixA(data) },
-      { id: "B", title: "图片、公式与标题索引", markdown: buildAppendixB(data) },
-      { id: "C", title: "A|B|C 三版本主题对照（逐条核验）", markdown: buildAppendixC(verified.topicColumns) },
-      { id: "D", title: "UN R48 §6 量化条款全量清单", markdown: buildAppendixD(data, matrixRows) },
-      { id: "E", title: "三版量化限值覆盖清单（有没有少数据）", markdown: buildAppendixE(matrixRows) },
-      { id: "F", title: "分档限值与公式型限值（三版原文对照）", markdown: buildAppendixF() },
+      { id: "A", title: appTitle("A"), markdown: buildAppendixA(data, slots) },
+      { id: "B", title: appTitle("B"), markdown: buildAppendixB(data, slots) },
+      { id: "C", title: appTitle("C"), markdown: buildAppendixC(verified.topicColumns, slots) },
+      { id: "D", title: appTitle("D"), markdown: buildAppendixD(data, matrixRows, slots) },
+      { id: "E", title: appTitle("E"), markdown: buildAppendixE(matrixRows, slots) },
+      { id: "F", title: appTitle("F"), markdown: buildAppendixF(slots) },
       {
         id: "G",
-        title: "三版一致参数逐条明细（全量供核对）",
-        markdown: buildAppendixG(matrixRows),
+        title: appTitle("G"),
+        markdown: buildAppendixG(matrixRows, slots),
       },
       {
         id: "H",
-        title: "A/B 定性条款并排对照（条款级，差异处标出）",
-        markdown: buildAppendixH(),
+        title: appTitle("H"),
+        markdown: buildAppendixH(slots),
       },
     ],
     // Structured twin of chapter 12. The chapter's markdown is a rendering;

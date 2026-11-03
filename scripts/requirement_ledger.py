@@ -377,20 +377,35 @@ def main():
         # 台账**不许过期**：重算一遍，和文件里的比。
         # 矩阵加了行、条款索引变了、登记改了，这里就会不一致 ——
         # 报告附录 E.5 印着的「23 条未逐条讲」必须是现算的那个数。
+        #
+        # 比的是**整份输出**，不只是总数 ——
+        # 只比总数会漏掉「内容变了但分类没变」的情况：
+        # 改了一句登记理由（例：把写错的法规号改对），
+        # 总数一个没动，`--check` 却说「一致」——
+        # 而报告里印的是**旧的那句**。
+        # 那是**假信心**：闸门说绿，交付件里却还是错的。
         try:
             old = json.load(io.open(OUT_PATH, encoding="utf-8"))
         except Exception as e:
             print("读不到 %s：%s" % (OUT_PATH, e))
             return 1
-        a = json.dumps(totals, ensure_ascii=False, sort_keys=True)
-        b = json.dumps(old.get("totals"), ensure_ascii=False, sort_keys=True)
+        a = json.dumps(out, ensure_ascii=False, sort_keys=True)
+        b = json.dumps(old, ensure_ascii=False, sort_keys=True)
         if a != b:
             print("要求台账已过期：")
-            print("  现算：%s" % a)
-            print("  文件：%s" % b)
+            # 先说总数（最容易看懂的差异），再说内容
+            ta = json.dumps(out.get("totals"), ensure_ascii=False, sort_keys=True)
+            tb = json.dumps(old.get("totals"), ensure_ascii=False, sort_keys=True)
+            if ta != tb:
+                print("  现算总数：%s" % ta)
+                print("  文件总数：%s" % tb)
+            else:
+                print("  总数一样，但**内容**不一样 —— "
+                      "登记理由/摘录/页码有改动（总数不变不代表内容没变）")
             print("跑一次 python scripts/requirement_ledger.py --write 更新。")
             return 1
-        print("要求台账与现算一致：%s" % a)
+        print("要求台账与现算一致（整份比对）：%s"
+              % json.dumps(out.get("totals"), ensure_ascii=False, sort_keys=True))
         return 0
     if write:
         io.open(OUT_PATH, "w", encoding="utf-8", newline="").write(
