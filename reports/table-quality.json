@@ -1,0 +1,258 @@
+{
+  "perVersion": {
+    "A": {
+      "table_pages": 7,
+      "precision": 1.0,
+      "serpentine_rate": 0.155,
+      "pages_with_serpentine": [
+        16,
+        17,
+        18
+      ]
+    },
+    "B": {
+      "table_pages": 7,
+      "precision": 0.364,
+      "serpentine_rate": 0.105,
+      "pages_with_serpentine": [
+        17,
+        18
+      ]
+    },
+    "C": {
+      "table_pages": 16,
+      "precision": 0.973,
+      "serpentine_rate": 0.101,
+      "pages_with_serpentine": [
+        2,
+        36,
+        67,
+        92,
+        94,
+        96,
+        102,
+        103
+      ]
+    }
+  },
+  "riskyCells": [
+    {
+      "id": "chromaticity.blueBoundary",
+      "version": "A",
+      "page": 16,
+      "value": "0.31",
+      "cell_numbers": 14,
+      "page_serpentine_rate": 0.333,
+      "page_precision": 1.0,
+      "cell_text": "W12绿色边界y=0.150+0.640xW23黄绿色边界y=0.440W34黄色边界x=0.500W45紫红色边界y=0.382W56紫色边界y=0.050+0.750xW61蓝色边界x=0.310",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "chromaticity.redBoundary",
+      "version": "A",
+      "page": 17,
+      "value": "0.335",
+      "cell_numbers": 11,
+      "page_serpentine_rate": 0.417,
+      "page_precision": 1.0,
+      "cell_text": "R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线（其延长线穿过光谱轨迹红色和蓝色端点之间的紫色范围）R41紫色边界: y=0.980-x",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "chromaticity.whiteBoundary",
+      "version": "A",
+      "page": 16,
+      "value": "0.15/0.64",
+      "cell_numbers": 14,
+      "page_serpentine_rate": 0.333,
+      "page_precision": 1.0,
+      "cell_text": "W12绿色边界y=0.150+0.640xW23黄绿色边界y=0.440W34黄色边界x=0.500W45紫红色边界y=0.382W56紫色边界y=0.050+0.750xW61蓝色边界x=0.310",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "chromaticity.yellowGreenBoundary",
+      "version": "A",
+      "page": 16,
+      "value": "0.44",
+      "cell_numbers": 14,
+      "page_serpentine_rate": 0.333,
+      "page_precision": 1.0,
+      "cell_text": "W12绿色边界y=0.150+0.640xW23黄绿色边界y=0.440W34黄色边界x=0.500W45紫红色边界y=0.382W56紫色边界y=0.050+0.750xW61蓝色边界x=0.310",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "retractableLamp.deployTimeMax",
+      "version": "A",
+      "page": 16,
+      "value": "3",
+      "cell_numbers": 14,
+      "page_serpentine_rate": 0.333,
+      "page_precision": 1.0,
+      "cell_text": "x y W1 0.310 0.348 W2 0.453 0.440 W3 0.500 0.440 W4 0.500 0.382 W5 0.443 0.382 W6 0.310 0.283",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "chromaticity.redBoundary",
+      "version": "B",
+      "page": 17,
+      "value": "0.335",
+      "cell_numbers": 5,
+      "page_serpentine_rate": 0.4,
+      "page_precision": 0.361,
+      "cell_text": "R12黄色边界y=0.335RR围2334)光紫谱线(轨其迹延长线穿过光谱轨迹红色和蓝色端点之间的紫色范R41紫色边界:y=0.980-x",
+      "evidence": "match"
+    },
+    {
+      "id": "chromaticity.whiteBoundary",
+      "version": "B",
+      "page": 17,
+      "value": "0.15/0.64",
+      "cell_numbers": 6,
+      "page_serpentine_rate": 0.4,
+      "page_precision": 0.361,
+      "cell_text": "W12绿色边界:y=0.150+0.640xW23黄绿色边界y=0.440WWWW34564561黄紫紫蓝色红色色边色边边界边界界界xxy===y000=...0530501.03008+20.750x",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "chromaticity.yellowGreenBoundary",
+      "version": "B",
+      "page": 17,
+      "value": "0.44",
+      "cell_numbers": 9,
+      "page_serpentine_rate": 0.4,
+      "page_precision": 0.361,
+      "cell_text": "W12绿色边界:y=0.150+0.640xW23黄绿色边界y=0.440WWWW34564561黄紫紫蓝色红色色边色边边界边界界界xxy===y000=...0530501.03008+20.750x",
+      "evidence": "match"
+    },
+    {
+      "id": "endOutlineMarker.minGapToPositionLamp",
+      "version": "C",
+      "page": 67,
+      "value": "200",
+      "cell_numbers": 6,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "reciprocally incorporated in accordance with paragraph5.7. The position of an end-outline marker lamp in relation to cor",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "rearReflexReflector.groupedMaxHeight",
+      "version": "C",
+      "page": 67,
+      "value": "1200",
+      "cell_numbers": 6,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "In height: Above the ground, not less than 250 mm nor more than 900 mm (not more than 1,200 mm if grouped with any rear ",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "rearReflexReflector.innerEdgeGapMin",
+      "version": "C",
+      "page": 67,
+      "value": "600",
+      "cell_numbers": 4,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "Position In width: that point on the illuminating surface which is farthest from the vehicle's median longitudinal plane",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "rearReflexReflector.lateralToVehicleEdgeMax",
+      "version": "C",
+      "page": 67,
+      "value": "400",
+      "cell_numbers": 4,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "Position In width: that point on the illuminating surface which is farthest from the vehicle's median longitudinal plane",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "rearReflexReflector.maxHeight",
+      "version": "C",
+      "page": 67,
+      "value": "900",
+      "cell_numbers": 6,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "In height: Above the ground, not less than 250 mm nor more than 900 mm (not more than 1,200 mm if grouped with any rear ",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "rearReflexReflector.minHeight",
+      "version": "C",
+      "page": 67,
+      "value": "250",
+      "cell_numbers": 6,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "In height: Above the ground, not less than 250 mm nor more than 900 mm (not more than 1,200 mm if grouped with any rear ",
+      "evidence": "excerpt"
+    },
+    {
+      "id": "courtesyLamp.maxIntensity",
+      "version": "C",
+      "page": 92,
+      "value": "0.5",
+      "cell_numbers": 4,
+      "page_serpentine_rate": 0.318,
+      "page_precision": 0.881,
+      "cell_text": "At the request of the applicant and with the consent of the Technical Service the requirements of paragraph 6.24.9.3. ma",
+      "evidence": "value",
+      "pairing": "无可配对（match 就是值本身）"
+    },
+    {
+      "id": "answerBackSignal.maxFlashFrequency",
+      "version": "C",
+      "page": 96,
+      "value": "2",
+      "cell_numbers": 3,
+      "page_serpentine_rate": 0.208,
+      "page_precision": 0.85,
+      "cell_text": "If the answer-back signalflashes, the frequency shall not exceed 2.0 Hz. The lampsused for the answer-back signal may op",
+      "evidence": "value+clause",
+      "pairing": "无可配对（match 就是值本身）"
+    },
+    {
+      "id": "rearReflexReflector.innerEdgeGapNarrow",
+      "version": "C",
+      "page": 67,
+      "value": "400",
+      "cell_numbers": 4,
+      "page_serpentine_rate": 0.438,
+      "page_precision": 0.952,
+      "cell_text": "Position In width: that point on the illuminating surface which is farthest from the vehicle's median longitudinal plane",
+      "evidence": "excerpt"
+    }
+  ],
+  "pairingVerified": [
+    "chromaticity.blueBoundary/A",
+    "chromaticity.redBoundary/A",
+    "chromaticity.whiteBoundary/A",
+    "chromaticity.yellowGreenBoundary/A",
+    "retractableLamp.deployTimeMax/A",
+    "chromaticity.redBoundary/B",
+    "chromaticity.whiteBoundary/B",
+    "chromaticity.yellowGreenBoundary/B",
+    "endOutlineMarker.minGapToPositionLamp/C",
+    "rearReflexReflector.groupedMaxHeight/C",
+    "rearReflexReflector.innerEdgeGapMin/C",
+    "rearReflexReflector.lateralToVehicleEdgeMax/C",
+    "rearReflexReflector.maxHeight/C",
+    "rearReflexReflector.minHeight/C",
+    "rearReflexReflector.innerEdgeGapNarrow/C"
+  ],
+  "pairingNotApplicable": [
+    "courtesyLamp.maxIntensity/C",
+    "answerBackSignal.maxFlashFrequency/C"
+  ],
+  "pairingUnverified": [],
+  "summary": {
+    "risky": 17,
+    "pairingVerified": 15,
+    "pairingNotApplicable": 2,
+    "pairingUnverified": 0,
+    "cells": 888
+  }
+}

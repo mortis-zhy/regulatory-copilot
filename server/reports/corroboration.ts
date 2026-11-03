@@ -14,16 +14,23 @@
  *
  * 所以复核下沉到**取值层**：不看引文，直接看这个值本身在不在源 PDF 里。
  *
- * ## 三档证据（任一档落在所报的那一页上，就算定位成功）
+ * ## 四档证据（任一档落在所报的那一页上，就算定位成功）
  *
- * | 档 | 证据 | 强度 |
- * |---|---|---|
- * | `excerpt` | 引文片段在所报页上 | 最强：读者翻过去能看到那句话 |
- * | `value`   | 取值字面量在所报页上 | 中：能看到的那个数在 |
- * | `clause`  | 条款号在所报页上 | 弱：条款在，但值可能是英文词（'two minutes'） |
+ * | 档 | 证据 | 强度 | 它能证明什么 |
+ * |---|---|---|---|
+ * | `excerpt` | 引文片段在所报页上 | 最强 | 读者翻过去能看到那句话和那个数 |
+ * | `match` | **标签 + 取值**那一小段在所报页上 | 强 | **配对已验** —— 这个数配的是那个标签 |
+ * | `value+clause` | 取值与条款号都在所报页上 | 中 | 人工复核时真正会看的东西 |
+ * | `value` | 取值字面量在所报页上 | 弱 | 那个数在（但可能配错了对象） |
+ * | `clause` | 条款号在所报页上 | 最弱 | 条款在，但值可能是英文词（'two minutes'） |
  *
- * 三档都不在所报页、但值在文档别处 → **页码不符**；
- * 三档都不在、值在整份文档里也找不到 → **疑似编造**（这一类必须为 0）。
+ * **`match` 那一档是抓「串行错位」的**：
+ * 串行错误（GB4785-2019 的色度表整段串成一行）的形态是
+ * 「每个数都是真的，只是配错了对象」——
+ * 「值在页上」分辨不出来，「标签与值一起在页上」才分辨得出来。
+ *
+ * 都不在所报页、但值在文档别处 → **页码不符**；
+ * 都不在、值在整份文档里也找不到 → **疑似编造**（这一类必须为 0）。
  *
  * ## 为什么「引文查不到」不等于「值查不到」
  *
@@ -176,11 +183,13 @@ export interface Corroboration {
    * 把两者合并，等于在换标准、语料尚未入库时把「数据缺失」报成「数据造假」。
    */
   status: "on-page" | "elsewhere" | "not-found" | "unchecked";
-  evidence: "excerpt" | "value+clause" | "value" | "clause" | "none";
+  evidence: "excerpt" | "match" | "value+clause" | "value" | "clause" | "none";
   /** 取值在源 PDF 出现的页码 */
   valuePages: number[];
   /** 引文在源 PDF 出现的页码 */
   excerptPages: number[];
+  /** 「标签 + 取值」那一小段在源 PDF 出现的页码（**配对证据**） */
+  matchPages: number[];
   /** 取值（或引文）在全文出现的页占比 0..1 */
   rarity: number;
   /** 一句话说明，给报告直接用 */
@@ -211,6 +220,7 @@ export function corroborateCell(
     evidence: "none",
     valuePages: [],
     excerptPages: [],
+    matchPages: [],
     rarity: 0,
     note: "未复核（该版本没有源 PDF 语料）",
   };
@@ -239,6 +249,29 @@ export function corroborateCell(
     if (cands.some((c) => hasLiteral(index.squashed[i], c))) valuePages.push(index.pageNos[i]);
   }
 
+  // ── 证据一之二：match 本身（标签 + 取值） ────────────────────────────
+  //
+  // 「引文」那一档查的是 match **往后 14 个字**，那段后文来自 MinerU 的
+  // 转写 —— 而转写本身可能是坏的（GB4785-2019 的色度表整段串成一行）。
+  // 所以要再查一档：**match 自己**（标签与取值绑在一起的那一小段）
+  // 在不在源 PDF 的那一页上。
+  //
+  // 这一档是**抓「配对错」的那一档**：
+  // 「值在页上」只能证明这个数是真的；「标签与值一起在页上」才能证明
+  // **这个数配的是那个标签**。串行错位（每个数都是真的，只是配错了对象）
+  // 只有这一档能分辨。
+  //
+  // 长度门槛 8：match 太短（比如 '20mm'、'600'）就只是个数，
+  // 找到它证明不了「标签与值的绑定」。
+  const matchText = canonicalText(cell.match);
+  const matchUsable = matchText.length >= 8;
+  const matchPages: number[] = [];
+  if (matchUsable) {
+    for (let i = 0; i < index.squashed.length; i++) {
+      if (index.squashed[i].includes(matchText)) matchPages.push(index.pageNos[i]);
+    }
+  }
+
   // ── 证据三：条款号 ──────────────────────────────────────────────────
   const clause = String(cell.clause ?? "").trim();
   const clausePages: number[] = [];
@@ -250,6 +283,7 @@ export function corroborateCell(
 
   const citedIdx = at(cited);
   const onExcerpt = citedIdx >= 0 && excerptPages.includes(cited);
+  const onMatch = citedIdx >= 0 && matchPages.includes(cited);
   const onValue = citedIdx >= 0 && valuePages.includes(cited);
   const onClause = citedIdx >= 0 && clausePages.includes(cited);
 
@@ -266,8 +300,20 @@ export function corroborateCell(
       evidence: "excerpt",
       valuePages,
       excerptPages,
+      matchPages,
       rarity,
       note: `引文与取值都在源 PDF 第 ${cited} 页`,
+    };
+  }
+  if (onMatch) {
+    return {
+      status: "on-page",
+      evidence: "match",
+      valuePages,
+      excerptPages,
+      matchPages,
+      rarity,
+      note: `标签与取值（${matchText}）在源 PDF 第 ${cited} 页 —— **配对已验**`,
     };
   }
   if (onValue) {
@@ -279,6 +325,7 @@ export function corroborateCell(
         evidence: "value+clause",
         valuePages,
         excerptPages,
+        matchPages,
         rarity,
         note: `取值与条款 ${clause} 都在源 PDF 第 ${cited} 页（引文措辞与源 PDF 不同）`,
       };
@@ -288,6 +335,7 @@ export function corroborateCell(
       evidence: "value",
       valuePages,
       excerptPages,
+      matchPages,
       rarity,
       note: `取值在源 PDF 第 ${cited} 页（引文措辞与源 PDF 不同）`,
     };
@@ -298,6 +346,7 @@ export function corroborateCell(
       evidence: "clause",
       valuePages,
       excerptPages,
+      matchPages,
       rarity,
       note: `条款 ${clause} 在源 PDF 第 ${cited} 页（取值是英文词展开，页面上是词不是数字）`,
     };
@@ -309,6 +358,7 @@ export function corroborateCell(
       evidence: "value",
       valuePages,
       excerptPages,
+      matchPages,
       rarity,
       note: `取值在源 PDF 第 ${valuePages.slice(0, 5).join("、")} 页，不在所报的第 ${cited} 页`,
     };
@@ -319,6 +369,7 @@ export function corroborateCell(
       evidence: "excerpt",
       valuePages,
       excerptPages,
+      matchPages,
       rarity,
       note: `引文在源 PDF 第 ${excerptPages.slice(0, 5).join("、")} 页，不在所报的第 ${cited} 页`,
     };
@@ -328,6 +379,7 @@ export function corroborateCell(
     evidence: "none",
     valuePages,
     excerptPages,
+    matchPages,
     rarity,
     note: `取值与引文在源 PDF 全篇都查不到（所报第 ${cited} 页）`,
   };

@@ -10,11 +10,12 @@
 在源 PDF 里其实在**第 32 页**（5.5.5.2 的起始页）。读者翻到第 31 页，
 找不到那句话 —— 页码本身就是一条错误信息。
 
-## 三档证据（任一档落在所报的那一页上，即算定位成功）
+## 四档证据（任一档落在所报的那一页上，即算定位成功）
 
 | 档 | 证据 | 说明 |
 |---|---|---|
 | 引文 | 引文片段在所报页上 | 最强：读者翻过去能看到那句话 |
+| 标签+取值 | match 本身在所报页上 | **配对已验** —— 抓串行错位靠这一档 |
 | 取值 | 取值字面量在所报页上 | 源 PDF 与转写的写法不同（千分位 / 单位 / LaTeX）时用 |
 | 条款 | 条款号在所报页上 | 取值是英文词展开（two minutes → 2）时用 |
 
@@ -26,7 +27,7 @@
 而「措辞不同」与**「这个值是编出来的」**在那一格里长得一模一样。
 
 所以复核下沉到**取值层**：不看引文，直接看这个值本身在不在源 PDF 里。
-三档都不在所报页、且整份文档里也找不到 → **疑似编造**，直接判失败。
+四档都不在所报页、且整份文档里也找不到 → **疑似编造**，直接判失败。
 
 用法： python scripts/matrix_page_check.py
 """
@@ -151,7 +152,7 @@ def main():
     bad = []            # 页码对不上
     fatal = []          # 三档证据在整份文档里都查不到 —— 疑似编造
     checked = 0
-    by_evidence = {"引文": 0, "取值": 0, "条款": 0}
+    by_evidence = {"引文": 0, "标签+取值": 0, "取值": 0, "条款": 0}
     skipped = 0
     for r in rows:
         for v in ("A", "B", "C"):
@@ -173,11 +174,23 @@ def main():
             cands = value_candidates(str(c.get("match") or ""), c.get("nums") or [])
             val_pages = [p for p, t in normed[v] if any(has_literal(t, cd) for cd in cands)]
 
+            # 档一之二：match 本身（标签 + 取值）—— **配对证据**
+            #
+            # 「引文」查的是 match 往后 14 个字，那段后文来自 MinerU 的转写，
+            # 而转写本身可能是坏的（GB4785-2019 的色度表整段串成一行）。
+            # match 自己（标签与取值绑在一起的那一小段）在不在源 PDF 上，
+            # 才是**配对有没有错**的判据：
+            # 串行错位的形态是「每个数都是真的，只是配错了对象」。
+            match_text = norm(str(c.get("match") or ""))
+            match_pages = []
+            if len(match_text) >= 8:
+                match_pages = [p for p, t in normed[v] if match_text in t]
+
             # 档三：条款号
             clause = str(c.get("clause") or "").strip()
             cl_pages = [p for p, t in normed[v] if clause and has_literal(t, clause)]
 
-            everywhere = set(frag_pages) | set(val_pages) | set(cl_pages)
+            everywhere = set(frag_pages) | set(match_pages) | set(val_pages) | set(cl_pages)
             if not everywhere:
                 # **三档证据在整份源 PDF 里都查不到** —— 这个值可能是编出来的。
                 fatal.append((r["id"], v, cited, c.get("nums"), c.get("match")))
@@ -185,6 +198,8 @@ def main():
             checked += 1
             if cited in frag_pages:
                 by_evidence["引文"] += 1
+            elif cited in match_pages:
+                by_evidence["标签+取值"] += 1
             elif cited in val_pages:
                 by_evidence["取值"] += 1
             elif cited in cl_pages:
@@ -192,10 +207,11 @@ def main():
             else:
                 bad.append((r["id"], v, cited, sorted(everywhere)[:6], c.get("source")))
 
-    out = ["核了 %d 个取值格（三档证据回源 PDF 均能定位），跳过 %d 个"
+    out = ["核了 %d 个取值格（四档证据回源 PDF 均能定位），跳过 %d 个"
            % (checked, skipped)]
-    out.append("证据分布：引文 %d · 取值 %d · 条款 %d"
-               % (by_evidence["引文"], by_evidence["取值"], by_evidence["条款"]))
+    out.append("证据分布：引文 %d · 标签+取值 %d · 取值 %d · 条款 %d"
+               % (by_evidence["引文"], by_evidence["标签+取值"],
+                  by_evidence["取值"], by_evidence["条款"]))
     if fatal:
         out.append("**查不到 %d 处（疑似编造，必须为 0）**：" % len(fatal))
         for f in fatal:

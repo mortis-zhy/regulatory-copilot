@@ -63,8 +63,12 @@ def main():
             val_pages = [p for p, t in normed[v] if any(mpc.has_literal(t, cd) for cd in cands)]
             clause = str(c.get("clause") or "").strip()
             cl_pages = [p for p, t in normed[v] if clause and mpc.has_literal(t, clause)]
+            match_text = mpc.norm(str(c.get("match") or ""))
+            match_pages = [p for p, t in normed[v] if len(match_text) >= 8 and match_text in t]
             if cited in frag_pages:
                 py = "excerpt"
+            elif cited in match_pages:
+                py = "match"
             elif cited in val_pages and cited in cl_pages:
                 py = "value+clause"
             elif cited in val_pages:

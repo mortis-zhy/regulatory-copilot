@@ -1,0 +1,55 @@
+[
+  {
+    "versions": "A/B/C/D",
+    "rows": 317,
+    "cells": 1268,
+    "verified": 796,
+    "newVersionColumn": {
+      "D": {
+        "hit": 0,
+        "total": 317
+      },
+      "noPattern": 317
+    }
+  },
+  {
+    "versions": "A/B/C",
+    "rows": 317,
+    "cells": 951,
+    "verified": 796,
+    "hit": {
+      "A": {
+        "hit": 284,
+        "total": 317
+      },
+      "B": {
+        "hit": 238,
+        "total": 317
+      },
+      "C": {
+        "hit": 274,
+        "total": 317
+      }
+    },
+    "changed": 10,
+    "emptyWithoutReason": 0,
+    "corroboratedOk": 796,
+    "corroboratedBad": 0
+  },
+  {
+    "versions": "A/B",
+    "error": "adaptiveHighBeam.envLightOff 定义了版本 \"C\"，但本次上传的语料里没有（现有 A/B）—— spec 与语料不匹配。\n  这份 spec 包是给【A/B/C】写的；本次上传的是【A/B】。\n  换一套标准要另写一套 spec（不要改这份）—— 步骤见 GENERALIZATION.md「二"
+  },
+  {
+    "versions": "A/C",
+    "error": "adaptiveHighBeam.envLightOff 定义了版本 \"B\"，但本次上传的语料里没有（现有 A/C）—— spec 与语料不匹配。\n  这份 spec 包是给【A/B/C】写的；本次上传的是【A/C】。\n  换一套标准要另写一套 spec（不要改这份）—— 步骤见 GENERALIZATION.md「二"
+  },
+  {
+    "versions": "B/C",
+    "error": "adaptiveHighBeam.envLightOff 定义了版本 \"A\"，但本次上传的语料里没有（现有 B/C）—— spec 与语料不匹配。\n  这份 spec 包是给【A/B/C】写的；本次上传的是【B/C】。\n  换一套标准要另写一套 spec（不要改这份）—— 步骤见 GENERALIZATION.md「二"
+  },
+  {
+    "versions": "C",
+    "error": "只识别到 1 个版本的正文（C）—— 矩阵至少需要 2 版才能做对照"
+  }
+]

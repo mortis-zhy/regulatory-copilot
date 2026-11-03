@@ -956,7 +956,12 @@ export function buildParameterMatrix(
     for (const ver of Object.keys(spec.p)) {
       if (!versions.includes(ver)) {
         throw new Error(
-          `${spec.id} 定义了版本 "${ver}"，但本次上传的语料里没有（现有 ${versions.join("/")}）—— spec 与语料不匹配`,
+          `${spec.id} 定义了版本 "${ver}"，但本次上传的语料里没有（现有 ${versions.join("/")}）—— ` +
+            `spec 与语料不匹配。\n` +
+            `  这份 spec 包是给【${Object.keys(spec.p).join("/")}】写的；本次上传的是【${versions.join("/")}】。\n` +
+            `  换一套标准要另写一套 spec（不要改这份）—— ` +
+            `步骤见 GENERALIZATION.md「二、换标准的操作清单」。\n` +
+            `  若只是少传了一份文件，把那份补上即可。`,
         );
       }
     }

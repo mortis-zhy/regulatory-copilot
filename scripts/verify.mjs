@@ -533,6 +533,16 @@ function runPy(args, label) {
   return { ok: r.status === 0, out: (r.stdout || "") + (r.stderr || ""), r };
 }
 
+/** 跑一个 node 探针脚本（泛化类的实测脚本都是 node）。 */
+function runNode(args, label) {
+  const r = spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    encoding: "utf-8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return { ok: r.status === 0, out: (r.stdout || "") + (r.stderr || ""), r };
+}
+
 check("verify_claims.py candidate partition closes", () => {
   const { ok, out } = runPy(["verify_claims.py"], "verify_claims");
   assert(ok, `verify_claims.py exited non-zero:\n        ${out.slice(-600)}`);
@@ -2467,6 +2477,7 @@ check("every matrix cell's value is corroborated against the source PDF", () => 
   const ev = st.byEvidence ?? {};
   for (const [k, label] of [
     ["excerpt", "引文与取值都在所报页"],
+    ["match", "标签与取值都在所报页"],
     ["value+clause", "取值与条款号都在所报页"],
   ]) {
     // 表格单元里的标签可能带 ** 强调号，匹配时要能容忍。
@@ -2476,7 +2487,92 @@ check("every matrix cell's value is corroborated against the source PDF", () => 
       `§12.5 的「${label}」档数与数据源对不上（应为 ${ev[k] ?? 0}）`,
     );
   }
-  return `${st.onPage}/${verified} 个取值格回源 PDF 复核通过（引文 ${ev.excerpt ?? 0} · 取值+条款 ${ev["value+clause"] ?? 0} · 取值 ${ev.value ?? 0}），查不到 0、页码不符 0`;
+  return `${st.onPage}/${verified} 个取值格回源 PDF 复核通过（引文 ${ev.excerpt ?? 0} · 标签+取值 ${ev.match ?? 0} · 取值+条款 ${ev["value+clause"] ?? 0} · 取值 ${ev.value ?? 0}），查不到 0、页码不符 0`;
+});
+
+check("a changed version set never degrades silently", () => {
+  // 「换个标准还能不能跑」不能靠嘴说。这一关拿**真实语料**跑几种版本组合，
+  // 断言机制的行为：
+  //
+  //   ① 三版（现在的配置）：空格全部有理由，复核全过；
+  //   ② **多一版但还没写它的 spec**：新列必须整列标「未建规则」——
+  //      **有理由的空**，不是静默空；而且**已有三版一个取值都不许变**
+  //      （新版本不能污染老版本，这是「多一份真相」的另一种形态）；
+  //   ③ **少一版**：必须**响亮失败**。
+  //      静默产出一份「少了一整列却看着正常」的矩阵，是这个项目最贵的 bug 形态。
+  //
+  // ③ 之所以要守着：把那个 throw 改成「跳过缺失的版本」看起来很合理，
+  // 但它会让**漏传一份文件**这件事变成一份看起来能交付的报告。
+  const { ok, out } = runNode(["scripts/version_subset_probe.mjs"], "version_subset_probe");
+  assert(ok, `版本组合探针跑失败:\n        ${out.slice(-600)}`);
+  const line = out.split("\n").find((l) => l.startsWith("SUMMARY "));
+  assert(line, `version_subset_probe 没有给出 SUMMARY 行:\n        ${out.slice(-600)}`);
+  const s = JSON.parse(line.slice("SUMMARY ".length));
+
+  assert(
+    s.three.emptyWithoutReason === 0,
+    `三版语料里有 ${s.three.emptyWithoutReason} 个空格子没写原因 —— 「空着也要说清为什么空」`,
+  );
+  assert(
+    s.three.corroboratedBad === 0 && s.three.corroboratedOk === s.three.verified,
+    `三版语料的回源复核没过 ${s.three.corroboratedBad} 格`,
+  );
+  assert(
+    s.four.noPattern === s.three.rows,
+    `加了第 4 版之后，新列不是整列「未建规则」（${s.four.noPattern}/${s.three.rows}）—— ` +
+      `要么是有取值（那 spec 已经写了），要么是**有理由的空**`,
+  );
+  assert(
+    s.four.verified === s.three.verified,
+    `加了第 4 版之后，已有版本的取值数变了（${s.three.verified} → ${s.four.verified}）—— ` +
+      `新版本污染了老版本`,
+  );
+  assert(
+    s.twoVersionFails,
+    `只传两版时**没有失败** —— 矩阵会少一整列却看着正常。` +
+      `少传一份文件必须响亮失败。`,
+  );
+  return (
+    `3 版：${s.three.rows} 行 / ${s.three.verified} 有值 / 空格全有理由 / 复核全过；` +
+    `多 1 版：新列整列「未建规则」（有理由的空），已有三版不变；` +
+    `少 1 版：响亮失败`
+  );
+});
+
+check("no value is taken from a table cell that got scrambled", () => {
+  // 串行错位（配对错）是**取值级复核抓不到**的一类错：
+  // 它的形态是「每个数都是真的，只是配错了对象」——
+  // 「值在页上」分辨不出来。
+  //
+  // OXR/MinerU 的 A/B 实测里，GB4785-2019 的色度表整段串成一行，
+  // W1 拿到了表 2 的 0.373/0.402；B 版的表格数字精确率只有 0.364。
+  //
+  // 这一关把 OXR 实测的判据（M1 精确率 / M3 串行率）固化成可复算的测量
+  // （`scripts/table_quality.py`），并对**每一个**从串行格里出来的矩阵取值
+  // 追问一句：**它配的是哪个标签，验过吗？**
+  //
+  // 判据（两条都算过）：
+  //   ① 复核的「引文」档或「标签+取值」档成立 ⟹ 标签与数值**一起**在源 PDF
+  //      那一页上 ⟹ 配对已验；
+  //   ② match 短到只有值本身（'0.5 cd'）⟹ **没有标签可配错**，
+  //      条款与取值都在页上就够了。
+  // 两条都不成立的 ⟹ 配对未验，直接判失败。
+  const { ok, out } = runPy(["scripts/table_quality.py"], "table_quality");
+  assert(ok, `表格抽取质量测量失败:\n        ${out.slice(-600)}`);
+  const tq = JSON.parse(read("reports/table-quality.json"));
+  const s = tq.summary ?? {};
+  assert(
+    (s.pairingUnverified ?? 0) === 0,
+    `有 ${s.pairingUnverified} 个矩阵取值是从串行表格格里出来的、且**配对没有验过**：` +
+      `\n        ${(tq.pairingUnverified ?? []).join("\n        ")}\n` +
+      `        这些数确实在源 PDF 上，但「它配的是哪个标签」没验过 —— ` +
+      `可能是串行错位（值是真的、配错了对象）。`,
+  );
+  const pv = tq.perVersion ?? {};
+  const line = Object.entries(pv)
+    .map(([v, x]) => `${v} 精确率 ${x.precision} · 串行率 ${x.serpentine_rate}`)
+    .join(" · ");
+  return `串行风险 ${s.risky ?? 0} 格：配对已验 ${s.pairingVerified ?? 0} · 无可配对 ${s.pairingNotApplicable ?? 0} · 配对未验 ${s.pairingUnverified ?? 0}（${line}）`;
 });
 
 check("every empty matrix cell says why it is empty", () => {
