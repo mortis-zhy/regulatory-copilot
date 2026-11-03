@@ -1061,7 +1061,7 @@ export function buildParameterMatrix(
         verified++;
         if (r.cells[v].source === "源 PDF") fromSourcePdf++;
         const c = r.cells[v].corroborated;
-        if (!c) {
+        if (!c || c.status === "unchecked") {
           corrob.unchecked++;
         } else if (c.status === "on-page") {
           corrob.onPage++;

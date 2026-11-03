@@ -2281,10 +2281,11 @@ function buildChapter12Matrix(
     `| 条款在所报页（取值由英文词展开） | ${ev.clause ?? 0} | 'two minutes' → 2，页面上是词不是数字 |`,
     `| **页码不符** | **${cb.elsewhere}** | 取值在源 PDF 的别的页上 —— 见下表 |`,
     `| **源 PDF 全篇查不到** | **${cb.notFound}** | **疑似编造，必须为 0** |`,
+    `| 无法复核 | ${cb.unchecked} | 这一版没有源 PDF 语料，或该格没有页码 |`,
     "",
-    cb.notFound === 0 && cb.elsewhere === 0
+    cb.notFound === 0 && cb.elsewhere === 0 && cb.unchecked === 0
       ? `> **全部 ${stats.verified} 格都在所报的那一页上找到了证据**，页码与取值逐格对得上。`
-      : `> **${cb.elsewhere + cb.notFound} 格需要人工核对** —— 清单在下表。`,
+      : `> **${cb.elsewhere + cb.notFound + cb.unchecked} 格需要人工核对** —— 清单在下表。`,
     "",
     ...(cb.exceptions.length
       ? [

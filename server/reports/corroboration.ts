@@ -169,7 +169,13 @@ export function buildSourceIndex(pages: Array<[number, string]> | undefined): So
  * 「20」，找到了也说明不了什么，读者需要知道这一点。
  */
 export interface Corroboration {
-  status: "on-page" | "elsewhere" | "not-found";
+  /**
+   * `unchecked` 与 `not-found` **必须分开**：
+   * 前者是「没法复核」（这一版没有源 PDF 语料、或者这一格没有页码），
+   * 后者是「复核了，查不到」（疑似编造）。
+   * 把两者合并，等于在换标准、语料尚未入库时把「数据缺失」报成「数据造假」。
+   */
+  status: "on-page" | "elsewhere" | "not-found" | "unchecked";
   evidence: "excerpt" | "value+clause" | "value" | "clause" | "none";
   /** 取值在源 PDF 出现的页码 */
   valuePages: number[];
@@ -201,7 +207,7 @@ export function corroborateCell(
   index: SourceIndex | null,
 ): Corroboration {
   const empty: Corroboration = {
-    status: "on-page",
+    status: "unchecked",
     evidence: "none",
     valuePages: [],
     excerptPages: [],
@@ -209,7 +215,7 @@ export function corroborateCell(
     note: "未复核（该版本没有源 PDF 语料）",
   };
   if (!index || !index.pageNos.length) {
-    return { ...empty, status: "not-found", note: "未复核：没有该版本的源 PDF 语料" };
+    return { ...empty, note: "未复核：没有该版本的源 PDF 语料" };
   }
   const cited = citedPage(cell.page);
   if (!cited) {
