@@ -52,6 +52,12 @@ const ENTRIES = [
   // innerRoot 是仓库根目录的解析器，被 reportV6 与 qualitativeObligations 共用。
   // 两份副本正是 §11.9 找不到数据的原因，所以它必须进构建清单（改了没重建会被抓到）。
   ["server/reports/innerRoot.ts", "dist/innerRoot.js"],
+  // reportFileName 派生下载文件名（换标准时自动跟着变）。
+  // 单独列出来：闸门要**直接调用**它，验「派生结果里不含报告里没有的标准名」。
+  ["server/reports/reportFileName.ts", "dist/reportFileName.js"],
+  // projectRoot 是服务端**唯一**的项目根解析器。
+  // 单独列出来：闸门要直接 import 它，验「服务端解析到的路径 == 仓库根的路径」。
+  ["server/_core/projectRoot.ts", "dist/projectRoot.js"],
   // consistency.ts is the report's self-check. It needs its own module so
   // _test_consistency.mjs can feed it **synthetic** tables — the false
   // positives it used to raise (55 medium findings, 53 of them the checker's

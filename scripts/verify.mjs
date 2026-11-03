@@ -71,12 +71,22 @@ check("dist/.build-manifest.json matches source hashes", () => {
 console.log("\n=== 3. source invariants (never grep dist/) ===");
 
 check("ReportBuilder download filename", () => {
+  // 这一关原来钉的是**写死的** "GB 4785 多版本横向对比研究报告.pdf" ——
+  // 那正是「换标准后下载文件名还写着 GB 4785」的病根。
+  // 现在文件名**由服务端从报告的源文档清单派生**
+  // （见「the download filename is derived from the report, not hardcoded」那一关），
+  // 所以这里只钉结构：恰好一处 a.download，且它走派生函数。
   const src = read("client/src/components/ReportBuilder.tsx");
-  const hits = [...src.matchAll(/a\.download\s*=\s*"([^"]+)"/g)].map((m) => m[1]);
+  const hits = [...src.matchAll(/a\.download\s*=\s*([^;]+);/g)].map((m) => m[1].trim());
   assert(hits.length === 1, `expected exactly one a.download assignment, found ${hits.length}`);
   assert(
-    hits[0] === "GB 4785 多版本横向对比研究报告.pdf",
-    `download name is "${hits[0]}" — expected the GB 4785-prefixed name`,
+    /reportFileNameFromResponse\(/.test(hits[0]),
+    `download name is "${hits[0]}" — 它必须走派生函数（reportFileNameFromResponse），` +
+      `不能写死标准名`,
+  );
+  assert(
+    /from "\.\.\/lib\/reportFileName"/.test(src),
+    "ReportBuilder 没有导入 reportFileNameFromResponse",
   );
   return hits[0];
 });
@@ -2545,6 +2555,170 @@ check("the parameter proposer still finds what the specs found", () => {
     `候选池文件里记的召回（${c.recall}）与刚跑出来的（${recalled}/${anchors}）对不上`,
   );
   return `提议层召回 ${recalled}/${anchors} = ${(rate * 100).toFixed(1)}%（地板 ${FLOOR * 100}%）· 候选池 ${c.candidateCount} 条，与现语料一致`;
+});
+
+check("the web UI does not claim a report size it cannot know", () => {
+  // 网页文案里**手写**的页数/章数一定过期。
+  //
+  // 2026-11-03 用浏览器 MCP 跑了一遍全流程，当场看到：
+  //   「完整对比报告（20+ 页 PDF）」「动态 13 章」「约 15-20 分钟」
+  // 而实际交付件是 **258 页 · 14 章 · 约 2 分钟** ——
+  // 而且那段文案把 **MinerU 路径说成了 LLM 路径**
+  // （MinerU 那条根本不走 LLM，是确定性渲染）。
+  //
+  // 交付件的真实数字必须**来自报告对象**（report.chapters.length 等），
+  // 不许写在文案里。
+  //
+  // 判据只查 **JSX 文本**（>…< 之间）——
+  // 客户需求简报里的「至少 20 页」是**要求**，不是对交付件的描述，放过。
+  const files = [
+    "client/src/pages/Home.tsx",
+    "client/src/components/ReportBuilder.tsx",
+  ];
+  const bad = [];
+  for (const f of files) {
+    const src = read(f);
+    for (const m of src.matchAll(/>([^<>{}]*\d+\s*\+?\s*(?:页|章)[^<>{}]*)</g)) {
+      bad.push(`${f}: 「${m[1].trim().slice(0, 40)}」`);
+    }
+  }
+  assert(
+    !bad.length,
+    `网页文案里手写了交付件的页数/章数（会过期）：\n        ${bad.join("\n        ")}\n` +
+      `        这些数字必须来自报告对象 —— 交付件现在是 258 页、14 章，写死的版本总有一天对不上。`,
+  );
+  // 生成完成后的那一句必须用报告对象的章数
+  const rb = read("client/src/components/ReportBuilder.tsx");
+  assert(
+    /report\.chapters\.length/.test(rb),
+    "ReportBuilder 的完成提示没有用 report.chapters.length —— 章数是手写的还是算出来的？",
+  );
+  return "网页文案不手写交付件尺寸，数字来自报告对象";
+});
+
+// check() 是同步的（它不 await），所以派生函数的 import 必须在模块顶层做。
+const { reportFileName, contentDisposition } = await import("../dist/reportFileName.js");
+
+// check() 是同步的（它不 await），所以 import 必须在模块顶层做。
+const { REPORT_FILE, UPLOADED_DOCS_DIR, PROJECT_ROOT: SERVER_ROOT } = await import(
+  "../dist/projectRoot.js"
+);
+
+check("the server resolves project paths through one canonical root", () => {
+  // 开发模式（tsx 跑源码）与打包模式（dist/）的 `import.meta.dirname` **差一层**，
+  // 所以写死 `path.resolve(import.meta.dirname, "../reports")` 只对其中一种成立。
+  //
+  // 2026-11-03 用浏览器 MCP 跑全流程时撞上（而且**没有任何报错**）：
+  //   - 网站把上传的文件写进 `server/uploaded-docs/`，
+  //     而**回源复核层读的是仓库根的 `uploaded-docs/`** ——
+  //     于是**网站上传的新标准，管线根本看不见**：认不出它是哪一版、
+  //     复核不了它的取值。**泛化断在第一步。**
+  //   - 网站把生成的报告写进 `server/reports/last-report.json`，
+  //     而 CLI 与全部闸门读的是**仓库根的 `reports/last-report.json`** ——
+  //     **两份真相来源**（这个项目治过好几次的病，又长出来了）。
+  //
+  // 这一关查两件事：
+  //   ① **功能**：服务端解析出来的路径必须就是仓库根的那两个；
+  //   ② **源码**：server/_core 下不许再有 `../reports` / `../uploaded-docs` 这种相对写法。
+  assert(
+    REPORT_FILE === resolve(ROOT, "reports", "last-report.json"),
+    `服务端解析的报告落点是 ${REPORT_FILE}，不是仓库根的 reports/last-report.json —— ` +
+      `网站与 CLI 会各写各的（两份真相来源）。`,
+  );
+  assert(
+    UPLOADED_DOCS_DIR === resolve(ROOT, "uploaded-docs"),
+    `服务端解析的上传落点是 ${UPLOADED_DOCS_DIR}，不是仓库根的 uploaded-docs/ —— ` +
+      `回源复核层读不到网站上传的文件。`,
+  );
+  assert(
+    SERVER_ROOT === ROOT,
+    `服务端认到的项目根是 ${SERVER_ROOT}，不是 ${ROOT}`,
+  );
+  for (const f of ["server/_core/agentRoutes.ts", "server/_core/index.ts"]) {
+    const src = read(f);
+    const bad = [...src.matchAll(/import\.meta\.dirname,\s*"(\.\.\/(?:reports|uploaded-docs)[^"]*)"/g)].map(
+      (m) => m[1],
+    );
+    assert(
+      !bad.length,
+      `${f} 里还有写死的相对路径 ${bad.join("、")} —— ` +
+        `它只在一种布局下成立（开发模式与打包模式差一层）。用 projectRoot.ts 的解析器。`,
+    );
+  }
+  return `服务端路径统一到项目根：报告 ${REPORT_FILE.replace(ROOT, "<root>")} · 上传 ${UPLOADED_DOCS_DIR.replace(ROOT, "<root>")}`;
+});
+
+check("the download filename is derived from the report, not hardcoded", () => {
+  // 文件名是交付件的一部分（收件人先看名字）。
+  // 原来两处写死 "GB 4785 多版本横向对比研究报告.pdf" / "GB4785_多版本…"，
+  // 换一套新标准时下载下来的文件**名字里还写着 GB 4785**。
+  //
+  // 这一关是**功能性**的：直接调用派生函数，拿几个语料验结果 ——
+  // ① 现在的三版 → 名字里出现三个标准；
+  // ② **换成别的标准** → 名字里**不许再出现 GB 4785**；
+  // ③ 拿不到源文档清单 → 退回不带标准名的通用名（宁可少写，不可写错）。
+  const now = reportFileName(
+    {
+      sourceDocuments: [
+        { name: "GB 4785 草案 V4.3.5（103 页）" },
+        { name: "GB 4785-2019（81 页）" },
+        { name: "UN R48-09（147 页）" },
+      ],
+    },
+    "pdf",
+  );
+  assert(
+    /GB4785草案V4\.3\.5/.test(now) && /UNR48-09/.test(now) && /多版本横向对比研究报告\.pdf$/.test(now),
+    `派生文件名不对：${now}`,
+  );
+
+  // 换一套标准：名字里不许再出现 GB 4785
+  const other = reportFileName(
+    { sourceDocuments: [{ name: "UN R149（100 页）" }, { name: "GB 24599（60 页）" }] },
+    "pdf",
+  );
+  assert(
+    !/4785/.test(other),
+    `换标准后派生出来的文件名里还有 GB 4785：${other} —— ` +
+      `这正是原来写死标准名的后果。`,
+  );
+  assert(/UNR149/.test(other) && /GB24599/.test(other), `派生文件名不对：${other}`);
+
+  // 拿不到源文档清单 → 通用名
+  const none = reportFileName({}, "pdf");
+  assert(
+    !/4785|R48/.test(none) && /多版本横向对比研究报告\.pdf$/.test(none),
+    `没有源文档清单时不该编出标准名：${none}`,
+  );
+
+  // Content-Disposition 必须是 RFC 6266 的两段式（非 ASCII 名字不能裸进 header）
+  const cd = contentDisposition({ sourceDocuments: [{ name: "GB 4785 草案（103 页）" }] }, "pdf");
+  assert(
+    /filename="[^"]*"/.test(cd) && /filename\*=UTF-8''/.test(cd),
+    `Content-Disposition 缺 RFC 6266 的 filename* 段：${cd}`,
+  );
+  assert(
+    !/[^\x00-\x7f]/.test(/filename="([^"]*)"/.exec(cd)?.[1] ?? ""),
+    `Content-Disposition 的 ASCII 兜底名里混进了非 ASCII 字节（Chromium 会拒绝）：${cd}`,
+  );
+
+  // 源码里不许再有写死的标准名下载
+  for (const f of [
+    "client/src/pages/Home.tsx",
+    "client/src/components/ReportBuilder.tsx",
+    "server/_core/agentRoutes.ts",
+  ]) {
+    const src = read(f);
+    const hard = [...src.matchAll(/(?:download|filename)\s*[=:]\s*["'`][^"'`]*4785[^"'`]*["'`]/gi)].map(
+      (m) => m[0],
+    );
+    assert(
+      !hard.length,
+      `${f} 里还有写死标准名的下载文件名：\n        ${hard.join("\n        ")}\n` +
+        `        文件名要从报告的源文档清单派生。`,
+    );
+  }
+  return `文件名从报告派生：现在 → ${now}；换标准 → ${other}`;
 });
 
 check("a changed version set never degrades silently", () => {

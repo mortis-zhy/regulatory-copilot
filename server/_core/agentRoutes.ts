@@ -9,6 +9,7 @@ import { renderPdf, renderWordHtml, type ReportPayload } from "../reports/export
 import { extractPdfTextServer } from "../ingestion/pdfExtract";
 import { sidecarHealth, ensureSidecar, sidecarExtractDocs, sidecarVerify, buildSidecarReport, SIDECAR_URL } from "./sidecarClient";
 import { runDeliveryGate } from "./deliveryGate";
+import { PROJECT_ROOT, REPORT_FILE, UPLOADED_DOCS_DIR } from "./projectRoot";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -85,7 +86,10 @@ export function registerAgentRoutes(router: Router) {
         const path = await import("node:path");
         const crypto = await import("node:crypto");
         const hash = crypto.createHash("sha256").update(bytes).digest("hex").slice(0, 16);
-        const dir = path.resolve(import.meta.dirname, "../uploaded-docs");
+        // 落点必须是**仓库根的 uploaded-docs/** —— 回源复核层（loadSourceCorpus）
+        // 与 Python 审计器读的就是那里。写到 server/uploaded-docs/ 的话，
+        // **网站上传的新标准管线根本看不见**（认不出是哪一版、复核不了取值）。
+        const dir = UPLOADED_DOCS_DIR;
         fs.mkdirSync(dir, { recursive: true });
         localFilePath = path.join(dir, `${hash}.pdf`);
         if (!fs.existsSync(localFilePath)) {
@@ -265,7 +269,7 @@ export function registerAgentRoutes(router: Router) {
       if (body?.useV8) {
         const fs = await import("node:fs");
         const path = await import("node:path");
-        const file = path.resolve(import.meta.dirname, "../reports/last-report.json");
+        const file = REPORT_FILE;
         if (!fs.existsSync(file)) {
           return res.status(409).json({
             error: "尚未生成对比报告。请先在「法规对比任务」页生成完整报告，再导出 PDF。",
@@ -288,14 +292,20 @@ export function registerAgentRoutes(router: Router) {
           });
         }
         const rawPdf = await renderPdfFromReportV8(report);
+        // 文件名**从报告的源文档清单派生** —— 换一套新标准时自动跟着变。
+        // 原来这里写死 "GB4785-multiversion-comparison-report.pdf"，
+        // 于是换标准后下载下来的文件名字里还写着 GB 4785。
+        const { contentDisposition, reportFileNameHeader } = await import("../reports/reportFileName");
         return res
           .status(200)
           .set({
             "Content-Type": "application/pdf",
-            // ASCII-only filename in the header — RFC 6266 forbids raw
-            // non-ASCII bytes in header values (Chromium rejects it).
-            // The browser-side link sets the Chinese display name instead.
-            "Content-Disposition": `attachment; filename="GB4785-multiversion-comparison-report.pdf"`,
+            // RFC 6266：ASCII 兜底 + filename*=UTF-8'' 正式名（浏览器优先用它）。
+            // 非 ASCII 字节不能直接进 header 值（Chromium 会拒绝）。
+            "Content-Disposition": contentDisposition(report, "pdf"),
+            // 自定义头带 UTF-8 原名，客户端直接拿来当 a.download
+            // 百分号编码 —— Node 的 HTTP 层拒绝非 ASCII 的 header 值
+            "X-Report-Filename": reportFileNameHeader(report, "pdf"),
           })
           .send(rawPdf);
       }
@@ -375,7 +385,7 @@ export function registerAgentRoutes(router: Router) {
       try {
         const fs = await import("node:fs");
         const path = await import("node:path");
-        const dir = path.resolve(import.meta.dirname, "../reports");
+        const dir = path.dirname(REPORT_FILE);
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(
           path.join(dir, "last-report.json"),
@@ -541,7 +551,7 @@ export function registerAgentRoutes(router: Router) {
             const fs = await import("node:fs");
             const path = await import("node:path");
             // dist/index.mjs → repo/reports/
-            const dir = path.resolve(import.meta.dirname, "../reports");
+            const dir = path.dirname(REPORT_FILE);
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(
               path.join(dir, "last-report.json"),
@@ -583,7 +593,7 @@ export function registerAgentRoutes(router: Router) {
     try {
       const fs = await import("node:fs");
       const path = await import("node:path");
-      const file = path.resolve(import.meta.dirname, "../reports/last-report.json");
+      const file = REPORT_FILE;
       if (!fs.existsSync(file)) {
         return res.status(404).json({ error: "no report generated yet" });
       }
@@ -629,8 +639,10 @@ export function registerAgentRoutes(router: Router) {
     try {
       const fs = await import("node:fs");
       const path = await import("node:path");
-      const repoRoot = path.resolve(import.meta.dirname, "../..");
-      const reportFile = path.resolve(import.meta.dirname, "../reports/last-report.json");
+      // 项目根用统一的解析器 —— `../..` 只在源码布局下对
+      // （打包后在 dist/ 里，`../..` 会跑到**仓库的上一层**去）。
+      const repoRoot = PROJECT_ROOT;
+      const reportFile = REPORT_FILE;
       if (!fs.existsSync(reportFile)) return res.status(404).json({ error: "no report generated yet" });
       const report = JSON.parse(fs.readFileSync(reportFile, "utf-8"));
       // PRIMARY: in-process trust analysis (trustChecks.ts) — no external file.
@@ -668,7 +680,7 @@ export function registerAgentRoutes(router: Router) {
       }
 
       // ---------- 5. 合并人工审阅结论 ----------
-      const verdictFile = path.join(path.resolve(import.meta.dirname, "../reports"), "verdicts.json");
+      const verdictFile = path.join(path.dirname(REPORT_FILE), "verdicts.json");
       const human: Record<string, { verdict: string; note: string; at: string }> = {};
       if (fs.existsSync(verdictFile)) {
         try { Object.assign(human, JSON.parse(fs.readFileSync(verdictFile, "utf-8"))); } catch { /* ignore */ }
@@ -724,7 +736,7 @@ export function registerAgentRoutes(router: Router) {
     try {
       const fs = await import("node:fs");
       const path = await import("node:path");
-      const reportFile = path.resolve(import.meta.dirname, "../reports/last-report.json");
+      const reportFile = REPORT_FILE;
       if (!fs.existsSync(reportFile)) return res.status(404).json({ error: "no report generated yet" });
       const report = JSON.parse(fs.readFileSync(reportFile, "utf-8"));
       const chapters = report.chapters ?? [];
@@ -807,11 +819,14 @@ export function registerAgentRoutes(router: Router) {
 
       const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
       const rawPdf = await renderPdfFromReportV8(req.body);
+      // 文件名同样**从报告的源文档清单派生**（与 /report/pdf 同一处实现）。
+      const { contentDisposition, reportFileNameHeader } = await import("../reports/reportFileName");
       res
         .status(200)
         .set({
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.pdf`,
+          "Content-Disposition": contentDisposition(req.body, "pdf"),
+          "X-Report-Filename": reportFileNameHeader(req.body, "pdf"),
         })
         .send(rawPdf);
     } catch (error) {

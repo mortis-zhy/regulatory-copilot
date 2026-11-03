@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Download, FileText, Loader2, CheckCircle2, CircleDashed, Sparkles } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
+import { reportFileNameFromResponse } from "../lib/reportFileName";
 
 type ChapterSpec = { id: number; title: string; sections: string[] };
 type ReportOutline = {
@@ -173,7 +174,9 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "GB 4785 多版本横向对比研究报告.pdf";
+      // 文件名**由服务端从报告的源文档清单派生** —— 换一套标准时自动跟着变，
+      // 不会下载出一个名字里还写着 GB 4785 的新标准的报告。
+      a.download = reportFileNameFromResponse(res, "pdf");
       a.click();
       URL.revokeObjectURL(url);
       toast.success("报告 PDF 已下载");
@@ -318,10 +321,12 @@ export default function ReportBuilder({ docs, onClose }: Props) {
           <div className="flex flex-col items-center justify-center gap-4 py-14 text-center">
             <Sparkles className="h-9 w-9 text-[#a17334]" />
             <div>
-              <p className="text-sm font-medium text-[#0c1a2b]">生成 20+ 页专业对比报告</p>
+              <p className="text-sm font-medium text-[#0c1a2b]">生成逐章三版对照报告</p>
               <p className="mt-1.5 max-w-md text-xs leading-5 text-[#7c6a4f]">
-                管线：Regex 精确提取条款/数值 → LLM 动态生成章节大纲 → 逐章流式生成（每章三版本对比表格 + 变更标注 + 数据溯源） → HTML→PDF 专业排版。
-                预计需要 15-20 分钟。
+                <strong>MinerU 高精度路径</strong>：抽取条款/数值 → 逐章三版对照（每格带条款号与页码）
+                → <strong>逐格回源 PDF 复核</strong> → HTML→PDF 专业排版，约 2–4 分钟。
+                <br />
+                <strong>快速草稿路径</strong>：LLM 逐章流式生成（未经回源复核），约 15–20 分钟。
               </p>
             </div>
             <p className="text-[11px] text-[#9c8b6c]">
@@ -421,7 +426,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
               ✅ 报告生成完成！{report.chapters.length} 章 · {totalChars.toLocaleString()} 字
             </p>
             <p className="mt-1 text-[11px] text-[#3a6b4f]">
-              点击右上角「下载 PDF」获取专业排版的 20+ 页报告（封面 · 目录 · 逐章对比表格 · 变更标注）。
+              点击右上角「下载 PDF」获取专业排版报告（封面 · 目录 · 逐章对比表格 · 变更标注）。
             </p>
           </div>
         )}

@@ -11,7 +11,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerAgentRoutes } from "./agentRoutes";
-import { registerParameterProposalRoutes, PROJECT_ROOT } from "./parameterProposals";
+import { registerParameterProposalRoutes } from "./parameterProposals";
+import { PROJECT_ROOT, REPORT_FILE } from "./projectRoot";
 import path from "node:path";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -98,7 +99,7 @@ async function startServer() {
     // produced it. /api/agent/report/last previously just 404'd with no clue
     // why the UI looked empty.
     try {
-      const f = nodePath.resolve(import.meta.dirname, "../reports/last-report.json");
+      const f = REPORT_FILE;
       if (nodeFs.existsSync(f)) {
         const st = nodeFs.statSync(f);
         let gen = "unknown";

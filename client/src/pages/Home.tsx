@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { reportFileNameFromResponse } from "../lib/reportFileName";
 import {
   ArrowUp,
   CheckCircle2,
@@ -920,7 +921,9 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = "GB4785_多版本横向对比研究报告.pdf";
+          // 文件名**由服务端从报告的源文档清单派生** —— 换一套标准时自动跟着变，
+          // 不会下载出一个名字里还写着 GB 4785 的新标准的报告。
+          link.download = reportFileNameFromResponse(response, "pdf");
           link.click();
           URL.revokeObjectURL(url);
           toast.success("对比报告 PDF 已下载（完整多版本横评）");
@@ -1011,8 +1014,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
                     <Sparkles className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-[13px] font-medium text-[#0c1a2b]">完整对比报告（20+ 页 PDF）</p>
-                    <p className="text-[11px] text-[#7c6a4f]">Regex 提取 + 动态 13 章 + 逐章流式生成 + 专业排版，约 15-20 分钟</p>
+                    <p className="text-[13px] font-medium text-[#0c1a2b]">完整对比报告（逐章三版对照 PDF）</p>
+                    <p className="text-[11px] text-[#7c6a4f]">抽取条款/数值 → 逐章三版对照 → 逐格回源复核 → 专业排版，约 2–4 分钟</p>
                   </div>
                 </div>
                 <button
