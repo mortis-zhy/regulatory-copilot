@@ -1,0 +1,328 @@
+/**
+ * 取值级「回源 PDF 复核」。
+ *
+ * ## 为什么要有这一层
+ *
+ * 矩阵里每一格的页码来自 MinerU 的分页标记，值来自 MinerU 的抽取结果。
+ * 交付前那道闸（`scripts/matrix_page_check.py`）拿**引文**回源 PDF 找，
+ * 找不到就归为「skipped —— MinerU 与源 PDF 措辞不同，查不到不算错」。
+ *
+ * 那个「不算错」是一个**没有证据的免罪**：实测 796 个取值格里有 120 格
+ * 引文根本查不到（引文本身就是纯数值：'1300'、'2 0 ^'、'20 ㎜'，
+ * 源 PDF 写成 '1,300'、'20°'、'20 mm'），而「措辞不同」与
+ * **「这个值根本是编出来的」**在那一格里长得一模一样。
+ *
+ * 所以复核下沉到**取值层**：不看引文，直接看这个值本身在不在源 PDF 里。
+ *
+ * ## 三档证据（任一档落在所报的那一页上，就算定位成功）
+ *
+ * | 档 | 证据 | 强度 |
+ * |---|---|---|
+ * | `excerpt` | 引文片段在所报页上 | 最强：读者翻过去能看到那句话 |
+ * | `value`   | 取值字面量在所报页上 | 中：能看到的那个数在 |
+ * | `clause`  | 条款号在所报页上 | 弱：条款在，但值可能是英文词（'two minutes'） |
+ *
+ * 三档都不在所报页、但值在文档别处 → **页码不符**；
+ * 三档都不在、值在整份文档里也找不到 → **疑似编造**（这一类必须为 0）。
+ *
+ * ## 为什么「引文查不到」不等于「值查不到」
+ *
+ * 源 PDF 的写法与 MinerU 的转写系统性不同：
+ *   '1,300' / '1 300' / '1300'      —— 千分位
+ *   '20 ㎜' / '20 mm' / '20°'        —— 单位与符号
+ *   '$2 0 ^ { \circ }' / '2 0 ^'    —— LaTeX 把一个数字拆成两位
+ *   '0.150' / '0.15'                —— 有效位
+ *   'two minutes' / '2'             —— 英文数词展开
+ * 所以取值要**同时**用「字面量」和「规范化后的数值」去找。
+ */
+
+/** 数字 token：允许千分位逗号与小数点连用（'1,300' / '0.150'）。 */
+const NUMTOK = /\d+(?:[.,]\d+)*/g;
+
+/** 数字之间的逗号（千分位）。 */
+const COMMA_BETWEEN_DIGITS = /(\d)[,，](\d)/g;
+
+/** 去标签 / 去 LaTeX / 去表格竖线 / 去空白。 */
+export function normalizeText(s: string): string {
+  return String(s ?? "")
+    .replace(/\$\s*\\mathrm\s*\{([^}]*)\}\s*\$/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\\[a-zA-Z]+/g, " ")
+    .replace(/[|^{}_]/g, "")
+    // 表格竖线只在 MinerU 的转写里有，源 PDF 的文本层没有。
+    // 不去掉的话，引文片段会带着 '||' 去源 PDF 里找，永远找不到 ——
+    // 那正是「das.wiperDuration」这一格长期挂在 skipped 里的原因。
+    .replace(/\|/g, "")
+    .replace(/㎜/g, "mm")
+    .replace(/\s+/g, "");
+}
+
+/** 千分位逗号去掉，空白也去掉 —— 「数字在哪」的最终形态。 */
+function squash(s: string): string {
+  let prev = "";
+  let t = String(s ?? "");
+  while (prev !== t) {
+    prev = t;
+    t = t.replace(COMMA_BETWEEN_DIGITS, "$1$2");
+  }
+  return t.replace(/\s+/g, "");
+}
+
+/**
+ * 引文与源页文本必须**用同一套归一化**，否则永远对不上。
+ *
+ * 这里踩过一次：源页文本去掉了千分位逗号（'7,000 lx' → '7000lx'），
+ * 而引文片段没有（仍是 '7,000lx.'）—— 于是「引文在页上」这一档
+ * 整整少了 115 格，全都掉到了证据更弱的「取值在页」那档。
+ * **两边归一化不一致，是比规则本身更容易犯、也更难发现的错。**
+ */
+function canonicalText(s: string): string {
+  return squash(normalizeText(s));
+}
+
+/** 一个数字前面不能是数字，后面也不能是数字（否则 '20' 会命中 '200'）。 */
+function digitAt(s: string, i: number): boolean {
+  return i >= 0 && i < s.length && s[i] >= "0" && s[i] <= "9";
+}
+
+/**
+ * 字面量是否作为一个**独立的数**出现在压平后的文本里。
+ *
+ * 边界规则：前后都不能是数字；前后都不能是「小数点 + 数字」
+ * （否则 '0.15' 会命中 '0.150' 的前半截 —— 那是同一个数，但要按原样对）。
+ */
+export function hasLiteral(squashed: string, lit: string): boolean {
+  if (!lit) return false;
+  let i = squashed.indexOf(lit);
+  while (i >= 0) {
+    const before = i > 0 ? squashed[i - 1] : "";
+    const after = squashed[i + lit.length] ?? "";
+    const beforeBad = digitAt(squashed, i - 1) || (before === "." && digitAt(squashed, i - 2));
+    const afterBad = digitAt(squashed, i + lit.length) || (after === "." && digitAt(squashed, i + lit.length + 1));
+    if (!beforeBad && !afterBad) return true;
+    i = squashed.indexOf(lit, i + 1);
+  }
+  return false;
+}
+
+/** 从引文里挑一段足够独特、又不会太长的连续文字（对齐 matrix_page_check.py）。 */
+export function excerptFragment(excerpt: string, match: string, width = 14): string {
+  const n = canonicalText(excerpt);
+  if (n.length < width) return n;
+  const m = canonicalText(match);
+  const at = m ? n.indexOf(m) : -1;
+  if (at < 0 || !m) return n.slice(0, width * 2);
+  return n.slice(at, at + m.length + width);
+}
+
+/** 一个取值在源 PDF 里可能的所有写法。 */
+export function valueCandidates(match: string, nums: string[]): string[] {
+  const out = new Set<string>();
+  for (const m of String(match ?? "").matchAll(NUMTOK)) {
+    const tok = m[0];
+    // 两个点以上是条款号（'5.2.4.2'），不是值。
+    if ((tok.match(/\./g) ?? []).length >= 2) continue;
+    out.add(tok);
+    out.add(tok.replace(/[,，]/g, ""));
+  }
+  for (const raw of nums ?? []) {
+    const s = String(raw).replace(/[,，]/g, "");
+    if (!s) continue;
+    out.add(s);
+    // '1300' 的源 PDF 写法可能是 '1,300' 或 '1 300'。
+    if (/^\d{4,}$/.test(s)) {
+      out.add(`${s.slice(0, -3)},${s.slice(-3)}`);
+      out.add(`${s.slice(0, -3)} ${s.slice(-3)}`);
+    }
+  }
+  return [...out];
+}
+
+/** 一版源 PDF 的索引：页码 → 压平后的文本。 */
+export interface SourceIndex {
+  /** 源 PDF 的页码（1 起） */
+  pageNos: number[];
+  /** 与 pageNos 一一对应的压平文本 */
+  squashed: string[];
+}
+
+export function buildSourceIndex(pages: Array<[number, string]> | undefined): SourceIndex | null {
+  if (!pages || !pages.length) return null;
+  const pageNos: number[] = [];
+  const squashed: string[] = [];
+  for (const [no, text] of pages) {
+    pageNos.push(no);
+    // 源页文本必须与引文片段**走同一套归一化**。
+    // GB 4785 的 PDF 文本层带 LaTeX 残渣（`^{...}`、`_`），
+    // 只去空白而不去标记，源页就会多出引文里没有的字符 ——
+    // 于是引文明明在那一页上，却判成「查不到」（实测差 45 格）。
+    squashed.push(canonicalText(text));
+  }
+  return { pageNos, squashed };
+}
+
+/**
+ * 复核结论。
+ *
+ * `status` 是给人看的结论，`evidence` 是支撑它的证据类型，
+ * `rarity` 是**这次复核有几分分量** —— 一个在全文 60% 的页上都出现的
+ * 「20」，找到了也说明不了什么，读者需要知道这一点。
+ */
+export interface Corroboration {
+  status: "on-page" | "elsewhere" | "not-found";
+  evidence: "excerpt" | "value+clause" | "value" | "clause" | "none";
+  /** 取值在源 PDF 出现的页码 */
+  valuePages: number[];
+  /** 引文在源 PDF 出现的页码 */
+  excerptPages: number[];
+  /** 取值（或引文）在全文出现的页占比 0..1 */
+  rarity: number;
+  /** 一句话说明，给报告直接用 */
+  note: string;
+}
+
+/** 复核所需的格子字段（避免与 parameterMatrix.ts 循环依赖）。 */
+export interface CorroborationTarget {
+  value: string;
+  match: string;
+  nums: string[];
+  clause: string;
+  page: string;
+}
+
+/** 从 '第36页' 里取出页码。 */
+function citedPage(page: string): number | null {
+  const m = /第\s*(\d+)\s*页/.exec(String(page ?? ""));
+  return m ? Number(m[1]) : null;
+}
+
+export function corroborateCell(
+  cell: CorroborationTarget,
+  index: SourceIndex | null,
+): Corroboration {
+  const empty: Corroboration = {
+    status: "on-page",
+    evidence: "none",
+    valuePages: [],
+    excerptPages: [],
+    rarity: 0,
+    note: "未复核（该版本没有源 PDF 语料）",
+  };
+  if (!index || !index.pageNos.length) {
+    return { ...empty, status: "not-found", note: "未复核：没有该版本的源 PDF 语料" };
+  }
+  const cited = citedPage(cell.page);
+  if (!cited) {
+    return { ...empty, note: "未复核：该格没有页码" };
+  }
+  const at = (no: number) => index.pageNos.indexOf(no);
+
+  // ── 证据一：引文片段 ────────────────────────────────────────────────
+  const frag = excerptFragment(cell.value, cell.match);
+  const excerptPages: number[] = [];
+  if (frag.length >= 8) {
+    for (let i = 0; i < index.squashed.length; i++) {
+      if (index.squashed[i].includes(frag)) excerptPages.push(index.pageNos[i]);
+    }
+  }
+
+  // ── 证据二：取值字面量 ──────────────────────────────────────────────
+  const cands = valueCandidates(cell.match, cell.nums);
+  const valuePages: number[] = [];
+  for (let i = 0; i < index.squashed.length; i++) {
+    if (cands.some((c) => hasLiteral(index.squashed[i], c))) valuePages.push(index.pageNos[i]);
+  }
+
+  // ── 证据三：条款号 ──────────────────────────────────────────────────
+  const clause = String(cell.clause ?? "").trim();
+  const clausePages: number[] = [];
+  if (clause) {
+    for (let i = 0; i < index.squashed.length; i++) {
+      if (hasLiteral(index.squashed[i], clause)) clausePages.push(index.pageNos[i]);
+    }
+  }
+
+  const citedIdx = at(cited);
+  const onExcerpt = citedIdx >= 0 && excerptPages.includes(cited);
+  const onValue = citedIdx >= 0 && valuePages.includes(cited);
+  const onClause = citedIdx >= 0 && clausePages.includes(cited);
+
+  // 分量：取值（或引文）在全文出现的页占比。
+  const denom = index.pageNos.length;
+  const rarity = Math.min(
+    1,
+    (valuePages.length ? valuePages.length : excerptPages.length) / (denom || 1),
+  );
+
+  if (onExcerpt) {
+    return {
+      status: "on-page",
+      evidence: "excerpt",
+      valuePages,
+      excerptPages,
+      rarity,
+      note: `引文与取值都在源 PDF 第 ${cited} 页`,
+    };
+  }
+  if (onValue) {
+    // 取值与条款号同时落在所报页上 —— 这是人工复核时真正会看的东西：
+    // 「翻到第 N 页，看到第 X 条写着那个数」。证据分量比单看取值强得多。
+    if (onClause) {
+      return {
+        status: "on-page",
+        evidence: "value+clause",
+        valuePages,
+        excerptPages,
+        rarity,
+        note: `取值与条款 ${clause} 都在源 PDF 第 ${cited} 页（引文措辞与源 PDF 不同）`,
+      };
+    }
+    return {
+      status: "on-page",
+      evidence: "value",
+      valuePages,
+      excerptPages,
+      rarity,
+      note: `取值在源 PDF 第 ${cited} 页（引文措辞与源 PDF 不同）`,
+    };
+  }
+  if (onClause) {
+    return {
+      status: "on-page",
+      evidence: "clause",
+      valuePages,
+      excerptPages,
+      rarity,
+      note: `条款 ${clause} 在源 PDF 第 ${cited} 页（取值是英文词展开，页面上是词不是数字）`,
+    };
+  }
+  // 值在文档别处 → 页码不符
+  if (valuePages.length) {
+    return {
+      status: "elsewhere",
+      evidence: "value",
+      valuePages,
+      excerptPages,
+      rarity,
+      note: `取值在源 PDF 第 ${valuePages.slice(0, 5).join("、")} 页，不在所报的第 ${cited} 页`,
+    };
+  }
+  if (excerptPages.length) {
+    return {
+      status: "elsewhere",
+      evidence: "excerpt",
+      valuePages,
+      excerptPages,
+      rarity,
+      note: `引文在源 PDF 第 ${excerptPages.slice(0, 5).join("、")} 页，不在所报的第 ${cited} 页`,
+    };
+  }
+  return {
+    status: "not-found",
+    evidence: "none",
+    valuePages,
+    excerptPages,
+    rarity,
+    note: `取值与引文在源 PDF 全篇都查不到（所报第 ${cited} 页）`,
+  };
+}

@@ -119,6 +119,16 @@ export interface Cell {
    * therefore made explicitly, with the clause that was checked, or not at all.
    */
   absentReason?: string;
+  /**
+   * 取值级「回源 PDF 复核」的结论。
+   *
+   * 之前这道复核只做在**引文**上（`scripts/matrix_page_check.py`），
+   * 而引文查不到时被归为「措辞不同，查不到不算错」——
+   * 那和「这个值是编出来的」在数据里长得一模一样。
+   * 这一栏把复核下沉到取值层，让**每一格**都有明确结论，
+   * 人工只需要看复核不通过的那几格。
+   */
+  corroborated?: Corroboration;
 }
 
 /**
@@ -175,6 +185,52 @@ export interface MatrixStats {
   changed: number;
   /** cells recovered from the source PDF after MinerU failed. */
   fromSourcePdf: number;
+  /**
+   * 取值级「回源 PDF 复核」的汇总。
+   *
+   * 这一栏是给**人工**用的：复核通过的格子不用看，没通过的才要看。
+   * 复核不了（没有源 PDF 语料 / 该格没有页码）的格子单列，不与
+   * 「查不到」混在一起 —— 前者是数据缺失，后者是可疑数据。
+   */
+  corroboration: {
+    /** 在所报的那一页上找到了证据 */
+    onPage: number;
+    /** 值在文档别处 —— 页码不符 */
+    elsewhere: number;
+    /** 值与引文在全篇都查不到 —— 疑似编造，必须为 0 */
+    notFound: number;
+    /** 没法复核 */
+    unchecked: number;
+    /** 证据类型分布 */
+    byEvidence: Record<string, number>;
+    /** 复核不通过的格子清单 */
+    exceptions: Array<{
+      id: string;
+      name: string;
+      version: Version;
+      page: string;
+      value: string;
+      status: string;
+      note: string;
+    }>;
+    /**
+     * 「复核分量有限」的格子：只有取值这一档证据，而那个取值在整份文档里
+     * 又到处都是（'3 m'、'15°' 这种）。
+     *
+     * 它们**不是错** —— 但「在第 72 页上找到了 3」这句话本身说明不了什么，
+     * 所以必须单独列出来让人看一眼。人工要看的量由此从「全部取值格」
+     * 降到这一张清单。
+     */
+    weak: Array<{
+      id: string;
+      name: string;
+      version: Version;
+      page: string;
+      value: string;
+      rarity: number;
+      note: string;
+    }>;
+  };
 }
 
 /** One parameter. `p` maps a version to the pattern that locates its value. */
@@ -342,6 +398,12 @@ export function numbersOf(s: string, unit?: string): string[] {
  * stays here, editable without touching code.
  */
 import SPECS_JSON from "../../data/parameter-specs.json";
+import {
+  buildSourceIndex,
+  corroborateCell,
+  type Corroboration,
+  type SourceIndex,
+} from "./corroboration";
 
 interface SpecJson {
   id: string;
@@ -903,6 +965,28 @@ export function buildParameterMatrix(
   const P: Record<Version, Array<[number, string]>> = {};
   for (const v of versions) P[v] = paginate(data[v]);
 
+  // 源 PDF 的逐页索引 —— 取值级复核要拿它当独立证据。
+  const sourceIndex: Record<string, SourceIndex | null> = {};
+  for (const v of versions) sourceIndex[v] = buildSourceIndex(corpus.pages[v]);
+
+  /** 给一个已定位的取值做一次回源 PDF 复核。 */
+  const verify = (hit: Cell, v: Version): Cell => {
+    if (hit.status !== "verified") return hit;
+    return {
+      ...hit,
+      corroborated: corroborateCell(
+        {
+          value: hit.value,
+          match: hit.match,
+          nums: hit.nums,
+          clause: hit.clause,
+          page: hit.page,
+        },
+        sourceIndex[v] ?? null,
+      ),
+    };
+  };
+
   const cell = (
     v: Version,
     re?: RegExp,
@@ -917,10 +1001,10 @@ export function buildParameterMatrix(
     }
     // MinerU first; the source PDF only when MinerU produced nothing.
     const hit = locate(P[v], re, "MinerU", clause, unit);
-    if (hit.status === "verified") return hit;
+    if (hit.status === "verified") return verify(hit, v);
     const alt = corpus.pages[v] ?? [];
     const out = alt.length ? locate(alt, re, "源 PDF", clause, unit) : hit;
-    if (out.status === "verified") return out;
+    if (out.status === "verified") return verify(out, v);
     // A spec may claim "this version does not require it" — but only if the
     // pattern genuinely finds nothing. If it DOES match, the claim is a false
     // regulatory conclusion and must fail loudly rather than be printed.
@@ -961,12 +1045,62 @@ export function buildParameterMatrix(
   for (const v of versions) byVersion[v] = { hit: 0, total: SPECS.length };
   let verified = 0;
   let fromSourcePdf = 0;
+  const corrob: MatrixStats["corroboration"] = {
+    onPage: 0,
+    elsewhere: 0,
+    notFound: 0,
+    unchecked: 0,
+    byEvidence: {},
+    exceptions: [],
+    weak: [],
+  };
   for (const r of rows) {
     for (const v of versions) {
       if (r.cells[v].status === "verified") {
         byVersion[v].hit++;
         verified++;
         if (r.cells[v].source === "源 PDF") fromSourcePdf++;
+        const c = r.cells[v].corroborated;
+        if (!c) {
+          corrob.unchecked++;
+        } else if (c.status === "on-page") {
+          corrob.onPage++;
+          corrob.byEvidence[c.evidence] = (corrob.byEvidence[c.evidence] ?? 0) + 1;
+          // 只有取值这一档、而取值又在全文到处都有的格子：找到了，但说明不了什么。
+          if (c.evidence === "value" && c.rarity > 0.2) {
+            corrob.weak.push({
+              id: r.id,
+              name: r.name,
+              version: v,
+              page: r.cells[v].page,
+              value: r.cells[v].nums.join(" / ") || r.cells[v].value.slice(0, 40),
+              rarity: c.rarity,
+              note: c.note,
+            });
+          }
+        } else if (c.status === "elsewhere") {
+          corrob.elsewhere++;
+          corrob.exceptions.push({
+            id: r.id,
+            name: r.name,
+            version: v,
+            page: r.cells[v].page,
+            value: r.cells[v].nums.join(" / ") || r.cells[v].value.slice(0, 40),
+            status: c.status,
+            note: c.note,
+          });
+        } else {
+          corrob.notFound++;
+          corrob.exceptions.push({
+            id: r.id,
+            name: r.name,
+            version: v,
+            page: r.cells[v].page,
+            value: r.cells[v].nums.join(" / ") || r.cells[v].value.slice(0, 40),
+            status: c.status,
+            note: c.note,
+          });
+        }
       }
     }
   }
@@ -980,6 +1114,7 @@ export function buildParameterMatrix(
       byVersion,
       fromSourcePdf,
       changed: rows.filter((r) => r.verdict === "changed").length,
+      corroboration: corrob,
     },
   };
 }

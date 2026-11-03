@@ -418,10 +418,21 @@ function collectTableRows(lines: string[], start: number): { rowLines: string[];
  * UN R48 excerpt sitting unused in the markdown the whole time.
  */
 function findVersionIdx(header: string[]): number {
-  for (let i = 0; i < header.length; i++) {
-    const h = (header[i] ?? "").replace(/\*/g, "").trim();
-    if (/^(版本|来源|文档|文件|标准|version|document|file)$/i.test(h)) return i;
-  }
+  // **只在第 0 列认版本列。**
+  //
+  // 纵向对照表的约定是「第一列是文档/版本，后面几列是该文档的属性」——
+  // 报告里所有这类表（附录 C/D/E 的「文档 | 条款 | 页码 | 原文摘录」）都是
+  // 第 0 列。放宽到任意一列，会把
+  //   | 参数 | 版本 | 矩阵报的页 | 取值 | 该值出现在全文 |
+  // 这种「**版本是某一行的属性**」的表误判成纵向对照表：
+  // 渲染器按「每行一个文档」重排，于是**参数名列被整列丢掉**，
+  // 交付件里那张表只剩页码与取值，看不出是哪一条参数。
+  //
+  // 这不是假设 —— 2026-11-03 的 §12.5「复核分量有限」那张表就是这么丢的，
+  // 而且丢得**毫无报错**：表还在、页还在、数字还在，只有名字没了。
+  if (!header.length) return -1;
+  const h = (header[0] ?? "").replace(/\*/g, "").trim();
+  if (/^(版本|来源|文档|文件|标准|version|document|file)$/i.test(h)) return 0;
   return -1;
 }
 

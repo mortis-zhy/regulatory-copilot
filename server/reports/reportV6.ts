@@ -2066,6 +2066,10 @@ function buildChapter12Matrix(
       "（明细表页码后标注「· 源 PDF」）。GB 4785-2019 的色度表文本层会把三列串成一行" +
       "（WWWW34564561黄紫紫蓝色红色色边…），" +
       "直读源 PDF 并把碎片拼接后可完整还原。",
+    `**回源复核**：已定位的 ${stats.verified} 个取值格，每一个都拿**源 PDF 的那一页**当独立证据核过 —— ` +
+      `取值本身能不能在那页上找到。` +
+      `${stats.corroboration.onPage} 格在所报页上找到了证据` +
+      `${stats.corroboration.exceptions.length ? `，**${stats.corroboration.exceptions.length} 格需要人工看一眼**（见 12.5）` : ""}。`,
     "",
     "---",
     "",
@@ -2250,7 +2254,74 @@ function buildChapter12Matrix(
     renderMatrixDetails(needAction, vs),
   ].join("\n");
 
-  return head + decisionView + grouped + details + tail + divergenceMd;
+  // ── 12.5 取值回源复核 ───────────────────────────────────────────────
+  // 这一节回答的是「这些格子可信吗」。
+  //
+  // 以前只有一道闸在做这件事（`scripts/matrix_page_check.py`），它拿**引文**
+  // 回源 PDF 找，找不到就归为「措辞不同，查不到不算错」——
+  // 而「措辞不同」与「这个值是编出来的」在数据里长得一模一样。
+  // 现在复核下沉到**取值层**：不看引文，直接看这个值本身在不在源 PDF 里，
+  // 于是每一格都有明确结论，人工只看复核不通过的那几格。
+  const cb = stats.corroboration;
+  const ev = cb.byEvidence ?? {};
+  const corroborationMd = [
+    "",
+    "---",
+    "",
+    "## 12.5 取值回源复核（每一格都回源 PDF 核过）",
+    "",
+    `本章已定位的 **${stats.verified} 个取值格**，每一个都拿**源 PDF 的那一页**当独立证据核过。`,
+    "证据分四档，任一档落在所报的那一页上，即算定位成功：",
+    "",
+    "| 证据档 | 格数 | 含义 |",
+    "|---|---|---|",
+    `| **引文与取值都在所报页** | ${ev.excerpt ?? 0} | 读者翻过去能同时看到那句话和那个数 |`,
+    `| **取值与条款号都在所报页** | ${ev["value+clause"] ?? 0} | 人工复核时真正会看的东西：第 N 页上，第 X 条写着那个数 |`,
+    `| 取值在所报页（引文措辞不同） | ${ev.value ?? 0} | 源 PDF 的写法与转写不同（千分位、单位、LaTeX），值本身对得上 |`,
+    `| 条款在所报页（取值由英文词展开） | ${ev.clause ?? 0} | 'two minutes' → 2，页面上是词不是数字 |`,
+    `| **页码不符** | **${cb.elsewhere}** | 取值在源 PDF 的别的页上 —— 见下表 |`,
+    `| **源 PDF 全篇查不到** | **${cb.notFound}** | **疑似编造，必须为 0** |`,
+    "",
+    cb.notFound === 0 && cb.elsewhere === 0
+      ? `> **全部 ${stats.verified} 格都在所报的那一页上找到了证据**，页码与取值逐格对得上。`
+      : `> **${cb.elsewhere + cb.notFound} 格需要人工核对** —— 清单在下表。`,
+    "",
+    ...(cb.exceptions.length
+      ? [
+          "### 需要人工核对的格子",
+          "",
+          "| 参数 | 版本 | 矩阵报的页 | 取值 | 复核结论 |",
+          "|---|---|---|---|---|",
+          ...cb.exceptions.map(
+            (e) =>
+              `| **${e.name}**（${e.id}） | ${e.version} | ${e.page} | ${e.value.replace(/\|/g, "\\|")} | ${e.note.replace(/\|/g, "\\|")} |`,
+          ),
+        ]
+      : []),
+    "",
+    ...(cb.weak.length
+      ? [
+          `### 复核分量有限、建议扫一眼的格子（${cb.weak.length} 格）`,
+          "",
+          "> 这些格子**不是错的** —— 取值确实在所报的那一页上。",
+          "> 但那个取值在整份文档里到处都是（最后一列是它出现的页占比），",
+          "> 「在所报的那一页上找到了它」这句话本身说明不了太多，所以单独列出来。",
+          "",
+          "| 参数 | 版本 | 矩阵报的页 | 取值 | 该值出现在全文 |",
+          "|---|---|---|---|---|",
+          ...cb.weak.map(
+            (e) =>
+              `| **${e.name}**（${e.id}） | ${e.version} | ${e.page} | ${e.value.replace(/\|/g, "\\|")} | ${Math.round(e.rarity * 100)}% 的页 |`,
+          ),
+        ]
+      : []),
+    "",
+    "> **这一节的价值不在于「都通过了」，而在于「不用再全看一遍」。**",
+    `> 换一套新标准时，人工只需要看这两张清单，而不是逐条翻 ${stats.verified} 个取值。`,
+    "",
+  ].join("\n");
+
+  return head + decisionView + grouped + details + tail + divergenceMd + corroborationMd;
 }
 
 /**

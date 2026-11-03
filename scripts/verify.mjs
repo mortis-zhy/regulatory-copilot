@@ -2263,11 +2263,220 @@ check("every matrix cell's page carries the quote it shows", () => {
   // 矩阵的页码来自 MinerU 的分页标记；**主题列**早就做过「源 PDF 页码复核」
   // （verify_claims.py 的那一遍，四个格因此被降级），**矩阵这一路没做过**。
   // 拿引文本身当证据回源 PDF 找：引文不在它自己报的页上，就是一条错信息。
+  //
+  // 2026-11-03 起这道闸**不再放过「查不到」**：旧版把「引文查不到」归为
+  // 「措辞不同，查不到不算错」，而那和「这个值是编出来的」在数据里长得一模一样。
+  // 现在改用三档证据（引文 / 取值 / 条款）——任一档落在所报页上即算定位成功，
+  // 三档在全篇都查不到即为**疑似编造**，直接判失败。
   const { ok, out } = runPy(["scripts/matrix_page_check.py"], "matrix_page_check");
-  assert(ok, `矩阵报的页上找不到它自己的引文:\n        ${out.slice(-900)}`);
+  assert(ok, `矩阵报的页上找不到它自己的引文或取值:\n        ${out.slice(-900)}`);
   const m = out.match(/核了 (\d+) 个取值格/);
   assert(m, `matrix_page_check 没有给出统计行:\n        ${out.slice(-400)}`);
-  return `${m[1]} 个取值格的引文回源 PDF 验到，页码全对`;
+  return `${m[1]} 个取值格回源 PDF 验到（引文/取值/条款三档证据），页码全对`;
+});
+
+check("no table loses a column to the version-column renderer", () => {
+  // 渲染器把「版本 / 来源 / 文档 / 文件 / 标准」这一列当成**纵向对照表**的
+  // 版本列 —— 也就是「每行一个文档，后面几列是该文档的属性」。
+  // 一旦这一列不在**第 0 列**，而它里面又恰好是 A/B/C，
+  // 「版本是某一行的属性」的表就会被误判：
+  // 渲染器按版本重排，**参数名列被整列丢掉** ——
+  // 交付件里那张表只剩页码与取值，看不出是哪一条参数。
+  //
+  // 2026-11-03 真的踩了：§12.5「复核分量有限」那张
+  // | 参数 | 版本 | 矩阵报的页 | 取值 | 该值出现在全文 |
+  // 被吞掉了第 1 列。**丢得毫无报错** —— 表还在、页还在、数字还在，
+  // 只有名字没了；交付件的正文里完全看不出少了东西。
+  //
+  // 这一关查两件事：
+  //   1. **源码级** —— 两个 findVersion* 判定函数只认第 0 列（这是根因）；
+  //   2. **PDF 级**  —— 对每一张「版本列不在第 0 列」的表，
+  //      **它第 0 列的内容必须真的出现在交付件里**。
+  //      这一条才是最终判据：判定函数哪天又被放宽了，这里立刻红。
+  for (const [file, fn] of [
+    ["server/reports/htmlRenderV8.ts", "findVersionIdx"],
+    ["server/reports/typedTables.ts", "findVersionCol"],
+  ]) {
+    const src = read(file);
+    const m = src.match(new RegExp(`function ${fn}\\([^)]*\\)\\s*:\\s*number\\s*\\{([\\s\\S]*?)\\n\\}`));
+    assert(m, `${file} 里找不到 ${fn}`);
+    assert(
+      /header\[0\]/.test(m[1]),
+      `${file} 的 ${fn} 不再只认第 0 列 —— 「版本是某一行的属性」的表会被误判成纵向对照表`,
+    );
+    assert(
+      !/for\s*\(\s*let\s+i\s*=\s*0\s*;\s*i\s*<\s*header\.length/.test(m[1]),
+      `${file} 的 ${fn} 又开始扫所有列了 —— 「版本是某一行的属性」的表会被误判成纵向对照表`,
+    );
+  }
+
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const VERSION_HEADER = /^(版本|来源|文档|文件|标准|version|document|file)$/i;
+  const VERSION_LABEL = /^(A|B|C)(\s|$|版|草案|现行|UN|R48)/i;
+  const cellsOf = (row) =>
+    String(row)
+      .trim()
+      .replace(/^\||\|$/g, "")
+      .split("|")
+      .map((c) => c.trim());
+  const tablesOf = (md) => {
+    const out = [];
+    let cur = [];
+    for (const line of String(md ?? "").split("\n")) {
+      if (line.trim().startsWith("|")) cur.push(line);
+      else {
+        if (cur.length >= 2) out.push(cur);
+        cur = [];
+      }
+    }
+    if (cur.length >= 2) out.push(cur);
+    return out;
+  };
+  // 「版本列不在第 0 列、且列里确实是 A/B/C」的表 —— 会被误判的那一类。
+  const risky = [];
+  for (const part of [...(rep.chapters ?? []), ...(rep.appendices ?? [])]) {
+    for (const t of tablesOf(part.markdown ?? "")) {
+      const header = cellsOf(t[0]).map((h) => h.replace(/\*/g, "").trim());
+      for (let i = 1; i < header.length; i++) {
+        if (!VERSION_HEADER.test(header[i])) continue;
+        const labels = new Set(
+          t
+            .slice(1)
+            .map((r) => (cellsOf(r)[i] ?? "").replace(/\*/g, "").trim())
+            .filter((c) => VERSION_LABEL.test(c)),
+        );
+        if (labels.size >= 2) {
+          risky.push({ part: part.id, header, body: t.slice(1).map(cellsOf) });
+          break;
+        }
+      }
+    }
+  }
+
+  if (!risky.length) return "报告里没有会被版本列判定误判的表";
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) {
+    return `skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）；` +
+      `报告里有 ${risky.length} 张表带非首列的版本列`;
+  }
+  // 把 PDF 全文抽出来（base64 传路径：Windows 上非 ASCII 路径经 argv 会变成乱码，
+  // fitz 打不开文件，这一关就会**静默空过** —— 恰恰是交付件那个文件名）。
+  const py =
+    "import sys,io,json,base64,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path); t='\\n'.join(p.get_text() for p in d)\n" +
+    "print(json.dumps({'t':t},ensure_ascii=False))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    stdio: ["pipe", "pipe", "pipe"],
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (r.status !== 0) {
+    return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 90)}`;
+  }
+  const pdfText = JSON.parse(r.stdout.trim().split("\n").pop()).t;
+  const flat = (s) =>
+    String(s ?? "")
+      .replace(/\*\*|\*|`/g, "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, "");
+  const haystack = flat(pdfText);
+  const lost = [];
+  for (const t of risky) {
+    for (const row of t.body) {
+      const first = flat(row[0]);
+      if (first.length < 3) continue;
+      if (!haystack.includes(first)) {
+        lost.push(`第 ${t.part} 章/附录：「${first.slice(0, 48)}」`);
+      }
+    }
+  }
+  assert(
+    !lost.length,
+    `这些表的第 0 列内容在交付件里找不到 —— 渲染器把它们当成了纵向对照表并整列丢掉：\n        ` +
+      lost.slice(0, 12).join("\n        "),
+  );
+  return `${risky.length} 张带非首列版本列的表，第 0 列内容全部出现在交付件里`;
+});
+
+check("every matrix cell's value is corroborated against the source PDF", () => {
+  // 「取值级复核」是给**人工**用的：让每一格都有明确结论，
+  // 于是人工只看复核不通过的那几格，而不是逐条翻全部取值。
+  //
+  // 这道闸守两件事：
+  //   1. **没有查不到的取值** —— 取值与引文在源 PDF 全篇都找不到，
+  //      意味着这个数可能是编出来的（这正是旧版放过的那一类）。
+  //   2. **报告里写出来的数字与数据一致** —— §12.5 的档数必须来自
+  //      parameterMatrixStats，不能是手写的。
+  //
+  // 另外把 Python 那一路的独立复算与 TS 的结果对一次：
+  // 两套实现走的是**不同的取文本路径**（TS 用 loadSourceCorpus 的
+  // 整页文本，Python 用 doc_lines 的逐行文本），数字对不上就说明
+  // 其中有一边的归一化不对称 —— 那正是本次踩过的坑。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const st = rep.parameterMatrixStats?.corroboration;
+  assert(st, "报告里没有 parameterMatrixStats.corroboration —— 取值级复核没有跑");
+  const verified = rep.parameterMatrixStats?.verified ?? 0;
+  assert(
+    st.notFound === 0,
+    `有 ${st.notFound} 个取值在源 PDF 全篇都查不到 —— 疑似编造：\n        ` +
+      JSON.stringify(st.exceptions.filter((e) => e.status === "not-found").slice(0, 8), null, 2),
+  );
+  assert(
+    st.elsewhere === 0,
+    `有 ${st.elsewhere} 个取值在源 PDF 的别的页上 —— 页码与取值对不上：\n        ` +
+      JSON.stringify(st.exceptions.filter((e) => e.status === "elsewhere").slice(0, 8), null, 2),
+  );
+  assert(
+    st.onPage + st.elsewhere + st.notFound + st.unchecked === verified,
+    `复核结论数对不上：onPage ${st.onPage} + elsewhere ${st.elsewhere} + ` +
+      `notFound ${st.notFound} + unchecked ${st.unchecked} ≠ 已定位 ${verified}`,
+  );
+  assert(
+    st.unchecked === 0,
+    `有 ${st.unchecked} 个取值格没法复核（没有源 PDF 语料或没有页码）—— ` +
+      `这些格子读者无法自行验证，必须补上语料`,
+  );
+
+  // 与 Python 那一路的独立复算对账
+  const { out } = runPy(["scripts/matrix_page_check.py"], "matrix_page_check");
+  const m = out.match(/核了 (\d+) 个取值格/);
+  assert(m, `matrix_page_check 没有给出统计行:\n        ${out.slice(-400)}`);
+  assert(
+    Number(m[1]) === st.onPage,
+    `两套复核实现对不上：Python 核了 ${m[1]} 格，TS 核了 ${st.onPage} 格 —— ` +
+      `其中一边的归一化不对称`,
+  );
+  // 逐格比：只比总数看不出「归一化不对称」——
+  // 2026-11-03 两边都判 796 格定位成功，但引文档数是 630 与 675，
+  // 差的那 45 格是源页去千分位逗号、引文片段没去造成的。
+  const cross = runPy(["scripts/compare_corroboration_tiers.py"], "corroboration_tiers");
+  assert(cross.ok, `两套复核实现逐格对不上（归一化不对称）：\n        ${cross.out.slice(-900)}`);
+
+  // §12.5 必须把这件事写出来，且数字与数据源一致
+  const ch12 = (rep.chapters ?? []).find((c) => String(c.markdown ?? "").includes("## 12.5 取值回源复核"));
+  assert(ch12, "报告第 12 章里没有 §12.5 取值回源复核 —— 复核结论没有交给读者");
+  const md = ch12.markdown;
+  assert(
+    md.includes(`**${verified} 个取值格**`),
+    `§12.5 里的取值格数（应为 ${verified}）与数据源对不上`,
+  );
+  const ev = st.byEvidence ?? {};
+  for (const [k, label] of [
+    ["excerpt", "引文与取值都在所报页"],
+    ["value+clause", "取值与条款号都在所报页"],
+  ]) {
+    // 表格单元里的标签可能带 ** 强调号，匹配时要能容忍。
+    const re = new RegExp(`\\|\\s*\\**${label}\\**\\s*\\|\\s*${ev[k] ?? 0}\\s*\\|`);
+    assert(
+      re.test(md),
+      `§12.5 的「${label}」档数与数据源对不上（应为 ${ev[k] ?? 0}）`,
+    );
+  }
+  return `${st.onPage}/${verified} 个取值格回源 PDF 复核通过（引文 ${ev.excerpt ?? 0} · 取值+条款 ${ev["value+clause"] ?? 0} · 取值 ${ev.value ?? 0}），查不到 0、页码不符 0`;
 });
 
 check("every empty matrix cell says why it is empty", () => {

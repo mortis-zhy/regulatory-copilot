@@ -191,10 +191,14 @@ function normVersionLabel(label: string): "A" | "B" | "C" | null {
 
 /** Find the version column (版本 / 来源 / version). */
 function findVersionCol(header: string[]): number {
-  const norm = header.map((h) => h.replace(/[\s*　]/g, ""));
-  for (let i = 0; i < norm.length; i++) {
-    if (/^(版本|来源|version)$/i.test(norm[i])) return i;
-  }
+  // **只在第 0 列认版本列** —— 与 htmlRenderV8.ts 的 findVersionIdx 同一口径。
+  // 放宽到任意一列，会把「版本是某一行的属性」的表误判成纵向对照表：
+  // 渲染器按「每行一个文档」重排，**参数名列被整列丢掉**，
+  // 交付件里那张表只剩页码与取值，看不出是哪一条参数。
+  // 报告里所有合法的纵向对照表，版本列都在第 0 列。
+  if (!header.length) return -1;
+  const h = header[0].replace(/[\s*　]/g, "");
+  if (/^(版本|来源|version)$/i.test(h)) return 0;
   return -1;
 }
 
