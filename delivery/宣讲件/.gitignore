@@ -1,0 +1,5 @@
+# 素材与中间产物都可重新生成（见 README.md「重新生成」一节）
+assets/
+figures/
+chk/
+deck.html

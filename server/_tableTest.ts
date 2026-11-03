@@ -11,18 +11,18 @@ import { parseAllTables, extractCanonicalIndicators, pairIndicatorsById } from "
 
 const ROOT = process.env.COMPARE_AGENT_ROOT
   ? path.resolve(process.env.COMPARE_AGENT_ROOT)
-  : path.resolve(import.meta.dirname, "..", "..");
+  : path.resolve(import.meta.dirname, "..");
 const PDFS: Array<{ label: string; path: string }> = [
-  { label: "A", path: `${ROOT}/2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf` },
-  { label: "B", path: `${ROOT}/GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf` },
+  { label: "A", path: `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf` },
+  { label: "B", path: `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf` },
 ];
 
 async function getText(p: { label: string; path: string }): Promise<string> {
-  const cacheFile = `${ROOT}/comparison_agent-main/.text-cache/${p.label}.txt`;
+  const cacheFile = `${ROOT}/.text-cache/${p.label}.txt`;
   if (fs.existsSync(cacheFile)) return fs.readFileSync(cacheFile, "utf-8");
   const bytes = fs.readFileSync(p.path);
   const result = await extractPdfTextServer(bytes);
-  fs.mkdirSync(`${ROOT}/comparison_agent-main/.text-cache`, { recursive: true });
+  fs.mkdirSync(`${ROOT}/.text-cache`, { recursive: true });
   fs.writeFileSync(cacheFile, result.fullText, "utf-8");
   return result.fullText;
 }

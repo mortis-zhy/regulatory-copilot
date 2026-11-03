@@ -11,7 +11,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUTER = ROOT.parent
+# 源 PDF 在**仓库内** delivery/PDF对比/（原来在仓库外那个「工作台」目录）。
+OUTER = ROOT / "delivery" / "PDF对比"
 
 src = (ROOT / "verify_claims.py").read_text(encoding="utf-8")
 # "manualFindings" appears three times (the literal, the facts.json projection,
@@ -35,9 +36,9 @@ def sha256(p: Path) -> str:
     return h.hexdigest()
 
 PDFS = {
-    "A": OUTER / "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
-    "B": OUTER / "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
-    "C": OUTER / "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+    "A": OUTER / "源文件_A_GB4785草案V4.3.5_103页.pdf",
+    "B": OUTER / "源文件_B_GB4785-2019_81页.pdf",
+    "C": OUTER / "源文件_C_UN-R48-09_147页.pdf",
 }
 sources = {}
 for label, p in PDFS.items():

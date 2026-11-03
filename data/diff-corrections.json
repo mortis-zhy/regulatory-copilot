@@ -1,9 +1,9 @@
 {
  "_comment": "第 11 章 45 条差值的人工更正表。键 = 主题|参数名。取值来源是 18 主题 diff 管线的 LLM 抽取（diff-result.json），是全报告唯一没有回原文核验过的取值来源；本表把逐条回原文核出来的错误改掉，并给出「这一行到底算不算变化」的人工裁定。机械噪声（重复单位、重复百分号）由 scripts/diff_corrections.py 自动清理，不进本表。verdict 取值：change=确为变化 / no-change=两版实质相同 / duplicate=与别行重复 / unverified=未能核实。改本表后必须重跑 `python verify_claims.py` 与 `node rebuild_report.mjs`，并由 `scripts/diff_value_check.py` 回原文复核。",
  "_sources": {
-  "A": "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
-  "B": "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
-  "C": "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf"
+  "A": "源文件_A_GB4785草案V4.3.5_103页.pdf",
+  "B": "源文件_B_GB4785-2019_81页.pdf",
+  "C": "源文件_C_UN-R48-09_147页.pdf"
  },
  "corrections": [
   {

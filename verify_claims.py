@@ -948,10 +948,12 @@ def verify_numeric_changes(real_tuples, texts):
 
 
 MANUAL_FINDINGS_PATH = ROOT / "data" / "manual-findings.json"
+# 三份源 PDF 在**仓库内** delivery/PDF对比/（原来读的是仓库外那个「工作台」目录下的
+# 同名副本 —— 字节完全相同，sha256 一致）。
 SOURCE_PDFS = {
-    "A": ROOT.parent / "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
-    "B": ROOT.parent / "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
-    "C": ROOT.parent / "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
+    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
+    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
 }
 
 

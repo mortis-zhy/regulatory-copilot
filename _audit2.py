@@ -6,13 +6,13 @@ v2 不看数字，只问一句：你抽出来的那句话，原文里找得到�
 """
 import json, io, os, re, sys
 sys.stdout.reconfigure(encoding='utf-8')
-OUTER = os.path.abspath('..')
+ROOT = os.path.dirname(os.path.abspath(__file__))
 
 SRC = {'A': '源文件_A_GB4785草案V4.3.5_103页.pdf',
        'B': '源文件_B_GB4785-2019_81页.pdf',
        'C': '源文件_C_UN-R48-09_147页.pdf'}
 import fitz
-DOCS = {k: fitz.open(os.path.join(OUTER, 'PDF对比', f)) for k, f in SRC.items()}
+DOCS = {k: fitz.open(os.path.join(ROOT, 'delivery', 'PDF对比', f)) for k, f in SRC.items()}
 def _fold_latex(s):
     """LaTeX 宏 → 源 PDF 的纯文本写法。
 

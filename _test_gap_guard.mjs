@@ -4,11 +4,14 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildHtml } from "./dist/htmlRenderV8.js";
 import { extractTypedTables } from "./dist/typedTables.js";
 
-const ROOT = path.resolve("..");
-const report = JSON.parse(fs.readFileSync(path.join(ROOT, "generated-report.json"), "utf8"));
+// fixture 在**仓库内**。原来读的是 `path.resolve("..")` = 仓库外那个
+// 「工作台」目录 —— 新克隆的同事那儿没有这个文件，闸门当场红。
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const report = JSON.parse(fs.readFileSync(path.join(ROOT, "test-fixtures", "generated-report.json"), "utf8"));
 
 // 跑一次 extractTypedTables（与 buildHtml 内部调用一致）
 const typed = extractTypedTables(report.chapters, (i) => report.chapters[i]?.title ?? "");

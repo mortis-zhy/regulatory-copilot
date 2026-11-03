@@ -16,13 +16,18 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent.parent))
-OUT_DIR = ROOT / "comparison_agent-main" / "dist" / "mineru-v4-data.json"
+# 仓库根。COMPARE_AGENT_ROOT 指**仓库本身**。
+# 原来这里取 `.parent.parent`（= 仓库外那个「工作台」目录），还要再拼一层
+# "comparison_agent-main" 才落回仓库 —— 同事克隆到别的路径就全错位。
+ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent))
+OUT_DIR = ROOT / "dist" / "mineru-v4-data.json"
 
+# 三份源 PDF 在仓库内 delivery/PDF对比/（原先是仓库外那三份按旧文件名命名的副本，
+# 与这几份字节完全相同 —— sha256 一致）。
 PDFS = {
-    "A": ROOT / "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
-    "B": ROOT / "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
-    "C": ROOT / "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
+    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
+    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
 }
 
 def extract_one(label, pdf_path):

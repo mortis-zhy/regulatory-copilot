@@ -16,7 +16,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = path.resolve(ROOT, "..", "宣讲件");
+// 讲稿输出在**仓库内**的 delivery/宣讲件 —— 不再写到仓库外的一个「工作台」目录。
+// 同事克隆下来 `node scripts/render_briefing.mjs` 就该在仓库里拿到讲稿。
+const OUT = path.join(ROOT, "delivery", "宣讲件");
 const ASSETS = path.join(OUT, "assets");
 const FIGDIR = path.join(OUT, "figures");
 
@@ -288,7 +290,7 @@ const FIG = {
       <tr><td><code>npm run verify</code></td><td><b>交付闸门</b> —— ${GATES} 项检查。改完必跑，绿了才准交付</td></tr>
       <tr><td><code>npm run build</code></td><td>构建（vite + 15 个可加载模块）</td></tr>
       <tr><td><code>node rebuild_report.mjs</code></td><td>重建 <code>reports/last-report.json</code>（14 章 + 8 附录）</td></tr>
-      <tr><td><code>node render_to_pdfdir.mjs</code></td><td>出交付 PDF → <code>PDF对比/</code></td></tr>
+      <tr><td><code>node render_to_pdfdir.mjs</code></td><td>出交付 PDF → <code>delivery/PDF对比/</code></td></tr>
       <tr><td><code>NODE_ENV=production node dist/index.js</code></td><td>起服务（<code>npm start</code> 在 Windows 上会失败）</td></tr>
       <tr><td><code>npm run dev</code></td><td>开发模式，改前端自动热更</td></tr>
     </table>
@@ -547,7 +549,7 @@ function buildDeck(figData) {
   // 3 客户抱怨
   pages.push(page({
     sec: "问题", num: "03", title: "客户原来抱怨的三条 —— 现在各自的答案",
-    sub: "引号里是客户原话（原文见 PDF对比/feedback.md）",
+    sub: "引号里是客户原话（原文见 delivery/PDF对比/feedback.md）",
     body: `
       <div class="qbox">① 「这一版和之前的差别不大，仍然只有法规中，有具体数值的内容的比较，例如安装高度，响应时间，光强等。」</div>
       <div class="abox">→ <b>差别就在新增的三块</b>：附录 H 把<b>无数值</b>的定性条款也逐条并排（184 条）；第 14 章补上真正的<b>欧标第三列</b>（26 条章节级对应）；§11.0 一份权威变化清单（17 条真实变化）。参数也从 305 补到 319。</div>

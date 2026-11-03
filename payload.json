@@ -3,15 +3,15 @@
   "templateName": "国标对比",
   "sourceDocuments": [
     {
-      "name": "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
+      "name": "源文件_A_GB4785草案V4.3.5_103页.pdf",
       "version": "103 页"
     },
     {
-      "name": "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
+      "name": "源文件_B_GB4785-2019_81页.pdf",
       "version": "81 页"
     },
     {
-      "name": "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+      "name": "源文件_C_UN-R48-09_147页.pdf",
       "version": "147 页"
     }
   ],

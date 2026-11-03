@@ -68,18 +68,25 @@ function resolveInnerRoot(): string {
 }
 const ROOT = resolveInnerRoot();
 const DATA = path.join(ROOT, "dist", "mineru-v4-data.json");
-const OUT_PDF = path.join(path.dirname(ROOT), "GB4785_多版本横向对比研究报告.pdf");
+// 生成物落在**仓库内** reports/。原来落在 path.dirname(ROOT) —— 也就是仓库**外面**
+// 的那个「工作台」目录：同事克隆仓库后跑网页端管线，PDF 会写到仓库外去，
+// 仓库里翻不到，交付件也就散了。
+const OUT_PDF = path.join(ROOT, "reports", "GB4785_多版本横向对比研究报告.pdf");
 // Full A/B/C value-diff set. verify_claims.py filters these down to a handful of
 // "survivors"; the report needs the unfiltered set too, because that is what
 // carries the C (UN R48) clause numbers the deliverable is judged on.
 //
-// diff-result.json sits next to verify_claims.py (the INNER repo root), whereas
-// ROOT above resolves to the OUTER workbench repo — so `path.join(ROOT, …)`
-// missed it and §11.3.3 silently rendered as an empty section. Probe the
-// plausible roots instead of guessing one.
+// diff-result.json sits next to verify_claims.py (the repo root). ROOT is
+// resolved by walking up for that marker file, so `path.join(ROOT, …)` should
+// hit — but it didn't once (it resolved one level too far, and §11.3.3
+// silently rendered as an empty section).
+//
+// 只认仓库内这一份。原来还有一个 `path.dirname(ROOT)` 的兜底 —— 那指向**仓库
+// 外**那个「工作台」目录：仓库里的 diff-result.json 一旦缺失，它会悄悄拿外面
+// 那份来渲染，出一份看着正常、其实是另一份数据的报告。宁可空着，不可错着。
 function findDiffResult(): string | null {
-  const candidates = [path.join(ROOT, "diff-result.json"), path.join(path.dirname(ROOT), "diff-result.json")];
-  const hit = candidates.find((p) => fs.existsSync(p)) ?? null;
+  const p = path.join(ROOT, "diff-result.json");
+  const hit = fs.existsSync(p) ? p : null;
   console.log(`[v6] resolveInnerRoot → ${ROOT} | diff-result: ${hit ?? "NOT FOUND"}`);
   return hit;
 }
@@ -3830,12 +3837,11 @@ ${msg}`);
 
   // The Python helpers sit next to ROOT, so cwd: ROOT is correct for locating
   // them. What actually broke: add_pdf_outline.py hardcodes its own PDF path
-  // (`ROOT.parent / "GB4785_多版本横向对比研究报告.pdf"`) and silently exits when
-  // that file is absent — which it is whenever OUT_PDF points elsewhere, e.g.
-  // the API's returnPdf path. Point it at the file we actually wrote.
+  // and silently exits when that file is absent — which it is whenever OUT_PDF
+  // points elsewhere, e.g. the API's returnPdf path. Point it at the file we
+  // actually wrote.
   const scriptDir = ROOT;
   const script = (name: string) => path.join(scriptDir, name);
-  const canonicalPdf = path.join(path.resolve(ROOT, ".."), "GB4785_多版本横向对比研究报告.pdf");
 
   // Patch PDF metadata (author/subject/keywords/pipeline-version).
   // Chromium's page.pdf() only honours `title`; set the rest via PyMuPDF.

@@ -3,15 +3,15 @@
  "version": 1,
  "sources": {
   "A": {
-   "fileName": "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
+   "fileName": "源文件_A_GB4785草案V4.3.5_103页.pdf",
    "sha256": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7"
   },
   "B": {
-   "fileName": "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
+   "fileName": "源文件_B_GB4785-2019_81页.pdf",
    "sha256": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085"
   },
   "C": {
-   "fileName": "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+   "fileName": "源文件_C_UN-R48-09_147页.pdf",
    "sha256": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
   }
  },
@@ -159,5 +159,6 @@
    "source": "manual-audit",
    "note": "光色对应表「醒目标志」行：A 的车身反光标识新增允许「橙色」（B 只有红、白两色）—— 光色要求放宽，尾部标志板两版同为红、黄，未变"
   }
- ]
+ ],
+ "_comment_sources": "fileName 指向仓库内 delivery/PDF对比/ 下的源 PDF（原先指向仓库外「工作台」目录下的同名副本 —— 字节相同，sha256 未变）。"
 }

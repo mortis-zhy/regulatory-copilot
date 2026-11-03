@@ -25,18 +25,22 @@ import { scanIndicators, pairIndicatorHits } from "../ingestion/indicatorScan";
 
 // Inner repo root. COMPARE_AGENT_ROOT lets a caller point the corpus elsewhere;
 // otherwise derive from this module's location (dist/reports → repo root is "../..").
+//
+// COMPARE_AGENT_ROOT 现在指的是**仓库根本身**（原来指的是仓库外那个「工作台」
+// 目录，所以这里才要再拼一层 "comparison_agent-main"）。
 const ROOT = process.env.COMPARE_AGENT_ROOT
-  ? path.resolve(process.env.COMPARE_AGENT_ROOT, "comparison_agent-main")
+  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
   : path.resolve(import.meta.dirname, "../..");
-const OUTER = path.resolve(ROOT, "..");
+// 三份源 PDF 现在在仓库内 delivery/PDF对比/（原来在仓库外，按外层文件名找）。
+const DELIVERY = path.join(ROOT, "delivery", "PDF对比");
 const DIFF_JSON = path.join(ROOT, "diff-result.json");
 const TEXT_DIR = path.join(ROOT, ".text-cache");
-const OUT_PDF = path.join(OUTER, "GB4785_多版本横向对比研究报告.pdf");
+const OUT_PDF = path.join(ROOT, "reports", "GB4785_多版本横向对比研究报告.pdf");
 
 const PDFS: Array<{ label: string; path: string }> = [
-  { label: "A", path: path.join(OUTER, "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf") },
-  { label: "B", path: path.join(OUTER, "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf") },
-  { label: "C", path: path.join(OUTER, "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf") },
+  { label: "A", path: path.join(DELIVERY, "源文件_A_GB4785草案V4.3.5_103页.pdf") },
+  { label: "B", path: path.join(DELIVERY, "源文件_B_GB4785-2019_81页.pdf") },
+  { label: "C", path: path.join(DELIVERY, "源文件_C_UN-R48-09_147页.pdf") },
 ];
 
 function esc(s: string): string {
@@ -226,9 +230,9 @@ async function main() {
     "",
     "## 1.5 数据来源",
     "",
-    "- **A**（GB 4785 草案 V4.3.5）：`2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf`，103 页",
-    "- **B**（GB 4785-2019 现行版）：`GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf`，81 页",
-    "- **C**（UN R48-09 国际参照）：`UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf`，147 页（仅作 anchor，不参与变化判定）",
+    "- **A**（GB 4785 草案 V4.3.5）：`源文件_A_GB4785草案V4.3.5_103页.pdf`（仓库内 `delivery/PDF对比/`），103 页",
+    "- **B**（GB 4785-2019 现行版）：`源文件_B_GB4785-2019_81页.pdf`（仓库内 `delivery/PDF对比/`），81 页",
+    "- **C**（UN R48-09 国际参照）：`源文件_C_UN-R48-09_147页.pdf`（仓库内 `delivery/PDF对比/`），147 页（仅作 anchor，不参与变化判定）",
   ].join("\n");
 
   const chapters = [

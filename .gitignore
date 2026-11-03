@@ -113,14 +113,33 @@ temp/
 client/public/__manus__/version.json
 .project-config.json
 
-# 运行时缓存/上传副本(原始 PDF 由外层工作台仓库跟踪)
+# 运行时缓存
 .mineru-work/
 .text-cache/
 .ocr-pages/
-uploaded-docs/
 dist/
 extract-cache/
 sidecar-cache/
+
+# ── uploaded-docs/ 是**活的语料**，不是运行时副本 ──────────────────────────
+# 三份源 PDF **已经在版本库里**（已跟踪，gitignore 对已跟踪文件无效）。
+# 8 处代码从这儿读它们（scripts/clause_split.py、scripts/export_clause_index.py、
+# server/reports/parameterMatrix.ts、server/reports/agentTools.ts、
+# server/_core/agentRoutes.ts、verify_claims.py、scripts/read_margin_clause.py）——
+# 目录空着，管线当场找不到文件，闸门直接红。
+#
+# 这里把忽略规则写成显式的「只放行这三份」，不是修 bug，是**把意图写死**：
+# 以后谁看到 `uploaded-docs/` 三个字母就顺手加回整目录忽略，那三份就会被
+# `git rm --cached` 掉 —— 新克隆的同事拿到一个空的活语料目录。
+# 网页端上传的新 PDF 仍然不入库。
+#
+# 它们与 delivery/PDF对比/源文件_*.pdf **字节完全相同**（sha256 一致），
+# git 只存一份 blob → 仓库里两条路径，零额外体积。
+uploaded-docs/*
+!uploaded-docs/2173836fae9f1314.pdf
+!uploaded-docs/f86e6c7367f24de2.pdf
+!uploaded-docs/92b2563197df022a.pdf
+!uploaded-docs/README.md
 
 # 本地密钥备份（禁止入库）
 .env.backup
@@ -135,6 +154,8 @@ __pycache__/
 reports/.verify-render.pdf
 reports/final.pdf
 reports/last-report.BAK.json
+# 网页端管线生成的报告 PDF（原来落在仓库外的工作台目录；现在在仓库内 reports/）
+reports/GB4785_多版本横向对比研究报告.pdf
 
 # 审计/排查脚本的临时输出（每次运行重写）
 reports/_*.txt

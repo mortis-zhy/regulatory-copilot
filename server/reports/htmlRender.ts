@@ -169,9 +169,9 @@ export function mdToHtml(md: string): string {
 
 /**
  * Turn a raw file name into a clean cover-card label:
- *   "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf" → "GB 4785 草案 V4.3.5"
- *   "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf" → "GB 4785-2019"
- *   "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf" → "UN R48-09"
+ *   "源文件_A_GB4785草案V4.3.5_103页.pdf" → "GB 4785 草案 V4.3.5"
+ *   "源文件_B_GB4785-2019_81页.pdf" → "GB 4785-2019"
+ *   "源文件_C_UN-R48-09_147页.pdf" → "UN R48-09"
  */
 export function cleanDocName(fileName: string): string {
   let n = fileName.replace(/\.(pdf|docx?|DOCX?|PDF)$/i, "");

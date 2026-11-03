@@ -9,10 +9,12 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { generateReport } from "./dist/reportGenerator.js";
 
-const ROOT = path.resolve("..");
-const payload = JSON.parse(fs.readFileSync(path.join(ROOT, "generate_payload.json"), "utf8"));
+// fixture 在**仓库内**（原来读的是仓库外那个「工作台」目录里的副本）。
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const payload = JSON.parse(fs.readFileSync(path.join(ROOT, "test-fixtures", "generate_payload.json"), "utf8"));
 const docs = payload.documents.map((d) => ({ label: d.label, fileName: d.fileName, text: d.text }));
 
 let regexJson = "{}";

@@ -22,7 +22,8 @@ import fitz
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 ROOT = Path(__file__).resolve().parent
-PDF = ROOT.parent / "GB4785_多版本横向对比研究报告.pdf"
+# 生成物在**仓库内** reports/（原来在仓库外 —— 同事克隆后找不到本脚本要处理的文件）。
+PDF = ROOT / "reports" / "GB4785_多版本横向对比研究报告.pdf"
 
 # Chapter titles in document order (must match reportV6 outline).
 TITLES = [

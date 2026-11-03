@@ -5,9 +5,9 @@ import { parseAllTables, extractCanonicalIndicators, pairIndicatorsById } from "
 
 const ROOT = process.env.COMPARE_AGENT_ROOT
   ? path.resolve(process.env.COMPARE_AGENT_ROOT)
-  : path.resolve(import.meta.dirname, "..", "..");
-const PDF_A = `${ROOT}/2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf`;
-const PDF_B = `${ROOT}/GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf`;
+  : path.resolve(import.meta.dirname, "..");
+const PDF_A = `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf`;
+const PDF_B = `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf`;
 
 async function main() {
   for (const [name, path] of [["A", PDF_A], ["B", PDF_B]] as const) {

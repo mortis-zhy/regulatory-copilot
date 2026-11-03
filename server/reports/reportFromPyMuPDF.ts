@@ -20,7 +20,8 @@ const ROOT = process.env.COMPARE_AGENT_ROOT
   ? path.resolve(process.env.COMPARE_AGENT_ROOT)
   : path.resolve(import.meta.dirname, "../..");
 const DATA = path.join(ROOT, "dist", "pymupdf-data.json");
-const OUT_PDF = path.join(ROOT, "..", "GB4785_多版本横向对比研究报告.pdf");
+// 生成物落在**仓库内** reports/（原来落在仓库外 —— 同事克隆后管线把 PDF 写到仓库外）。
+const OUT_PDF = path.join(ROOT, "reports", "GB4785_多版本横向对比研究报告.pdf");
 
 function esc(s: string): string {
   return (s ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");

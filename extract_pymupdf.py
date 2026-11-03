@@ -9,17 +9,20 @@ Output: dist/pymupdf-data.json with:
   - 9 GB4785 data indicators (regex scan)
   - new device classes (keyword scan)
 """
-import fitz, json, re, sys, io
+import fitz, json, re, sys, io, os
 from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-ROOT = Path(r"C:\Users\zsndz\Desktop\comparison_agent-main")
-OUT = ROOT / "comparison_agent-main" / "dist" / "pymupdf-data.json"
+# 仓库根。COMPARE_AGENT_ROOT 指**仓库本身**。
+# 原来这里写死了 `C:\Users\zsndz\Desktop\comparison_agent-main`（这台机器的路径）——
+# 同事克隆到别处就直接读不到文件。
+ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent))
+OUT = ROOT / "dist" / "pymupdf-data.json"
 
 PDFS = {
-    "A": ROOT / "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
-    "B": ROOT / "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
-    "C": ROOT / "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
+    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
+    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
 }
 
 def normalize_number_spaces(text: str) -> str:

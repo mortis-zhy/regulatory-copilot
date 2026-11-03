@@ -127,18 +127,110 @@ check("no hardcoded absolute user paths in pipeline code", () => {
   const targets = [
     "server",
     "client/src",
+    "scripts",
+    "tools",
+    "python_service",
     "verify_claims.py",
     "extract_mineru_v4_sdk.py",
-    "python_service",
+    "extract_pymupdf.py",
+    "extract_v5.py",
+    "ocr_full.py",
     "audit_pages.py",
+    "_audit2.py",
+    "render_to_pdfdir.mjs",
+    "add_pdf_outline.py",
   ];
-  const hits = spawnSync("git", ["grep", "-l", "Users/zsndz", "--", ...targets], {
-    cwd: ROOT,
-    encoding: "utf-8",
-  });
+  // 闸门自己写着这个字符串（就是它要找的东西），所以要排除掉自己。
+  const hits = spawnSync(
+    "git",
+    ["grep", "-l", "Users/zsndz", "--", ...targets, ":(exclude)scripts/verify.mjs"],
+    { cwd: ROOT, encoding: "utf-8" },
+  );
   const out = (hits.stdout || "").trim();
   assert(!out, `hardcoded path(s) in pipeline code:\n        ${out}\n        use COMPARE_AGENT_ROOT or __file__-relative paths`);
   return "clean";
+});
+
+/**
+ * 仓库自足闸门 —— 同事克隆下来就能跑，不该再依赖「仓库外那个工作台目录」。
+ *
+ * 犯过两次：
+ *   1. 源 PDF 在仓库外，路径写死 → 换台机器就找不到文件；
+ *   2. 旧文件名（仓库外那三份副本的名字）在代码里到处出现 → 仓库里的
+ *      `delivery/PDF对比/源文件_*.pdf` 明明存在，代码却还在找旧名字。
+ *
+ * 这两条都是**静默**失败：跑不通时报「找不到文件」，不报「你改错地方了」。
+ */
+check("仓库自足：代码不指向仓库外，源 PDF 只有一个名字", () => {
+  // 旧文件名 —— 仓库外那三份副本的名字，仓库内已统一为 源文件_A|B|C_*.pdf。
+  const stale = [
+    "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
+    "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
+    "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+  ];
+  const staleHits = spawnSync(
+    "git",
+    ["grep", "-n", "-I", "-e", stale[0], "-e", stale[1], "-e", stale[2],
+     "--", ".", ":(exclude)scripts/verify.mjs"],
+    { cwd: ROOT, encoding: "utf-8" },
+  );
+  const staleOut = (staleHits.stdout || "").trim();
+  assert(!staleOut, `代码/数据里还在用旧源文件名：\n        ${staleOut}\n        统一用 delivery/PDF对比/源文件_A|B|C_*.pdf`);
+
+  // 指向仓库外的写法。**先剥注释** —— 否则有人写一句「原来这里是
+  // `path.resolve("..")`」就会把闸门弄红（第一次跑就被自己的注释骗了）。
+  const code = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+  const escapeIdioms = [
+    "ROOT.parent",
+    "path.dirname(ROOT)",
+    'path.resolve("..")',
+    'path.resolve(ROOT, "..")',
+    'path.join(ROOT, "..")',
+  ];
+  const scanTargets = [
+    "server", "client/src", "scripts", "tools", "python_service",
+    "verify_claims.py", "extract_mineru_v4_sdk.py", "extract_pymupdf.py",
+    "extract_v5.py", "ocr_full.py", "audit_pages.py", "_audit2.py",
+    "render_to_pdfdir.mjs", "add_pdf_outline.py",
+  ];
+  const files = spawnSync("git", ["ls-files", "--", ...scanTargets], {
+    cwd: ROOT, encoding: "utf-8",
+  });
+  const list = (files.stdout || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  const bad = [];
+  for (const f of list) {
+    if (f === "scripts/verify.mjs") continue; // 闸门自己写着这些字符串
+    let src;
+    try {
+      src = code(read(f));
+    } catch {
+      continue;
+    }
+    for (const id of escapeIdioms) {
+      if (src.includes(id)) bad.push(`${f} → ${id}`);
+    }
+  }
+  assert(bad.length === 0, `代码还在指向仓库外：\n        ${bad.join("\n        ")}\n        全部改成仓库内的相对路径`);
+
+  // 代码里引用的源 PDF 必须真的在仓库里存在。
+  const referenced = new Set();
+  for (const f of list) {
+    if (f === "scripts/verify.mjs") continue;
+    let src;
+    try {
+      src = read(f);
+    } catch {
+      continue;
+    }
+    for (const m of src.matchAll(/源文件_[ABC][^"'\s]*\.pdf/g)) referenced.add(m[0]);
+  }
+  const missing = [...referenced].filter(
+    (n) => !existsSync(resolve(ROOT, "delivery", "PDF对比", n)),
+  );
+  assert(missing.length === 0, `代码引用了仓库里没有的源 PDF：${missing.join("、")}`);
+
+  return `旧名 0 处 · 出仓库写法 0 处 · ${referenced.size} 个源 PDF 引用全部在库`;
 });
 
 /**
@@ -305,6 +397,75 @@ check("讲稿里的闸门数来自机器，不是手写", () => {
     `讲稿里还手写着闸门数：${hard.join("、")} —— 加了新闸门就会过期（已踩过一次）`,
   );
   return "闸门数由 dist/verify-summary.json 注入";
+});
+
+check("交付材料在仓库里，且脚本不再写到仓库外", () => {
+  // 交付材料现在住在仓库内的 delivery/。曾经它们在仓库**外**的一个「工作台」
+  // 目录里 —— 于是同事克隆仓库只能拿到代码，拿不到要交出去的 PDF，
+  // 讲稿脚本还把文件写到仓库外（`path.resolve(ROOT, "..", "宣讲件")`）。
+  const need = [
+    "delivery/README.md",
+    "delivery/中间文件清单_2026-10-27.md",
+    "delivery/PDF对比/README.md",
+    "delivery/PDF对比/feedback.md",
+    "delivery/PDF对比/争议裁定书.txt",
+    "delivery/PDF对比/㉚_闭环口径修正_249页_2026-10-27.pdf",
+    "delivery/PDF对比/分析报告/📋_客户差评逐条对照_验收版.md",
+    "delivery/宣讲件/README.md",
+    "delivery/宣讲件/项目宣讲_GB4785三版对比_讲稿版_2026-10-28.pdf",
+  ];
+  const missing = need.filter((p) => !existsSync(resolve(ROOT, p)));
+  assert(missing.length === 0, `交付材料不在仓库里：${missing.join("、")}`);
+
+  // 脚本不许再往仓库外写。
+  //
+  // 匹配前**先去掉注释** —— 否则有人在注释里写一句「原来这里写的是
+  // `path.resolve("..")`」就会把闸门弄红（第一次跑就被自己的注释骗了）。
+  // 闸门要查的是代码，不是散文。
+  const code = (src) =>
+    src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+  const pdfdir = code(read("render_to_pdfdir.mjs"));
+  assert(
+    pdfdir.includes('"delivery"') && !pdfdir.includes('path.resolve("..")'),
+    "render_to_pdfdir.mjs 不该再写到仓库外 —— 交付 PDF 要落在 delivery/PDF对比/",
+  );
+  const brief = code(read("scripts/render_briefing.mjs"));
+  assert(
+    brief.includes('"delivery"') && !brief.includes('path.resolve(ROOT, "..")'),
+    "scripts/render_briefing.mjs 不该再写到仓库外 —— 讲稿要落在 delivery/宣讲件/",
+  );
+  const audit = code(read("_audit2.py"));
+  assert(
+    audit.includes("'delivery'") && !audit.includes("os.path.abspath('..')"),
+    "_audit2.py 得从仓库根找源 PDF —— delivery/PDF对比/",
+  );
+  return `${need.length} 项交付材料在库`;
+});
+
+check("活语料 uploaded-docs 随仓库走（新克隆也能跑管线）", () => {
+  // 8 处代码从 uploaded-docs/ 读三份源 PDF（路径写死）。目录空了，
+  // 新克隆的同事闸门直接红 —— 而且是「找不到文件」这种响亮的失败，不是
+  // 安静地少一半数据。
+  const live = [
+    "uploaded-docs/2173836fae9f1314.pdf", // A 草案 V4.3.5
+    "uploaded-docs/f86e6c7367f24de2.pdf", // B 2019
+    "uploaded-docs/92b2563197df022a.pdf", // C R48-09
+  ];
+  const missing = live.filter((p) => !existsSync(resolve(ROOT, p)));
+  assert(missing.length === 0, `活语料缺文件：${missing.join("、")}`);
+
+  // 「在磁盘上」不等于「在版本库里」—— 必须 git ls-files 确认已跟踪
+  const r = spawnSync("git", ["ls-files", "uploaded-docs/"], { cwd: ROOT, encoding: "utf-8" });
+  const tracked = (r.stdout || "").split("\n").map((s) => s.trim());
+  const untracked = live.filter((p) => !tracked.includes(p));
+  assert(
+    untracked.length === 0,
+    `这些源 PDF 没进版本库：${untracked.join("、")} —— 新克隆的同事拿不到活语料`,
+  );
+  return `${live.length} 份源 PDF 已跟踪`;
 });
 
 console.log("\n=== 4. python verification layer ===");

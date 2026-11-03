@@ -28,9 +28,13 @@ import fitz
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 ROOT = Path(__file__).resolve().parent
-PDF_DIR = ROOT.parent
-PDF_A = PDF_DIR / "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf"
-PDF_B = PDF_DIR / "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf"
+# 源 PDF 在**仓库内** delivery/PDF对比/。原来读的是仓库外那个「工作台」目录下的
+# 三份源 PDF（按外层的文件名匹配）—— 新克隆的同事那儿没有这些文件，
+# 这道闸门会当场红（红得响亮是好事，但闸门不该依赖仓库外的目录）。
+# 这三份与 uploaded-docs/ 下的活语料字节完全相同（sha256 一致）。
+PDF_DIR = ROOT / "delivery" / "PDF对比"
+PDF_A = PDF_DIR / "源文件_A_GB4785草案V4.3.5_103页.pdf"
+PDF_B = PDF_DIR / "源文件_B_GB4785-2019_81页.pdf"
 
 failures: list[str] = []
 warnings: list[str] = []
