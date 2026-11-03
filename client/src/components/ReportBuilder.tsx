@@ -34,6 +34,14 @@ type CompleteReport = {
   appendices?: Array<{ id: string; title: string; markdown?: string }>;
   sourceDocuments: Array<{ label: string; name: string; meta: string }>;
   generatedAt: string;
+  /**
+   * 产出这份报告的管线：mineru = 已回源复核；llm-sse = 快速草稿（未核验）。
+   *
+   * **必须一路带着**：客户端把报告原样 POST 给 /report/render，
+   * 服务端靠这个字段决定文件名与封面要不要打「未经回源复核」的标。
+   * 少了它，草稿会用交付件的文件名下载下来（历史上就是这么漏的）。
+   */
+  generator?: string;
 };
 
 type Props = {
@@ -51,6 +59,15 @@ export default function ReportBuilder({ docs, onClose }: Props) {
   const [currentText, setCurrentText] = useState("");
   const [regexStats, setRegexStats] = useState<string>("");
   const [report, setReport] = useState<CompleteReport | null>(null);
+  /**
+   * 这次跑的是哪条管线。
+   *
+   * 面板抬头原来只有一句「Regex 提取 + 动态大纲 + 逐章流式生成」，
+   * 那**描述的是快速草稿**，却挂在「完整对比报告生成」这个抬头下 ——
+   * MinerU 那条路是确定性渲染，根本不流式生成。
+   * 用户读到的是「我的报告是模型逐章编出来的」——对交付件来说这句话是假的。
+   */
+  const [pipeline, setPipeline] = useState<"mineru" | "draft" | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [downloading, setDownloading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,6 +94,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
     }));
 
     setPhase("generating");
+    setPipeline("draft");
     setOutline(null);
     setChapterStates({});
     setCurrentId(null);
@@ -125,7 +143,9 @@ export default function ReportBuilder({ docs, onClose }: Props) {
             setChapterStates((prev) => ({ ...prev, [ev.id as number]: "done" }));
             break;
           case "report_complete":
-            setReport(ev as unknown as CompleteReport);
+            // generator 显式写死：这条路径**就是** LLM 草稿。
+            // 服务端也会带上同一个字段，两边对不上时以服务端为准（渲染时会再核一次）。
+            setReport({ ...(ev as unknown as CompleteReport), generator: "llm-sse" });
             setPhase("done");
             break;
           case "error":
@@ -190,6 +210,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
   const cancel = useCallback(() => {
     abortRef.current?.abort();
     setPhase("idle");
+    setPipeline(null);
   }, []);
 
   // MinerU 高精度管线：走 Python sidecar + 确定性渲染，无 LLM 编造。
@@ -200,6 +221,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       return;
     }
     setPhase("generating");
+    setPipeline("mineru");
     setErrorMsg("");
     setCurrentText("");
     try {
@@ -237,6 +259,9 @@ export default function ReportBuilder({ docs, onClose }: Props) {
         appendices: data.appendices ?? [],
         sourceDocuments: (data as any).sourceDocuments ?? [],
         generatedAt: (data as any).generatedAt ?? "",
+        // 这条管线是已回源复核的 MinerU 路径 —— 标记要带着走，
+        // 否则服务端会把这份已核验的报告当成「来路不明」的打上草稿标。
+        generator: (data as any).generator ?? "mineru",
       });
       setPhase("done");
       toast.success("MinerU 高精度报告已生成");
@@ -271,7 +296,15 @@ export default function ReportBuilder({ docs, onClose }: Props) {
             <p className="text-[13px] font-semibold text-[#0c1a2b]" style={{ fontFamily: '"Noto Serif SC", serif' }}>
               完整对比报告生成
             </p>
-            <p className="text-[10px] text-[#9c8b6c]">Regex 提取 + 动态大纲 + 逐章流式生成 + 专业 PDF</p>
+            {/* 抬头按**哪条管线**说话 —— 原来那句描述的是快速草稿，
+                却挂在整个面板的抬头下，MinerU 的交付件也是它。 */}
+            <p className="text-[10px] text-[#9c8b6c]">
+              {pipeline === "mineru"
+                ? "MinerU 多模态提取 + 逐格回源复核 + 专业 PDF"
+                : pipeline === "draft"
+                  ? "Regex 提取 + 动态大纲 + 逐章流式生成（未经核验）"
+                  : "抽取条款/数值 → 逐章三版对照 → 逐格回源复核 → 专业 PDF"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">

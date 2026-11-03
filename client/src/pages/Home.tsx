@@ -882,9 +882,11 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
   const exportReport = useCallback(
     async (format: "word" | "pdf") => {
       // PDF exports the full regulatory comparison report (V8 pipeline:
-      // 139 pages, triptych cards, closure dashboard), NOT the chat answer.
+      // triptych cards, closure dashboard), NOT the chat answer.
       // The server reads reports/last-report.json and renders it through
       // htmlRenderV8 — byte-identical to POST /api/agent/report/render.
+      // **页数不要写在这里** —— 它随标准与内容变，写死就是「过期的数」。
+      // 想知道多少页，看生成出来的报告本身。
       if (format === "pdf") {
         if (pdfExportingRef.current) return; // re-entry guard
         pdfExportingRef.current = true;

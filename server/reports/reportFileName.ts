@@ -31,6 +31,17 @@
  *
  * 拿不到源文档清单时退回一个**不带标准名**的通用名 ——
  * 宁可少写，不可写错。
+ *
+ * ## 草稿必须自带标记
+ *
+ * 「快速草稿（未经核验）」走的是同一个渲染器、同一套版式，
+ * 派生出来的文件名与交付件**一模一样** ——
+ * 于是同事把草稿发给客户，文件名上没有任何提示。
+ *
+ * 那是这个项目最贵的一类错：**安静地给出一份未经核验的东西。**
+ * 所以：报告带 `generator` 且不是 `mineru` 的，文件名里必须带标记。
+ * **没有 generator 标记的也算草稿** —— 证明不了它来自已核验管线，
+ * 就不能让它冒充交付件（与 `/report/pdf` 的护栏同一口径）。
  */
 
 /** 文件名里不能出现的字符（Windows 最严的那一套）。 */
@@ -57,19 +68,43 @@ function tight(s: string): string {
 export type FileNameSource = {
   sourceDocuments?: Array<{ label?: string; name?: string }>;
   outline?: { title?: string };
+  /** 产出这条报告的管线：mineru = 已回源复核；其余 = 草稿。 */
+  generator?: string;
 };
+
+/** 已核验交付件的 generator 值。 */
+export const VERIFIED_GENERATOR = "mineru";
+
+/** 草稿文件名上的标记（中文）。 */
+export const DRAFT_MARKER = "（快速草稿·未经回源复核）";
+
+/** 草稿文件名上的标记（ASCII 兜底名用）。 */
+export const DRAFT_MARKER_ASCII = "-draft-unverified";
+
+/**
+ * 这份报告是不是「未经回源复核的草稿」。
+ *
+ * **没有 generator 标记的也算草稿** —— 证明不了它来自已核验管线，
+ * 就不能让它冒充交付件。与 `/report/pdf` 的护栏同一口径：
+ * 那边是 `prefer !== actual → 409`，这边是「不是 mineru → 加标记」。
+ */
+export function isUnverifiedDraft(report: FileNameSource | null | undefined): boolean {
+  const g = typeof report?.generator === "string" ? report.generator.trim() : "";
+  return g !== VERIFIED_GENERATOR;
+}
 
 /** 报告的源文档清单 → 文件名主干（不含扩展名）。 */
 export function reportFileStem(report: FileNameSource | null | undefined): string {
   const base = "多版本横向对比研究报告";
+  const draft = isUnverifiedDraft(report) ? DRAFT_MARKER : "";
   const docs = (report?.sourceDocuments ?? [])
     .map((d) => stripPages(String(d?.name ?? "")).trim())
     .filter(Boolean);
-  if (!docs.length) return base;
+  if (!docs.length) return `${base}${draft}`;
   const joined = docs.map(tight).join("-");
   // 太长就退到「第一份 + 份数」—— 文件名过长在很多系统上会被截断。
   const stem = joined.length > 72 ? `${tight(docs[0])}等${docs.length}份` : joined;
-  return `${stem}_${base}`;
+  return `${stem}_${base}${draft}`;
 }
 
 /** UTF-8 文件名（给客户端 `a.download` 用）。 */
@@ -94,6 +129,7 @@ export function contentDisposition(report: FileNameSource | null | undefined, ex
  * 剩下的用 `-` 连起来（'GB 4785 草案 V4.3.5（103 页）' → 'GB4785-V4.3.5'）。
  */
 export function asciiStem(report: FileNameSource | null | undefined): string {
+  const draft = isUnverifiedDraft(report) ? DRAFT_MARKER_ASCII : "";
   const docs = (report?.sourceDocuments ?? [])
     .map((d) => stripPages(String(d?.name ?? "")).trim())
     .filter(Boolean)
@@ -104,8 +140,8 @@ export function asciiStem(report: FileNameSource | null | undefined): string {
         .replace(/^-+|-+$/g, ""),
     )
     .filter(Boolean);
-  if (!docs.length) return "";
-  return `${docs.join("-")}_multiversion-comparison-report`;
+  if (!docs.length) return draft ? `multiversion-comparison-report${draft}` : "";
+  return `${docs.join("-")}_multiversion-comparison-report${draft}`;
 }
 
 /**

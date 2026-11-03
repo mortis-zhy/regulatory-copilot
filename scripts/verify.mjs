@@ -2597,7 +2597,8 @@ check("the web UI does not claim a report size it cannot know", () => {
 });
 
 // check() 是同步的（它不 await），所以派生函数的 import 必须在模块顶层做。
-const { reportFileName, contentDisposition } = await import("../dist/reportFileName.js");
+const { reportFileName, contentDisposition, isUnverifiedDraft, DRAFT_MARKER, DRAFT_MARKER_ASCII } =
+  await import("../dist/reportFileName.js");
 
 // check() 是同步的（它不 await），所以 import 必须在模块顶层做。
 const { REPORT_FILE, UPLOADED_DOCS_DIR, PROJECT_ROOT: SERVER_ROOT } = await import(
@@ -2656,11 +2657,24 @@ check("the PDF export refuses to serve an unverified draft", () => {
   // 判据要**成对看**：文件名与 generator 标记必须匹配 ——
   // 「last-report.json ↔ mineru」且「last-report.llm-sse.json ↔ llm-sse」。
   // 只看文件名会误伤（MinerU 写 last-report.json 是对的）。
-  // 路径与 generator 标记之间**隔着注释行** —— 所以要取一个窗口，不是一行。
+  // 路径与 generator 标记**不在同一处**：标记挂在**报告对象**上
+  // （`const report = { ...built, generator: "mineru" }`），
+  // 写盘处只是把它 JSON.stringify 出去。
+  // 所以判据是「离写盘点**最近**的 generator 标记」——
+  // 前后都看，取最近的那一个，而不是只往后找（往后找会跨到别的管线）。
+  const genTags = [...src.matchAll(/generator:\s*"([^"]+)"/g)].map((m) => ({
+    gen: m[1],
+    at: m.index,
+  }));
   const writes = [...src.matchAll(/path\.join\(dir,\s*"(last-report[^"]*)"\)/g)];
   const pairs = writes.map((m) => {
-    const tail = src.slice(m.index, m.index + 400);
-    return [m[1], /generator:\s*"([^"]+)"/.exec(tail)?.[1] ?? ""];
+    let best = null;
+    for (const t of genTags) {
+      const d = Math.abs(t.at - m.index);
+      if (d > 1500) continue;
+      if (!best || d < best.d) best = { gen: t.gen, d };
+    }
+    return [m[1], best?.gen ?? ""];
   });
   assert(pairs.length >= 2, `只找到 ${pairs.length} 处报告写入 —— 应该有两条管线各一处`);
   for (const [file, gen] of pairs) {
@@ -2737,8 +2751,13 @@ check("the download filename is derived from the report, not hardcoded", () => {
   // ① 现在的三版 → 名字里出现三个标准；
   // ② **换成别的标准** → 名字里**不许再出现 GB 4785**；
   // ③ 拿不到源文档清单 → 退回不带标准名的通用名（宁可少写，不可写错）。
+  //
+  // 注意 fixture 上的 `generator: "mineru"`：
+  // **证明不了它出自已核验管线的报告，文件名一律带「未经回源复核」标记**
+  // （见下一关），所以「已核验」这件事必须**显式**写出来，不能靠默认值。
   const now = reportFileName(
     {
+      generator: "mineru",
       sourceDocuments: [
         { name: "GB 4785 草案 V4.3.5（103 页）" },
         { name: "GB 4785-2019（81 页）" },
@@ -2754,7 +2773,10 @@ check("the download filename is derived from the report, not hardcoded", () => {
 
   // 换一套标准：名字里不许再出现 GB 4785
   const other = reportFileName(
-    { sourceDocuments: [{ name: "UN R149（100 页）" }, { name: "GB 24599（60 页）" }] },
+    {
+      generator: "mineru",
+      sourceDocuments: [{ name: "UN R149（100 页）" }, { name: "GB 24599（60 页）" }],
+    },
     "pdf",
   );
   assert(
@@ -2765,14 +2787,17 @@ check("the download filename is derived from the report, not hardcoded", () => {
   assert(/UNR149/.test(other) && /GB24599/.test(other), `派生文件名不对：${other}`);
 
   // 拿不到源文档清单 → 通用名
-  const none = reportFileName({}, "pdf");
+  const none = reportFileName({ generator: "mineru" }, "pdf");
   assert(
     !/4785|R48/.test(none) && /多版本横向对比研究报告\.pdf$/.test(none),
     `没有源文档清单时不该编出标准名：${none}`,
   );
 
   // Content-Disposition 必须是 RFC 6266 的两段式（非 ASCII 名字不能裸进 header）
-  const cd = contentDisposition({ sourceDocuments: [{ name: "GB 4785 草案（103 页）" }] }, "pdf");
+  const cd = contentDisposition(
+    { generator: "mineru", sourceDocuments: [{ name: "GB 4785 草案（103 页）" }] },
+    "pdf",
+  );
   assert(
     /filename="[^"]*"/.test(cd) && /filename\*=UTF-8''/.test(cd),
     `Content-Disposition 缺 RFC 6266 的 filename* 段：${cd}`,
@@ -2799,6 +2824,150 @@ check("the download filename is derived from the report, not hardcoded", () => {
     );
   }
   return `文件名从报告派生：现在 → ${now}；换标准 → ${other}`;
+});
+
+check("a draft can never wear the deliverable's name", () => {
+  // 「快速草稿（未经核验）」与交付件走**同一个渲染器、同一套版式**，
+  // 渲染出来的东西一模一样 —— 于是草稿下载下来，
+  // 文件名与交付件**逐字相同**（GB4785草案V4.3.5-…_多版本横向对比研究报告.pdf），
+  // 转发给客户时**没有任何地方**能看出它没回过源。
+  //
+  // 2026-11-03 浏览器全流程实测时才发现：`/report/pdf` 那条路有护栏，
+  // 但**弹窗里那个「下载 PDF」按钮走的是 `/report/render`，
+  // 而客户端把 `generator` 字段丢了** —— 那条路上护栏和标记都没有。
+  //
+  // 判据（三条都要）：
+  //   ① 草稿的文件名必须**带标记**，且与交付件的名字**不同**；
+  //   ② **没有 generator 标记的也算草稿** —— 证明不了它出自已核验管线，
+  //      就不能让它冒充交付件（与 /report/pdf 的护栏同口径）；
+  //   ③ 服务端渲染草稿时，**封面标题也要打标** ——
+  //      文件名会转发掉，封面不会。
+  const docs = [
+    { name: "GB 4785 草案 V4.3.5（103 页）" },
+    { name: "GB 4785-2019（81 页）" },
+    { name: "UN R48-09（147 页）" },
+  ];  const verified = reportFileName({ generator: "mineru", sourceDocuments: docs }, "pdf");
+  const draft = reportFileName({ generator: "llm-sse", sourceDocuments: docs }, "pdf");
+  const unmarked = reportFileName({ sourceDocuments: docs }, "pdf");
+
+  assert(
+    !/未经回源复核/.test(verified),
+    `已核验的交付件文件名里不该有草稿标记：${verified}`,
+  );
+  assert(
+    draft.includes(DRAFT_MARKER) && draft !== verified,
+    `草稿的文件名与交付件一模一样（${draft}）—— ` +
+      `转发出去就没人看得出它没回过源。文件名必须带「未经回源复核」标记。`,
+  );
+  assert(
+    unmarked.includes(DRAFT_MARKER),
+    `没有 generator 标记的报告，文件名里没有草稿标记（${unmarked}）—— ` +
+      `证明不了它出自已核验管线，就不能让它冒充交付件。`,
+  );
+  assert(
+    isUnverifiedDraft({ generator: "llm-sse" }) && isUnverifiedDraft({}) && !isUnverifiedDraft({ generator: "mineru" }),
+    "isUnverifiedDraft 的判据不对",
+  );
+  // ASCII 兜底名也要能区分（老客户端只读 filename= 那一段）
+  const cdDraft = contentDisposition({ generator: "llm-sse", sourceDocuments: docs }, "pdf");
+  assert(
+    cdDraft.includes(DRAFT_MARKER_ASCII),
+    `草稿的 ASCII 兜底名里没有标记：${cdDraft}`,
+  );
+
+  // ── 源码侧：标记必须一路带得到渲染那一步 ──────────────────────────
+  const routes = read("server/_core/agentRoutes.ts");
+  // ① 快速草稿的报告对象必须带 generator: "llm-sse"
+  const sse = routes.slice(routes.indexOf('router.post("/api/agent/report/generate"'));
+  assert(
+    /generator:\s*"llm-sse"/.test(sse),
+    "快速草稿的报告对象里没有 generator 标记 —— 客户端与服务端都不知道它是草稿",
+  );
+  // ② MinerU 那条路的响应必须带 generator: "mineru"
+  assert(
+    /generator:\s*"mineru"/.test(routes),
+    "MinerU 路径没有带 generator 标记 —— 已核验的报告会被当成来路不明",
+  );
+  // ③ /report/render 必须按标记打标（封面 + 文件名）
+  const render = routes.slice(routes.indexOf('router.post("/api/agent/report/render"'));
+  assert(
+    /isUnverifiedDraft/.test(render) && /DRAFT_MARKER/.test(render),
+    "/report/render 没有按 generator 打草稿标 —— 草稿的 PDF 封面与交付件长得一样",
+  );
+  // ④ 客户端必须把 generator 留在报告对象里（否则 POST 给服务端时字段就没了）
+  const rb = read("client/src/components/ReportBuilder.tsx");
+  assert(
+    /generator:\s*\(data as any\)\.generator/.test(rb),
+    "ReportBuilder 没有把 generator 存进报告对象 —— 服务端收到的是无标记报告，会被当成草稿",
+  );
+  assert(
+    /generator:\s*"llm-sse"/.test(rb),
+    "ReportBuilder 的快速草稿路径没有标 llm-sse",
+  );
+  return `草稿文件名带标记（${draft}），已核验的不带（${verified}）`;
+});
+
+check("the report panel does not call the verified path stream-generated", () => {
+  // 面板抬头原来只有一句「Regex 提取 + 动态大纲 + 逐章流式生成 + 专业 PDF」——
+  // 那**描述的是快速草稿**，却挂在「完整对比报告生成」这个抬头下，
+  // 于是 **MinerU 的交付件也被说成「模型逐章编出来的」**。
+  //
+  // 那不是措辞洁癖：交付件的每个取值都回过源 PDF，
+  // 说它是流式生成的，等于**把核验过的东西说成没核验**，
+  // 也把没核验的东西（草稿）说成了核验过的。两种都骗人。
+  //
+  // 判据：抬头必须**按管线分支**，且「流式生成」只出现在草稿那一支。
+  const rb = read("client/src/components/ReportBuilder.tsx");
+  // 锚点必须落在 **JSX 里的那处标题**上 ——
+  // 注释里也提到「完整对比报告生成」，用 indexOf 会锚到注释里。
+  const titleMatch = />\s*完整对比报告生成\s*</.exec(rb);
+  assert(titleMatch, "找不到「完整对比报告生成」面板抬头（JSX 里）");
+  const header = rb.slice(titleMatch.index, titleMatch.index + 900);
+  assert(
+    /pipeline\s*===\s*"mineru"/.test(header),
+    "面板抬头没有按管线分支 —— MinerU 是确定性渲染，不是流式生成",
+  );
+  assert(
+    /pipeline\s*===\s*"draft"/.test(header),
+    "面板抬头没有区分快速草稿",
+  );
+  // 「流式生成」四个字只许出现在**自报家门的那一句里**。
+  //
+  // 判据要**先剥掉注释** —— 注释里解释「原来那句描述的是快速草稿」是合理的，
+  // 那不是页面上的文案。剥完之后，要求每一句提到「逐章流式生成」的**同一行**
+  // 必须带着「未经核验」标记。
+  //
+  // 为什么按**行**判而不按「邻近 200 字」判：抬头那个三目表达式里，
+  // MinerU 那一支与草稿那一支**挨着**（中间只隔两行）——
+  // 按窗口判，MinerU 支的「逐章流式生成」会借着旁边草稿支的
+  // 「未经核验」蒙混过关。**同一行**才是「这一句自报家门」的真实含义。
+  const rbNoComment = rb.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const streamLines = rbNoComment.split("\n").filter((l) => l.includes("逐章流式生成"));
+  assert(streamLines.length > 0, "找不到「逐章流式生成」—— 这一关大概已经失效了，请重写");
+  for (const line of streamLines) {
+    assert(
+      /未经(?:回源)?(?:核验|复核)/.test(line),
+      `「逐章流式生成」出现在不带「未经核验」标记的这一句里：${line.trim().slice(0, 80)} —— ` +
+        `交付件是确定性渲染，不能说成流式生成。`,
+    );
+  }
+  return "面板抬头按管线分支：MinerU 说回源复核，草稿才说流式生成";
+});
+
+check("no orphan module is left under server/reports", () => {
+  // 死代码不会自己报错，但它会让「换一套标准要改多少东西」这个数**虚高** ——
+  // 每一版旧渲染器都写死了 GB 4785 的名字、章节号、指标值。
+  //
+  // 2026-11-03 盘点时发现 server/reports 下有 4 个文件（1853 行）**零引用**：
+  // 三个旧版渲染器 + 一个旧版报告入口。它们不产出任何交付件，
+  // 却让下一个人以为「这个文件好像还在用，别删」。
+  //
+  // 判据：server/reports 下每个 .ts 都必须**被人引用**。
+  // 引用只认 import 语句与真路径 —— 散文里提到一个名字不算引用。
+  const r = spawnSync("node", ["scripts/orphan_scan.mjs"], { cwd: ROOT, encoding: "utf-8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(r.status === 0, `server/reports 下有零引用模块：\n        ${out.slice(-900)}`);
+  return out.trim().split("\n").slice(-1)[0].slice(0, 80);
 });
 
 check("a changed version set never degrades silently", () => {

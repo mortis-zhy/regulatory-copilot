@@ -387,6 +387,8 @@ export function registerAgentRoutes(router: Router) {
 
       console.log(`[mineru-report] extracting ${docs.length} docs via sidecar...`);
       const extracted = await sidecarExtractDocs(docs);
+      // 文件名派生的两处实现 —— 与 /report/render 同一处，不各写一份。
+      const { contentDisposition, reportFileNameHeader } = await import("../reports/reportFileName");
       // cross-doc verification (numericChanges + topicColumns) — best-effort:
       // needs dist/diff-result.json + extract-cache which the CLI pipeline
       // pre-computes. If absent, fall back to extraction-only report.
@@ -397,7 +399,11 @@ export function registerAgentRoutes(router: Router) {
       } catch (e) {
         console.warn(`[mineru-report] verify unavailable (falling back to extraction-only): ${e}`);
       }
-      const { report } = await buildSidecarReport(extracted, verified);
+      const { report: built } = await buildSidecarReport(extracted, verified);
+      // generator 标记**跟着报告对象走**，不只落在盘上的那份 JSON 里 ——
+      // 客户端拿到的响应、服务端渲染的 PDF、派生的下载文件名，
+      // 三处都要知道这份报告出自哪条管线。
+      const report = { ...built, generator: "mineru" as const };
       console.log(`[mineru-report] report built (${report.chapters.length} chapters, ${report.appendices.length} appendices)`);
 
       // Persist for /report/last + re-render. The generator tag matters: the
@@ -408,11 +414,7 @@ export function registerAgentRoutes(router: Router) {
         const path = await import("node:path");
         const dir = path.dirname(REPORT_FILE);
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(
-          path.join(dir, "last-report.json"),
-          JSON.stringify({ ...report, generator: "mineru" }),
-          "utf-8",
-        );
+        fs.writeFileSync(path.join(dir, "last-report.json"), JSON.stringify(report), "utf-8");
       } catch (e) {
         console.error("[mineru-report] persist failed:", e);
       }
@@ -445,7 +447,10 @@ export function registerAgentRoutes(router: Router) {
 
         return res.status(200).set({
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename*=UTF-8''regulatory-comparison-report.pdf`,
+          // 文件名**从报告的源文档清单派生**（与另外两条导出路同一处实现），
+          // 不再写死 —— 换一套标准后这个名字会骗人。
+          "Content-Disposition": contentDisposition(report, "pdf"),
+          "X-Report-Filename": reportFileNameHeader(report, "pdf"),
         }).send(pdf);
       }
       return res.json(report);
@@ -542,6 +547,11 @@ export function registerAgentRoutes(router: Router) {
               meta: (d as { pageCount?: number; meta?: string }).meta ?? "",
             })),
             generatedAt: new Date().toLocaleString("zh-CN"),
+            // 这条管线是 LLM 逐章流式生成，**没有经过回源复核**。
+            // 标记必须一路带到客户端：客户端把报告原样交给 /report/render，
+            // 服务端据此决定文件名与封面要不要打「草稿」标。
+            // 少了它，草稿就会用交付件的文件名下载下来（见 reportFileName.ts）。
+            generator: "llm-sse",
           };
 
           // ── Persist gate ────────────────────────────────────────────
@@ -862,15 +872,37 @@ export function registerAgentRoutes(router: Router) {
       }
 
       const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
-      const rawPdf = await renderPdfFromReportV8(req.body);
-      // 文件名同样**从报告的源文档清单派生**（与 /report/pdf 同一处实现）。
-      const { contentDisposition, reportFileNameHeader } = await import("../reports/reportFileName");
+      // ── 草稿打标 ────────────────────────────────────────────────────
+      // 「快速草稿」与交付件走**同一个渲染器、同一套版式**，
+      // 渲染出来的东西在 PDF 内部长得一模一样 ——
+      // 光靠文件名提示不够：文件一转发就没人记得它的名字了。
+      //
+      // 所以草稿的**封面标题**也要带上「未经回源复核」，
+      // 让任何一页截图都能看出这份不是交付件。
+      //
+      // 判据与 /report/pdf 的护栏同口径：**证明不了它出自已核验管线，
+      // 就不能让它冒充交付件**（没有 generator 标记的也算草稿）。
+      const { contentDisposition, reportFileNameHeader, isUnverifiedDraft, DRAFT_MARKER } = await import(
+        "../reports/reportFileName"
+      );
+      let body = req.body;
+      if (isUnverifiedDraft(req.body)) {
+        const title = String(req.body?.outline?.title ?? "多版本横向对比研究报告");
+        body = {
+          ...req.body,
+          outline: { ...(req.body?.outline ?? {}), title: `${title}${DRAFT_MARKER}` },
+        };
+        console.warn("[report/render] 渲染的是未经回源复核的草稿 —— 封面与文件名已打标");
+      }
+      const rawPdf = await renderPdfFromReportV8(body);
+      // 文件名同样**从报告的源文档清单派生**（与 /report/pdf 同一处实现），
+      // 草稿的名字里带「未经回源复核」标记。
       res
         .status(200)
         .set({
           "Content-Type": "application/pdf",
-          "Content-Disposition": contentDisposition(req.body, "pdf"),
-          "X-Report-Filename": reportFileNameHeader(req.body, "pdf"),
+          "Content-Disposition": contentDisposition(body, "pdf"),
+          "X-Report-Filename": reportFileNameHeader(body, "pdf"),
         })
         .send(rawPdf);
     } catch (error) {
