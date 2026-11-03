@@ -18,29 +18,22 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+// 仓库根 —— **唯一实现**（server/_core/projectRoot.ts）。
+// 原来这里自己写了一份：不认 `COMPARE_AGENT_ROOT`（于是设了环境变量时
+// 闸门读的是另一个根），且找不到时退回 `../..`（打包后会跑到**外层**仓库）。
+import { PROJECT_ROOT } from "./projectRoot";
 
 /** Header names the triptych renderer in htmlRenderV8.ts recognises as a version column. */
 const RENDERER_VERSION_HEADER = /^(版本|来源|文档|文件|标准|version|document|file)$/i;
-
-function innerRoot(): string {
-  let dir = import.meta.dirname;
-  for (let i = 0; i < 6; i++) {
-    if (fs.existsSync(path.join(dir, "verify_claims.py"))) return dir;
-    const up = path.dirname(dir);
-    if (up === dir) break;
-    dir = up;
-  }
-  return path.resolve(import.meta.dirname, "../..");
-}
 
 export type GateResult = { ok: boolean; checks: number; failures: string[] };
 
 /**
  * @param report  the RenderableReport about to be delivered
- * @param rootOverride  repo root; defaults to the located inner root
+ * @param rootOverride  repo root; defaults to the located project root
  */
 export function checkDelivery(report: any, rootOverride?: string): GateResult {
-  const ROOT = rootOverride ?? innerRoot();
+  const ROOT = rootOverride ?? PROJECT_ROOT;
   const failures: string[] = [];
   let checks = 0;
 

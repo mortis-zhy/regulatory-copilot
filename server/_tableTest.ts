@@ -9,9 +9,8 @@ import path from "node:path";
 import { extractPdfTextServer } from "./ingestion/pdfExtract";
 import { parseAllTables, extractCanonicalIndicators, pairIndicatorsById } from "./ingestion/tableParser";
 
-const ROOT = process.env.COMPARE_AGENT_ROOT
-  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
-  : path.resolve(import.meta.dirname, "..");
+// 仓库根 —— **唯一实现**在 _core/projectRoot.ts。
+import { PROJECT_ROOT as ROOT } from "./_core/projectRoot";
 const PDFS: Array<{ label: string; path: string }> = [
   { label: "A", path: `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf` },
   { label: "B", path: `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf` },

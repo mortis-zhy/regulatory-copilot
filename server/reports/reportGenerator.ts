@@ -16,6 +16,10 @@
  */
 
 import { readFileSync } from "node:fs";
+import path from "node:path";
+// 项目根 —— **唯一实现**（server/_core/projectRoot.ts）。
+// 运行时读的文件（change_example.md）按项目根算，不按本文件所在位置算。
+import { PROJECT_ROOT } from "../_core/projectRoot";
 import { streamMiniMaxChat, type ChatMessage } from "../integrations/minimax";
 import { extractStructured } from "../ingestion/structuredExtract";
 import { diffDocuments } from "./diffEngine";
@@ -365,7 +369,14 @@ let cachedChangeExample: string | null = null;
 function changeStyleExample(): string {
   if (cachedChangeExample !== null) return cachedChangeExample;
   try {
-    const file = new URL("../change_example.md", import.meta.url);
+    // 范例文件在**项目根** —— 从项目根算，不按本文件所在位置算。
+    //
+    // 原来写的是 `new URL("../change_example.md", import.meta.url)`：
+    // 源码布局 → `server/change_example.md`；打包布局 → `<root>/change_example.md`。
+    // **两种布局指向两个目录**，而两个都不存在 ——
+    // 于是这个范例从被回收那一刻起就一直是空的，
+    // 症状只有一行 `[report] change_example.md not loaded:`。
+    const file = path.join(PROJECT_ROOT, "change_example.md");
     const raw = readFileSync(file, "utf-8");
     // Keep only the core 11.1–11.3 format sections (drop trailing noise)
     const cut = raw.search(/11\.4|变化点的影响与/);

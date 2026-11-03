@@ -22,27 +22,20 @@ import path from "node:path";
 // 与**抽取器语义校验**（逐页扫描 + 第一页命中 + 只读第 1 个捕获组）。
 // agent 的提议必须过这一层才允许落盘 —— 页面是录入界面，不是后门。
 import { deviceChapterPrefixes, validateProposal } from "../reports/specAgent";
-
 /**
- * 项目根 —— 从本文件向上找，认 `data/parameter-specs.json` 为准。
+ * 项目根 —— **唯一实现**在 `server/_core/projectRoot.ts`。
  *
- * 不能写死 `../..`：源码里本文件在 `server/_core/`，`../..` 正好是根；
- * 但打包后它在 `dist/`，`../..` 会跑到**外层**那个 workbench 仓库去。
- * 症状是 API 静默返回空数组 —— 没有报错，只是读到了别人的目录。
+ * 原来这里自己写了一份（认 `data/parameter-specs.json`、向上找 6 层、
+ * 找不到抛错）。逻辑几乎一样，但**两份实现就会漂移** ——
+ * `projectRoot.ts` 认 8 层，这份认 6 层；
+ * 哪天有人改了其中一份的认据，两边就会指向不同的目录。
+ *
+ * 症状不是报错，是**读到了别人的目录**：那个目录读起来是「成功」的，
+ * 只是内容不对 —— 那种错最难发现。
  */
-function findRoot(): string {
-  if (process.env.COMPARE_AGENT_ROOT) return process.env.COMPARE_AGENT_ROOT;
-  let dir = import.meta.dirname;
-  for (let i = 0; i < 6; i++) {
-    if (fs.existsSync(path.join(dir, "data", "parameter-specs.json"))) return dir;
-    const up = path.dirname(dir);
-    if (up === dir) break;
-    dir = up;
-  }
-  throw new Error("找不到项目根（向上 6 层内没有 data/parameter-specs.json）—— 设 COMPARE_AGENT_ROOT");
-}
+import { PROJECT_ROOT } from "./projectRoot";
 
-export const PROJECT_ROOT = findRoot();
+export { PROJECT_ROOT };
 const ROOT = PROJECT_ROOT;
 const CANDIDATES_C = path.join(ROOT, "data", "parameter-candidates-c.json");
 const CANDIDATES_AB = path.join(ROOT, "data", "parameter-candidates.json");

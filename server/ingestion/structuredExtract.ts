@@ -12,8 +12,9 @@
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+// 项目根 —— **唯一实现**（server/_core/projectRoot.ts）。
+import { PROJECT_ROOT } from "../_core/projectRoot";
 import { streamMiniMaxChat } from "../integrations/minimax";
 
 export type ExtractedValue = {
@@ -61,7 +62,17 @@ export const TOPICS = [
   "试验项目与判定表",     // 试验编号 × 项目 × 判定
 ] as const;
 
-const CACHE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "extract-cache");
+/**
+ * 抽取缓存目录 —— **从项目根算**（`<root>/dist/extract-cache`）。
+ *
+ * 原来按本文件所在位置算：
+ *   源码 `server/ingestion/` → `server/ingestion/extract-cache/`
+ *   打包 `dist/`             → `dist/extract-cache/`
+ * **同一个缓存被分成了两个目录**，取决于是怎么跑的 ——
+ * 开发模式重跑一遍抽取，打包模式看不见开发模式的结果。
+ * 缓存的价值全在「复用」，分裂了就等于没有。
+ */
+const CACHE_DIR = path.join(PROJECT_ROOT, "dist", "extract-cache");
 const CACHE_VERSION = "v3"; // bumped when TOPICS change or extraction strategy changes
 
 function cacheFile(text: string): string {

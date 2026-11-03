@@ -29,20 +29,21 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+// 项目根 —— **唯一实现**（server/_core/projectRoot.ts）。
+import { PROJECT_ROOT } from "../_core/projectRoot";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
 /**
- * 内层仓库根（dist/ 与 data/ 都在那儿）。
+ * 内层仓库根（dist/ 与 data/ 都在那儿）—— **唯一实现**在
+ * `server/_core/projectRoot.ts`。
  *
- * 这个模块有两个运行位置：
- *   · 源码 `server/reports/agentTools.ts` → 上两层是仓库根
- *   · 构建产物 `dist/agentTools.js`        → 上**一层**才是仓库根
- * 写死任何一种都会让另一半读不到 data/ —— 表现为「工具全查不到」。
+ * 原来这里按**目录名**猜：目录叫 "dist" 就上两层，否则上三层。
+ * 那个启发式在两种布局下都对，但它是**又一份「我在哪一层」的判断** ——
+ * 换个目录名、换个打包位置，它就悄悄指错地方（症状是「工具全查不到」）。
+ *
+ * 现在统一走项目根解析器：认 `data/parameter-specs.json`，
+ * 源码布局与打包布局都成立。
  */
-const ROOT = path.basename(HERE) === "dist"
-  ? path.resolve(HERE, "..")
-  : path.resolve(HERE, "..", "..");
+const ROOT = PROJECT_ROOT;
 
 type Json = Record<string, any>;
 

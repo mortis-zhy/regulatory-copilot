@@ -2739,7 +2739,65 @@ check("the server resolves project paths through one canonical root", () => {
         `它只在一种布局下成立（开发模式与打包模式差一层）。用 projectRoot.ts 的解析器。`,
     );
   }
-  return `服务端路径统一到项目根：报告 ${REPORT_FILE.replace(ROOT, "<root>")} · 上传 ${UPLOADED_DOCS_DIR.replace(ROOT, "<root>")}`;
+
+  // ── ③ 整个 server/ 只许有一份根解析器（2026-11-04 扩） ────────────────
+  //
+  // 原来这一关只查了 agentRoutes.ts 与 index.ts 两处，
+  // 于是**漏掉了四份各自为政的项目根解析器**：
+  //
+  //   | 位置 | 认据 | 认 COMPARE_AGENT_ROOT | 找不到时 |
+  //   |---|---|---|---|
+  //   | server/_core/projectRoot.ts | data/parameter-specs.json | ✅ | 抛错 |
+  //   | server/reports/innerRoot.ts | verify_claims.py | ✅ | **退回 ../..** |
+  //   | server/_core/deliveryGate.ts | verify_claims.py | ❌ **不认** | 退回 ../.. |
+  //   | server/_core/parameterProposals.ts | data/parameter-specs.json | ✅ | 抛错 |
+  //
+  // `deliveryGate.ts` 那份**连环境变量都不认** ——
+  // 设了 `COMPARE_AGENT_ROOT` 时，闸门读的是另一个根，
+  // 于是「拿 A 语料验 B 语料的报告」这种组合根本验不到。
+  //
+  // `innerRoot.ts` 的注释自己写着「两份拷贝会漂移，第二份就是 §11.9 那个 bug 的来源」——
+  // 说得对，但它自己**就是**那第二份的来源；写完那句话之后又多出了三份。
+  //
+  // 现在的不变量：**server/ 下只有 projectRoot.ts 一处认「我在哪一层」**，
+  // 其余一律从它拿根。判据 = 代码里（剥掉注释后）不许出现
+  // `import.meta.dirname` / `import.meta.url`。
+  const serverFiles = [];
+  const walkServer = (dir) => {
+    for (const e of readdirSync(resolve(ROOT, dir), { withFileTypes: true })) {
+      if (e.name === "node_modules" || e.name === "dist") continue;
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) walkServer(rel);
+      else if (e.name.endsWith(".ts")) serverFiles.push(rel);
+    }
+  };
+  walkServer("server");
+  const offenders = [];
+  for (const f of serverFiles) {
+    if (f === "server/_core/projectRoot.ts") continue;
+    const code = read(f)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    if (/import\.meta\.(dirname|url)/.test(code)) offenders.push(f);
+  }
+  assert(
+    !offenders.length,
+    `server/ 下这些文件还在按「自己所在位置」算路径：${offenders.join("、")} —— ` +
+      `源码布局与打包布局差一层，按位置算的路径只在一种布局下成立。` +
+      `项目根只有一份实现：server/_core/projectRoot.ts。`,
+  );
+
+  // 运行时读的文件必须在**项目根**存在（不是「读不到就降级」）。
+  // change_example.md 就被当「中间文件」回收过，而运行时代码还在读它 ——
+  // 症状只是每次跑打一行 not loaded，草稿路径的写作范例**一直是空的**。
+  for (const f of ["change_example.md"]) {
+    assert(
+      existsSync(resolve(ROOT, f)),
+      `运行时输入 ${f} 不在仓库里 —— 代码读不到它时会**静默降级**（功能还在，质量没了）。` +
+        `它是运行时输入，不是中间文件，必须入库。`,
+    );
+  }
+  return `服务端路径统一到项目根：报告 ${REPORT_FILE.replace(ROOT, "<root>")} · 上传 ${UPLOADED_DOCS_DIR.replace(ROOT, "<root>")} · server/ 下 ${serverFiles.length} 个模块只有一份根解析器`;
 });
 
 check("the download filename is derived from the report, not hardcoded", () => {

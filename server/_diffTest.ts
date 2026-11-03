@@ -10,10 +10,10 @@ import path from "node:path";
 import { extractStructured } from "./ingestion/structuredExtract";
 import { diffDocuments } from "./reports/diffEngine";
 
-// 仓库根（源 PDF 在 delivery/PDF对比/ 下）。原来这里取的是**仓库外**那个「工作台」目录。
-const ROOT = process.env.COMPARE_AGENT_ROOT
-  ? path.resolve(process.env.COMPARE_AGENT_ROOT)
-  : path.resolve(import.meta.dirname, "..");
+// 仓库根（源 PDF 在 delivery/PDF对比/ 下）。**唯一实现**在 _core/projectRoot.ts ——
+// 原来这里自己算了一份（`path.resolve(import.meta.dirname, "..")`），
+// 认据与认环境变量的方式各写各的，改一处忘另一处就会指向不同的目录。
+import { PROJECT_ROOT as ROOT } from "./_core/projectRoot";
 const PDFS: Array<{ label: string; path: string }> = [
   { label: "A", path: `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf` },
   { label: "B", path: `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf` },

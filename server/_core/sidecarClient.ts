@@ -65,18 +65,17 @@ export async function ensureSidecar(timeoutMs = 60000): Promise<boolean> {
     const { spawn } = await import("node:child_process");
     const path = await import("node:path");
     const fs = await import("node:fs");
-    const { fileURLToPath } = await import("node:url");
-    // Walk up until python_service/main.py appears. `import.meta.dirname`
-    // points inside dist/ after bundling, and resolving "../.." from there
-    // lands on the OUTER workbench repo — where python_service does not exist,
-    // so the spawn silently produced a dead PID.
-    let root = path.dirname(fileURLToPath(import.meta.url));
-    for (let i = 0; i < 6 && root; i++) {
-      if (fs.existsSync(path.join(root, "python_service", "main.py"))) break;
-      const up = path.dirname(root);
-      if (up === root) break;
-      root = up;
-    }
+    // sidecar 脚本在**项目根**下 —— 用唯一那份根解析器算。
+    //
+    // 原来这里自己向上走（找 `python_service/main.py`）：
+    // `import.meta.dirname` 打包后在 dist/ 里，从那儿算 `../..` 会落到
+    // **外层**那个 workbench 仓库 —— 那里没有 python_service，
+    // 于是 spawn 出一个死 PID 而**不报错**。
+    //
+    // 现在走同一个根：项目根由 `data/parameter-specs.json` 认定，
+    // 找不到就抛错（宁可起不来，也不要读到别人的目录）。
+    const { PROJECT_ROOT } = await import("./projectRoot");
+    const root = PROJECT_ROOT;
     const entry = path.join(root, "python_service", "main.py");
     if (!fs.existsSync(entry)) {
       console.error("[sidecar] auto-start skipped — main.py not found under", root);
