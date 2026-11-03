@@ -13,6 +13,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerAgentRoutes } from "./agentRoutes";
 import { registerParameterProposalRoutes } from "./parameterProposals";
 import { PROJECT_ROOT, REPORT_FILE } from "./projectRoot";
+import { INSTANCE_HEADER, probeOwnInstance } from "./instanceProbe";
 import path from "node:path";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -37,9 +38,27 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // 每个响应都带上本进程的 PID —— 另一个实例据此认出「端口上坐着我自己」。
+  app.use((_req, res, next) => {
+    res.setHeader(INSTANCE_HEADER, String(process.pid));
+    next();
+  });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // 健康检查：只回身份，不回业务数据。
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      ok: true,
+      pid: process.pid,
+      port: process.env.PORT || "3000",
+      // 项目根 —— 写出来是因为「写到了别的目录」这类问题**查不出来**：
+      // 服务端启动时只说「last-report.json present」，
+      // 不会说它读的是哪个目录。写出来一眼就能看出对不对。
+      root: PROJECT_ROOT,
+      reportFile: REPORT_FILE,
+    });
+  });
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerAgentRoutes(app);
@@ -87,10 +106,47 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
+
+  // 端口被**本项目的另一个实例**占着 → 响亮地拒绝启动。
+  //
+  // 原来的做法是静默换到下一个端口（3001、3002……），于是每起一个实例就多一个
+  // 活着的进程，一个都不退出 —— 实测一次会话堆到了 39 个。
+  // 而真正的伤害是：**你在浏览器里连的 3000 是最早那个旧实例**，
+  // 它跑旧代码、还把报告写回同一份 last-report.json。
+  // 「我刚跑出来的报告怎么还是旧的」—— 查起来毫无线索。
+  //
+  // 所以这里**不静默挪端口**：要么你把旧实例关掉，要么你明确换端口。
+  const occupant = await probeOwnInstance(preferredPort);
+  if (occupant && process.env.ALLOW_PORT_FALLBACK !== "1") {
+    console.error(
+      [
+        "",
+        `[启动失败] 端口 ${preferredPort} 已被**本项目的另一个实例**占用（PID ${occupant}）。`,
+        "",
+        "  在你浏览器里连的 3000 端口是**那个旧进程**：它跑的是旧代码，",
+        "  你改了源码它不会重载，而且它还会把报告写回同一份 reports/last-report.json ——",
+        "  于是「刚跑出来的报告怎么还是旧的」这种问题，在这里查不出任何线索。",
+        "",
+        "  先关掉它再启动：",
+        `    taskkill /PID ${occupant} /F`,
+        "",
+        "  或给它/给自己换一个端口：",
+        `    set PORT=3001 && npm run dev`,
+        "",
+        "  （确实想两个实例并存，就设 ALLOW_PORT_FALLBACK=1 —— 但要知道它们会抢同一份报告文件。）",
+        "",
+      ].join("\n"),
+    );
+    process.exit(1);
+  }
+
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    console.log(
+      `Port ${preferredPort} is busy, using port ${port} instead` +
+        (occupant ? "（占用者是本项目的另一个实例，已设 ALLOW_PORT_FALLBACK=1）" : ""),
+    );
   }
 
   server.listen(port, () => {

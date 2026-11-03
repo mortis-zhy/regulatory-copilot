@@ -3207,6 +3207,74 @@ check("the report's title layer comes from the declaration, not from literals", 
   return `封面/章节/附录标题全部来自声明（${vKeys.length} 版：${vKeys.join(",")}）；声明的标准名语料里都有`;
 });
 
+check("there is only one report file and one uploaded-docs dir", () => {
+  // 「两份真相来源」是这个项目治过好几次的病：
+  // 网站把报告写进 `server/reports/last-report.json`，
+  // 而 CLI 与全部闸门读的是仓库根的 `reports/last-report.json` ——
+  // 两份都存在、都不报错，你读到哪一份取决于**你从哪儿启动的**。
+  //
+  // 同样的道理适用于上传目录：网站把 PDF 写进 `server/uploaded-docs/`，
+  // 而回源复核层读的是仓库根的 `uploaded-docs/` ——
+  // 于是**网站上传的新标准，管线根本看不见**。
+  //
+  // 判据：这两个「影子路径」**不许存在**。
+  // 它们一旦出现，就是有人（或某个还活着的旧进程）走错了目录。
+  const shadows = [
+    "server/reports/last-report.json",
+    "server/reports/last-report.llm-sse.json",
+    "server/uploaded-docs",
+  ];
+  const found = shadows.filter((p) => existsSync(resolve(ROOT, p)));
+  assert(
+    found.length === 0,
+    `出现了影子路径：${found.join(" / ")} ——\n` +
+      "        那意味着有东西写到了错误目录（通常是还活着的旧 dev 进程）。\n" +
+      "        删掉它们，并查清是谁写的：网页的报告与上传文件必须落在仓库根。",
+  );
+  return "只有一份 reports/last-report.json 与一个 uploaded-docs/";
+});
+
+check("a busy port stops the server instead of silently moving it", () => {
+  // 端口被占时**静默换到下一个端口**，看着无害，实际很坏：
+  //
+  //   · 每起一个实例就多一个活着的进程，一个都不退出 ——
+  //     实测一次会话里堆到了 **39 个** `tsx server/_core/index.ts`；
+  //   · 你在浏览器里连的 3000 端口，是**最早那个旧实例** ——
+  //     它跑旧代码（改了源码它不知道），还会把报告写回**同一份**
+  //     reports/last-report.json。
+  //     于是「我刚跑出来的报告怎么标题还是旧的」这种问题，
+  //     在服务器日志里查不出任何线索（日志在新起的那个实例上）。
+  //
+  // 所以现在：**端口被本项目的另一个实例占着 → 响亮地拒绝启动**。
+  // 判据：
+  //   ① 源码里必须有「探针 + 拒绝退出」这两样；
+  //   ② 探针本身要有已知答案用例（_test_instance_probe.mjs）；
+  //   ③ 每个响应都要带实例标记（否则探针认不出「是我自己」）。
+  const src = read("server/_core/index.ts");
+  assert(
+    /probeOwnInstance/.test(src),
+    "index.ts 里没有用端口探针 —— 端口被占时它还是会静默换端口",
+  );
+  assert(
+    /process\.exit\(1\)/.test(src),
+    "index.ts 探到本项目的另一个实例后没有拒绝启动 —— 它会静默挪到下一个端口",
+  );
+  assert(
+    /ALLOW_PORT_FALLBACK/.test(src),
+    "index.ts 没有逃生开关 —— 真要两个实例并存时连路都没有",
+  );
+  assert(
+    /INSTANCE_HEADER/.test(src),
+    "index.ts 没给每个响应打实例标记 —— 探针认不出端口上坐的是不是自己",
+  );
+  const probe = read("server/_core/instanceProbe.ts");
+  assert(
+    /x-regulatory-copilot/.test(probe),
+    "instanceProbe.ts 的标记头与 index.ts 设置的不一致 —— 探针永远认不出自己人",
+  );
+  return "端口被本项目的另一个实例占着时拒绝启动（探针有已知答案用例）";
+});
+
 check("a draft can never wear the deliverable's name", () => {
   // 「快速草稿（未经核验）」与交付件走**同一个渲染器、同一套版式**，
   // 渲染出来的东西一模一样 —— 于是草稿下载下来，
@@ -4239,6 +4307,9 @@ for (const t of [
   // Word 导出的**已知答案用例**：缺 changes/parameters/evidence 时
   // 必须是空表，不是崩溃。以前它崩在 `.map` 上，吐一个裸的 500 HTML 页。
   "_test_word_export.mjs",
+  // 端口探针的**已知答案用例**：带标记的假实例要认得出，
+  // 不带标记的不能误认。判据是「哪个端口上坐着我自己」。
+  "_test_instance_probe.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

@@ -62,6 +62,10 @@ const ENTRIES = [
   // projectRoot 是服务端**唯一**的项目根解析器。
   // 单独列出来：闸门要直接 import 它，验「服务端解析到的路径 == 仓库根的路径」。
   ["server/_core/projectRoot.ts", "dist/projectRoot.js"],
+  // instanceProbe 探测「这个端口上是不是本项目的另一个实例」。
+  // 单独列出来：闸门要用**已知答案**驱动它 —— 起一个带标记的假服务器，
+  // 断言探针认得出；再起一个不带的，断言它认不出。
+  ["server/_core/instanceProbe.ts", "dist/instanceProbe.js"],
   // consistency.ts is the report's self-check. It needs its own module so
   // _test_consistency.mjs can feed it **synthetic** tables — the false
   // positives it used to raise (55 medium findings, 53 of them the checker's
