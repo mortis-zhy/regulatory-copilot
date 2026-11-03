@@ -175,7 +175,16 @@ check("仓库自足：代码不指向仓库外，源 PDF 只有一个名字", ()
     { cwd: ROOT, encoding: "utf-8" },
   );
   const staleOut = (staleHits.stdout || "").trim();
-  assert(!staleOut, `代码/数据里还在用旧源文件名：\n        ${staleOut}\n        统一用 delivery/PDF对比/源文件_A|B|C_*.pdf`);
+  // 命中的可能是一整行 JSON（dist/extract-cache/ 那种），不截断的话
+  // 一次失败能吐出 1 MB 日志，看的人只会跳过 —— 截到能一眼看出是哪个文件。
+  const brief = staleOut
+    ? staleOut
+        .split("\n")
+        .slice(0, 12)
+        .map((l) => (l.length > 140 ? `${l.slice(0, 140)}…（本行 ${l.length} 字）` : l))
+        .join("\n        ")
+    : "";
+  assert(!staleOut, `代码/数据里还在用旧源文件名：\n        ${brief}\n        统一用 delivery/PDF对比/源文件_A|B|C_*.pdf`);
 
   // 指向仓库外的写法。**先剥注释** —— 否则有人写一句「原来这里是
   // `path.resolve("..")`」就会把闸门弄红（第一次跑就被自己的注释骗了）。
@@ -466,6 +475,43 @@ check("活语料 uploaded-docs 随仓库走（新克隆也能跑管线）", () =
     `这些源 PDF 没进版本库：${untracked.join("、")} —— 新克隆的同事拿不到活语料`,
   );
   return `${live.length} 份源 PDF 已跟踪`;
+});
+
+check("抽取语料随仓库走（新克隆也能跑完整闸门）", () => {
+  // 这四个文件是闸门的**输入**，不是产物：
+  //   dist/mineru-v4-data.json   三份源 PDF 的 MinerU 抽取结果
+  //   dist/verified-comparison.json / dist/facts.json   核验语料与事实表
+  //   dist/extract-cache/v3-*.json   三版差值抽取缓存
+  //
+  // 同事克隆下来 `npm install && npm run build` 之后要能跑 `npm run verify`。
+  // 这四个缺一个，第 4 段就报「找不到文件」—— 闸门当不了交付判据。
+  //
+  // 为什么不能靠「重新生成」：extract-cache 是真实 LLM 产物（非确定，重跑会
+  // 改引文，进而改报告）；mineru-v4-data.json 要 853 MB 的 .mineru-models/。
+  // 都不是「克隆一下就能重建」的东西。
+  const corpus = [
+    "dist/mineru-v4-data.json",
+    "dist/verified-comparison.json",
+    "dist/facts.json",
+  ];
+  const missing = corpus.filter((p) => !existsSync(resolve(ROOT, p)));
+  assert(missing.length === 0, `抽取语料缺文件：${missing.join("、")}`);
+
+  const r = spawnSync("git", ["ls-files", "dist/"], { cwd: ROOT, encoding: "utf-8" });
+  const tracked = (r.stdout || "").split("\n").map((s) => s.trim());
+  const untracked = corpus.filter((p) => !tracked.includes(p));
+  assert(
+    untracked.length === 0,
+    `这些抽取语料没进版本库：${untracked.join("、")} —— 新克隆的同事跑不了闸门`,
+  );
+
+  // extract-cache 里的 v3-*.json 也要跟着走（三个版本各一个）
+  const cache = tracked.filter((p) => /^dist\/extract-cache\/v3-.*\.json$/.test(p));
+  assert(
+    cache.length === 3,
+    `dist/extract-cache 里应有三份 v3-*.json 差值缓存，实际 ${cache.length} 份 —— 新克隆跑不了差值核验`,
+  );
+  return `${corpus.length} 个语料文件 + ${cache.length} 份差值缓存已跟踪`;
 });
 
 console.log("\n=== 4. python verification layer ===");

@@ -141,6 +141,30 @@ uploaded-docs/*
 !uploaded-docs/92b2563197df022a.pdf
 !uploaded-docs/README.md
 
+# ── dist/ 里的**语料**要入库 ──────────────────────────────────────────────
+# dist/ 整个目录是构建产物（可重新生成），但里面有四个文件不是：
+#
+#   dist/mineru-v4-data.json   三份源 PDF 的 MinerU 抽取结果（11.6 MB）
+#   dist/verified-comparison.json  核验后的对比语料
+#   dist/facts.json            事实表
+#   dist/extract-cache/v3-*.json  三版差值抽取缓存（LLM 产物）
+#
+# 它们是 `npm run verify` 的**输入**（不是输出）。不入库的话，新克隆的同事
+# 跑闸门会在第 4 段直接报「找不到文件」—— 闸门就没法当交付判据用了。
+#
+# 为什么它们不是「本地垃圾」：重新生成 extract-cache 要调真实 LLM（非确定，
+# 会改变报告里的引文），mineru-v4-data.json 要 853 MB 的 .mineru-models/。
+# 两者都不是同事克隆一下就能重建的。
+#
+# 与 dist/ 里的其余文件（构建产物、缓存）保持忽略。
+dist/*
+!dist/mineru-v4-data.json
+!dist/verified-comparison.json
+!dist/facts.json
+!dist/extract-cache/
+dist/extract-cache/*
+!dist/extract-cache/v3-*.json
+
 # 本地密钥备份（禁止入库）
 .env.backup
 .env*

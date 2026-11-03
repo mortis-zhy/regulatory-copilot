@@ -77,14 +77,24 @@
 
 ```bash
 cd <仓库根>
-npm run verify            # 交付闸门，红了不许交付
-node rebuild_report.mjs   # 重建报告数据
-node render_to_pdfdir.mjs # 出交付 PDF → delivery/PDF对比/
+npm install
+npm run build              # dist/*.js 是构建产物，不入库
+npm run verify             # 交付闸门，红了不许交付
+node rebuild_report.mjs    # 重建报告数据
+node render_to_pdfdir.mjs  # 出交付 PDF → delivery/PDF对比/
 node scripts/render_briefing.mjs   # 出讲稿 → delivery/宣讲件/
 ```
 
 出稿前**必须**先跑 `verify` —— 讲稿里那句「N 项闸门」是从 `dist/verify-summary.json`
 读的，读不到就拒绝出稿。
+
+> **新克隆的同事能跑到第几步**：`npm install && npm run build` 之后就能跑完整的
+> `npm run verify` —— 闸门要用的抽取语料（`dist/mineru-v4-data.json`、
+> `dist/verified-comparison.json`、`dist/facts.json`、`dist/extract-cache/v3-*.json`）
+> **在库里**，不用重新生成。
+>
+> 再往后（重新抽取、重新调 LLM 跑差值）需要 `.mineru-models/`（853 MB，不入库）
+> 和 API key —— 那是在**原作者那台机器**上做的事，新克隆的同事不必重复。
 
 ---
 
