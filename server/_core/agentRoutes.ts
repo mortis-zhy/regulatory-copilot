@@ -278,6 +278,27 @@ export function registerAgentRoutes(router: Router) {
         }
         const { renderPdfFromReportV8 } = await import("../reports/htmlRenderV8");
         const report = JSON.parse(fs.readFileSync(file, "utf-8"));
+        // **护栏**：存着的这份必须是**已核验**的那一条管线出来的。
+        //
+        // 两条管线写同一个文件，快速草稿（llm-sse）会把 MinerU 的产物**覆盖掉**。
+        // `/report/last` 早就有 `?prefer=mineru` 的护栏，
+        // 但**这个导出端点没有** —— 于是同事跑一次草稿，
+        // 点「下载 PDF」拿到的就是**未经回源复核的 LLM 草稿**，
+        // 而界面上它长得跟交付件一模一样。
+        //
+        // 那是这个项目最贵的一类错：**安静地给出一份未经核验的东西**。
+        const prefer = typeof req.query?.prefer === "string" ? req.query.prefer : "mineru";
+        const actual = report.generator ?? "unknown";
+        if (prefer !== actual) {
+          return res.status(409).json({
+            error:
+              `当前存着的报告是「${actual}」生成的，不是「${prefer}」—— ` +
+              `未经回源复核的草稿不能当作交付件导出。`,
+            code: "generator_mismatch",
+            generator: actual,
+            hint: "用 MinerU 高精度路径重新生成，或加 ?prefer=llm-sse 明确接受这份草稿",
+          });
+        }
         // Same integrity gate as /report/render — never hand a degraded
         // report to the user as if it were complete.
         const { buildTrustBundle } = await import("../reports/trustChecks");
@@ -550,17 +571,26 @@ export function registerAgentRoutes(router: Router) {
           try {
             const fs = await import("node:fs");
             const path = await import("node:path");
-            // dist/index.mjs → repo/reports/
             const dir = path.dirname(REPORT_FILE);
             fs.mkdirSync(dir, { recursive: true });
+            // **草稿写它自己的文件**，不覆盖已核验的那一份。
+            //
+            // 原来两条管线写同一个 `last-report.json`，
+            // 于是同事跑一次快速草稿，**交付件就被覆盖了** ——
+            // 交付闸门、CLI、官网的「下载 PDF」全都读那一份。
+            // 护栏（`?prefer=mineru`）能挡住「读」，挡不住「覆盖」：
+            // 已核验的那份**从此就没了**，只能重跑一次 MinerU 才能拿回来。
+            //
+            // 分开写之后：已核验的那份**永远在**，草稿在隔壁，
+            // 要哪份取哪份（`/report/last?prefer=…`）。
             fs.writeFileSync(
-              path.join(dir, "last-report.json"),
+              path.join(dir, "last-report.llm-sse.json"),
               // Tag the origin so /report/last?prefer=mineru can refuse to serve
               // an unverified LLM draft as if it had been machine-verified.
               JSON.stringify({ ...report, generator: "llm-sse" }),
               "utf-8",
             );
-            console.log(`[report] saved last-report.json (generator=llm-sse, ${chapters.length} chapters, ${appendices.length} appendices)`);
+            console.log(`[report] saved last-report.llm-sse.json (generator=llm-sse, ${chapters.length} chapters, ${appendices.length} appendices)`);
             if (failedChapters.length) {
               console.warn(
                 `[report] persisted with ${failedChapters.length} degraded chapters: ${failedChapters
@@ -593,18 +623,32 @@ export function registerAgentRoutes(router: Router) {
     try {
       const fs = await import("node:fs");
       const path = await import("node:path");
-      const file = REPORT_FILE;
+      // **两条管线各写各的文件**：
+      //   reports/last-report.json         —— 已核验（MinerU）
+      //   reports/last-report.llm-sse.json —— 快速草稿（未经回源复核）
+      //
+      // 原来两者写同一个文件，草稿会把交付件**覆盖掉** ——
+      // 护栏能挡住「读」，挡不住「覆盖」。
+      const prefer = typeof req.query?.prefer === "string" ? req.query.prefer : "mineru";
+      const file =
+        prefer === "llm-sse"
+          ? path.join(path.dirname(REPORT_FILE), "last-report.llm-sse.json")
+          : REPORT_FILE;
       if (!fs.existsSync(file)) {
-        return res.status(404).json({ error: "no report generated yet" });
+        return res.status(404).json({
+          error:
+            prefer === "llm-sse"
+              ? "还没有快速草稿（last-report.llm-sse.json 不存在）"
+              : "no report generated yet",
+          generator: prefer,
+          available: fs.existsSync(REPORT_FILE) ? ["mineru"] : [],
+        });
       }
       const stat = fs.statSync(file);
       const parsed = JSON.parse(fs.readFileSync(file, "utf-8"));
 
       // ?prefer=mineru (default) refuses to hand back an unverified LLM draft
-      // dressed up as a verified report. Both pipelines persist to the same
-      // file, so without this an SSE run silently replaced the machine-verified
-      // MinerU output and /trust then graded the wrong artifact.
-      const prefer = typeof req.query?.prefer === "string" ? req.query.prefer : "mineru";
+      // dressed up as a verified report.
       const actual = parsed.generator ?? "unknown";
       if (prefer !== actual) {
         return res.status(409).json({

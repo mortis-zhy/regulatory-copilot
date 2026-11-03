@@ -2604,6 +2604,86 @@ const { REPORT_FILE, UPLOADED_DOCS_DIR, PROJECT_ROOT: SERVER_ROOT } = await impo
   "../dist/projectRoot.js"
 );
 
+check("the PDF export refuses to serve an unverified draft", () => {
+  // 两条管线写**同一个** `reports/last-report.json` ——
+  // 快速草稿（llm-sse）会把 MinerU 的产物覆盖掉。
+  //
+  // `/report/last` 早就有 `?prefer=mineru` 的护栏，
+  // 但 **PDF 导出端点（/report/pdf）一度没有** ——
+  // 于是同事跑一次草稿，点「下载 PDF」拿到的就是
+  // **未经回源复核的 LLM 草稿**，而界面上它长得跟交付件一模一样。
+  //
+  // 那是这个项目最贵的一类错：**安静地给出一份未经核验的东西**。
+  //
+  // 这一关查两件事：
+  //   ① 导出端点必须**先看 generator 再渲染**；
+  //   ② 客户端必须把服务端的拒绝理由**原样显示**，不许用一句笼统的话盖掉。
+  const src = read("server/_core/agentRoutes.ts");
+  const pdfRoute = src.slice(src.indexOf('router.post("/api/agent/report/pdf"'));
+  assert(pdfRoute.length > 0, "找不到 /api/agent/report/pdf 路由");
+  const renderAt = pdfRoute.indexOf("renderPdfFromReportV8(report)");
+  const checkAt = pdfRoute.indexOf("generator_mismatch");
+  assert(renderAt > 0 && checkAt > 0, "PDF 导出端点里找不到渲染调用或 generator 护栏");
+  assert(
+    checkAt < renderAt,
+    "PDF 导出端点**先渲染再判 generator** —— 护栏必须拦在渲染之前",
+  );
+  assert(
+    /generator\s*\?\?\s*"unknown"/.test(pdfRoute),
+    "PDF 导出端点没有读报告的 generator 标记",
+  );
+  assert(
+    /prefer\s*!==\s*actual/.test(pdfRoute),
+    "PDF 导出端点没有比对 prefer 与实际 generator",
+  );
+  // 客户端：409 的理由要显示出来
+  const home = read("client/src/pages/Home.tsx");
+  const c409 = home.slice(home.indexOf("response.status === 409"));
+  assert(
+    c409.includes("detail?.error") && c409.includes("detail?.hint"),
+    "客户端没有把服务端的 409 理由（error + hint）显示出来 —— " +
+      "「存着的不是已核验报告」这句话必须让用户看见",
+  );
+
+  // **草稿不许写进已核验那份的文件**。
+  //
+  // 护栏能挡住「读」，挡不住「覆盖」：两条管线原来写同一个
+  // `reports/last-report.json`，同事跑一次快速草稿，
+  // **交付件就被覆盖了** —— 交付闸门、CLI、官网的「下载 PDF」全读那一份，
+  // 已核验的那份从此只能靠重跑 MinerU 拿回来。
+  //
+  // 所以草稿必须写自己的文件：`reports/last-report.llm-sse.json`。
+  // 判据要**成对看**：文件名与 generator 标记必须匹配 ——
+  // 「last-report.json ↔ mineru」且「last-report.llm-sse.json ↔ llm-sse」。
+  // 只看文件名会误伤（MinerU 写 last-report.json 是对的）。
+  // 路径与 generator 标记之间**隔着注释行** —— 所以要取一个窗口，不是一行。
+  const writes = [...src.matchAll(/path\.join\(dir,\s*"(last-report[^"]*)"\)/g)];
+  const pairs = writes.map((m) => {
+    const tail = src.slice(m.index, m.index + 400);
+    return [m[1], /generator:\s*"([^"]+)"/.exec(tail)?.[1] ?? ""];
+  });
+  assert(pairs.length >= 2, `只找到 ${pairs.length} 处报告写入 —— 应该有两条管线各一处`);
+  for (const [file, gen] of pairs) {
+    if (file === "last-report.json") {
+      assert(
+        gen === "mineru",
+        `已核验那份（last-report.json）被标记成 generator="${gen}" —— ` +
+          `交付件必须是 MinerU 那条管线出来的`,
+      );
+    } else {
+      assert(
+        gen === "llm-sse",
+        `${file} 的 generator 标记是 "${gen}" —— 草稿文件里必须是 llm-sse`,
+      );
+    }
+  }
+  assert(
+    pairs.some(([f, t]) => f === "last-report.llm-sse.json" && /llm-sse/.test(t)),
+    "快速草稿没有写自己的文件（last-report.llm-sse.json）—— 它会覆盖已核验的交付件",
+  );
+  return "PDF 导出端点先判 generator 再渲染；草稿写自己的文件，不覆盖交付件";
+});
+
 check("the server resolves project paths through one canonical root", () => {
   // 开发模式（tsx 跑源码）与打包模式（dist/）的 `import.meta.dirname` **差一层**，
   // 所以写死 `path.resolve(import.meta.dirname, "../reports")` 只对其中一种成立。

@@ -897,7 +897,11 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           });
           if (response.status === 409) {
             const detail = await response.json().catch(() => null);
-            toast.error(detail?.error ?? "尚未生成对比报告，请先生成完整报告");
+            // 409 有两种：还没有报告 / 存着的不是已核验的那条管线出来的。
+            // 服务端把话说全了，这里不要再用一句笼统的话盖掉它。
+            toast.error(detail?.error ?? "尚未生成对比报告，请先生成完整报告", {
+              description: detail?.hint ?? "",
+            });
             return;
           }
           if (response.status === 400) {
