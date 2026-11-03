@@ -213,3 +213,6 @@ server.out.log
 srv.out.log
 srv.err.log
 ui-test/
+
+# Claude Code 的会话日志 —— 机器产物，不进仓库
+.claude/logs/
