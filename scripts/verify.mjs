@@ -2599,6 +2599,7 @@ check("the web UI does not claim a report size it cannot know", () => {
 // check() 是同步的（它不 await），所以派生函数的 import 必须在模块顶层做。
 const { reportFileName, contentDisposition, isUnverifiedDraft, DRAFT_MARKER, DRAFT_MARKER_ASCII } =
   await import("../dist/reportFileName.js");
+const { extractMasterParams } = await import("../dist/htmlRenderV8.js");
 
 // check() 是同步的（它不 await），所以 import 必须在模块顶层做。
 const { REPORT_FILE, UPLOADED_DOCS_DIR, PROJECT_ROOT: SERVER_ROOT } = await import(
@@ -2959,6 +2960,62 @@ check("the chapter-to-lamp map agrees with the corpus", () => {
   assert(summary, `check_section_map.py 没给出汇总行:\n        ${out.slice(-500)}`);
   assert(Number(summary[2]) === 0, `有 ${summary[2]} 条不一致`);
   return `映射表 ${summary[1]} 条与语料一致 · 不一致 ${summary[2]} · 取不到 ${summary[3]}（已登记）`;
+});
+
+check("the download button never drops a field the renderer needs", () => {
+  // 弹窗里那个「下载 PDF」按钮，把客户端手上的报告原样 POST 给
+  // `/report/render`，服务端照它渲染。
+  //
+  // 客户端原来**手工列了五个字段**（outline/chapters/appendices/
+  // sourceDocuments/generatedAt）—— 看起来够了，
+  // 但渲染器还要 `report.parameterMatrix`：
+  // 「MASTER PARAMETER INDEX」（317 行的主索引，**8 页**）就是从它建的
+  // （htmlRenderV8.ts：`renderMasterParams(extractMasterParams(chapters, report.parameterMatrix))`）。
+  //
+  // 挑字段 = 把它悄悄丢掉 →
+  // **下载下来的是一份缺 8 页主索引的报告**，而界面上看不出任何区别：
+  // 页数变了、其余一模一样，客户不会知道少了什么。
+  //
+  // 判据：**不许再挑字段** —— 客户端必须把服务端返回的**整个**报告带过去。
+  const rb = read("client/src/components/ReportBuilder.tsx");
+  // 有两处 setReport：草稿路径（从 SSE 事件拿）与 MinerU 路径（从响应拿）。
+  // 要查的是**从响应拿**的那一处 —— 它以前在挑字段。
+  const idx = rb.indexOf("setReport({");
+  let setReport = "";
+  let pos = 0;
+  while (pos >= 0 && pos < rb.length) {
+    const start = rb.indexOf("setReport({", pos);
+    if (start < 0) break;
+    const block = rb.slice(start, start + 1400);
+    if (block.includes("data.outline")) {
+      setReport = block;
+      break;
+    }
+    pos = start + 1;
+  }
+  assert(setReport.length > 0, "找不到 ReportBuilder 里那个从响应建报告对象的 setReport");
+  assert(
+    /\.\.\.\(\s*data as any\s*\)|\.\.\.\(\s*data\s*\)/.test(setReport),
+    "ReportBuilder 还在**挑字段**建报告对象 —— 服务端返回的字段被丢掉，" +
+      "渲染器要用的 parameterMatrix（MASTER PARAMETER INDEX，8 页）会消失，" +
+      "下载下来的是一份缺页报告，而界面上看不出来。整份带过去。",
+  );
+  assert(
+    !/parameterMatrix\s*[:=]/.test(setReport.replace(/\.\.\.\(\s*data as any\s*\)/, "")),
+    "setReport 里出现了 parameterMatrix 的手工赋值 —— 它应该由整个响应带过来，不要手工拼。",
+  );
+
+  // 还要**功能**地证明这个字段是有用的 ——
+  // 渲染器在有/无 parameterMatrix 时给出的主索引行数必须不同。
+  const report = JSON.parse(read("reports/last-report.json"));
+  const withMatrix = extractMasterParams(report.chapters ?? [], report.parameterMatrix);
+  const without = extractMasterParams(report.chapters ?? [], undefined);
+  assert(
+    withMatrix.length > without.length,
+    `主索引在有 parameterMatrix 时是 ${withMatrix.length} 行，没有时是 ${without.length} 行 —— ` +
+      `两者一样，说明这个字段根本没被用上（那客户端丢它也就无害）。`,
+  );
+  return `主索引：有 parameterMatrix ${withMatrix.length} 行 · 无 ${without.length} 行 —— 客户端必须带着它`;
 });
 
 check("a draft can never wear the deliverable's name", () => {

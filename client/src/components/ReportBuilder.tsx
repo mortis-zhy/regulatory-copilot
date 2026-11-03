@@ -42,6 +42,13 @@ type CompleteReport = {
    * 少了它，草稿会用交付件的文件名下载下来（历史上就是这么漏的）。
    */
   generator?: string;
+  /**
+   * 参数矩阵（317 行）与它的统计 —— **渲染器要用**：
+   * 「MASTER PARAMETER INDEX」就是从 `parameterMatrix` 建的。
+   * 客户端**不要挑字段**：整个响应原样带过去。
+   */
+  parameterMatrix?: unknown[];
+  parameterMatrixStats?: Record<string, unknown>;
 };
 
 type Props = {
@@ -254,6 +261,18 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       for (const c of data.outline?.chapters ?? []) states[c.id] = "done";
       setChapterStates(states);
       setReport({
+        // **整个响应原样带过去**，不要挑字段。
+        //
+        // 原来这里手工列了 outline/chapters/appendices/sourceDocuments/generatedAt
+        // 五个字段 —— 看起来够了，但**渲染器还要 `parameterMatrix`**：
+        // 「MASTER PARAMETER INDEX」（317 行的主索引，8 页）就是从它建的
+        // （htmlRenderV8.ts: `renderMasterParams(extractMasterParams(chapters, report.parameterMatrix))`）。
+        // 挑字段 = 把它悄悄丢掉 →
+        // **弹窗里那个「下载 PDF」按钮出的是缺 8 页主索引的报告**，
+        // 而界面上看不出任何区别。
+        //
+        // 教训与本项目反复治的病同形：**「我以为我带全了」**。
+        ...(data as any),
         outline: data.outline!,
         chapters: data.chapters ?? [],
         appendices: data.appendices ?? [],

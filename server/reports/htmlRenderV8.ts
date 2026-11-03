@@ -597,7 +597,15 @@ function cellsKeys(cells: Record<string, any>, row?: any): string[] {
   return [...known, ...extra];
 }
 
-function extractMasterParams(
+/**
+ * 主索引（MASTER PARAMETER INDEX）的行 —— **导出来是为了让闸门能验它**。
+ *
+ * 这个函数是「报告里少 8 页」那个坑的要害：
+ * 有 `matrix`（参数矩阵）时它按矩阵建行，没有时退而从章节 markdown 里刮 ——
+ * 刮出来的是**另一个东西**，行数少一大截，但**页面上看不出异常**。
+ * 客户端要是把 `parameterMatrix` 丢了，下载下来的就是后者。
+ */
+export function extractMasterParams(
   chapters: ReportChapter[],
   matrix?: unknown[],
 ): MasterParamRow[] {
