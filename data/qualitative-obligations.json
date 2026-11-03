@@ -1,0 +1,277 @@
+{
+  "_meta": {
+    "title": "定性义务变化清单",
+    "purpose": "第 12 章参数矩阵只装得下**数值**。但客户真正要的是「产品哪里不一样、要不要改」—— 配备/禁止/适用范围/控制逻辑这类定性义务变化，矩阵一行都装不下，于是变成了「这版和之前差别不大」。这份清单补上那块。",
+    "aspects": ["配备", "禁止", "适用范围", "控制逻辑", "例外", "安装基准", "测试方法"],
+    "scopes": [
+      "配备（强制安装 / 选装 / 允许不装）",
+      "禁止（不得使用 / 不得安装）",
+      "适用范围（哪类车辆、哪类灯具、哪条触发条件）",
+      "控制逻辑（自动 / 手动 / 谁来控制）",
+      "例外（豁免条款）",
+      "安装基准（以什么为基准定位）",
+      "测试方法（按什么标准判合格）"
+    ],
+    "cStatuses": [
+      "与 A 同义",
+      "C 部分对应（口径/范围不同）",
+      "C 更严",
+      "C 无对应义务"
+    ],
+    "coverage": "本清单是**已逐条回原文核验的定性义务变化**，不是穷举。数值型变化一律不在这里，去第 12 章参数矩阵。",
+    "verify": "scripts/verify_qualitative_obligations.py 逐条把 A/B/C 的条款号、页码、原文摘录对回 data/clause-index.json；「某版没有此规定」一律用 absentTerms 在该条原文中扫过确认，不是凭印象写的。"
+  },
+  "entries": [
+    {
+      "id": "ess.presence",
+      "device": "紧急制动信号（ESS）",
+      "aspect": "配备",
+      "title": "紧急制动信号：汽车由「选装」升格为「强制安装」",
+      "b": {
+        "clause": "5.23.1",
+        "page": 54,
+        "quote": "配备 选装。",
+        "absentTerms": ["强制安装", "强制"]
+      },
+      "a": {
+        "clause": "7.2.1",
+        "page": 69,
+        "quote": "配备 汽车强制安装。挂车选装。"
+      },
+      "c": {
+        "clause": "6.23.1",
+        "page": 90,
+        "quote": "Presence Mandatory on motor vehicles. Optional on trailers.",
+        "status": "与 A 同义"
+      },
+      "nature": "**义务升格** —— 汽车上的 ESS 从「可选装」变成「强制安装」；挂车两版都仍是选装。",
+      "designImpact": "所有 M/N 类汽车都要有 ESS 及其控制逻辑；只靠制动灯/转向灯同时点亮来「顺带」实现 ESS 的方案不够，A §7.2.1 要求按 7.2.7 实现。挂车不受影响，仍是选装。",
+      "testImpact": "型式认可须单独验证 ESS 的点亮实现方式（是否满足 A §7.2.7 的点亮条件与时序），不能只看制动灯/转向灯本身合规。",
+      "evidence": "已核验（A §7.2.1 p69 / B §5.23.1 p54 / C §6.23.1 p90）"
+    },
+    {
+      "id": "farBeam.heightUpperLimit",
+      "device": "远光灯",
+      "aspect": "安装基准",
+      "title": "远光灯：新增「不高于车辆前挡风玻璃下边缘」的安装高度基准",
+      "b": {
+        "clause": "5.1.4.2",
+        "page": 22,
+        "quote": "高度:无特殊要求。",
+        "absentTerms": ["前挡风玻璃"]
+      },
+      "a": {
+        "clause": "5.1.4.2",
+        "page": 24,
+        "quote": "高度：发光面的最高点不应高于车辆前挡风玻璃下边缘。"
+      },
+      "c": {
+        "clause": "6.1.4.2",
+        "page": 37,
+        "quote": "In height: No individual specifications.",
+        "status": "C 无对应义务",
+        "absentTerms": ["windscreen", "windshield"]
+      },
+      "nature": "**新增安装基准（单边加严）** —— B 与 C 对远光灯高度都无要求，A 单独加了一条以车体为基准的高度上限。",
+      "designImpact": "远光灯的发光面最高点必须落在前挡风玻璃下边缘之下。常规布置与常规车身高度的关系需重新校核；高车身/越野车型或外置灯组的方案风险最大。",
+      "testImpact": "型式认可须量出远光灯发光面最高点并与车辆前挡风玻璃下边缘比较；这条量出来就能判，没有取值表也不必推算。",
+      "evidence": "已核验（A §5.1.4.2 p24 / B §5.1.4.2 p22 / C §6.1.4.2 p37）"
+    },
+    {
+      "id": "autoHighBeam.bicycle",
+      "device": "远光灯自动控制",
+      "aspect": "适用范围",
+      "title": "自动远光的探测对象：增加「电动自行车」",
+      "b": {
+        "clause": "5.1.7.2",
+        "page": 22,
+        "quote": "本条中的“车辆”指L、M、N、O 类车辆",
+        "absentTerms": ["电动自行车"]
+      },
+      "a": {
+        "clause": "5.1.7.2",
+        "page": 24,
+        "quote": "本条中的“车辆”指 L、M、N、O 类车辆及电动自行车"
+      },
+      "c": {
+        "clause": "6.1.9.3.1.2",
+        "page": 39,
+        "quote": "(c) An oncoming bicycle at a distance extending to at least 75 m",
+        "status": "C 部分对应（口径/范围不同）"
+      },
+      "nature": "**适用范围扩大** —— A 把「电动自行车」写进了本条「车辆」的定义，于是自动远光的探测义务延伸到迎面骑行的电动自行车。B 的定义里没有。",
+      "designImpact": "自动远光传感器的探测对象必须覆盖迎面电动自行车。B 版方案只要满足 L/M/N/O 类车辆即可，升级到 A 需要复核传感器视场与识别策略。",
+      "testImpact": "自动远光的探测性能试验须加入迎面电动自行车场景（迎面、对方有照明）。",
+      "evidence": "已核验（A §5.1.7.2 p24 / B §5.1.7.2 p22 / C §6.1.9.3.1.2 p39）",
+      "note": "C 把同一件事写在探测条款里而不是「车辆」定义里 —— **义务相同，条款位置不同**。这一条是三版里 C 唯一参与「等价性」判断的定性条目。"
+    },
+    {
+      "id": "headlampLevelling.manualScope",
+      "device": "前照灯调光装置",
+      "aspect": "适用范围",
+      "title": "手动调光装置：从「不限车型」收窄为「仅越野/商用类或卤素光源」",
+      "b": {
+        "clause": "5.2.6.2.2",
+        "page": 26,
+        "quote": "前照灯手动调光装置:应有一个停止位置",
+        "absentTerms": ["M2G", "M3G", "N2G", "N3G", "卤素"]
+      },
+      "a": {
+        "clause": "5.2.6.2.1",
+        "page": 27,
+        "quote": "仅M2G、M3G、N2G、N3G 类车辆或主近光为卤素光源的车辆允许使用手动调光装置",
+        "noteClause": "A §5.2.6.2.2（p27）：除5.2.6.2.1 规定的情况外，车辆配备的调光装置应为自动"
+      },
+      "c": {
+        "clause": "6.2.6.2.2",
+        "page": 42,
+        "quote": "devices which are adjusted manually, shall only be permitted for vehicles of categories M2G, M3G, N2G, N3G",
+        "status": "C 部分对应（口径/范围不同）"
+      },
+      "nature": "**适用范围收窄（新增默认自动）** —— B 版手动调光装置对车型不限；A 版限定为 M2G/M3G/N2G/N3G 类车辆**或主近光为卤素光源**的车辆，其余车辆必须配自动调光装置。",
+      "designImpact": "M1/N1 乘用车若主近光为 LED，不能再提供手动调光档位，须改为自动调光（或取消调光功能）。卤素主近光的车型不受影响 —— 这是 A 版特意留的例外。",
+      "testImpact": "型式认可须同时核两件事：车型类别是否属于 M2G/M3G/N2G/N3G，以及主近光光源型式是否为卤素；两者都不满足却配了手动调光装置，即为不符合。",
+      "evidence": "已核验（A §5.2.6.2.1 p27 / B §5.2.6.2.2 p26 / C §6.2.6.2.2 p42）",
+      "note": "A 比 C **多一条豁免**（卤素光源），比 B **多一层限制**。若只对照 B↔C 会以为 A 是原样照抄 C —— 实际不是。"
+    },
+    {
+      "id": "autoDippedBeam.scope",
+      "device": "近光灯",
+      "aspect": "控制逻辑",
+      "title": "近光灯自动开闭：从「可以是自动」变成「特定车辆强制自动」",
+      "b": {
+        "clause": "5.2.7.5",
+        "page": 26,
+        "quote": "近光灯的开关可以是自动的。然而,近光灯的开关应能随时手动操作。",
+        "absentTerms": ["M1", "N1", "昼间行驶灯"]
+      },
+      "a": {
+        "clause": "5.2.7.5",
+        "page": 28,
+        "quote": "M1 和N1 类车辆和配备昼间行驶灯或A2 类位置灯的车辆，近光灯应按附录C 的条件，自动开启和关闭近光灯",
+        "noteClause": "A §5.2.7.5.1（p28）/ §5.2.7.5.2（p29）：自动控制的保持关闭情形与驾驶员随时切回自动模式"
+      },
+      "c": {
+        "clause": "6.2.7.5",
+        "page": 43,
+        "quote": "The dipped-beam headlamps shall be switched ON and OFF automatically relative to the ambient light conditions according to the requirements of Annex 13",
+        "status": "C 更严",
+        "noteClause": "C §6.2.7.6（p44）：irrespective of 6.2.7.5, it shall always be possible to switch the dipped beam headlamps ON manually"
+      },
+      "nature": "**控制逻辑升格（部分车辆强制）** —— B 版「可以是自动」；A 版对 M1/N1 类车辆以及配备昼间行驶灯或 A2 类位置灯的车辆改为**应当**按附录 C 自动开启和关闭。",
+      "designImpact": "M1/N1 与装了昼间行驶灯或 A2 类位置灯的车型必须实现近光自动开闭，不能只留手动开关。其余车辆仍可自动（须符合附录 C）。",
+      "testImpact": "型式认可须验证近光自动开闭，并逐条核 A §5.2.7.5.1 的可保持关闭情形（驻车档、驻车制动、首次启动、前雾灯开启、二次操作等）。",
+      "evidence": "已核验（A §5.2.7.5 p28 / B §5.2.7.5 p26 / C §6.2.7.5 p43 + §6.2.7.6 p44）",
+      "note": "C 要求的自动开闭是**全车型**（R48 不按车型分档），A 只对指定车型强制 —— 表面看 C 更严；但 A 另有 §5.2.7.5.2 要求驾驶员随时切回自动模式，与 C §6.2.7.6 的「始终可手动打开」是同一取向。"
+    },
+    {
+      "id": "plasticLensCleaning",
+      "device": "前照灯清洗装置",
+      "aspect": "禁止",
+      "title": "塑料配光镜：禁止使用机械式前照灯清洗装置",
+      "b": {
+        "clause": "5.2.9",
+        "page": 27,
+        "quote": "当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。",
+        "absentTerms": ["塑料"]
+      },
+      "a": {
+        "clause": "5.2.9",
+        "page": 29,
+        "quote": "对于使用塑料配光镜的灯具，禁止使用机械式的前照灯清洗装置。"
+      },
+      "c": {
+        "clause": "6.2.9.2",
+        "page": 44,
+        "quote": "shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511",
+        "status": "C 无对应义务",
+        "absentTerms": ["plastic", "prohibited", "shall not"]
+      },
+      "nature": "**新增禁止性义务（A 单边）** —— B 与 C 都只规定「该装的时候要装」，都没有禁止机械式清洗装置；A 单独加了一条禁止。",
+      "designImpact": "使用塑料配光镜的前照灯产品，机械式（刮片式）清洗方案不可用，须改非机械式方案（高压水气、超声等）。这是一条会直接改 BOM 的义务，不是措辞差异。",
+      "testImpact": "型式认可须确认清洗装置型式；「塑料配光镜 + 机械式清洗装置」为不符合。",
+      "evidence": "已核验（A §5.2.9 p29 / B §5.2.9 p27 / C §6.2.9.2 p44）；「B/C 无此规定」已用「塑料 / plastic / prohibited / shall not」在两版原文中扫描确认。"
+    },
+    {
+      "id": "dippedBeam.cleaningScope",
+      "device": "近光灯清洗装置",
+      "aspect": "适用范围",
+      "title": "近光灯清洗装置的触发与配备范围：单侧 vs 两侧",
+      "b": {
+        "clause": "5.2.9",
+        "page": 27,
+        "quote": "当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。"
+      },
+      "a": {
+        "clause": "5.2.9",
+        "page": 29,
+        "quote": "当任一侧近光灯光源光通量或用于产生主近光的光源模块光通量之和超过2000lm时，两侧近光灯 均应配备符合GB/T 21260的前照灯清洗装置。"
+      },
+      "c": {
+        "clause": "6.2.9.2",
+        "page": 44,
+        "quote": "having a total objective luminous flux for at least one headlamp which exceeds 2,000 lumens shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511",
+        "status": "C 部分对应（口径/范围不同）"
+      },
+      "nature": "**触发口径与配备范围变化** —— B 按「单侧」判、装该侧；A 按「任一侧」判、一旦触发**两侧都装**；C 按「至少一只灯」触发，且按**灯**（headlamp）而非按侧配备、判定标准指向 UN R4511。",
+      "designImpact": "非对称灯具方案（单侧高配、另一侧低配）在 B 下只需高配侧装清洗器，A 下会被拉成两侧都装 —— 直接影响成本与布置。",
+      "testImpact": "试验须按「任一侧 / 至少一只」触发口径判定，并按 A 的口径核两侧配备；清洁装置的合格标准 A/B 引 GB/T 21260，C 引 UN R4511，是两套标准。",
+      "evidence": "已核验（A §5.2.9 p29 / B §5.2.9 p27 / C §6.2.9.2 p44）",
+      "note": "触发阈值三版都是 2000 lm，**变的是口径不是数值** —— 所以它不在第 12 章矩阵里（矩阵只比数值），只能在这张清单里出现。这正是矩阵装不下的那类差异。"
+    },
+    {
+      "id": "afs.cleaningScope",
+      "device": "AFS 自适应前照灯清洗器",
+      "aspect": "适用范围",
+      "title": "AFS 清洗器的触发条件：单侧 2000 lm 与合计 4000 lm 的组合关系",
+      "b": {
+        "clause": "5.22.9.1",
+        "page": 53,
+        "quote": "其左右两侧光源总目标光通量之和超过 4000lm时,AFS应配备符合GB21260要求的前照灯清洗器。",
+        "absentTerms": ["单侧"]
+      },
+      "a": {
+        "clause": "5.3.9.1",
+        "page": 34,
+        "quote": "总目标光通量之和超过4000lm或单侧超过2000lm时，应配备符合GB/T 21260 要求的前照灯清洗器。"
+      },
+      "c": {
+        "clause": "6.22.9.1",
+        "page": 88,
+        "quote": "if the total objective luminous flux of the light source(s) and/or light source module(s) of these units exceeds 2,000 lm at least on one side, and which contribute to the Class C (basic) passing beam",
+        "status": "C 部分对应（口径/范围不同）"
+      },
+      "nature": "**触发条件由「一条」变「两条（并列）」** —— B 只有合计 > 4000 lm 一条触发；A 是「合计 > 4000 lm **或** 单侧 > 2000 lm」两条并列；C 是「至少一侧 > 2000 lm」，且限定限于贡献 Class C（基础）远光的那部分发光单元。",
+      "designImpact": "按 A，一个基础模式主近光总目标光通量不高（< 4000 lm）但单侧超过 2000 lm 的 AFS 也要配清洗器 —— B 版方案会漏。单侧光通量偏高的 AFS 布置是风险点。",
+      "testImpact": "试验须分别算合计值与单侧值，任一条触发即判定须配清洗器；C 的判定还要先确定哪些发光单元贡献 Class C 基础远光。",
+      "evidence": "已核验（A §5.3.9.1 p34 / B §5.22.9.1 p53 / C §6.22.9.1 p88）；「B 无单侧触发」已用「单侧」在 B 原文中扫描确认。"
+    },
+    {
+      "id": "frontFogLamp.aimMarkingAccuracy",
+      "device": "前雾灯",
+      "aspect": "测试方法",
+      "title": "前雾灯初始下倾度的标注精度：0.1% 与「一位小数」",
+      "b": {
+        "clause": "5.3.6.1.2",
+        "page": 28,
+        "quote": "的精度进行规定,并以清晰且不易抹去的方法在每个前雾灯或制造商铭牌"
+      },
+      "a": {
+        "clause": "5.4.6.1.2",
+        "page": 36,
+        "quote": "由制造商以不大于0.1%的精度进行规定,并以清晰且不易抹去的方式在每个前雾灯或制造商铭牌"
+      },
+      "c": {
+        "clause": "6.3.6.1.2.2",
+        "page": 46,
+        "quote": "shall be specified within an accuracy of one decimal place by the manufacturer and indicated in a clearly legible and indelible manner on each vehicle close to either the front fog lamp",
+        "status": "C 部分对应（口径/范围不同）"
+      },
+      "nature": "**口径不同（不是「C 没有这条要求」）** —— A/B 要求「以不大于 **0.1%** 的精度规定并标明」；C §6.3.6.1.2.2 要求「以**一位小数**的准确度规定并标明」。要求的是同一件事（制造商规定初始下倾度并标在车上），但两个口径不是同一个量。",
+      "designImpact": "铭牌/车身上的初始下倾度标注：GB 口径下要标到 0.1%，R48 口径下要标到一位小数（如 −1.5%）。**数值本身的可用范围两版一致**（A/B 的倾斜度限值表与 C §6.3.6.1.2.1 同源），差的是**标注精度**。",
+      "testImpact": "标注核对按各自标准执行：GB 按 0.1% 精度核，R48 按一位小数核。同一台车若同时满足两个口径（标注到 0.1% 自然也满足一位小数），两边都过。",
+      "evidence": "已核验（A §5.4.6.1.2 p36 / B §5.3.6.1.2 p28 / C §6.3.6.1.2.2 p46）",
+      "note": "第 12 章矩阵里这一行的 C 列是「无此规定（已核）」，指的是 **0.1% 这个数**在 C 里没有 —— 不是说 C 没有标注要求。矩阵比的是数值，比不出「口径不同」；这一条只能在这里说。"
+    }
+  ]
+}

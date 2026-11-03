@@ -860,6 +860,16 @@ function judge(
       ? `，${ref} 可回查`
       : `，${ref} 未定位`;
   if (sameValue(a, b)) {
+    // A/B 一致**不等于三版一致** —— 第三版数值不同就说明有差异。
+    // 旧代码只比 A/B，于是「A=B=5%、C=3%」这种**出口欧盟级**的差异被归档进
+    // 「三版一致 / 不需要改设计」，附录 G 还把它逐条列了出来当范例。
+    const c = ref ? cells[ref] : undefined;
+    if (c && c.status === "verified" && c.nums.length && a.nums.length && !sameValue(c, a)) {
+      return {
+        verdict: "c-diverged",
+        note: `${v0}/${v1} 一致，但 ${ref} 取值不同（${c.nums.join(" / ")}）`,
+      };
+    }
     return {
       verdict: "same",
       note: !ref ? `${v0}/${v1} 一致` : cells[ref].status === "verified" ? `${v0}/${v1} 一致` : `${v0}/${v1} 一致（${ref} 未定位）`,
@@ -1010,6 +1020,10 @@ export function verdictLabel(row: Row, versions: Version[]): string {
   const [v0, v1] = versions;
   if (v === "changed") return `**${v0}/${v1} 有变化**`;
   if (v === "same") return `${v0}/${v1} 一致`;
+  if (v === "c-diverged") {
+    const ref = versions[2];
+    return ref ? `${v0}/${v1} 一致，${ref} 不同` : `${v0}/${v1} 一致`;
+  }
   if (v === "incomplete") {
     const missing = versions.filter((k) => row.cells[k]?.status !== "verified");
     // **「未定位」与「该版无此规定（已核）」要分开说。**
@@ -1050,16 +1064,19 @@ export function verdictLabel(row: Row, versions: Version[]): string {
  */
 export interface MatrixGroups {
   changed: Row[];
+  /** A/B 取值一致，但第三版不同 —— 不是「三版一致」，是「两版一致、一版背离」。 */
+  cDiverged: Row[];
   singleSide: Row[];
   incomplete: Row[];
   same: Row[];
 }
 
 export function groupRows(rows: Row[], versions: Version[]): MatrixGroups {
-  const g: MatrixGroups = { changed: [], singleSide: [], incomplete: [], same: [] };
+  const g: MatrixGroups = { changed: [], cDiverged: [], singleSide: [], incomplete: [], same: [] };
   for (const r of rows) {
     if (r.verdict === "changed") g.changed.push(r);
     else if (r.verdict === "incomplete") g.incomplete.push(r);
+    else if (r.verdict === "c-diverged") g.cDiverged.push(r);
     else if (/-only$/.test(String(r.verdict))) g.singleSide.push(r);
     else g.same.push(r);
   }

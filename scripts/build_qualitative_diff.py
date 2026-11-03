@@ -313,6 +313,19 @@ def build():
             matched = bool(na[:10]) and na[:10] == nb[:10]
 
         if not matched:
+            # 相似度：**机械算出来的事实**，不是判定。
+            # 两版开头原文归一化后的 difflib ratio —— 可复现，读者能自己核。
+            # 分档只描述「字面像不像」，不主张「是不是同一条款」。
+            _na, _nb = norm(a_text), norm(b_text)
+            _sim = round(difflib.SequenceMatcher(None, _na, _nb).ratio(), 3) if (_na and _nb) else 0.0
+            if _sim >= 0.75:
+                _sim_note = "字面高度相似 —— 多半是同一条款、措辞不同（仍请回原文确认）"
+            elif _sim >= 0.45:
+                _sim_note = "字面部分相似 —— 可能同条款改写，也可能不是；须回原文确认"
+            elif min(len(_na), len(_nb)) < 12:
+                _sim_note = "一侧原文短到不像完整条款 —— 多为 OCR 断裂，须回源核"
+            else:
+                _sim_note = "字面不像 —— 大概率不是同一条款（编号重排），不并排"
             unpaired.append({
                 "bClause": b_clause,
                 "aClause": a_clause,
@@ -321,8 +334,12 @@ def build():
                 "device": device_name(B, b_clause),
                 "aHead": (ea.get("head") or "").strip()[:60],
                 "bHead": (eb.get("head") or "").strip()[:60],
+                "aSnippet": a_text[:120],
+                "bSnippet": b_text[:120],
                 "aPage": ea.get("page") or 0,
                 "bPage": eb.get("page") or 0,
+                "sim": _sim,
+                "simNote": _sim_note,
             })
             continue
 

@@ -93,6 +93,64 @@ const REPORT = (() => {
   if (!auth?.total) throw new Error("报告里解析不出 §11.0 的变化条数 —— 稿子里的条数会变成 0");
   return { params: rows.length, cells, hits, empty: cells - hits, changes: auth.total };
 })();
+/**
+ * 另外几个数 —— 也从机器产物读。
+ *
+ * 讲稿里手写过「26 条章节级对应」「A 124 + B 105 + C 142 = 371 条」
+ * 「326 条可比 + 86 条只登记」。R48 章节映射补了「范围」「一般规定」两条之后，
+ * 稿子还写着 26 —— **交付件里两个数打架**。
+ *
+ * 每一个数都指向一个具体的数据文件，**不重新实现口径**（那是第二个真相来源）。
+ */
+const FACTS = (() => {
+  const readJson = (rel) => {
+    const q = path.join(ROOT, rel);
+    if (!fs.existsSync(q)) throw new Error(`读不到 ${rel} —— 讲稿里的数必须来自机器产物。`);
+    return JSON.parse(fs.readFileSync(q, "utf-8"));
+  };
+  const cov = readJson("data/coverage-audit.json");
+  const r48 = readJson("data/r48-chapters.json");
+  const qd = readJson("data/qualitative-diff.json");
+  const qo = readJson("data/qualitative-obligations.json");
+  const clauseIdx = readJson("data/clause-index.json")._clauses ?? {};
+  const perVer = {};
+  for (const [v, c] of Object.entries(clauseIdx)) perVer[v] = Object.keys(c ?? {}).length;
+  const vKeys = Object.keys(perVer).sort();
+  return {
+    // R48 章节对应：map 的条数（GB 独有的另算）
+    r48Mapped: Object.keys(r48.map ?? {}).length,
+    r48GbOnly: (r48.gbOnly ?? []).length,
+    // 条款索引的条款数
+    clauseA: perVer.A ?? 0,
+    clauseB: perVer.B ?? 0,
+    clauseC: perVer.C ?? 0,
+    clauseTotal: vKeys.reduce((a, v) => a + perVer[v], 0),
+    // 覆盖审计
+    limits: cov.totals?.limits ?? 0,
+    missing: cov.totals?.missing ?? 0,
+    otherDevice: cov.totals?.otherDevice ?? 0,
+    general: cov.totals?.general ?? 0,
+    // 附录 H
+    hComparable: qd.summary?.comparable ?? 0,
+    hDifferent: qd.summary?.differentText ?? 0,
+    hUnpaired: qd.summary?.notComparable ?? 0,
+    // 定性义务清单
+    qoCount: (qo.entries ?? []).length,
+  };
+})();
+const R48_MAPPED = String(FACTS.r48Mapped);
+const CLAUSE_A = String(FACTS.clauseA);
+const CLAUSE_B = String(FACTS.clauseB);
+const CLAUSE_C = String(FACTS.clauseC);
+const CLAUSE_TOTAL = String(FACTS.clauseTotal);
+const LIMITS = String(FACTS.limits);
+const MISSING = String(FACTS.missing);
+const OTHER_DEVICE = String(FACTS.otherDevice);
+const H_COMPARABLE = String(FACTS.hComparable);
+const H_DIFFERENT = String(FACTS.hDifferent);
+const H_UNPAIRED = String(FACTS.hUnpaired);
+const QO_COUNT = String(FACTS.qoCount);
+
 const PARAMS = String(REPORT.params);
 const CELLS = String(REPORT.cells);
 const HITS = String(REPORT.hits);
@@ -227,7 +285,7 @@ const FIG = {
   metrics: `
   <div class="fig">
     <div class="mgrid">
-      <div class="m"><span class="v">100<span class="u">%</span></span><span class="l">三版条款覆盖</span><span class="d">A 124 条款 / B 105 / C 142<br>missing 0 · 别装置顶替 0</span></div>
+      <div class="m"><span class="v">100<span class="u">%</span></span><span class="l">三版条款覆盖</span><span class="d">A ${CLAUSE_A} 条款 / B ${CLAUSE_B} / C ${CLAUSE_C}<br>missing ${MISSING} · 别装置顶替 ${OTHER_DEVICE}</span></div>
       <div class="m"><span class="v">0</span><span class="l">真缺口</span><span class="d">448 条要求里<br>285 已覆盖 · 66 附录逐条列出<br>52 已引原文 · 45 非产品要求</span></div>
       <div class="m"><span class="v">969</span><span class="l">定量限值被覆盖</span><span class="d">A 340 · B 287 · C 342</span></div>
       <div class="m"><span class="v">${HITS}<span class="u">/${CELLS}</span></span><span class="l">参数取值位有值</span><span class="d">${PARAMS} 参数 × 3 版<br>其余 ${EMPTY} 格是<b>有理由的空</b>（该版确实没规定）</span></div>
@@ -249,7 +307,7 @@ const FIG = {
         <td>三版 missing 0 / 别装置顶替 0；<code>clause_value_check</code> · <code>matrix_page_check</code> · <code>diff_value_check</code> 三道回源</td></tr>
       <tr><td class="q">"仅有两版国标，无欧标，只有罗列，无对比"</td>
         <td>① 第 14 章欧标第三列（条款号+页码+原文）<br>② §11.0 一份权威变化清单，报告各处只报这一个数<br>③ 第 12 章改决策视图，不再是三列罗列</td>
-        <td>26 条章节级对应逐条回原文验过；§11.0 与首页仪表盘<b>同源对账</b>（新闸门盯着）</td></tr>
+        <td>${R48_MAPPED} 条章节级对应逐条回原文验过；§11.0 与首页仪表盘<b>同源对账</b>（新闸门盯着）</td></tr>
     </table>
   </div>`,
 
@@ -258,10 +316,10 @@ const FIG = {
   <div class="fig">
     <table class="tbl">
       <tr><th style="width:26%">过去要人工做的事</th><th style="width:34%">现在</th><th>量级</th></tr>
-      <tr><td>把三份 PDF 的条款逐条读出来建索引</td><td>脚本切条款，机器回源</td><td>A 124 + B 105 + C 142 = 371 条</td></tr>
+      <tr><td>把三份 PDF 的条款逐条读出来建索引</td><td>脚本切条款，机器回源</td><td>A ${CLAUSE_A} + B ${CLAUSE_B} + C ${CLAUSE_C} = ${CLAUSE_TOTAL} 条</td></tr>
       <tr><td>把每个参数在三个版本里的值抄进表里</td><td>spec 驱动 + 机器校验</td><td>${CELLS} 个取值位</td></tr>
       <tr><td>判断"哪些差异是真变化"</td><td>差值裁定 + 勘误表逐条回原文</td><td>57 条闭环条目 → ${CHANGES} 条真实变化</td></tr>
-      <tr><td>把定性条款挑出来给客户看</td><td>装置感知的 A/B 自动配对</td><td>326 条可比 + 86 条只登记</td></tr>
+      <tr><td>把定性条款挑出来给客户看</td><td>装置感知的 A/B 自动配对</td><td>${H_COMPARABLE} 条可比 + ${H_UNPAIRED} 条只登记</td></tr>
       <tr><td>逐条核对自己印出来的数字有没有错</td><td>${GATES} 项闸门，改坏就红</td><td>每一条结论都带页码</td></tr>
     </table>
     <div class="note">人工没被替代 —— 人工被挪到了<b>该由人判断的地方</b>（方向相反的条件句、工程影响、编号重排）。</div>
@@ -578,7 +636,7 @@ function buildDeck(figData) {
       <ul>
         <li><b>数值对比</b>：${PARAMS} 个参数 × 3 版，每个取值带条款号、页码、原文摘录</li>
         <li><b>定性并排</b>：附录 H 把 184 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
-        <li><b>欧标第三列</b>：UN R48-09 的条款号 + 页码 + 原文，26 条章节级对应逐条回源验过</li>
+        <li><b>欧标第三列</b>：UN R48-09 的条款号 + 页码 + 原文，${R48_MAPPED} 条章节级对应逐条回源验过</li>
         <li><b>可追责</b>：${GATES} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
       </ul>`,
     endline: `这四条合起来才是「能交给客户」—— <b>不是一份更厚的报告，是一条会自己证明自己没取错数的产线</b>。`,
@@ -591,7 +649,7 @@ function buildDeck(figData) {
     sub: "引号里是客户原话（原文见 delivery/PDF对比/feedback.md）",
     body: `
       <div class="qbox">① 「这一版和之前的差别不大，仍然只有法规中，有具体数值的内容的比较，例如安装高度，响应时间，光强等。」</div>
-      <div class="abox">→ <b>差别就在新增的三块</b>：附录 H 把<b>无数值</b>的定性条款也逐条并排（184 条）；第 14 章补上真正的<b>欧标第三列</b>（26 条章节级对应）；§11.0 一份权威变化清单（${CHANGES} 条真实变化）。参数也从 305 补到 ${PARAMS}。</div>
+      <div class="abox">→ <b>差别就在新增的三块</b>：附录 H 把<b>无数值</b>的定性条款也逐条并排（${H_DIFFERENT} 条）；§11.9 补上<b>矩阵装不下的定性义务</b>（${QO_COUNT} 条配备/禁止/适用范围变化）；§11.0 一份权威变化清单（${CHANGES} 条真实变化）。参数也从 305 补到 ${PARAMS}。</div>
       <div class="qbox">② 「前段是数值摘取进行罗列对比。数值有提取错误或空缺。」</div>
       <div class="abox">→ ① <b>完整性保证本身的洞</b>被修掉（条款索引曾吞掉 A 草案 4 个装置共 71 条，我们曾在一个缺了四个装置的集合上宣称「真缺口 0」）<br/>
         ② 空缺必须是<b>有理由的空</b>（该版确实没规定），与「抽取失败」在报告里措辞不同；每个取值带条款号与页码，可逐条回源</div>

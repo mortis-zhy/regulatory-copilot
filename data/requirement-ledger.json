@@ -2,12 +2,12 @@
  "generatedAt": null,
  "totals": {
   "requirements": 448,
-  "covered": 285,
+  "covered": 286,
   "appendixListed": 65,
   "weak": 0,
   "notApplicable": 45,
   "gaps": 0,
-  "quoted": 53
+  "quoted": 52
  },
  "rows": [
   {
@@ -2514,9 +2514,9 @@
    "page": 44,
    "excerpt": "Irrespective of the requirements of paragraph 6.2.7.5., it shall always be possible to switch the dipped beam headlamps ON manually.",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 40
+   "quotedMatch": 0
   },
   {
    "version": "C",

@@ -196,12 +196,26 @@
       "probe": "Rear-end collision alert signal",
       "near": "6.25",
       "matrixToken": "追尾警告信号"
+    },
+    "1": {
+      "gbName": "范围",
+      "r48": "1",
+      "probe": "This Regulation applies to vehicles of categories M, N",
+      "near": "1",
+      "note": "C §1 Scope（p5）：「This Regulation applies to vehicles of categories M, N, and to their trailers (category O) with regard to the installation of lighting and light-signalling devices.」—— **原来被当成「GB 独有的范围章」**。两版的适用范围可以直接对照：GB 写明本标准适用什么，R48 写明 UN R48 适用什么。",
+      "matrixToken": ""
+    },
+    "4": {
+      "gbName": "一般要求",
+      "r48": "5",
+      "probe": "The lighting and light-signalling devices shall be so fitted that under normal conditions of use",
+      "near": "5",
+      "note": "C §5 General specifications（p24）：§5.1 安装条件、§5.3 基准轴线允差 ±3°、§5.4 空载检验高度方向……—— **原来被当成「GB 独有的一般要求章」**，而且当时给的理由（振动、基准轴线、允差 ±3°）**恰好就是 C §5.1/§5.3/§5.4 的内容** —— 理由本身是反证。",
+      "matrixToken": ""
     }
   },
   "gbOnly": {
-    "1": "GB 独有的「范围」章（写明本标准适用什么）",
     "2": "GB 独有的「规范性引用文件」章（列 GB/T 3977 等引用标准）",
-    "4": "GB 独有的「一般要求」章（振动、基准轴线、允差 ±3° 等）",
     "5": "GB 第 5 章是各灯具的容器章（下辖 5.1~5.26），R48 没有对应的容器章",
     "5.24": "GB 独有的「牵引杆挂车标志灯」（图 4）—— R48-09 无对应装置",
     "6": "GB 独有的「检验规则」章",

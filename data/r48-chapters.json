@@ -2,6 +2,19 @@
  "_comment": "由 scripts/build_r48_chapters.py 生成 —— **不要手改**。GB 章节 → UN R48-09 章节的对应关系，每条都回 R48 原文验过。",
  "generatedFrom": "dist/mineru-v4-data.json",
  "map": {
+  "1": {
+   "gb": "1",
+   "gbName": "范围",
+   "r48": "1",
+   "r48Name": "This Regulation applies to vehicles of categories M, N",
+   "page": 5,
+   "pageLabel": "第5页",
+   "excerpt": "This Regulation applies to vehicles of categories M, N, and to their trailers (category O)<sup>1</sup> with regard to the installation of lighting and light-signalling devices. 2. Definitions 2.1. General 2.1.1. The definitions given in this Regulation and its series of amendments in force at the time of application for type approval shall apply to the Light-Signalling Devices (148), Road Illumination Devices (149) a…",
+   "hits": 1,
+   "matrixToken": "",
+   "note": "C §1 Scope（p5）：「This Regulation applies to vehicles of categories M, N, and to their trailers (category O) with regard to the installation of lighting and light-signalling devices.」—— **原来被当成「GB 独有的范围章」**。两版的适用范围可以直接对照：GB 写明本标准适用什么，R48 写明 UN R48 适用什么。",
+   "verified": true
+  },
   "3": {
    "gb": "3",
    "gbName": "术语和定义",
@@ -13,6 +26,19 @@
    "hits": 1,
    "matrixToken": "",
    "note": "R48 的定义在 §2（Definitions），§2.1.1 是通用定义条。",
+   "verified": true
+  },
+  "4": {
+   "gb": "4",
+   "gbName": "一般要求",
+   "r48": "5",
+   "r48Name": "The lighting and light-signalling devices shall be so fitted that under normal conditions of use",
+   "page": 24,
+   "pageLabel": "第24页",
+   "excerpt": "The lighting and light-signalling devices shall be so fitted that under normal conditions of use as defined in paragraphs 2.3.10., 2.3.10.1. and 2.3.10.2. and notwithstanding any vibrations to which they may be subjected, they retain the characteristics prescribed by this Regulation and enable the vehicle to comply with the requirements of this Regulation. In particular, it shall not be possible for the lamps to be i…",
+   "hits": 1,
+   "matrixToken": "",
+   "note": "C §5 General specifications（p24）：§5.1 安装条件、§5.3 基准轴线允差 ±3°、§5.4 空载检验高度方向……—— **原来被当成「GB 独有的一般要求章」**，而且当时给的理由（振动、基准轴线、允差 ±3°）**恰好就是 C §5.1/§5.3/§5.4 的内容** —— 理由本身是反证。",
    "verified": true
   },
   "5.1": {
@@ -342,9 +368,7 @@
   }
  },
  "gbOnly": {
-  "1": "GB 独有的「范围」章（写明本标准适用什么）",
   "2": "GB 独有的「规范性引用文件」章（列 GB/T 3977 等引用标准）",
-  "4": "GB 独有的「一般要求」章（振动、基准轴线、允差 ±3° 等）",
   "5": "GB 第 5 章是各灯具的容器章（下辖 5.1~5.26），R48 没有对应的容器章",
   "5.24": "GB 独有的「牵引杆挂车标志灯」（图 4）—— R48-09 无对应装置",
   "6": "GB 独有的「检验规则」章",

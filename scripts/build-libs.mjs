@@ -44,6 +44,14 @@ const ENTRIES = [
   // offline rebuild path (rebuild_report.mjs) could not reach buildMinerUReport.
   ["server/reports/reportV6.ts", "dist/reportV6.js"],
   ["server/reports/parameterMatrix.ts", "dist/parameterMatrix.js"],
+  // qualitativeObligations 是第 11.9 节的实现（定性义务变化清单）。
+  // 它被 reportV6 打包进去，但**单独列出来**：构建清单靠源码哈希判断
+  // 「改了源码没重建」。若只盯 reportV6.ts，改了本文件而忘了重建，
+  // 闸门会放行 —— 那正是这份清单当初要防的失败模式。
+  ["server/reports/qualitativeObligations.ts", "dist/qualitativeObligations.js"],
+  // innerRoot 是仓库根目录的解析器，被 reportV6 与 qualitativeObligations 共用。
+  // 两份副本正是 §11.9 找不到数据的原因，所以它必须进构建清单（改了没重建会被抓到）。
+  ["server/reports/innerRoot.ts", "dist/innerRoot.js"],
   // consistency.ts is the report's self-check. It needs its own module so
   // _test_consistency.mjs can feed it **synthetic** tables — the false
   // positives it used to raise (55 medium findings, 53 of them the checker's

@@ -649,6 +649,85 @@ check("chapter 11 keeps sections 11.2 / 11.3 / 11.3.0 / 11.4", () => {
   return "11.2 / 11.3 / 11.3.0 / 11.4 all present";
 });
 
+// ---------------------------------------------------------------------------
+// §11.9 定性义务变化清单
+//
+// 第 12 章参数矩阵只装得下**数值**。客户真正在问的是「产品哪里不一样、要不要改」——
+// 配备 / 禁止 / 适用范围 / 控制逻辑 这类定性义务变化，矩阵里一行都装不下。
+// §11.9 装这块，是客户「这版和之前差别不大」这条抱怨的正题。
+//
+// 这三道闸门盯三件不同的事：
+//   1. 数据源本身经得起核（条款号 / 页码 / 原文摘录 / 缺失结论）；
+//   2. 这一节真的进了交付件，且条目数与数据源对得上（防止改了 JSON 没重出报告）；
+//   3. 每一条都给出了 C 的对应状态 —— 「C 到底管不管这件事」是客户的问题，
+//      空白格等于没回答。
+// ---------------------------------------------------------------------------
+
+check("定性义务清单逐条回原文核验（条款/页码/原文/缺失结论）", () => {
+  const { ok, out } = runPy(["scripts/verify_qualitative_obligations.py"], "qualitative obligations");
+  assert(ok, `定性义务清单核验失败：\n        ${out.slice(-900)}`);
+  const n = (out.match(/定性义务清单：(\d+) 条/) || [])[1];
+  assert(n && Number(n) > 0, "没有解析出条目数");
+  return `${n} 条 —— ${out.split("\n").filter((l) => l.includes("核验")).join(" / ").trim()}`;
+});
+
+check("第 11.9 节进了交付件，且条目数与数据源一致", () => {
+  const qo = JSON.parse(read("data/qualitative-obligations.json"));
+  const md = loadReport()
+    .chapters.map((c) => c.markdown ?? "")
+    .join("\n");
+  const head = "### 11.9 定性义务变化清单";
+  assert(md.includes(head), "交付件里没有 §11.9 定性义务变化清单");
+  assert(
+    !md.includes("本节数据不可用"),
+    "§11.9 渲染成了「本节数据不可用」—— 数据文件没被读到（多半是路径解析跑到了仓库外）",
+  );
+  const rendered = (md.match(/^#### 11\.9\.\d+ /gm) || []).length;
+  assert(
+    rendered === qo.entries.length,
+    `§11.9 渲染了 ${rendered} 条，数据源有 ${qo.entries.length} 条 —— 报告没重新生成？`,
+  );
+  const missing = qo.entries
+    .filter((e) => !md.includes(e.title))
+    .map((e) => `${e.id}/${e.title}`);
+  assert(missing.length === 0, `这些条目没进交付件：${missing.join("; ")}`);
+  // 执行摘要是客户先看的地方 —— §11.9 若只在第 11 章末尾，多数人翻不到。
+  const execMd = loadReport().chapters.find((c) => c.id === 0)?.markdown ?? "";
+  assert(
+    execMd.includes("11.9"),
+    "执行摘要里没提 §11.9 —— 定性义务变化清单藏在第 11 章末尾，多数客户看不到",
+  );
+  assert(
+    new RegExp(`\\*\\*${qo.entries.length}\\s*条定性义务变化\\*\\*`).test(execMd),
+    `执行摘要没报「${qo.entries.length} 条定性义务变化」这个数`,
+  );
+  return `${rendered} 条全部在交付件里，执行摘要已指向 §11.9`;
+});
+
+check("§11.9 每一条都给出了 C 的对应状态", () => {
+  const qo = JSON.parse(read("data/qualitative-obligations.json"));
+  const md = loadReport()
+    .chapters.map((c) => c.markdown ?? "")
+    .join("\n");
+  const sec = md.slice(md.indexOf("### 11.9 定性义务变化清单"));
+  const blocks = sec.split(/^#### 11\.9\.\d+ /m).slice(1);
+  assert(blocks.length === qo.entries.length, `切出 ${blocks.length} 个条目块，数据源有 ${qo.entries.length} 条`);
+  const bad = [];
+  qo.entries.forEach((e, i) => {
+    const b = blocks[i] ?? "";
+    if (!b.includes(`C §${e.c.clause}`)) bad.push(`${e.id}: C 条款号没渲染`);
+    if (!b.includes(`p${e.c.page}`)) bad.push(`${e.id}: C 页码没渲染`);
+    if (!b.includes(e.c.status ?? "")) bad.push(`${e.id}: C 状态没渲染`);
+    if (!b.includes(`A §${e.a.clause}`) || !b.includes(`B §${e.b.clause}`)) {
+      bad.push(`${e.id}: A/B 条款号没渲染`);
+    }
+  });
+  assert(bad.length === 0, bad.join("; "));
+  const statuses = {};
+  for (const e of qo.entries) statuses[e.c.status] = (statuses[e.c.status] ?? 0) + 1;
+  return `${qo.entries.length} 条，C 状态分布 ${JSON.stringify(statuses)}`;
+});
+
 check("executive summary candidate count closes against the ledger", () => {
   const md = loadReport()
     .chapters.map((c) => c.markdown ?? "")
@@ -889,7 +968,7 @@ check("矩阵里每一个空格子都归了类，且没有「不知道」的格�
     "12.1 总表里没有「无此规定（已核）」标记",
   );
   assert(
-    /12\.3 缺一版取值的参数/.test(md) && !/12\.3 定位失败的参数/.test(md),
+    /12\.3 缺[^）\n]*取值的参数/.test(md) && !/12\.3 定位失败的参数/.test(md),
     "12.3 的标题还是「定位失败的参数」—— 那些格子全部是「已核过确实没有」，不是定位失败",
   );
   return `${counts["not-specified"]} 格已核无规定 / 取数失败 0 格`;
@@ -1000,15 +1079,16 @@ check("chapter 12 is a parameter matrix, not a table dump", () => {
   // matrix is actually filled in.
   assert(/本版覆盖/.test(md), "chapter 12 does not state its coverage");
 
-  // **分组不能丢行**：四个子组的行数之和必须等于矩阵的行数。
-  // 以前 305 行平铺，没有分组；现在分成「有变化 / 只有一版有 / 缺一版 / 三版一致」，
+  // **分组不能丢行**：五个子组的行数之和必须等于矩阵的行数。
+  // 以前 305 行平铺，没有分组；现在分成「有变化 / A/B 一致但 C 不同 / 另两版一致缺一版 / 只有一版有规定 / 三版一致」，
   // 一旦分组逻辑有漏，参数就会**静默消失** —— 比显示错更糟。
   const matrix = loadReport().parameterMatrix ?? [];
   const groupCounts = {
     changed: (md.match(/### 12\.1\.1 有变化（(\d+) 条）/) ?? [])[1],
-    single: (md.match(/### 12\.1\.2 只有一版有规定（(\d+) 条）/) ?? [])[1],
-    incomplete: (md.match(/### 12\.1\.3 缺一版取值（(\d+) 条）/) ?? [])[1],
-    same: (md.match(/### 12\.1\.4 三版一致（(\d+) 条）/) ?? [])[1],
+    cDiverged: (md.match(/### 12\.1\.2 A\/B 一致、C 不同（(\d+) 条）/) ?? [])[1],
+    single: (md.match(/### 12\.1\.3 另两版一致、缺一版规定（(\d+) 条）/) ?? [])[1],
+    incomplete: (md.match(/### 12\.1\.4 只有一版有规定、另两版无取值（(\d+) 条）/) ?? [])[1],
+    same: (md.match(/### 12\.1\.5 三版一致（(\d+) 条）/) ?? [])[1],
   };
   for (const [k, v] of Object.entries(groupCounts)) {
     assert(!!v, `第 12 章缺 ${k} 组的小标题 —— 分组结构不完整`);
@@ -1016,7 +1096,7 @@ check("chapter 12 is a parameter matrix, not a table dump", () => {
   const sumGroups = Object.values(groupCounts).reduce((a, b) => Number(a) + Number(b), 0);
   assert(
     sumGroups === matrix.length,
-    `四个分组的行数之和 ${sumGroups} ≠ 矩阵行数 ${matrix.length} —— 有参数被漏掉了`,
+    `五个分组的行数之和 ${sumGroups} ≠ 矩阵行数 ${matrix.length} —— 有参数被漏掉了`,
   );
   // 「三版一致」那一组必须能数出矩阵里 verdict=same 的行数
   const sameInMatrix = matrix.filter((m) => m.verdict === "same").length;
@@ -1043,6 +1123,7 @@ check("chapter 12 is a parameter matrix, not a table dump", () => {
   );
   const headingCounts = [
     Number(groupCounts.changed),
+    Number(groupCounts.cDiverged),
     Number(groupCounts.single),
     Number(groupCounts.incomplete),
     Number(groupCounts.same),
@@ -1053,6 +1134,40 @@ check("chapter 12 is a parameter matrix, not a table dump", () => {
   );
 
   return `${rows.length} 个参数行 · 四组合计 ${sumGroups} = 矩阵 ${matrix.length} · 附录 G 明细 ${gBlocks.length} 块 · 速览表与分组标题一致`;
+});
+
+check("「A/B 一致、C 不同」的参数没有被埋进「三版一致」", () => {
+  // 旧判定只比 A/B 两版，于是「A=B=5%、C=3%」这种**出口欧盟级**的差异
+  // 被归档进「三版一致 / 不需要改设计」，附录 G 还把它逐条列出来当范例。
+  // 这一类必须是**单独的组**，而且必须在 12.4（出口重点）里点名。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const rows = rep.parameterMatrix ?? [];
+  const cDiverged = rows.filter((r) => r.verdict === "c-diverged");
+  const same = rows.filter((r) => r.verdict === "same");
+  assert(
+    cDiverged.every((r) => r.cells?.C?.status === "verified"),
+    "有行被标成 c-diverged，但 C 列其实没取到值 —— 这个判定不该出现",
+  );
+  assert(
+    !same.some((r) => r.cells?.C?.status === "verified" && r.cells?.C?.nums?.length &&
+      r.cells?.A?.nums?.length &&
+      r.cells.C.nums.join(",") !== r.cells.A.nums.join(",")),
+    "有行 A/B 取值相同、C 取值不同，却仍被判成「三版一致」—— 这就是漏报，judge() 必须把它判成 c-diverged",
+  );
+  const md = reportText();
+  if (cDiverged.length) {
+    assert(
+      /### A\/B 一致、C 不同（\d+ 条）/.test(md) || /A\/B 一致、C 不同/.test(md),
+      "12.4 里没有「A/B 一致、C 不同」这一节 —— 出口重点漏了这一类",
+    );
+    for (const r of cDiverged) {
+      assert(
+        md.includes(String(r.name ?? "")),
+        `12.4 里没有点名「${r.name}」—— 这一类必须在出口重点里逐条列出`,
+      );
+    }
+  }
+  return `${cDiverged.length} 条 A/B 一致但第三版不同的参数已单列并在 12.4 点名`;
 });
 
 check("no spec pattern spans a page boundary", () => {
@@ -1965,10 +2080,31 @@ check("appendix H — the row count equals the data it is built from", () => {
   const md = app.markdown ?? "";
   const data = JSON.parse(read("data/qualitative-diff.json"));
   const s = data.summary ?? {};
-  const diffRows = (md.match(/^\| B \d+(\.\d+)* \/ A /gm) ?? []).length;
+  // **只数 H.2 这一节** —— H.4 的表格行同样以「| B … / A …」开头，
+  // 不切段会把两节的行数加到一起（实测 184 + 86 = 270，看着像 H.2 多了 86 行）。
+  const h2Start = md.indexOf("## H.2");
+  const h3Start = md.indexOf("## H.3");
+  assert(h2Start > 0 && h3Start > h2Start, "附录 H 里找不到 H.2 / H.3 的小节标题");
+  const h2 = md.slice(h2Start, h3Start);
+  const diffRows = (h2.match(/^\| B \d+(\.\d+)* \/ A /gm) ?? []).length;
   assert(
     diffRows === (s.differentText ?? 0),
     `附录 H.2 列了 ${diffRows} 行，数据里是 ${s.differentText ?? 0} 条「文字不同」`,
+  );
+  // H.4（编号不可直接对读的那批）以前只印条款号，同事指出数据里明明有
+  // aHead / bHead / aPage / bPage 却一个都没印。现在两版开头原文与页码都印了 ——
+  // 这一条钉住「不能再退回只印条款号」。
+  const h4Start = md.indexOf("## H.4");
+  assert(h4Start > 0, "附录 H 里找不到 H.4 的小节标题");
+  const h4 = md.slice(h4Start);
+  const unpairedRows = (h4.match(/^\| B \d+(\.\d+)* \/ A /gm) ?? []).length;
+  assert(
+    unpairedRows === (s.notComparable ?? 0),
+    `附录 H.4 列了 ${unpairedRows} 行，数据里是 ${s.notComparable ?? 0} 条「不可并排」`,
+  );
+  assert(
+    /A 草案 · 开头原文/.test(h4) && /B 现行 · 开头原文/.test(h4),
+    "附录 H.4 没有渲染两版开头原文 —— 同事第 13 条：只给条款号等于没给",
   );
   assert(
     md.includes(`可并排 **${s.comparable}**`),
@@ -1978,7 +2114,7 @@ check("appendix H — the row count equals the data it is built from", () => {
     md.includes(`## H.3 归一化后同文的条款（${s.sameText} 条）`),
     `附录 H.3 的条数与数据不符（应为 ${s.sameText}）`,
   );
-  return `H.2 ${diffRows} 行 · 同文 ${s.sameText} · 不可并排 ${s.notComparable}`;
+  return `H.2 ${diffRows} 行 · 同文 ${s.sameText} · 不可并排 ${unpairedRows}（H.4 已渲染两版开头原文与页码）`;
 });
 
 check("§11.4 网传指标不计入待复核桶（已裁定的不是待办）", () => {
