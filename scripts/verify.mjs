@@ -2933,6 +2933,34 @@ check("the report's page counts come from the corpus, not from literals", () => 
     .join(" · ")}）`;
 });
 
+check("the chapter-to-lamp map agrees with the corpus", () => {
+  // 「章节 → 灯」映射表（scripts/propose_parameters_c.py 的 R48_SECTIONS）是
+  // **手写的 25 行**。手写的东西会错，而且**错了不报错**：
+  //
+  //   本表曾把 6.14 标成「Direction-indicator position」，
+  //   而 6.14 实为 Rear retro-reflector ——
+  //   于是所有「侧转向灯」行都被派到回复反射器的条款里，
+  //   候选句**全是错的**，而表本身看着完全正常。
+  //
+  // 换标准时更糟：这张表不跟着语料走 → **候选池整体错位**，pipeline 一声不吭。
+  //
+  // 这一关**自动核对，不自动替换**：
+  // 表里每条的英文名，都去语料里「那一章自己的标题」对一次。
+  // 对不上 → 红。取不到 → 必须在 KNOWN_UNVERIFIABLE 名单里（每一处写清为什么），
+  // 不在名单里也红 —— **多一条就要人工确认一次**，不许悄悄多一条。
+  //
+  // 自动生成整张表**做不到**：表里有人的判断
+  // （6.21 Conspicuity markings 对应的是 GB 的「醒目标志」，不是按编号对齐的 5.21），
+  // 推不出来就不该推 —— 「宁可空着，不可错着」。
+  const r = spawnSync("python", ["scripts/check_section_map.py"], { cwd: ROOT, encoding: "utf-8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  assert(r.status === 0, `章节→灯映射表与语料对不上：\n        ${out.slice(-900)}`);
+  const summary = /一致 (\d+) · 不一致 (\d+) · 取不到 (\d+)/.exec(out);
+  assert(summary, `check_section_map.py 没给出汇总行:\n        ${out.slice(-500)}`);
+  assert(Number(summary[2]) === 0, `有 ${summary[2]} 条不一致`);
+  return `映射表 ${summary[1]} 条与语料一致 · 不一致 ${summary[2]} · 取不到 ${summary[3]}（已登记）`;
+});
+
 check("a draft can never wear the deliverable's name", () => {
   // 「快速草稿（未经核验）」与交付件走**同一个渲染器、同一套版式**，
   // 渲染出来的东西一模一样 —— 于是草稿下载下来，
