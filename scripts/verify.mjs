@@ -4310,6 +4310,9 @@ for (const t of [
   // 端口探针的**已知答案用例**：带标记的假实例要认得出，
   // 不带标记的不能误认。判据是「哪个端口上坐着我自己」。
   "_test_instance_probe.mjs",
+  // 「标签 → 版本键」判据的**已知答案用例**：
+  // 现在的写法要认得出、**换一套标准**也要认得出、认不出的不许瞎猜。
+  "_test_version_labels.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

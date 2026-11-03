@@ -22,6 +22,10 @@
  *   - extractTypedTables() → whole-report entry list
  */
 
+// 版本显示名表 —— 判据从它派生（见 normVersionLabel 的注释）。
+// 单独成模块正是为了**不把整份 spec 拖进这个包**。
+import { VERSION_META, normVersionText } from "./versionMeta";
+
 export type TypedTableKind = "triptych" | "plain";
 
 export type TypedTableEntry = {
@@ -159,6 +163,144 @@ export function normalizeRow(row: string[], width: number): string[] {
 // Triptych classification
 // ---------------------------------------------------------------------------
 
+/** 一个版本的几种「认得出它的写法」。 */
+type VersionAliases = {
+  key: string;
+  /** 版本键本身：A */
+  keyNorm: string;
+  /** 展示名去掉版本键之后的那截：草案 / 现行 / UN R48-09 */
+  labelTail: string;
+  /** 文档名全文：GB4785草案V4.3.5 */
+  docNorm: string;
+  /** 标准号全文：GB4785—XXXX */
+  stdNorm: string;
+  /** 文档名去掉末尾的修订号（V4.3.5 / 2019 / 09）：GB4785草案 */
+  revNorm: string;
+  /** 再去掉「草案 / 现行」那截，只剩标准族：GB4785 */
+  famNorm: string;
+  /** 上面几截合起来 —— 键后面的部分拿它们去比。 */
+  forms: string[];
+};
+
+/** 末尾的修订号：V4.3.5 · 2019 · 09 · XXXX */
+const REV_TAIL = /[-–—\s]?(V?\d+(?:\.\d+)*|XXXX)\s*$/;
+/** 末尾的「草案 / 现行」那截。 */
+const LABEL_TAIL = /(草案|现行|国际法规|新编|旧版|修订版)$/;
+
+/**
+ * 按一张显示名表造出「标签 → 版本键」的判据。
+ *
+ * 拆成工厂是为了**能拿一张假表来驱动** ——
+ * 判据是从表派生的，那么「换一套标准还对不对」就该用**换一张表**来验，
+ * 而不是靠声称。
+ *
+ * ## 判据
+ *
+ * ① **版本键打头**：「A」「A 草案」「C UN」——
+ *    键后面要么没有，要么是展示名那截的前缀，要么以「版」开头。
+ * ② **按文档名/标准号认**：「GB 4785 草案 V4.3.5」「GB 4785—XXXX」「UN R48-09」——
+ *    在所有版本的所有别名里取**最长**的那个前缀。
+ * ③ **最长者若分属不同版本 → 认不出**（返回 null）。
+ *    「GB 4785」就属于这一类：A 与 B 共用同一个标准族，
+ *    光看族名**分不出是哪一版** —— 与其猜，不如不认。
+ *
+ * > 「宁可空着，不可错着」：认不出只是让表格退回普通样式；
+ * > 认错会让**对照表把一版的数字摆到另一版的列名下**。
+ *
+ * ## 为什么判据是**派生**的
+ *
+ * 原来这里硬编码了「A 草案 / B 现行 / C UN R48」与「GB 4785 … 草案 / … 2019 /
+ * UN R\d」这些形状。换一套标准，它们**全都不认** ——
+ * 表会退化成普通表格（不报错，只是样式没了）。
+ *
+ * 现在判据从**声明式显示名表**（`versionMeta.ts` 的 `VERSION_META`）派生：
+ * 每个版本的 `label`（"A 草案"）、`doc`（"GB 4785 草案 V4.3.5"）、
+ * `std`（"GB 4785—XXXX"）都是判据的一部分。
+ * 换标准 = 改那张表一行，**这里一个字都不用改**。
+ *
+ * 顺带修掉一个**正则优先级**的老 bug：
+ * `/^GB\s*4785\D{0,3}XXXX|草案/` 里 `|` 的优先级最低，
+ * 所以它其实是「以 GB 4785 开头 **或** 含『草案』」——
+ * 于是**任何**带「草案」两个字的标签都被判成 A。
+ */
+export function buildVersionMatcher(
+  meta: ReadonlyArray<{ key: string; label: string; doc: string; std: string }>,
+): (label: string) => "A" | "B" | "C" | null {
+  const aliases: VersionAliases[] = meta.map((m) => {
+    const keyNorm = m.key.toUpperCase();
+    const docNorm = normVersionText(m.doc);
+    const stdNorm = normVersionText(m.std);
+    const labelNorm = normVersionText(m.label);
+    const labelTail = labelNorm.startsWith(keyNorm) ? labelNorm.slice(keyNorm.length) : labelNorm;
+    const revNorm = docNorm.replace(REV_TAIL, "");
+    const famNorm = revNorm.replace(LABEL_TAIL, "");
+    return {
+      key: m.key,
+      keyNorm,
+      labelTail,
+      docNorm,
+      stdNorm,
+      revNorm,
+      famNorm,
+      forms: [labelTail, docNorm, stdNorm, revNorm, famNorm].filter(Boolean),
+    };
+  });
+
+  return (label: string): "A" | "B" | "C" | null => {
+    const t = normVersionText(label);
+    if (!t) return null;
+
+    // ① 版本键打头
+    for (const a of aliases) {
+      if (t === a.keyNorm) return a.key as "A" | "B" | "C";
+      if (!t.startsWith(a.keyNorm)) continue;
+      const rest = t.slice(a.keyNorm.length);
+      if (!rest) return a.key as "A" | "B" | "C";
+      if (rest.startsWith("版")) return a.key as "A" | "B" | "C";
+      // 键后面的那截，拿这个版本的**各种写法**去比，**两个方向**都认 ——
+      //   rest 以它开头：「A 草案 V4.3.5」「A 草案（第 72 页）」「C UN R48 条款」；
+      //   它以 rest 开头：「C UN」之于「C UN R48-09」。
+      for (const f of a.forms) {
+        if (f && (rest.startsWith(f) || f.startsWith(rest))) return a.key as "A" | "B" | "C";
+      }
+    }
+
+    // ② 按别名取**最长**前缀
+    let bestLen = 0;
+    const bestVersions = new Set<string>();
+    for (const a of aliases) {
+      for (const alias of [a.docNorm, a.stdNorm, a.revNorm, a.famNorm]) {
+        if (!alias || !t.startsWith(alias)) continue;
+        if (alias.length > bestLen) {
+          bestLen = alias.length;
+          bestVersions.clear();
+          bestVersions.add(a.key);
+        } else if (alias.length === bestLen) {
+          bestVersions.add(a.key);
+        }
+      }
+    }
+    if (bestLen === 0) return null;
+    // ③ 同样长却分属不同版本 → 分不出是哪一版，**不猜**
+    if (bestVersions.size !== 1) return null;
+    return [...bestVersions][0] as "A" | "B" | "C";
+  };
+}
+
+/*
+ * `defaultVersionMatcher` 在模块加载时就算好了 ——
+ * 所以 `REV_TAIL` / `LABEL_TAIL`（工厂函数要用）必须**声明在它之前**。
+ * 否则打包后 `var` 提升让它们是 undefined：
+ * `docNorm.replace(undefined, "")` 变成「找字符串 undefined」，
+ * **别名全部退化成文档名全文**，于是「UN R48」「GB 4785 草案」这类简写认不出来。
+ *
+ * 这个坑是 `_test_version_labels.mjs` 抓到的：
+ * 用假表驱动工厂函数时是对的（那时常量已初始化），
+ * 用默认表时是错的（初始化时机不同）——
+ * **同一段逻辑，两条路，结果不一样。**
+ */
+const defaultVersionMatcher = buildVersionMatcher(VERSION_META);
+
 /**
  * Normalize a version cell to A / B / C.
  *
@@ -172,21 +314,8 @@ export function normalizeRow(row: string[], width: number): string[] {
  * frequently writes just "**A**" and a bare-letter miss would silently
  * downgrade a real comparison table to a plain table.
  */
-function normVersionLabel(label: string): "A" | "B" | "C" | null {
-  const t = (label ?? "")
-    .replace(/\*/g, "")
-    .replace(/[`_\s]/g, "")
-    .trim()
-    .toUpperCase();
-  if (!t) return null;
-  if (/^A(版|草案|$)/.test(t)) return "A";
-  if (/^B(版|现行|2019|$)/.test(t)) return "B";
-  if (/^C(版|UN|R48|$)/.test(t)) return "C";
-  // Long-form labels used in the "文档" index column
-  if (/^GB\s*4785\D{0,3}XXXX|草案/.test(t)) return "A";
-  if (/^GB\s*4785\D{0,3}2019|现行/.test(t)) return "B";
-  if (/^UN\s*R\d/.test(t)) return "C";
-  return null;
+export function normVersionLabel(label: string): "A" | "B" | "C" | null {
+  return defaultVersionMatcher(label);
 }
 
 /** Find the version column (版本 / 来源 / version). */
