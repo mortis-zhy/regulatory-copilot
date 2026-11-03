@@ -1,0 +1,52 @@
+{
+  "A": {
+    "page": 16,
+    "truth": {
+      "points": 10,
+      "formulas": 9
+    },
+    "oxr": {
+      "points_found": 0,
+      "points_ok": 0,
+      "points_wrong": 0,
+      "points_recall": 0,
+      "formulas_found": 10,
+      "formulas_ok": 10,
+      "formulas_recall": 9
+    },
+    "mineru": {
+      "points_found": 47,
+      "points_ok": 10,
+      "points_wrong": 37,
+      "points_recall": 10,
+      "formulas_found": 51,
+      "formulas_ok": 10,
+      "formulas_recall": 9
+    }
+  },
+  "B": {
+    "page": 17,
+    "truth": {
+      "points": 27,
+      "formulas": 19
+    },
+    "oxr": {
+      "points_found": 27,
+      "points_ok": 27,
+      "points_wrong": 0,
+      "points_recall": 27,
+      "formulas_found": 22,
+      "formulas_ok": 20,
+      "formulas_recall": 19
+    },
+    "mineru": {
+      "points_found": 23,
+      "points_ok": 16,
+      "points_wrong": 7,
+      "points_recall": 13,
+      "formulas_found": 24,
+      "formulas_ok": 9,
+      "formulas_recall": 8
+    }
+  }
+}

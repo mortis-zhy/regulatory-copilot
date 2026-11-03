@@ -1,0 +1,50 @@
+{
+  "A": {
+    "mineru": {
+      "pages": 7,
+      "precision": 0.857,
+      "recall": 0.523,
+      "serpentine_rate": 0.155,
+      "order_lcs": 0.523
+    },
+    "oxr": {
+      "pages": 7,
+      "precision": 0.857,
+      "recall": 0.488,
+      "serpentine_rate": 0.035,
+      "order_lcs": 0.408
+    }
+  },
+  "B": {
+    "mineru": {
+      "pages": 7,
+      "precision": 0.21,
+      "recall": 0.114,
+      "serpentine_rate": 0.105,
+      "order_lcs": 0.109
+    },
+    "oxr": {
+      "pages": 7,
+      "precision": 0.229,
+      "recall": 0.165,
+      "serpentine_rate": 0.021,
+      "order_lcs": 0.138
+    }
+  },
+  "C": {
+    "mineru": {
+      "pages": 16,
+      "precision": 0.906,
+      "recall": 0.672,
+      "serpentine_rate": 0.101,
+      "order_lcs": 0.662
+    },
+    "oxr": {
+      "pages": 16,
+      "precision": 0.874,
+      "recall": 0.785,
+      "serpentine_rate": 0.055,
+      "order_lcs": 0.785
+    }
+  }
+}
