@@ -4497,6 +4497,51 @@ check("网站那条路不改写已入库的核验产物", () => {
   return "sidecar /verify 跑完，入库产物一个字节都没动";
 });
 
+check("报告附录 E 的台账快照不是旧的", () => {
+  // ## 这道闸门在补一个「顺序错了没人管」的洞
+  //
+  // `server/reports/reportV6.ts` 把 `data/requirement-ledger.json` **import 进去** ——
+  // esbuild 会在**打包那一刻**把它内联进 `dist/reportV6.js`。
+  // 所以「改了台账 → 重建报告」这件事，只有在**先 `npm run build`、后重建报告**时才对。
+  //
+  // 顺序错了会怎样：报告照常生成、闸门全绿（台账文件本身是对的），
+  // 只是**附录 E 里印的是旧台账**。实测踩到过：
+  // 改了 §11.9 的 B 侧引文 → 重建报告（**没先重建 bundle**）→ 出 PDF → 138/138 全绿，
+  // 而交付件附录 E.5.2 里印的还是旧引文（5 字，新的 40 字）。
+  //
+  // **报告里印着的台账必须与现算的那份逐条对得上** —— 这就是这道闸门。
+  const ledger = JSON.parse(read("data/requirement-ledger.json"));
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const apE = (rep.appendices ?? []).find((a) => a.id === "E");
+  assert(apE, "报告里没有附录 E（台账快照所在）");
+  const md = apE.markdown ?? "";
+  const norm = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
+  const mdNorm = norm(md);
+  // 这两档是附录 E 里**逐条列出**的（E.5.1 原文 / E.5.2 条款号与页码）。
+  const listed = (ledger.rows ?? []).filter(
+    (r) => r.disposition === "已引原文" || r.disposition === "附录逐条",
+  );
+  const stale = [];
+  for (const r of listed) {
+    const ex = norm(r.excerpt);
+    const head = ex.slice(0, 12);
+    // 条款号要在（两种档位的表里都有），原文摘录也要在（E.5.1/E.5.2 都印摘录）。
+    if (!md.includes(r.clause)) {
+      stale.push(`${r.version} §${r.clause}（条款号不在附录 E 里）`);
+      continue;
+    }
+    if (head && !mdNorm.includes(head)) {
+      stale.push(`${r.version} §${r.clause} 的摘录「${head}…」不在附录 E 里 —— 附录印的是**旧台账**`);
+    }
+  }
+  assert(
+    stale.length === 0,
+    `附录 E 印的台账快照与现算的不一致（${stale.length} 条）:\n        ${stale.slice(0, 8).join("\n        ")}` +
+      "\n        重算顺序：npm run build → node rebuild_report.mjs → python scripts/requirement_ledger.py --write",
+  );
+  return `${listed.length} 条台账行在附录 E 里逐条对得上（条款号 + 原文摘录）`;
+});
+
 check("同一义务，报告里三处说法一致（对账）", () => {
   // 客户 DR-003（P1）：「§11.9 称 ESS 由选装变强制；第 14 章仍引 p41 并判无实质数值变化」
   // —— **同一份报告前后用不同证据、得出冲突结论**。
