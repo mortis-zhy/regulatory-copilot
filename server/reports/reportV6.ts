@@ -1484,7 +1484,6 @@ function buildNarrativeFromHeadings(
       const hs = (data[k]?.headings ?? []).filter((h: any) => re.test(h.title));
       for (const h of hs.slice(0, 20)) parts.push(`| ${k} | p${h.page} | ${esc(h.title)} |`);
     }
-    parts.push("", "> 逐条变化与数据核验见第 11 章。");
   } else if (chapterId === 10) {
     // ch10: 附录与实施 — 按主题分组，每个主题下并排展示 A/B/C 的对应条款。
     //
@@ -1523,6 +1522,7 @@ function buildNarrativeFromHeadings(
     parts.push(
       "> 本章按主题分组，三份文档并排；**R48 侧的匹配用英文关键词**（`the shape of the bodywork`、`same type`、`annex`），",
       "> 否则中文正则永远匹配不到英文标题，这一章会看起来只有新旧 GB 两版。",
+      "> 逐条变化与数据核验见第 11 章；逐参数三版取值见第 12 章。",
       "",
     );
     for (const th of themes) {
@@ -1547,7 +1547,7 @@ function buildNarrativeFromHeadings(
       }
       parts.push("");
     }
-    parts.push("> 逐条变化与数据核验见第 11 章；逐参数三版取值见第 12 章。");
+    parts.push("");
   }
 
   return parts.join("\n");
@@ -2805,6 +2805,11 @@ function buildChapterTopics(topicColumns: any[], keywords: RegExp, matrixRows?: 
     "**本节不再给「实质差异 / 格式差异」标签** —— 那是把两版不同条款号的摘录做文本比对，",
     "25 条里 25 条都判成「实质差异」，零信息量。真正的取值对照在每个主题下的**三版取值表**",
     "（取自第 12 章参数矩阵）与「变化判定」行。",
+    "",
+    // 导航指针放**章首**，不放章末 ——
+    // 放章末时它常常被前面的表格挤到**单独一页**上，
+    // 于是读者会拿到一页只有一句话的「空白页」（客户 DR-015）。
+    "> 逐条变化与数据核验见第 11 章；逐参数三版取值见第 12 章。",
     "",
   ];
 

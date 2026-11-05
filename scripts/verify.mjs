@@ -4025,6 +4025,50 @@ print(json.dumps({"entries": len(entries), "distinct_pages": len(uniq), "mismatc
   return `${res.entries} 条目录项 · ${res.distinct_pages} 个不同页码 · 抽查一致`;
 });
 
+check("交付件里没有近空白页（客户 DR-015）", () => {
+  // 客户 DR-015：「仅保留导航句」的一页 —— 读者拿到的是一页纸和一句
+  // 「逐条变化与数据核验见第 11 章」。**增加篇幅并中断阅读**。
+  //
+  // 根因有两处，都不是内容问题而是**版面**问题：
+  //   ① 章末那句导航指针被前面的表格挤到**单独一页**上；
+  //   ② 章末的「变化判定」条同样会孤行。
+  //
+  // 修法：导航指针搬进**章首**（内容跟着走，指针不落单）；
+  //       判定条加 `page-break-before: avoid`（它是上一段的结论）。
+  //
+  // 判据：去掉页眉页脚后，**正文行数 ≤ 2** 的页 = 近空白页。
+  // （阈值不是按字数定的 —— 一页封面只有一百来个字，但它不是空白页；
+  //   真正的空白页是「只有一两行」。）
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF";
+  const py =
+    "import sys,re,json,base64,io\n" +
+    "import fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path)\n" +
+    "thin=[]\n" +
+    "for i,p in enumerate(d):\n" +
+    "    lines=[l.strip() for l in p.get_text().split('\\n') if l.strip()]\n" +
+    "    body=[l for l in lines if not l.startswith('GB 4785 多版本') and not l.startswith('汽车外部照明') and not re.fullmatch(r'\\d+ / \\d+',l)]\n" +
+    "    if len(body)<=2:\n" +
+    "        thin.append((i+1,len(body),' '.join(body)[:60]))\n" +
+    "print(json.dumps({'pages':d.page_count,'thin':thin[:6]},ensure_ascii=False))\n";
+  const out = spawnSync("python", ["-c", py], {
+    input: Buffer.from(pdfPath, "utf8").toString("base64"),
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  const res = JSON.parse(out.stdout.trim().split("\n").pop());
+  assert(
+    !res.thin || res.thin.length === 0,
+    `交付件里有 ${res.thin?.length ?? 0} 页近空白页（正文 ≤ 2 行）：` +
+      `第 ${(res.thin ?? []).map((t) => t[0]).join("、")} 页` +
+      ` —— 一页只放一两行，读者拿到的是纸不是内容（客户 DR-015）`,
+  );
+  return `${res.pages} 页里没有近空白页（正文 ≤ 2 行的页：0）`;
+});
+
 check("delivered PDF has no placeholder cells claiming missing data", () => {
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";

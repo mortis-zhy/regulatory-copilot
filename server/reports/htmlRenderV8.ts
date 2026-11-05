@@ -2563,6 +2563,10 @@ td.cell-uv { background: #fdf3f0 !important; border-left: 2.5pt solid #c9542a; }
   border-radius: 1.5mm;
   font-size: 9.2pt;
   page-break-inside: avoid;
+  /* 判定条是**上一段的结论**，不该自己独占一页（客户 DR-015：空白页）。
+     break-before: avoid 让浏览器尽量把它留在上一段旁边；
+     万一上面装不下，它会跟上一段一起挪到下一页 —— 留白比孤行好。 */
+  page-break-before: avoid;
 }
 .verdict-strip .v-chip { font-weight: 700; color: var(--v-color); white-space: nowrap; }
 .verdict-strip .v-rest { color: #3a3027; flex: 1; }
