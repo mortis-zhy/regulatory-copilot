@@ -213,13 +213,14 @@
       "c": {
         "clause": "6.2.9.2",
         "page": 44,
-        "quote": "shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511",
+        "quote": "shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 45",
         "status": "C 无对应义务",
         "absentTerms": [
           "plastic",
           "prohibited",
           "shall not"
-        ]
+        ],
+        "note": "原文此处脚注 11：UN Regulation No. 45<sup>11</sup> —— **脚注号不是法规号的一部分**，OCR 会把法规号与脚注号粘成一个不存在的号（45 + 11）。"
       },
       "nature": "**新增禁止性义务（A 单边）** —— B 与 C 都只规定「该装的时候要装」，都没有禁止机械式清洗装置；A 单独加了一条禁止。",
       "designImpact": "使用塑料配光镜的前照灯产品，机械式（刮片式）清洗方案不可用，须改非机械式方案（高压水气、超声等）。这是一条会直接改 BOM 的义务，不是措辞差异。",
@@ -244,12 +245,13 @@
       "c": {
         "clause": "6.2.9.2",
         "page": 44,
-        "quote": "having a total objective luminous flux for at least one headlamp which exceeds 2,000 lumens shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511",
-        "status": "C 部分对应（口径/范围不同）"
+        "quote": "having a total objective luminous flux for at least one headlamp which exceeds 2,000 lumens shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 45",
+        "status": "C 部分对应（口径/范围不同）",
+        "note": "原文此处脚注 11：UN Regulation No. 45<sup>11</sup> —— **脚注号不是法规号的一部分**，OCR 会把法规号与脚注号粘成一个不存在的号（45 + 11）。"
       },
-      "nature": "**触发口径与配备范围变化** —— B 按「单侧」判、装该侧；A 按「任一侧」判、一旦触发**两侧都装**；C 按「至少一只灯」触发，且按**灯**（headlamp）而非按侧配备、判定标准指向 UN R4511。",
+      "nature": "**触发口径与配备范围变化** —— B 按「单侧」判、装该侧；A 按「任一侧」判、一旦触发**两侧都装**；C 按「至少一只灯」触发，且按**灯**（headlamp）而非按侧配备、判定标准指向 **UN R45**（原文「UN Regulation No. 45」，其后的 **11 / 16 是脚注号**，不是法规号的一部分 —— OCR 把法规号与脚注号粘在一起（45 + 11、45 + 16），看起来像另一个法规号）。",
       "designImpact": "非对称灯具方案（单侧高配、另一侧低配）在 B 下只需高配侧装清洗器，A 下会被拉成两侧都装 —— 直接影响成本与布置。",
-      "testImpact": "试验须按「任一侧 / 至少一只」触发口径判定，并按 A 的口径核两侧配备；清洁装置的合格标准 A/B 引 GB/T 21260，C 引 UN R4511，是两套标准。",
+      "testImpact": "试验须按「任一侧 / 至少一只」触发口径判定，并按 A 的口径核两侧配备；清洁装置的合格标准 A/B 引 GB/T 21260，C 引 **UN R45**（原文「UN Regulation No. 45」，其后的 11 / 16 是**脚注号**，不是法规号的一部分），是两套标准。",
       "evidence": "已核验（A §5.2.9 p29 / B §5.2.9 p27 / C §6.2.9.2 p44）",
       "note": "触发阈值三版都是 2000 lm，**变的是口径不是数值** —— 所以它不在第 12 章矩阵里（矩阵只比数值），只能在这张清单里出现。这正是矩阵装不下的那类差异。"
     },

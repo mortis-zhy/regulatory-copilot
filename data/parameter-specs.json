@@ -4911,7 +4911,7 @@
         },
         "B": {
           "source": "5\\.22\\.4\\.1[\\s\\S]{0,1000}?小\\s*于\\s*(1300)\\s*mm",
-          "why": "B §5.22.4.1 d)（p49）：「对于宽度小\n于1300mm 的其他类型车辆,该距离可以降至400mm。」—— GB 2019 把「小于」拆到两行，所以 `小\\s*于` 要允许中间有空白。"
+          "why": "B §5.22.4.1 d)（p49）：「对于宽度小\n于1300mm 的其他类型车辆,该距离可以降至400mm。」—— GB 4785-2019 把「小于」拆到两行，所以 `小\\s*于` 要允许中间有空白。"
         },
         "C": {
           "source": "6\\.22\\.4\\.1\\.4[\\s\\S]{0,700}?less than\\s*(1[ ,]300)\\s*mm",
@@ -4920,7 +4920,7 @@
       },
       "why": {
         "A": "A §5.3.4.1 d)（p30）：「对于宽度小于1300mm 的其他类型车辆，该距离可以降至400mm。」—— 之前只给 C 取了值（A not-found），等于把「A 也有这条」漏掉了。",
-        "B": "B §5.22.4.1 d)（p49）：「对于宽度小\n于1300mm 的其他类型车辆,该距离可以降至400mm。」—— GB 2019 把「小于」拆到两行，所以 `小\\s*于` 要允许中间有空白。",
+        "B": "B §5.22.4.1 d)（p49）：「对于宽度小\n于1300mm 的其他类型车辆,该距离可以降至400mm。」—— GB 4785-2019 把「小于」拆到两行，所以 `小\\s*于` 要允许中间有空白。",
         "C": "R48 §6.22.4.1.4：「…for all other categories of motor vehicles this distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300 mm.」"
       }
     },
@@ -6257,7 +6257,7 @@
       },
       "why": {
         "C": "R48 §6.2.9.2（p44）：「Dipped-beam headlamps with light source(s) and/or light source module(s) producing the principal dipped-beam having a total objective luminous flux for at least one headlamp which exceeds 2,000 lumens shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511.」—— 这是**近光灯特有的一条要求**（不是限值而是「必须加装」）。",
-        "A": "A §5.2.9 其他要求（p29）：「当任一侧近光灯光源光通量或用于产生主近光的光源模块光通量之和超过2000lm时，**两侧**近光灯均应配备符合GB/T 21260的前照灯清洗装置。……对于使用**塑料配光镜**的灯具，**禁止使用机械式**的前照灯清洗装置。」—— 三版都有这条；A 引 GB/T 21260，C 引 UN R4511。口径差别（A 任一侧之和→两侧均配备 / B 单侧→该侧 / C 至少一只→须配）属**定性**差异，见定性义务变化清单。",
+        "A": "A §5.2.9 其他要求（p29）：「当任一侧近光灯光源光通量或用于产生主近光的光源模块光通量之和超过2000lm时，**两侧**近光灯均应配备符合GB/T 21260的前照灯清洗装置。……对于使用**塑料配光镜**的灯具，**禁止使用机械式**的前照灯清洗装置。」—— 三版都有这条；A 引 GB/T 21260，C 引 UN R45（原文「UN Regulation No. 45」，脚注 11/16 不是法规号的一部分）。口径差别（A 任一侧之和→两侧均配备 / B 单侧→该侧 / C 至少一只→须配）属**定性**差异，见定性义务变化清单。",
         "B": "B §5.2.9 其他要求（p27）：「当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。」—— 与 A 同一条，B 引 GB/T 21260。"
       }
     },

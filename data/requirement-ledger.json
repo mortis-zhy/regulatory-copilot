@@ -2031,7 +2031,7 @@
    "excerpt": "Especially in case of light-signalling lamps incorporating a manufacturer logo, the lamp shall be type approved according to the requirements of the UN regulation No 148.",
    "hasLimit": false,
    "disposition": "附录逐条",
-   "reason": "R48 §5.30.1「带制造商徽标的光信号灯具应按 UN R10 等取得型式批准」—— 同上，是**认证程序**要求，不是灯具参数。",
+   "reason": "R48 §5.30.1（p35）「Especially in case of light-signalling lamps incorporating a manufacturer logo, the lamp shall be type approved according to the requirements of **the UN regulation No 148**.」—— 同上，是**认证程序**要求（型式批准），不是灯具参数。**引的是 UN R148**（原文「UN regulation No 148」）；把它写成**另一部法规的号**（整车型式批准那一类）就把认证依据引到别的法规上去了 —— 原文里根本没有那个号。",
    "quotedMatch": 0
   },
   {
