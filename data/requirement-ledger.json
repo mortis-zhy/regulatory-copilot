@@ -2,12 +2,12 @@
  "generatedAt": null,
  "totals": {
   "requirements": 462,
-  "covered": 286,
+  "covered": 287,
   "appendixListed": 66,
   "weak": 0,
   "notApplicable": 45,
   "gaps": 0,
-  "quoted": 65
+  "quoted": 64
  },
  "rows": [
   {
@@ -3845,9 +3845,9 @@
    "page": 84,
    "excerpt": "Geometric visibility On each side of the vehicle, for each lighting function and mode provided: The angles of geometric visibility prescribed for the respective lighting functions according to paragraphs 6.1.5. and 6.2.5. of this Regulation, shall be met by at least one of the lighting units that are simultaneously ene…",
    "hasLimit": false,
-   "disposition": "已引原文",
+   "disposition": "已覆盖",
    "reason": "",
-   "quotedMatch": 24
+   "quotedMatch": 0
   },
   {
    "version": "C",

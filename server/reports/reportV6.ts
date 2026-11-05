@@ -48,6 +48,7 @@ import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedg
 // 参数矩阵（第 12 章）只装得下数值；这一节装矩阵装不下的那半边，
 // 是客户「这版和之前差别不大」这条抱怨的正题。
 import { build11_9, loadQualitativeObligations } from "./qualitativeObligations";
+import { build11_10, ledgerSummary } from "./qualitativeLedger";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
 import { diffRefs, buildRefSection } from "./refDiff";
@@ -3113,6 +3114,18 @@ function buildExecSummary(input: {
           `${(REQUIREMENT_LEDGER as any)?.totals?.quoted ?? 0} 条已引原文（随长摘录带入，E.5.2 列出条款号与页码），` +
           `${(REQUIREMENT_LEDGER as any)?.totals?.notApplicable ?? 0} 条非产品要求（已登记理由），` +
           `**真缺口 ${(REQUIREMENT_LEDGER as any)?.totals?.gaps ?? 0} 条**。见附录 E.5。`,
+        ...(ledgerSummary()
+          ? [
+            `7. **定性义务已建成全量台账（按义务面）**：**${ledgerSummary()!.total} 条**义务面` +
+              `（装置 × 义务面）逐条判定 —— 判为**实质差异 ${ledgerSummary()!.substantive} 条**、` +
+              `判为非实质（同文 / 措辞 / 编号重排）**${ledgerSummary()!.nonSubstantive} 条**、` +
+              `**${ledgerSummary()!.pending} 条机器判不出来**（标「需人工判读」，**按相似度排序** —— ` +
+              `先看最像的；其中 ${ledgerSummary()!.adjudicated} 条已人工逐条裁定并写明依据）。` +
+              `另有引出条款 ${ledgerSummary()!.leadIn} 条、不可直接对读 ${ledgerSummary()!.notComparable} 条、` +
+              `材料截断 ${ledgerSummary()!.truncated} 条 —— **这三类不判，也不写成「一致」**。` +
+              `逐条判定与依据见 **§11.10**。`,
+          ]
+          : []),
       ]
     : [];
 
@@ -4460,6 +4473,11 @@ export async function buildMinerUReport(
   const qoMd = build11_9();
   ch11Md = ch11Md.replace(/\s*$/, "") + "\n\n" + qoMd + "\n";
   console.log(`[v6] §11.9 定性义务变化清单 inserted (${qoMd.length} chars)`);
+  // §11.10 定性义务**全量台账**（客户 DR-013）——
+  // 「按义务面建立全量台账，优先裁定 H 中高相似条目并回流摘要」
+  const qlMd = build11_10();
+  ch11Md = ch11Md.replace(/\s*$/, "") + "\n\n" + qlMd + "\n";
+  console.log(`[v6] §11.10 定性义务全量台账 inserted (${qlMd.length} chars)`);
   const narrativeChapters = chapterTitles.map((t, i) => ({
     id: i + 2,
     title: t,
