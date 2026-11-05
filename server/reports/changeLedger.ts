@@ -229,6 +229,19 @@ export function valuesOf(text: string): number[] {
  * 读者看得到 10→15、1200→1400。真正的定性说明放在「核验依据」列
  * （那是从原文核出来的理由，不是猜的）。
  */
+/**
+ * 取值字符串**开头**的比较口径（"< 750" → "<"）。
+ *
+ * 矩阵的取值带着口径（`short()` 会显示 "< 750"），
+ * 变化清单要能据此认出「**数值一样、口径不同**」——
+ * 只比数字的话，它会被说成「数值相同（表述改变）」，
+ * 而差的是**边界**：恰好 750 mm 时适用性不同（客户 DR-002）。
+ */
+function leadingComparator(v: string): string {
+  const m = /^\s*([<≤≥>=])/.exec(String(v ?? ""));
+  return m ? m[1] : "";
+}
+
 export function classify(bValue: string, aValue: string): string {
   const b = String(bValue ?? "").trim();
   const a = String(aValue ?? "").trim();
@@ -238,6 +251,11 @@ export function classify(bValue: string, aValue: string): string {
   // 「已删除」「无」这类显式表述
   if (/已?删除|无此条款|取消了/.test(a) && !/已?删除/.test(b)) return "删除（A 已无）";
   if (/B\s*全文\s*0\s*命中|无此分类|无\s*500mm|位置无特殊要求/.test(b)) return "新增（A 才有）";
+
+  // **口径不同**：数值一样、边界不同 —— 单独一类，不能混进「表述改变」。
+  const bc = leadingComparator(b);
+  const ac = leadingComparator(a);
+  if (bc && ac && bc !== ac) return "口径改变（边界不同）";
 
   const bn = valuesOf(b);
   const an = valuesOf(a);
@@ -338,15 +356,22 @@ export function buildChangeLedger(verified: Any, matrixRows: Any[] = []): Change
     });
   }
 
-  // ── 4) 第 12 章矩阵（verdict = changed） ───────────────────────────
+  // ── 4) 第 12 章矩阵（verdict = changed / comparator-differs） ────────
   for (const m of matrixRows ?? []) {
-    if (m?.verdict !== "changed") continue;
+    // 「口径不同」也是**实质变化** —— 数值一样、边界不同，
+    // 恰好落在门槛上的那台灯适用性就变了（客户 DR-002）。
+    if (m?.verdict !== "changed" && m?.verdict !== "comparator-differs") continue;
     const cs = m.cells ?? {};
     const b = cs.B ?? {};
     const a = cs.A ?? {};
     const c = cs.C ?? {};
-    const bValue = (b.nums ?? []).length ? (b.nums ?? []).join(" / ") : String(b.value ?? "");
-    const aValue = (a.nums ?? []).length ? (a.nums ?? []).join(" / ") : String(a.value ?? "");
+    // 取值要**带着口径** —— 清单里印「750 → 750」等于没说。
+    const withCmp = (cell: any): string =>
+      (cell.nums ?? []).length
+        ? `${cell.comparator ? cell.comparator + " " : ""}${(cell.nums ?? []).join(" / ")}`
+        : String(cell.value ?? "");
+    const bValue = withCmp(b);
+    const aValue = withCmp(a);
 
     // 已声明为同一条的，合并到那一条上；**数值对不上就拒绝合并**。
     const alias = matrixAlias(m.name ?? "");

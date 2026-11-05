@@ -1945,6 +1945,9 @@ check("the parameter matrix is still a MATRIX in the PDF, not three card columns
     encoding: "utf8",
     input: Buffer.from(pdfPath, "utf-8").toString("base64"),
     stdio: ["pipe", "pipe", "pipe"],
+    // **PDF 全文有几百 KB（中文 3 字节/字）** —— 默认的 1 MB 缓冲
+    // 会让这一关以 ENOBUFS **静默**死掉（status=null、stderr 为空）。
+    maxBuffer: 256 * 1024 * 1024,
   });
   if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
   const res = JSON.parse(r.stdout.trim().split("\n").pop());
@@ -3947,6 +3950,9 @@ check("delivered PDF has no placeholder cells claiming missing data", () => {
     encoding: "utf-8",
     input: Buffer.from(pdfPath, "utf-8").toString("base64"),
     stdio: ["pipe", "pipe", "pipe"],
+    // **PDF 全文有几百 KB（中文 3 字节/字）** —— 默认的 1 MB 缓冲
+    // 会让这一关以 ENOBUFS **静默**死掉（status=null、stderr 为空）。
+    maxBuffer: 256 * 1024 * 1024,
   });
   if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
   const { n } = JSON.parse(r.stdout.trim().split("\n").pop());
@@ -4019,6 +4025,9 @@ const r = spawnSync("python", ["-c", py], {
     encoding: "utf-8",
     input: Buffer.from(pdfPath, "utf-8").toString("base64"),
     stdio: ["pipe", "pipe", "pipe"],
+    // **PDF 全文有几百 KB（中文 3 字节/字）** —— 默认的 1 MB 缓冲
+    // 会让这一关以 ENOBUFS **静默**死掉（status=null、stderr 为空）。
+    maxBuffer: 256 * 1024 * 1024,
   });
   assert(
     r.status === 0,
@@ -4076,6 +4085,9 @@ function gatePdfFlat() {
     encoding: "utf-8",
     input: Buffer.from(GATE_PDF, "utf-8").toString("base64"),
     stdio: ["pipe", "pipe", "pipe"],
+    // **PDF 全文有几百 KB（中文 3 字节/字）** —— 默认的 1 MB 缓冲
+    // 会让这一关以 ENOBUFS **静默**死掉（status=null、stderr 为空）。
+    maxBuffer: 256 * 1024 * 1024,
   });
   assert(
     r.status === 0,
@@ -4191,6 +4203,9 @@ check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
     encoding: "utf-8",
     input: Buffer.from(pdfPath, "utf-8").toString("base64"),
     stdio: ["pipe", "pipe", "pipe"],
+    // **PDF 全文有几百 KB（中文 3 字节/字）** —— 默认的 1 MB 缓冲
+    // 会让这一关以 ENOBUFS **静默**死掉（status=null、stderr 为空）。
+    maxBuffer: 256 * 1024 * 1024,
   });
   if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
   const m = JSON.parse(r.stdout.trim().split("\n").pop());
@@ -4497,6 +4512,53 @@ check("网站那条路不改写已入库的核验产物", () => {
   return "sidecar /verify 跑完，入库产物一个字节都没动";
 });
 
+check("口径不同不许判成一致", () => {
+  // 客户 DR-002：矩阵只比较数字，**丢了比较符号**。
+  // A §5.7.5「离地高度**小于** 750 ㎜」与 B §5.7.5「离地高度**不大于** 750mm」
+  // 被判成「A/B 一致」—— 而**恰好 750 mm 时适用性不同**。
+  //
+  // 这道闸门查的是**判定与数据一致**：
+  //   · A/B 口径不同（且两边都取到了口径）→ 判定必须是「口径不同」，不许是「一致」；
+  //   · 判定是「口径不同」→ 两边口径必须真的不同，且**数值必须一样**
+  //     （数值不一样那是「有变化」，不是「口径不同」）。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const rows = rep.parameterMatrix ?? [];
+  const problems = [];
+  let diffRows = 0;
+  for (const r of rows) {
+    const a = r.cells?.A ?? {};
+    const b = r.cells?.B ?? {};
+    const cmpDiff = !!(a.comparator && b.comparator && a.comparator !== b.comparator);
+    const sameNums =
+      (a.nums ?? []).length > 0 &&
+      (a.nums ?? []).join(",") === (b.nums ?? []).join(",");
+    if (cmpDiff && sameNums && r.verdict === "same") {
+      problems.push(`${r.id}: A ${a.comparator} / B ${b.comparator}，判定却是「一致」`);
+    }
+    if (r.verdict === "comparator-differs") {
+      diffRows++;
+      if (!cmpDiff) {
+        problems.push(`${r.id}: 判成「口径不同」，但两边口径并没有不同`);
+      }
+      if (!sameNums) {
+        problems.push(`${r.id}: 判成「口径不同」，但数值并不相同 —— 那是「有变化」`);
+      }
+    }
+    // **只有一边取到口径** → 不许判「口径不同」（没法比没取到的东西）
+    if (
+      r.verdict === "comparator-differs" &&
+      !(a.comparator && b.comparator)
+    ) {
+      problems.push(`${r.id}: 只有一边取到口径，却判成「口径不同」`);
+    }
+  }
+  assert(
+    problems.length === 0,
+    `比较口径与判定不一致:\n        ${problems.slice(0, 8).join("\n        ")}`,
+  );
+  return `${diffRows} 行判为「口径不同」，其余口径一致的行都没被误判`;
+});
+
 check("报告附录 E 的台账快照不是旧的", () => {
   // ## 这道闸门在补一个「顺序错了没人管」的洞
   //
@@ -4604,6 +4666,10 @@ for (const t of [
   // 「按内容认版本」的**已知答案用例**：
   // 改了名不许改判、不相干的不许瞎猜、两版难分时不许硬认。
   "_test_version_recognition.mjs",
+  // 比较口径的**已知答案用例**：
+  // 否定词把方向翻过来（「不应小于」是下限）、英文等价式（or equal to）、
+  // 认不出的留空（宁可空着，不可错着）。
+  "_test_comparator.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

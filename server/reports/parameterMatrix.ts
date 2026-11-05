@@ -125,6 +125,17 @@ export interface Cell {
    * 人工只需要看复核不通过的那几格。
    */
   corroborated?: Corroboration;
+  /**
+   * 比较口径 —— 「小于 750」与「不大于 750」是**两个不同的限值**。
+   *
+   * 客户 DR-002：矩阵只比较数字，丢了比较符号，
+   * 于是 A「离地高度小于 750 ㎜」与 B「离地高度不大于 750mm」
+   * 被判成「A/B 一致」—— 而**恰好 750 mm 时适用性不同**。
+   *
+   * 它由 `comparatorBefore` 从**原文**里取（紧贴取值前面的比较词），
+   * 取不到就是没取到 —— 留空，不猜。
+   */
+  comparator?: Comparator;
 }
 
 /**
@@ -790,6 +801,110 @@ function quoteAround(text: string, idx: number, len: number): string {
   return trimPartialTag(head + body + tail, [head.length, head.length + body.length]);
 }
 
+/**
+ * 比较口径（canonical）—— 「小于」与「不大于」是**两个不同的限值**。
+ *
+ * ## 为什么必须把它当数据
+ *
+ * 客户 DR-002：「低安装高度门槛均写 750 并判 A/B 一致」——
+ * 而原文只比较数字，**丢了比较符号**。而 A §5.7.5 写「离地高度**小于** 750 ㎜」，
+ * B §5.7.5 写「离地高度**不大于** 750mm」：
+ * **恰好 750 mm 时适用性不同**（B 允许减小可见度角，A 不允许）——
+ * 却被判成「A/B 一致」。
+ *
+ * 这不是笔误，是**抽取层丢掉了一个维度**：`nums` 只装数字，
+ * 「小于 750」与「不大于 750」的 nums 都是 ["750"]，
+ * `sameValue` 于是说它们一样。
+ *
+ * ## 口径从**原文**里取，不是人写的
+ *
+ * 取「紧贴取值前面」的比较词，并与取值之间只允许隔空白与单位。
+ * 英文版（R48）也要认：`below` = 小于、`shall not exceed` = 不大于。
+ * 没取到就是没取到 —— **留空**，不猜。
+ */
+export type Comparator = "<" | "≤" | "≥" | ">" | "=";
+
+/**
+ * 比较词 → canonical 口径。
+ *
+ * ## 关键：不否定词会把方向**翻过来**
+ *
+ * - 「**不**大于 X」「不**应**大于 X」→ 值 ≤ X → 口径 `≤`
+ * - 「**不**小于 X」「不**应**小于 X」→ 值 ≥ X → 口径 `≥`
+ *
+ * 而「小于 X」→ 值 < X → 口径 `<`。
+ *
+ * 所以规则只有一条：**看「不」在不在**。
+ * 顺序要紧：带否定的写法必须**先**判 ——
+ * 否则「不应小于 600mm」会被判成 `<`（「小于」匹配到了），
+ * 而原文的意思是「**不得小于** 600mm」= 下限 600。
+ * 这正是「距离不应小于600mm」被读成上限的那种错。
+ */
+const COMPARATOR_WORDS: Array<[RegExp, Comparator]> = [
+  // ① 带否定的大于类 → ≤
+  [/(?:不|未)(?:应|得|允许|可|能|准|得|会)?\s*(?:大\s*于|高\s*于|超\s*出|超\s*过)\s*$/, "≤"],
+  // ② 带否定的小于类 → ≥
+  [/(?:不|未)(?:应|得|允许|可|能|准|得|会)?\s*(?:小\s*于|低\s*于|少\s*于)\s*$/, "≥"],
+  // ③ 不带否定的大于类 → >
+  [/(?:大\s*于|高\s*于|多\s*于)\s*$/, ">"],
+  // ④ 不带否定的小于类 → <
+  [/(?:小\s*于|低\s*于|少\s*于)\s*$/, "<"],
+  // ⑤ 至多 / 最多 → ≤；至少 / 最少 → ≥
+  [/(?:至\s*多|最\s*多)\s*$/, "≤"],
+  [/(?:至\s*少|最\s*少)\s*$/, "≥"],
+  // ⑥ 等于 → =
+  [/(?:等\s*于)\s*$/, "="],
+  // ⑦ 英文：**否定式 / 等价式先判**，否则「not less than」会被 `<` 那条吃掉，
+  //    「less than or equal to」会被 `=` 那条吃掉。
+  //
+  //    裸的「more than / greater than」**不判** —— 它在 R48 里的真实语境
+  //    多是「the deviation ... differs by more than 0.15」（偏差**超过** 0.15 即不合格），
+  //    那句话的**限值关系是 ≤**（偏差不得大于 0.15），判成「>」就是反的。
+  //    **宁可留空，不猜** —— 留空只是少一个维度，猜错是把法规结论说反。
+  [/(?:shall\s+)?(?:not|nor|no)\s+(?:be\s+)?(?:exceed(?:s)?|more\s+than|greater\s+than)\s*$/, "≤"],
+  [/(?:less\s+than|equal\s+or\s+less\s+than)\s+or\s+equal\s+to\s*$/, "≤"],
+  [/(?:equal\s+or\s+less\s+than)\s*$/, "≤"],
+  [/(?:no|not)\s+(?:be\s+)?less\s+than\s*$/, "≥"],
+  [/(?:not|nor)\s+below\s*$/, "≥"],
+  [/at\s+least\s*$/, "≥"],
+  [/(?:below|less\s+than)\s*$/, "<"],
+  [/(?:equal\s+to)\s*$/, "="],
+];
+
+/**
+ * 取值**前面紧邻**的比较词。
+ *
+ * @param text 该页的原文
+ * @param focusStart 取值在原文里的起点
+ */
+export function comparatorBefore(text: string, focusStart: number): Comparator | null {
+  // 只看取值前面的一小段 —— 远了就可能抓到别的句子里的比较词。
+  const before = text.slice(Math.max(0, focusStart - 24), focusStart).replace(/\s+/g, " ");
+  if (!before) return null;
+  // 到最近的句读为止：比较词必须属于**这一句**。
+  const tail = before.split(/[，,。;；:：]/).pop() ?? "";
+  const trimmed = tail.trimEnd().toLowerCase();
+  if (!trimmed) return null;
+  for (const [re, cmp] of COMPARATOR_WORDS) {
+    const m = re.exec(trimmed);
+    if (!m) continue;
+    // 比较词与取值之间只允许隔空白与单位 —— 否则抓到的不是这个数的口径。
+    const between = trimmed.slice(m.index + m[0].length);
+    if (!/^[\sA-Za-z%°㎜㎜]{0,8}$/.test(between)) continue;
+    return cmp;
+  }
+  return null;
+}
+
+/** 口径的中文说法（报告里显示用）。 */
+export const COMPARATOR_TEXT: Record<Comparator, string> = {
+  "<": "小于",
+  "≤": "不大于",
+  "≥": "不小于",
+  ">": "大于",
+  "=": "等于",
+};
+
 function locate(
   pages: Array<[number, string]>,
   re: RegExp,
@@ -798,8 +913,13 @@ function locate(
   unit?: string,
 ): Cell {
   for (const [page, text] of pages) {
-    // fresh lastIndex per page — the regexes are module-level and stateful
-    const rx = new RegExp(re.source, re.flags.replace("g", ""));
+    // fresh lastIndex per page — the regexes are module-level and stateful.
+    // `d` 旗标给出**捕获组在原文里的位置**（ES2022）——
+    // 没有它就只能用 `m[0].indexOf(m[1])` 去找，而那是**第一次出现**：
+    // 「……若上述间距为大于 20 ㎜，小于 40 ㎜；——1b 类：若上述间距不大于 20 ㎜」
+    // 这种句子里同一段文本出现两次，取到的位置是**前一个 20**，
+    // 于是口径被读成「大于」——而它其实是「不大于」。
+    const rx = new RegExp(re.source, re.flags.replace("g", "") + "d");
     const m = rx.exec(text);
     if (!m) continue;
     // When the spec supplies a capture group, that group — not the whole
@@ -807,6 +927,11 @@ function locate(
     // clause anchor across the sentence, and every number it passes over
     // (250 / 800 / 1200 …) lands in `nums` as if it were part of the answer.
     const focus = m.length > 1 && m[1] != null ? m[1] : m[0];
+    const groupSpan = m.indices?.[1];
+    const focusStart = groupSpan ? groupSpan[0] : m.index;
+    // 口径取「取值前面紧邻的比较词」；比较词与取值之间只允许隔空白与单位。
+    // 取不到就是取不到 —— 留空，不猜（客户 DR-002 丢的就是这个维度）。
+    const comparator = comparatorBefore(text, focusStart);
     return {
       value: quoteAround(text, m.index, m[0].length),
       match: focus,
@@ -815,6 +940,7 @@ function locate(
       page: `第${page}页`,
       status: "verified",
       source: origin,
+      ...(comparator ? { comparator } : {}),
     };
   }
   return { ...MISS };
@@ -822,6 +948,12 @@ function locate(
 
 /** Equality of two cells: numeric signature first, quoted prose as fallback. */
 function sameValue(a: Cell, b: Cell): boolean {
+  // **只比数值，不比口径。**
+  // 口径（小于 / 不大于）是**A 与 B 之间**的问题 ——
+  // 「新版有没有改这一条」才是报告要回答的；
+  // 而第三版是**参照**，它的口径表述方式与国标不同（R48 说 "no more than"，
+  // GB 说「不大于」），拿它参与判定只会造出假差异。
+  // A/B 的口径比较在 `judge()` 里单独做。
   if (a.nums.length && b.nums.length) return a.nums.join(",") === b.nums.join(",");
   // No numbers on either side (a prose requirement) — fall back to text, with
   // MinerU's markup flattened so <sub>3</sub> == $\mathrm{N_3G}$.
@@ -899,6 +1031,18 @@ function judge(
     : cells[ref].status === "verified"
       ? `，${ref} 可回查`
       : `，${ref} 未定位`;
+  // **口径不同**（数字一样，边界不一样）—— 先于「一致」判。
+  // 「小于 750」与「不大于 750」的 nums 一样，只比数字会判成一致，
+  // 而**恰好 750 mm 时适用性不同**（客户 DR-002）。
+  if (comparatorDiffers(a, b)) {
+    return {
+      verdict: "comparator-differs",
+      note:
+        `${v0} ${COMPARATOR_TEXT[a.comparator!]} ${a.nums.join(" / ")}` +
+        `，${v1} ${COMPARATOR_TEXT[b.comparator!]} ${b.nums.join(" / ")}` +
+        ` —— **数值相同，口径不同**（边界值上适用性不同）`,
+    };
+  }
   if (sameValue(a, b)) {
     // A/B 一致**不等于三版一致** —— 第三版数值不同就说明有差异。
     // 旧代码只比 A/B，于是「A=B=5%、C=3%」这种**出口欧盟级**的差异被归档进
@@ -916,6 +1060,21 @@ function judge(
     };
   }
   return { verdict: "changed", note: `${v0}/${v1} 不一致${refNote}` };
+}
+
+/**
+ * 两格的数字一样、**口径不一样**（「小于 750」vs「不大于 750」）。
+ *
+ * 单独一种判定，不混进「不一致」——
+ * 读者看到「不一致」会以为是**数值**变了，于是去查数值；
+ * 而这里数值一模一样，差的是**边界**：恰好 750 mm 时适用性不同。
+ * 这一条必须**单独说**，否则照样被读成「数值变了」。
+ */
+function comparatorDiffers(a: Cell, b: Cell): boolean {
+  if (!a?.comparator || !b?.comparator) return false;
+  if (!a.nums.length || !b.nums.length) return false;
+  if (a.nums.join(",") !== b.nums.join(",")) return false;
+  return a.comparator !== b.comparator;
 }
 
 export function buildParameterMatrix(
@@ -1119,7 +1278,13 @@ function short(cell: Cell): string {
     if (cell.miss === "not-specified") return "无此规定（已核）";
     return cell.miss === "no-pattern" ? "未建规则" : "未命中";
   }
-  if (cell.nums.length) return cell.nums.join(" / ");
+  if (cell.nums.length) {
+    // **口径要跟着数字一起显示。**
+    // 只显示「750」的话，读者看到的是三个一样的数字 + 「A/B 一致」——
+    // 而 A 是「小于 750」、B 是「不大于 750」，**边界上适用性不同**。
+    const cmp = cell.comparator ? `${cell.comparator} ` : "";
+    return `${cmp}${cell.nums.join(" / ")}`;
+  }
   return esc(cell.value).slice(0, 28) + "…";
 }
 
@@ -1137,6 +1302,7 @@ export function verdictLabel(row: Row, versions: Version[]): string {
   const v = row.verdict;
   const [v0, v1] = versions;
   if (v === "changed") return `**${v0}/${v1} 有变化**`;
+  if (v === "comparator-differs") return `**${v0}/${v1} 口径不同**`;
   if (v === "same") return `${v0}/${v1} 一致`;
   if (v === "c-diverged") {
     const ref = versions[2];
@@ -1192,7 +1358,11 @@ export interface MatrixGroups {
 export function groupRows(rows: Row[], versions: Version[]): MatrixGroups {
   const g: MatrixGroups = { changed: [], cDiverged: [], singleSide: [], incomplete: [], same: [] };
   for (const r of rows) {
-    if (r.verdict === "changed") g.changed.push(r);
+    // 「口径不同」也是**要动手的**变化 —— 数值一样、边界不同，
+    // 恰好落在门槛上的那台灯适用性就变了。
+    // 不放进 `changed` 的话，它会落进「三版一致 / 不需要改设计」那一组 ——
+    // 而那正是客户 DR-003 说的「报告前后结论打架」。
+    if (r.verdict === "changed" || r.verdict === "comparator-differs") g.changed.push(r);
     else if (r.verdict === "incomplete") g.incomplete.push(r);
     else if (r.verdict === "c-diverged") g.cDiverged.push(r);
     else if (/-only$/.test(String(r.verdict))) g.singleSide.push(r);

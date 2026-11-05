@@ -1,39 +1,39 @@
 [
   {
     "versions": "A/B/C/D",
-    "rows": 317,
-    "cells": 1268,
-    "verified": 796,
+    "rows": 319,
+    "cells": 1276,
+    "verified": 801,
     "newVersionColumn": {
       "D": {
         "hit": 0,
-        "total": 317
+        "total": 319
       },
-      "noPattern": 317
+      "noPattern": 319
     }
   },
   {
     "versions": "A/B/C",
-    "rows": 317,
-    "cells": 951,
-    "verified": 796,
+    "rows": 319,
+    "cells": 957,
+    "verified": 801,
     "hit": {
       "A": {
-        "hit": 284,
-        "total": 317
+        "hit": 285,
+        "total": 319
       },
       "B": {
-        "hit": 238,
-        "total": 317
+        "hit": 240,
+        "total": 319
       },
       "C": {
-        "hit": 274,
-        "total": 317
+        "hit": 276,
+        "total": 319
       }
     },
-    "changed": 10,
+    "changed": 9,
     "emptyWithoutReason": 0,
-    "corroboratedOk": 796,
+    "corroboratedOk": 801,
     "corroboratedBad": 0
   },
   {

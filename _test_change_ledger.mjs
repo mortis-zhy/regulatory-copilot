@@ -140,7 +140,14 @@ const ok = (cond, msg) => {
   const rawVerdicts = Object.values(facts.diffVerdicts ?? {}).filter(
     (v) => v.verdict === "有变化",
   ).length;
-  const rawMatrix = (rep.parameterMatrix ?? []).filter((m) => m.verdict === "changed").length;
+  // 矩阵这一路的原始条数 —— 与清单实际收的那一批**同一口径**：
+  // 「changed」（数值变了）+「comparator-differs」（数值一样、口径变了）。
+  // 后者也是实质变化（客户 DR-002：恰好落在门槛上的适用性不同），
+  // 所以它进清单；但守恒核对必须按**同一口径**数，否则会把
+  // 「口径变化」误判成「凭空多出的条目」。
+  const rawMatrix = (rep.parameterMatrix ?? []).filter(
+    (m) => m.verdict === "changed" || m.verdict === "comparator-differs",
+  ).length;
   const rawTotal = rawNumeric + rawManual + rawVerdicts + rawMatrix;
   const expanded = Object.values(bd.bySource).reduce((a, b) => a + b, 0);
   ok(
