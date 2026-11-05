@@ -88,7 +88,7 @@ python scripts/test_diff_corrections.py  # 清洗器自测
 python scripts/test_diff_evidence.py    # 取证模型自测（反例必须被挡住）
 npm run build && node rebuild_report.mjs # 重建报告（带上游指纹）
 node render_to_pdfdir.mjs                # 出交付件
-npm run verify                           # 149 项
+npm run verify                           # 150 项
 ```
 
 > **为什么是这个顺序**：交付链上每一段都是确定性的，
@@ -131,7 +131,7 @@ the renderer derives its version list from the corpus
 
 ---
 
-## 四、三十五条经验（从事故里长出来的）
+## 四、三十六条经验（从事故里长出来的）
 
 ### 1. 「看不见」伪装成「没有缺口」
 
@@ -993,6 +993,42 @@ illumination to the side of the vehicle to assist during slow manoeuvres.
 不可直接对读（编号体系不同构）、材料截断（原文不完整）。
 **报告不拿它们凑「三版一致」** —— 「不判」要写出来，不许沉默。
 
+### 36. **同一份内容拆成两个交付件 —— 就要有一道闸门比它们**
+
+2026-11-06 客户 DR-016：
+
+> 「大量原文、矩阵和附录重复呈现」「**决策信息被原文淹没**」
+> 修改建议：**拆成 20–30 页决策正文 + 证据附件，统一证据入口**
+
+做法：**决策正文**（30 页：结论 · 影响 · 待确认项 · 统一证据入口）
++ **证据附件**（278 页，全报告，**一字未改**）。
+
+### 正文**从附件生成**，不另写一份
+
+正文里的每一个数都从**附件自己的 markdown** 里取：
+
+```js
+function num(label, re, text) {
+  const m = text.match(re);
+  if (!m) throw new Error(`取不到「${label}」—— 附件结构变了，先改这个脚本`);
+  return Number(m[1]);
+}
+```
+
+不填 0、不填「略」、不填上一版的数；抽完还要**对数**
+（表行数必须等于清单说的条数）。
+
+### 通则：**两份文件 = 两份可能漂移的数**
+
+附件改了而正文没重出 —— 两份文件的数对不上，
+而**没有人会发现**（客户看到的是两个自洽的文件）。
+所以必须有一道闸门**专门比它们**：
+本版加了「决策正文是 20–30 页，且每个数都跟附件一致」。
+
+> 顺带一条：**页数本身是判据** —— 正文短于 20 页说明那只是摘要，
+> 长于 30 页说明没拆开。把「20–30 页」写进闸门，
+> 「精简」这件事才不会在下一轮悄悄退化。
+
 ---
 
 ## 五、换标准之后，怎么确认还是「正确的」
@@ -1052,6 +1088,6 @@ illumination to the side of the vehicle to assist during slow manoeuvres.
     否则页码会漂一页。
 
 > 换标准之后，这几条**仍然是可证伪的**：
-> 跑 `npm run verify`（**149 项**）就够，不需要重新相信谁。
+> 跑 `npm run verify`（**150 项**）就够，不需要重新相信谁。
 > 跟 V8 一起不跑的还有 `_test_agent_e2e.mjs` —— 它调真模型，费钱且会抖，
 > 所以**不进闸门**，但要人工定期跑。
