@@ -1,13 +1,13 @@
 {
  "generatedAt": null,
  "totals": {
-  "requirements": 448,
+  "requirements": 462,
   "covered": 286,
-  "appendixListed": 65,
+  "appendixListed": 66,
   "weak": 0,
   "notApplicable": 45,
   "gaps": 0,
-  "quoted": 52
+  "quoted": 65
  },
  "rows": [
   {
@@ -765,9 +765,9 @@
    "page": 68,
    "excerpt": "当远光灯和近光灯间歇或交替点亮作为警告信号功能时，发光徽标应保持当前熄灭或点亮状 态，且光强不应发生变化。",
    "hasLimit": false,
-   "disposition": "已引原文",
-   "reason": "",
-   "quotedMatch": 24
+   "disposition": "附录逐条",
+   "reason": "A §6.4.2.6「当远光灯和近光灯间歇或交替点亮作为警告信号功能时，发光徽标应保持当前熄灭或点亮状态，且光强不应发生变化。」—— 这是 A 第 6 章「从属功能」里**发光徽标**的控制要求，定性、无数值。A 的第 6 章在 B 版没有对应章（第 14 章以「A 独有」整章带出，只引章首一段），本条落在那一段之外，故在此逐条列出原文与页码供回查。",
+   "quotedMatch": 0
   },
   {
    "version": "A",
@@ -4937,6 +4937,174 @@
    "disposition": "不适用",
    "reason": "R48 第 12 章是**过渡条款**（各修正案系列的过渡安排：各缔约方不得拒绝批准、旧系列批准是否继续被接受）—— 是法规生效安排，不涉及灯具参数。本报告第 10 章按主题引用「实施日期/过渡期」。",
    "quotedMatch": 0
+  },
+  {
+   "version": "A",
+   "clause": "7.2.1",
+   "head": "紧急制动信号：汽车由「选装」升格为「强制安装」",
+   "page": 69,
+   "excerpt": "配备 汽车强制安装。挂车选装。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 14,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.23.1",
+   "head": "紧急制动信号：汽车由「选装」升格为「强制安装」",
+   "page": 54,
+   "excerpt": "配备 选装。紧急制动信号应由5.23.7规定的所有制动灯或转向灯的同时启动来实现。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 40,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.1.4.2",
+   "head": "远光灯：新增「不高于车辆前挡风玻璃下边缘」的安装高度基准",
+   "page": 22,
+   "excerpt": "高度:无特殊要求。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 9,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "A",
+   "clause": "5.1.7.2",
+   "head": "自动远光的探测对象：增加「电动自行车」",
+   "page": 24,
+   "excerpt": "本条中的“车辆”指 L、M、N、O 类车辆及电动自行车",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 25,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.1.7.2",
+   "head": "自动远光的探测对象：增加「电动自行车」",
+   "page": 22,
+   "excerpt": "本条中的“车辆”指L、M、N、O 类车辆",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 19,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "A",
+   "clause": "5.2.6.2.1",
+   "head": "手动调光装置：从「不限车型」收窄为「仅越野/商用类或卤素光源」",
+   "page": 27,
+   "excerpt": "仅M2G、M3G、N2G、N3G 类车辆或主近光为卤素光源的车辆允许使用手动调光装置",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 41,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.2.6.2.2",
+   "head": "手动调光装置：从「不限车型」收窄为「仅越野/商用类或卤素光源」",
+   "page": 26,
+   "excerpt": "前照灯手动调光装置:应有一个停止位置",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 18,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "A",
+   "clause": "5.2.7.5",
+   "head": "近光灯自动开闭：从「可以是自动」变成「特定车辆强制自动」",
+   "page": 28,
+   "excerpt": "M1 和N1 类车辆和配备昼间行驶灯或A2 类位置灯的车辆，近光灯应按附录C 的条件，自动开启和关闭近光灯",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 49,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.2.7.5",
+   "head": "近光灯自动开闭：从「可以是自动」变成「特定车辆强制自动」",
+   "page": 26,
+   "excerpt": "近光灯的开关可以是自动的。然而,近光灯的开关应能随时手动操作。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 31,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "A",
+   "clause": "5.2.9",
+   "head": "塑料配光镜：禁止使用机械式前照灯清洗装置",
+   "page": 29,
+   "excerpt": "对于使用塑料配光镜的灯具，禁止使用机械式的前照灯清洗装置。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 29,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "A",
+   "clause": "5.3.9.1",
+   "head": "AFS 清洗器的触发条件：单侧 2000 lm 与合计 4000 lm 的组合关系",
+   "page": 34,
+   "excerpt": "总目标光通量之和超过4000lm或单侧超过2000lm时，应配备符合GB/T 21260 要求的前照灯清洗器。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 53,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.22.9.1",
+   "head": "AFS 清洗器的触发条件：单侧 2000 lm 与合计 4000 lm 的组合关系",
+   "page": 53,
+   "excerpt": "其左右两侧光源总目标光通量之和超过 4000lm时,AFS应配备符合GB21260要求的前照灯清洗器。",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 50,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "A",
+   "clause": "5.4.6.1.2",
+   "head": "前雾灯初始下倾度的标注精度：0.1% 与「一位小数」",
+   "page": 36,
+   "excerpt": "由制造商以不大于0.1%的精度进行规定,并以清晰且不易抹去的方式在每个前雾灯或制造商铭牌",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 44,
+   "quoteSource": "§11.9"
+  },
+  {
+   "version": "B",
+   "clause": "5.3.6.1.2",
+   "head": "前雾灯初始下倾度的标注精度：0.1% 与「一位小数」",
+   "page": 28,
+   "excerpt": "的精度进行规定,并以清晰且不易抹去的方法在每个前雾灯或制造商铭牌",
+   "hasLimit": false,
+   "disposition": "已引原文",
+   "reason": "§11.9 定性义务清单已逐条回原文核验并引用原文",
+   "quotedMatch": 32,
+   "quoteSource": "§11.9"
   }
  ]
 }

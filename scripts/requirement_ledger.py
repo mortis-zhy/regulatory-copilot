@@ -103,6 +103,24 @@ def collect_report_text(rep) -> dict:
     return {"_all": _norm_body("\n".join(parts))}
 
 
+def quote_fully_present(excerpt: str, report_text: dict) -> bool:
+    """这条**逐字引文**是不是整段出现在报告里。
+
+    与 `content_in_report` 的区别：那个问「最长能连续命中多少字」
+    （≥24 字才算证据，因为长文本撞车少）；
+    这个问「**整段引文在不在**」—— 用来核 §11.9 那种
+    **短引文**（有的只有 5 个字：「配备 选装。」）。
+
+    短引文不能用「24 字命中」那条尺子量 —— 它天生没有 24 字。
+    但它也不是「撞上了就算」：它必须**整段**在报告里，
+    而报告里出现它的地方只有一处 —— §11.9 逐条列出的原文。
+    """
+    ex = _norm_body(excerpt or "")
+    if len(ex) < 6:
+        return False
+    return ex in report_text.get("_all", "")
+
+
 def content_in_report(excerpt: str, report_text: dict) -> int:
     """这一条的正文在报告里吗？返回最长连续命中长度（0 = 没出现）。
 
@@ -325,6 +343,68 @@ def main():
                 "quotedMatch": hit if disp == "已引原文" else 0,
             })
 
+    # ── §11.9 定性义务清单的条款，也要进账 ────────────────────────────
+    #
+    # ## 为什么
+    #
+    # 台账的清点口径是「正文里出现**要求词**（应当/必须/不得/…）的条款」。
+    # 而 GB 的要求词大量写成「**应由**」「**应配备**」——
+    # 「紧急制动信号应**由**所有符合5.7规定的制动灯…实现」这一句里
+    # 没有「应当/必须/不得」，于是**整个条款不进账**。
+    #
+    # 后果：全标准最重的那条变化（ESS 配备：选装 → 强制安装）
+    # **不在台账里**，而台账对外说的是「448 条要求条款，真缺口 0」。
+    # 「真缺口 0」管不到它 —— 这与「完整性只在解析器看得见的那个集合里成立」
+    # 是同一类问题。
+    #
+    # ## 怎么补
+    #
+    # §11.9 的每一条都**逐条回原文核验过**（条款号 + 页码 + 原文摘录，
+    # 由 scripts/verify_qualitative_obligations.py 对回 data/clause-index.json），
+    # 所以它们是**有证据的**要求条款 —— 直接补进账，处置记「已引原文」
+    # （§11.9 就是逐字引了原文的那一节）。
+    #
+    # 证据的落点是**原文摘录必须在报告里逐字出现** ——
+    # 不在，就记「真缺口」（响亮地失败），不假装覆盖。
+    qo_path = os.path.join(ROOT, "data", "qualitative-obligations.json")
+    if os.path.exists(qo_path):
+        qo = json.load(io.open(qo_path, encoding="utf-8"))
+        all_text = report_text.get("_all", "")
+        for entry in (qo.get("entries") or []):
+            for side, ver in (("a", "A"), ("b", "B")):
+                s = entry.get(side) or {}
+                cl = str(s.get("clause") or "").strip()
+                quote = str(s.get("quote") or "").strip()
+                if not cl or not quote:
+                    continue
+                if any(r["version"] == ver and r["clause"] == cl for r in rows):
+                    continue  # 已经在账上（要求词命中过）
+                # 原文必须在报告里逐字出现 —— 否则不认它「已覆盖」
+                present = quote_fully_present(quote, report_text)
+                totals["requirements"] += 1
+                if present:
+                    disp = "已引原文"
+                    totals["quoted"] += 1
+                else:
+                    disp = "真缺口"
+                    totals["gaps"] += 1
+                rows.append({
+                    "version": ver,
+                    "clause": cl,
+                    "head": (entry.get("title") or "")[:120],
+                    "page": int(s.get("page") or 0),
+                    "excerpt": quote[:320],
+                    "hasLimit": False,
+                    "disposition": disp,
+                    "reason": ("§11.9 定性义务清单已逐条回原文核验并引用原文"
+                               if present else
+                               "§11.9 声称引用了这一条，但报告里找不到该原文"),
+                    "quotedMatch": len(_norm_body(quote)) if present else 0,
+                    # 这一行的证据是**逐字引文**（可能只有几个字），
+                    # 复核的尺子也不同 —— 见 quote_fully_present。
+                    "quoteSource": "§11.9",
+                })
+
     out = {"generatedAt": None, "totals": totals, "rows": rows}
     lines = []
     for v in cs.ordered_versions(docs):
@@ -357,7 +437,14 @@ def main():
             if r["disposition"] != "已引原文":
                 continue
             checked += 1
-            if content_in_report(r.get("excerpt", ""), report_text) < 24:
+            # §11.9 的行：证据是**逐字引文**，可能只有 5 个字 ——
+            # 那样的引文不能拿「≥24 字连续命中」量（它天生没有那么长），
+            # 但可以要求**整段在报告里**（§11.9 逐条列出的就是它）。
+            if r.get("quoteSource") == "§11.9":
+                ok = quote_fully_present(r.get("excerpt", ""), report_text)
+            else:
+                ok = content_in_report(r.get("excerpt", ""), report_text) >= 24
+            if not ok:
                 missing.append(f"{r['version']} §{r['clause']}")
         print(
             "「已引原文」复核：%d 条逐条回报告搜过 · %d 条搜不到"

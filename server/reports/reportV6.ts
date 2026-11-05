@@ -711,7 +711,18 @@ function mainClause(title: string): string {
   return m ? m[1] : title;
 }
 
-interface ClauseBlock { clause: string; title: string; aText: string; aPage: number; bText: string; bPage: number }
+interface ClauseBlock {
+  clause: string;
+  title: string;
+  aText: string;
+  aPage: number;
+  bText: string;
+  bPage: number;
+  /** B 侧条款号（「5.23」）与 A 侧条款号（「7.2」）——
+   *  §11.9 的定性义务按条款号对位（客户 DR-003）。 */
+  bNum?: string;
+  aNum?: string;
+}
 
 /**
  * A GB clause number → the `topicColumns` row that covers it, if any.
@@ -879,6 +890,29 @@ function build14_clauseTextDiff(
   const aPages = pageTextOf(aFull);
   const bPages = pageTextOf(bFull);
 
+  // §11.9 的定性义务清单 —— **逐条回原文核验过**（条款号 + 页码 + 原文）。
+  //
+  // 为什么第 14 章要查它：变化判定原来只问「**数值**变没变」。
+  // 于是「ESS 由选装变强制安装」这种**配备**层面的变化，在第 14 章里
+  // 显示成「📝 无实质数值变化 …… 不需要改设计」——
+  // 而同一份报告的 §11.9 写着「义务升格，所有 M/N 类汽车都要有 ESS」。
+  // 客户 DR-003 指的就是这个自相矛盾。
+  //
+  // 现在：同一节若在 §11.9 里有条目，第 14 章必须**说出来**，
+  // 而不是写「不需要改设计」。
+  const qoEntries = loadQualitativeObligations().file?.entries ?? [];
+  const qoEntriesForSection = (bNum: string, aNum: string): any[] => {
+    const boundary = (longer: string, shorter: string) =>
+      longer === shorter || longer.startsWith(shorter + ".");
+    return qoEntries.filter((e) => {
+      const bc = String(e?.b?.clause ?? "");
+      const ac = String(e?.a?.clause ?? "");
+      const hitB = bc && (boundary(bc, bNum) || boundary(bNum, bc));
+      const hitA = ac && (boundary(ac, aNum) || boundary(aNum, ac));
+      return hitB || hitA;
+    });
+  };
+
   // B is the structural skeleton: MinerU extracted B's full heading tree
   // (chapters 1-10 + sections 5.1-5.26 + 6.x + 7.x). A's heading extraction
   // only captured chapter-level titles, so we drive from B and map to A.
@@ -924,11 +958,50 @@ function build14_clauseTextDiff(
     return pg;
   };
 
-  // A section start: first subclause "<num>.N" occurrence in A fullText.
-  const aSectionStart = (aNum: string): number => {
-    const re = new RegExp(`(?<![\\d.])${aNum.replace(/\./g, "\\.")}\\.\\d`);
-    const m = re.exec(aFull);
-    return m ? pageOfPos(aFull, m.index) : 0;
+  // A 侧定位退回了「宽松定位」的次数 —— 报告里会写明，
+  // 闸门也会盯住（退化的行，其页码可能是交叉引用的页）。
+  let aLocatorFallbacks = 0;
+
+  // A section start: where A's clause "<num>.N" **actually starts**.
+  //
+  // ## 为什么不能「取第一次出现」
+  //
+  // 原来这里是 `aFull.exec(/(?<![\d.])7\.2\.\d/)` —— 取**全文第一次**出现。
+  // 而条款号在正文里**也会被交叉引用**：A 第 41 页有一句
+  // 「后转向灯按7.2.1执行紧急制动信号和7.3.1执行追尾警告信号时不得使用该闪烁方式」，
+  // 于是「7.2.1」的第一次出现落在**转向灯**那节 —— 第 14 章的
+  // 「5.23 紧急制动信号 ↔ A 7.2」那一行于是：
+  //   · A 列引的是**第 41 页**（错的，应该是第 69 页）；
+  //   · A 列贴的是**转向灯闪烁**的正文（错的，应该是「7.2.1 配备 汽车强制安装」）。
+  // 客户 DR-003 指的就是这个：同一份报告里 §11.9 用 A §7.2.1 p69 说
+  // 「ESS 由选装变强制」，第 14 章却用 p41 说「无实质变化」。
+  //
+  // ## 判据：条款号必须**在行首**，且**前面不远就是装置名**
+  //
+  // A 正文的样式是「装置名\n7.2.1 配备\n正文」——
+  // 标题是**独立成行**的，交叉引用是**句中的**。
+  // 加上「往前 60 字内出现装置名」，就同时躲开了
+  // 「另一个装置的同名条款号」与「表格里的编号」。
+  const aSectionStart = (aNum: string, devName = ""): number => {
+    const esc = aNum.replace(/\./g, "\\.");
+    const re = new RegExp(`(?<![\\d.])${esc}\\.\\d`, "g");
+    const name = devName.trim();
+    let m: RegExpExecArray | null;
+    const atLineStart = (pos: number) => pos === 0 || aFull[pos - 1] === "\n";
+    while ((m = re.exec(aFull))) {
+      if (!atLineStart(m.index)) continue;
+      if (name.length >= 2) {
+        const back = aFull.slice(Math.max(0, m.index - 60), m.index);
+        if (!back.includes(name)) continue;
+      }
+      return pageOfPos(aFull, m.index);
+    }
+    // 退化：条款号不在行首（少数章节正文把它写成句中的）——
+    // 退回「第一次出现」，与旧行为一致，但**记一笔**：
+    // 这一行的页码可能是错的（交叉引用），报告里会写明有几行退回了宽松定位。
+    aLocatorFallbacks++;
+    const first = new RegExp(`(?<![\\d.])${esc}\\.\\d`).exec(aFull);
+    return first ? pageOfPos(aFull, first.index) : 0;
   };
 
   const mapToA = (bNum: string): string => {
@@ -983,7 +1056,10 @@ function build14_clauseTextDiff(
       aPage = aChap.get(aNum)!.page;
       aTitle = aChap.get(aNum)!.title;
     } else {
-      aPage = aSectionStart(aNum);
+      // 装置名是判据的一部分 —— 见 aSectionStart 的说明：
+      // 光看条款号会落到**交叉引用**上（客户 DR-003）。
+      const devNameA = bi.title.replace(/^\d+(?:\.\d+)?\s*/, "").replace(/[（(].*$/, "").trim();
+      aPage = aSectionStart(aNum, devNameA);
       if (!aPage) {
         // Fallback: some A sections have no numbered subclause anchor in the
         // body (e.g. A 5.20 醒目标志 is a bare name line + prose with no
@@ -1051,6 +1127,7 @@ function build14_clauseTextDiff(
       clause: aPage ? `${bi.num} ↔ A ${aNum}` : `${bi.num} ↔ —（A 无对应条款）`,
       title: bi.title,
       aText, aPage: aPage || 0, bText, bPage: bi.page,
+      bNum: bi.num, aNum,
     });
   }
 
@@ -1088,15 +1165,21 @@ function build14_clauseTextDiff(
     "> **R48 确实没有对应章的，报告写明「无对应章」并给出理由**（如 GB 的「检验规则」、",
     "> 「实施日期」这类管理性章节，以及 GB 独有的「牵引杆挂车标志灯」），不硬凑。",
     ">",
-    "> **变化判定由 §11.0 变化总清单回答** —— 那一节是全报告唯一一份「改了什么」，",
-    "> 逐条回原文核验过。本章只回答一件事：**这一节有没有实质变化**；",
-    "> 有 → 列出是哪几条（编号 + B 值 → A 值），没有 → 明写「无实质数值变化」。",
+    "> **变化判定由 §11.0 变化总清单与 §11.9 定性义务清单共同回答** —— 那两节是全报告仅有的两份「改了什么」，",
+    "> 都逐条回原文核验过。本章只回答一件事：**这一节有没有实质变化**；",
+    "> 有 → 列出是哪几条（编号 + B 值 → A 值；定性义务给出条款与页码），没有 → 明写「无实质数值变化」。",
     ">",
     "> **说明**：以 B 现行的完整章节结构为骨架，逐条映射到 A 对应条款（章节映射：B6→A8、B6.1→A9、B7→A10；装置节映射见 11.6.2），并排对照条款正文（每条截断 600 字）。A 独有的第 6/7 章追加在末尾。",
     "",
-    `> 对比条目：${clauses.length}（B 驱动 ${clauses.length - aOnly.length} + A 独有 ${aOnly.length}）· A 侧定位成功 ${clauses.filter((c) => c.aPage).length} / ${clauses.length}`,
+    `> 对比条目：${clauses.length}（B 驱动 ${clauses.length - aOnly.length} + A 独有 ${aOnly.length}）· A 侧定位成功 ${clauses.filter((c) => c.aPage).length} / ${clauses.length}` +
+      (aLocatorFallbacks
+        ? ` · **${aLocatorFallbacks} 行退回宽松定位**（A 的条款号在正文里不是行首，页码可能落在交叉引用上）`
+        : " · A 侧全部按**条款标题**定位（不是正文里的交叉引用）"),
     "",
-    "**使用提示**：`🔴 本节有 N 条实质变化` → 看下面列出的 chg 编号，到 §11.0 看完整依据与页码；`📝 无实质数值变化` → 差异只在措辞/编号，产品无需改；`🆕/🗑` 对应新增/删除。**没有「请逐字比对」这种把判断推回给读者的判定。**",
+    "**使用提示**：`🔴 本节有 N 条实质变化` → 看下面列出的 chg 编号，到 §11.0 看完整依据与页码；" +
+      "`🔴 本节有 N 条定性义务变化` → 配备 / 禁止 / 适用范围 / 控制逻辑变了，到 §11.9 看三版原文与设计、测试影响；" +
+      "`📝 无实质数值变化` → 数值层面差异只在措辞/编号；`🆕/🗑` 对应新增/删除。" +
+      "**没有「请逐字比对」这种把判断推回给读者的判定。**",
     "",
   ];
   for (const c of clauses) {
@@ -1203,6 +1286,7 @@ function build14_clauseTextDiff(
     //   有 → 列出是哪几条（chgNN + B 值 → A 值）
     //   没有 → 明写「本节无实质数值变化」，并说明依据是逐条回原文核过
     const ledgerHere = ledgerRowsForSection(ledger, deviceName);
+    const qoHere = qoEntriesForSection(c.bNum ?? "", c.aNum ?? "");
     const aa = c.aText.replace(/\s+/g, "");
     const bb = c.bText.replace(/\s+/g, "");
     if (!c.bText) {
@@ -1213,7 +1297,11 @@ function build14_clauseTextDiff(
       );
     } else if (ledgerHere.length) {
       out.push(
-        `**变化判定**：🔴 **本节有 ${ledgerHere.length} 条实质变化**（见 §11.0 变化总清单）：`,
+        `**变化判定**：🔴 **本节有 ${ledgerHere.length} 条实质变化**（见 §11.0 变化总清单）` +
+          (qoHere.length
+            ? `**与 ${qoHere.length} 条定性义务变化**（见 §11.9）`
+            : "") +
+          `：`,
       );
       for (const lr of ledgerHere) {
         out.push(
@@ -1221,14 +1309,43 @@ function build14_clauseTextDiff(
             `（${lr.kind}）`,
         );
       }
+      for (const e of qoHere) {
+        out.push(
+          `  - **${e.title}** —— A §${e.a?.clause}（第 ${e.a?.page} 页）→ ` +
+            `B §${e.b?.clause}（第 ${e.b?.page} 页）：${e.nature}`,
+        );
+        const q = (x: any) => String(x?.quote ?? "").replace(/\s+/g, " ").trim();
+        if (q(e.a)) out.push(`    - A 原文（§${e.a?.clause}，第 ${e.a?.page} 页）：「${q(e.a)}」`);
+        if (q(e.b)) out.push(`    - B 原文（§${e.b?.clause}，第 ${e.b?.page} 页）：「${q(e.b)}」`);
+      }
+    } else if (qoHere.length) {
+      // **定性变化**：数值没变，但「要不要改设计」变了。
+      // 这一支以前不存在 —— 于是「ESS 由选装变强制」在第 14 章里
+      // 显示成「无实质数值变化 …… 不需要改设计」，与 §11.9 直接打架（客户 DR-003）。
+      out.push(
+        `**变化判定**：🔴 **本节有 ${qoHere.length} 条定性义务变化**（数值层面无变化；` +
+          `配备 / 禁止 / 适用范围 / 控制逻辑变了，见 §11.9）：`,
+      );
+      for (const e of qoHere) {
+        out.push(
+          `  - **${e.title}** —— A §${e.a?.clause}（第 ${e.a?.page} 页）→ ` +
+            `B §${e.b?.clause}（第 ${e.b?.page} 页）：${e.nature}`,
+        );
+        // 把**三版原文**也摆在这一节里 —— §11.9 是唯一的出处，
+        // 读者在第 14 章看到「变了」时应该当场能读到原文，
+        // 而不是要翻到另一章才知道凭什么这么说。
+        const q = (x: any) => String(x?.quote ?? "").replace(/\s+/g, " ").trim();
+        if (q(e.a)) out.push(`    - A 原文（§${e.a?.clause}，第 ${e.a?.page} 页）：「${q(e.a)}」`);
+        if (q(e.b)) out.push(`    - B 原文（§${e.b?.clause}，第 ${e.b?.page} 页）：「${q(e.b)}」`);
+      }
     } else if (aa === bb) {
       out.push(`**变化判定**：📝 实质一致（仅标点/空白差异）。`);
     } else if (aa.includes(bb) || bb.includes(aa)) {
       out.push(`**变化判定**：🔧 局部调整 —— 未列入 §11.0 变化总清单（无数值层面的变化）。`);
     } else {
       out.push(
-        `**变化判定**：📝 **无实质数值变化** —— 本节未列入 §11.0 变化总清单` +
-          `（该清单逐条回原文核验过；差异在措辞/编号层面，不需要改设计）。`,
+        `**变化判定**：📝 **无实质数值变化** —— 本节未列入 §11.0 变化总清单与 §11.9 定性义务清单` +
+          `（两处都逐条回原文核验过；差异在措辞/编号层面）。`,
       );
     }
     out.push("");

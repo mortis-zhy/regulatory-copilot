@@ -2,7 +2,15 @@
   "_meta": {
     "title": "定性义务变化清单",
     "purpose": "第 12 章参数矩阵只装得下**数值**。但客户真正要的是「产品哪里不一样、要不要改」—— 配备/禁止/适用范围/控制逻辑这类定性义务变化，矩阵一行都装不下，于是变成了「这版和之前差别不大」。这份清单补上那块。",
-    "aspects": ["配备", "禁止", "适用范围", "控制逻辑", "例外", "安装基准", "测试方法"],
+    "aspects": [
+      "配备",
+      "禁止",
+      "适用范围",
+      "控制逻辑",
+      "例外",
+      "安装基准",
+      "测试方法"
+    ],
     "scopes": [
       "配备（强制安装 / 选装 / 允许不装）",
       "禁止（不得使用 / 不得安装）",
@@ -30,8 +38,11 @@
       "b": {
         "clause": "5.23.1",
         "page": 54,
-        "quote": "配备 选装。",
-        "absentTerms": ["强制安装", "强制"]
+        "quote": "配备 选装。紧急制动信号应由5.23.7规定的所有制动灯或转向灯的同时启动来实现。",
+        "absentTerms": [
+          "强制安装",
+          "强制"
+        ]
       },
       "a": {
         "clause": "7.2.1",
@@ -58,7 +69,9 @@
         "clause": "5.1.4.2",
         "page": 22,
         "quote": "高度:无特殊要求。",
-        "absentTerms": ["前挡风玻璃"]
+        "absentTerms": [
+          "前挡风玻璃"
+        ]
       },
       "a": {
         "clause": "5.1.4.2",
@@ -70,7 +83,10 @@
         "page": 37,
         "quote": "In height: No individual specifications.",
         "status": "C 无对应义务",
-        "absentTerms": ["windscreen", "windshield"]
+        "absentTerms": [
+          "windscreen",
+          "windshield"
+        ]
       },
       "nature": "**新增安装基准（单边加严）** —— B 与 C 对远光灯高度都无要求，A 单独加了一条以车体为基准的高度上限。",
       "designImpact": "远光灯的发光面最高点必须落在前挡风玻璃下边缘之下。常规布置与常规车身高度的关系需重新校核；高车身/越野车型或外置灯组的方案风险最大。",
@@ -86,7 +102,9 @@
         "clause": "5.1.7.2",
         "page": 22,
         "quote": "本条中的“车辆”指L、M、N、O 类车辆",
-        "absentTerms": ["电动自行车"]
+        "absentTerms": [
+          "电动自行车"
+        ]
       },
       "a": {
         "clause": "5.1.7.2",
@@ -114,7 +132,13 @@
         "clause": "5.2.6.2.2",
         "page": 26,
         "quote": "前照灯手动调光装置:应有一个停止位置",
-        "absentTerms": ["M2G", "M3G", "N2G", "N3G", "卤素"]
+        "absentTerms": [
+          "M2G",
+          "M3G",
+          "N2G",
+          "N3G",
+          "卤素"
+        ]
       },
       "a": {
         "clause": "5.2.6.2.1",
@@ -143,7 +167,11 @@
         "clause": "5.2.7.5",
         "page": 26,
         "quote": "近光灯的开关可以是自动的。然而,近光灯的开关应能随时手动操作。",
-        "absentTerms": ["M1", "N1", "昼间行驶灯"]
+        "absentTerms": [
+          "M1",
+          "N1",
+          "昼间行驶灯"
+        ]
       },
       "a": {
         "clause": "5.2.7.5",
@@ -173,7 +201,9 @@
         "clause": "5.2.9",
         "page": 27,
         "quote": "当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。",
-        "absentTerms": ["塑料"]
+        "absentTerms": [
+          "塑料"
+        ]
       },
       "a": {
         "clause": "5.2.9",
@@ -185,7 +215,11 @@
         "page": 44,
         "quote": "shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 4511",
         "status": "C 无对应义务",
-        "absentTerms": ["plastic", "prohibited", "shall not"]
+        "absentTerms": [
+          "plastic",
+          "prohibited",
+          "shall not"
+        ]
       },
       "nature": "**新增禁止性义务（A 单边）** —— B 与 C 都只规定「该装的时候要装」，都没有禁止机械式清洗装置；A 单独加了一条禁止。",
       "designImpact": "使用塑料配光镜的前照灯产品，机械式（刮片式）清洗方案不可用，须改非机械式方案（高压水气、超声等）。这是一条会直接改 BOM 的义务，不是措辞差异。",
@@ -228,7 +262,9 @@
         "clause": "5.22.9.1",
         "page": 53,
         "quote": "其左右两侧光源总目标光通量之和超过 4000lm时,AFS应配备符合GB21260要求的前照灯清洗器。",
-        "absentTerms": ["单侧"]
+        "absentTerms": [
+          "单侧"
+        ]
       },
       "a": {
         "clause": "5.3.9.1",
