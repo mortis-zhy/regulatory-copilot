@@ -867,22 +867,76 @@ const COMPARATOR_WORDS: Array<[RegExp, Comparator]> = [
   [/(?:至\s*少|最\s*少)\s*$/, "≥"],
   // ⑥ 等于 → =
   [/(?:等\s*于)\s*$/, "="],
-  // ⑦ 英文：**否定式 / 等价式先判**，否则「not less than」会被 `<` 那条吃掉，
-  //    「less than or equal to」会被 `=` 那条吃掉。
-  //
-  //    裸的「more than / greater than」**不判** —— 它在 R48 里的真实语境
-  //    多是「the deviation ... differs by more than 0.15」（偏差**超过** 0.15 即不合格），
-  //    那句话的**限值关系是 ≤**（偏差不得大于 0.15），判成「>」就是反的。
-  //    **宁可留空，不猜** —— 留空只是少一个维度，猜错是把法规结论说反。
-  [/(?:shall\s+)?(?:not|nor|no)\s+(?:be\s+)?(?:exceed(?:s)?|more\s+than|greater\s+than)\s*$/, "≤"],
-  [/(?:less\s+than|equal\s+or\s+less\s+than)\s+or\s+equal\s+to\s*$/, "≤"],
+  // ⑦ 英文的**等价式**（先判，它们不是「比较词 + 否定」的形状）——
+//    否则「less than or equal to」会被 `=` 那条吃掉。
+[/(?:less\s+than|equal\s+or\s+less\s+than)\s+or\s+equal\s+to\s*$/, "≤"],
   [/(?:equal\s+or\s+less\s+than)\s*$/, "≤"],
-  [/(?:no|not)\s+(?:be\s+)?less\s+than\s*$/, "≥"],
-  [/(?:not|nor)\s+below\s*$/, "≥"],
   [/at\s+least\s*$/, "≥"],
-  [/(?:below|less\s+than)\s*$/, "<"],
+  // **「by more than X」是偏差的上限**（deviation … differs by more than 0.15），
+  // 不是下限 —— 它必须**先于**裸的「more than」判掉，
+  // 否则「偏差不得大于 0.15」会被判成「>」（把法规结论说反）。
+  [/\bby\s+(?:more|less)\s+than\s*$/, "≤"],
+  // 「可减至 X」→ X 是**下限**；「可增至 X」→ X 是**上限**。
+  [/(?:may\s+be\s+)?(?:reduced|shortened|lowered)\s+to\s*$/, "≥"],
+  [/(?:may\s+be\s+)?(?:increased|raised|extended)\s+to\s*$/, "≤"],
+];
+
+/**
+ * 英文比较词的**自然方向**（不含否定）。
+ *
+ * 否定单独判（`NEGATION_RE`）—— 因为否定可能离比较词很远：
+ *   「shall **not** be positioned **lower than** 250 mm」→ 自然「<」+ 否定 → **≥**
+ *   「shall **not** be: **Less than**: 350 mm」→ 同上
+ * 逐条写成「not X」的正则会漏掉这两种（它们中间隔着别的词）。
+ */
+const ENGLISH_NATURAL: Array<[RegExp, Comparator]> = [
+  [/exceed(?:s|ing)?\s*$/, ">"],
+  [/above\s*$/, ">"],
+  [/(?:greater|larger|higher|further)\s+than\s*$/, ">"],
+  [/more\s+than\s*$/, ">"],
+  [/(?:below|less\s+than|lower\s+than|fewer\s+than)\s*$/, "<"],
   [/(?:equal\s+to)\s*$/, "="],
 ];
+
+/** 否定词。 */
+const NEGATION_RE = /\b(?:not|nor|no|none|neither|never)\b/;
+
+/**
+ * 否定**是否作用于**紧跟其后的那个比较词。
+ *
+ * 规则：
+ *   ① 作用域里要有否定词；
+ *   ② 否定与比较词之间**不许隔着并列词**（and / or / but）——
+ *      「shall not be more than 3 m **and** the gap shall be more than 250 mm」
+ *      里的 250 是**下限**，不是上限。
+ */
+function negationApplies(scope: string): boolean {
+  const s = String(scope ?? "").toLowerCase();
+  const hits = [...s.matchAll(/\b(?:not|nor|no|none|neither|never)\b/g)];
+  if (!hits.length) return false;
+  const last = hits[hits.length - 1];
+  const between = s.slice(last.index + last[0].length);
+  if (/\b(?:and|or|but)\b/.test(between)) return false;
+  return true;
+}
+
+/**
+ * 否定把方向翻过来。
+ *
+ * **不是简单的对调** —— 法规语言的否定给出的是**含端点**的那一侧：
+ *   「not more than X」= 值 ≤ X（不是「< X」）；
+ *   「not less than X」= 值 ≥ X（不是「> X」）。
+ * 这正是 `<750` 与 `≤750` 的区别（客户 DR-002）。
+ *
+ * 「not equal to X」这五种表示不了 → **留空**（宁可空着，不可错着）。
+ */
+const FLIPPED: Record<Comparator, Comparator | null> = {
+  "<": "≥",
+  ">": "≤",
+  "≤": ">",
+  "≥": "<",
+  "=": null,
+};
 
 /**
  * 取值**前面紧邻**的比较词。
@@ -892,10 +946,27 @@ const COMPARATOR_WORDS: Array<[RegExp, Comparator]> = [
  */
 export function comparatorBefore(text: string, focusStart: number): Comparator | null {
   // 只看取值前面的一小段 —— 远了就可能抓到别的句子里的比较词。
-  const before = text.slice(Math.max(0, focusStart - 24), focusStart).replace(/\s+/g, " ");
+  // **64 而不是 24**：R48 里有
+  // 「None of the additional lighting units described in paragraph 6.22.4.1.2. above
+  //   shall **not** be positioned **lower than** 250 mm」
+  // 否定词与比较词之间隔着二十几个字 —— 窗口太窄就把否定切掉了，
+  // 「不得低于 250」会被判成「低于 250」（**把下限说成上限**）。
+  const before = text.slice(Math.max(0, focusStart - 160), focusStart).replace(/\s+/g, " ");
   if (!before) return null;
   // 到最近的句读为止：比较词必须属于**这一句**。
-  const tail = before.split(/[，,。;；:：]/).pop() ?? "";
+  // 「句号 + 空格 + 大写」也是句子边界 —— R48 的英文句子这么断，
+  // 而条款号（「6.22.4.1.3. None of…」）后面跟的也是大写，切开正好是句子开头。
+  const pieces = before.split(/[，,。;；:：]|\. (?=[A-Z])/);
+  let tail = pieces.pop() ?? "";
+  // 「shall not be: Less than: 350 mm」—— 比较词自成一段，否定在前一段。
+  let prevPiece = "";
+  if (!tail.trim()) {
+    // 末尾只剩句读 —— 比较词在**冒号/分号之前**
+    // （R48 的「Less than: 350 mm for M1 …」就是这种）。
+    const label = pieces.pop() ?? "";
+    prevPiece = (pieces.pop() ?? "").toLowerCase();
+    tail = label;
+  }
   const trimmed = tail.trimEnd().toLowerCase();
   if (!trimmed) return null;
   for (const [re, cmp] of COMPARATOR_WORDS) {
@@ -905,6 +976,21 @@ export function comparatorBefore(text: string, focusStart: number): Comparator |
     const between = trimmed.slice(m.index + m[0].length);
     if (!/^[\sA-Za-z%°㎜㎜]{0,8}$/.test(between)) continue;
     return cmp;
+  }
+  // 英文：比较词的**自然方向** + **否定翻向**
+  //
+  // 否定与比较词可以隔着词（「shall not be positioned lower than 250」），
+  // 所以不能把否定写进每一条正则 —— 那样会漏掉这两种形状，
+  // 把「不得低于 250」判成「低于 250」（把下限说成上限）。
+  for (const [re, natural] of ENGLISH_NATURAL) {
+    const m = re.exec(trimmed);
+    if (!m) continue;
+    const between = trimmed.slice(m.index + m[0].length);
+    if (!/^[\sA-Za-z%°㎜㎜]{0,8}$/.test(between)) continue;
+    const negated = negationApplies(trimmed.slice(0, m.index)) ||
+      negationApplies(prevPiece);
+    const flipped = negated ? FLIPPED[natural] : natural;
+    return flipped;
   }
   return null;
 }

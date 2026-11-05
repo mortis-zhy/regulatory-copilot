@@ -2174,6 +2174,8 @@ function buildChapter12Matrix(
   const vs = stats.versions;
   const bv = stats.byVersion;
   const n = vs.length;
+  // §12.6 —— A 与 C 的主差异清单（客户 DR-010）
+  const acDiffMd = buildACDiffSection(rows as any[], vs, []);
   const all = (r: (typeof rows)[number]) => vs.every((v) => r.cells[v].status === "verified");
   const full = rows.filter(all);
   const families = [...new Set(rows.map((r) => r.family))];
@@ -2502,7 +2504,167 @@ function buildChapter12Matrix(
     "",
   ].join("\n");
 
-  return head + decisionView + grouped + details + tail + divergenceMd + corroborationMd;
+  return (
+    head + decisionView + grouped + details + tail + divergenceMd + corroborationMd + acDiffMd
+  );
+}
+
+/**
+ * §12.6 —— A 与 C 的主差异清单（客户 DR-010）。
+ *
+ * 客户写的是：「C 始终仅作参照，不参与变化判定；
+ * **C 只作参考无法满足新国标与欧标主要区别的业务问题**；
+ * 修改建议：**增加 A-C 主差异清单及设计/测试影响**」。
+ *
+ * 业务问题就是一句话：**新国标（A 草案）和欧标（R48）在哪些地方不一样？**
+ * 这一节直接回答它 —— 而且把差异分成**四种**，因为它们的处理方式完全不同：
+ *
+ * | 类别 | 含义 | 谁要动手 |
+ * |---|---|---|
+ * | **C 有、A 无** | 欧标有这条要求，国标没有 | **出口按 C 做**（国内可不做） |
+ * | **A 有、C 无** | 国标有这条要求，欧标没有 | **国内按 A 做**（出口欧盟不强制） |
+ * | 数值不同 | 同一个量，两套限值 | 按各自标准核 |
+ * | 口径不同 | 数值同、边界不同 | 恰好落在该值上的产品适用性不同 |
+ *
+ * 「某版没有这一条」两边都要求是**核过的**（`not-specified` + 逐条依据），
+ * 不是「没抽到」—— 这一点在每行的依据里都写着。
+ */
+function buildACDiffSection(
+  rows: any[],
+  vs: string[],
+  labels: string[],
+): string {
+  const A = vs[0];
+  const C = vs[vs.length - 1];
+  const numDiff: any[] = [];
+  const cmpDiff: any[] = [];
+  const cOnly: any[] = [];
+  const aOnly: any[] = [];
+  for (const r of rows) {
+    const a = r.cells?.[A];
+    const c = r.cells?.[C];
+    if (!a || !c) continue;
+    const av = a.status === "verified";
+    const cv = c.status === "verified";
+    if (av && cv) {
+      const na = (a.nums ?? []).join("|");
+      const nc = (c.nums ?? []).join("|");
+      if (na !== nc) numDiff.push(r);
+      else if (a.comparator && c.comparator && a.comparator !== c.comparator) {
+        cmpDiff.push(r);
+      }
+    } else if (av && !cv && c.miss === "not-specified") {
+      aOnly.push(r);
+    } else if (cv && !av && a.miss === "not-specified") {
+      cOnly.push(r);
+    }
+  }
+  if (!numDiff.length && !cmpDiff.length && !aOnly.length && !cOnly.length) return "";
+
+  const show = (r: any, side: string): string => {
+    const cell = r.cells?.[side];
+    if (!cell || cell.status !== "verified") return "无此规定（已核）";
+    const cmp = cell.comparator ? `${cell.comparator} ` : "";
+    return `${cmp}${(cell.nums ?? []).join(" / ")}${cell.unit ? "" : ""}`;
+  };
+  const unitOf = (r: any): string => r.unit ?? "";
+
+  return [
+    "",
+    "---",
+    "",
+    "## 12.6 A 与 C 的主差异清单（新国标 ↔ 欧标）",
+    "",
+    "> **这一节回答的是业务问题**：新国标（A 草案）与欧标（UN R48-09）**在哪些地方不一样**。",
+    "> 前面几节讲的是「A 相对 B 变了什么」—— 那是**国内**的视角；",
+    "> 这一节是**出口**的视角：C 一直只作参照，而出口的人要按 C 核。",
+    "",
+    `本章 ${rows.length} 个参数里，**A 与 C 有实质差异的有 ${numDiff.length + cmpDiff.length + aOnly.length + cOnly.length} 条**（两版都有值且完全相同的 ${rows.length - numDiff.length - cmpDiff.length - aOnly.length - cOnly.length} 条见附录 G）：`,
+    "",
+    "| 差异类别 | 条数 | 谁要动手 |",
+    "|---|---|---|",
+    `| **C 有、A 无** | **${cOnly.length}** | **出口按 C 做** —— 欧标有这条要求，国标没有 |`,
+    `| **A 有、C 无** | **${aOnly.length}** | **国内按 A 做** —— 国标有这条要求，欧标没有 |`,
+    `| 数值不同 | ${numDiff.length} | 两套限值不同，按各自标准核 |`,
+    `| 口径不同（数值同） | ${cmpDiff.length} | 恰好落在该值上的产品，适用性不同 |`,
+    "",
+    "> **「某版没有这一条」是核过的**，不是没抽到 —— 每条都附了那一版的检索依据与条款号。",
+    "",
+    ...(cOnly.length
+      ? [
+          `### ① C 有、A 无（${cOnly.length} 条）—— **出口按 C 核**`,
+          "",
+          "> 国标没有这条要求，但**欧标有** —— 做出口认证的车必须满足 C 的规定；",
+          "> 国内型式认证不要求。",
+          "",
+          ...cOnly.map(
+            (r) =>
+              `- **${r.name}**（${unitOf(r)}）：${C} ${show(r, C)} ／ ${A} 无此规定（已核） —— ` +
+              `**设计**：出口版本按 ${C} 的规定做（国内版本无此要求）；` +
+              `**测试**：出口型式认证要验这一条，国内认证不验`,
+          ),
+          "",
+        ]
+      : []),
+    ...(aOnly.length
+      ? [
+          `### ② A 有、C 无（${aOnly.length} 条）—— **国内按 A 核**`,
+          "",
+          "> 欧标（UN R48-09）没有这条要求，但**国标有** —— 国内型式认证必须满足 A 的规定；",
+          "> 出口欧盟时欧盟不强制（仍建议满足）。",
+          "",
+          ...aOnly.map(
+            (r) =>
+              `- **${r.name}**（${unitOf(r)}）：${A} ${show(r, A)} ／ ${C} 无此规定（已核） —— ` +
+              `**设计**：国内版本按 ${A} 的规定做（欧盟不强制）；` +
+              `**测试**：国内型式认证要验这一条，欧盟型式认证不验`,
+          ),
+          "",
+        ]
+      : []),
+    ...(numDiff.length
+      ? [
+          `### ③ 数值不同（${numDiff.length} 条）—— 两套限值不同`,
+          "",
+          ...numDiff.map((r) => {
+            const na = (r.cells?.[A]?.nums ?? []).map(Number);
+            const nc = (r.cells?.[C]?.nums ?? []).map(Number);
+            const dir =
+              na.some((x) => nc.some((y) => x > y))
+                ? `**${A} 比 ${C} 更严**`
+                : na.some((x) => nc.some((y) => x < y))
+                  ? `**${A} 比 ${C} 更松**`
+                  : "两套取值互不相同，逐条回原文核";
+            return (
+              `- **${r.name}**（${unitOf(r)}）：${A} ${show(r, A)} ／ ${C} ${show(r, C)} —— ${dir}；` +
+              `**设计**：按更严的一侧做即可同时满足两边；` +
+              `**测试**：同一台车要同时满足两套标准时，取更严的一侧`
+            );
+          }),
+          "",
+        ]
+      : []),
+    ...(cmpDiff.length
+      ? [
+          `### ④ 口径不同（数值同，${cmpDiff.length} 条）—— 边界上适用性不同`,
+          "",
+          "> 数值一样，但**比较符号不同** —— 恰好落在该值上的产品，两套标准的适用性不同。",
+          "",
+          ...cmpDiff.map(
+            (r) =>
+              `- **${r.name}**（${unitOf(r)}）：${A} ${show(r, A)} ／ ${C} ${show(r, C)} —— ` +
+              `**边界值上适用性不同**；` +
+              `**设计**：按更严的一侧留余量（边界值上两套标准的适用性不同）；` +
+              `**测试**：按各自标准判，恰好等于该值的产品要分别确认`,
+          ),
+          "",
+        ]
+      : []),
+    "> **这一节与 §12.1 的区别**：§12.1 问「A 相对 B 变了什么」（国内视角）；",
+    "> 这一节问「A 与 C 差在哪」（出口视角）。两边的行**可以重叠** ——",
+    "> 一条参数既可能 A 改了，也同时与 C 不同。",
+    "",
+  ].join("\n");
 }
 
 /**
@@ -2704,6 +2866,9 @@ function buildExecSummary(input: {
           `有值（带页码）或「无此规定（已核）」（附逐条依据）—— **没有「不知道」的格子**，` +
           `也**不填推测值**。第 12.4 节是出口重点：A 与 B 不一致且 C 也有取值的那几条，` +
           `逐条给出「A 在向 R48 对齐」还是「A 在此条上背离 R48」。` +
+          `**要直接回答「新国标与欧标差在哪」，看 §12.6** —— ` +
+          `那里把 A 与 C 的差异分成四类（C 有 A 无 / A 有 C 无 / 数值不同 / 口径不同），` +
+          `逐条给设计影响与测试影响。` +
           (cDivergedN
             ? `另有 **${cDivergedN} 条 A/B 相同但 C 不同** —— 这一类旧口径会算成「三版一致」，` +
               `属**漏报**，出口认证要按 C 核，12.4 一并列出。`

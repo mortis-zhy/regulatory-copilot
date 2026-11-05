@@ -4025,6 +4025,48 @@ print(json.dumps({"entries": len(entries), "distinct_pages": len(uniq), "mismatc
   return `${res.entries} 条目录项 · ${res.distinct_pages} 个不同页码 · 抽查一致`;
 });
 
+check("A 与 C 的主差异清单要在报告里，并给设计/测试影响（客户 DR-010）", () => {
+  // 客户 DR-010（P2）：「C 始终仅作参照，不参与变化判定；
+  // **C 只作参考无法满足新国标与欧标主要区别的业务问题**；
+  // 修改建议：**增加 A-C 主差异清单及设计/测试影响**」。
+  //
+  // 业务问题就是一句话：**新国标（A 草案）与欧标（R48）在哪些地方不一样**。
+  // 这一节直接回答它，而且必须把差异分成**四种** ——
+  // 它们的处理方式完全不同：
+  //   C 有 A 无 → **出口按 C 做**；A 有 C 无 → **国内按 A 做**；
+  //   数值不同 → 按各自标准核；口径不同 → 边界上适用性不同。
+  //
+  // 只给「A vs C 数值不同」是不够的 —— 实测那只有 3 条，
+  // 而**「C 有 A 无」33 条 +「A 有 C 无」42 条才是出口时真正要动手的部分**。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const ch12 = (rep.chapters ?? []).find((c) => String(c.markdown ?? "").includes("## 12.6 A 与 C 的主差异清单"));
+  assert(ch12, "报告第 12 章里没有 §12.6「A 与 C 的主差异清单」—— 客户问的「新国标与欧标差在哪」没人回答");
+  const md = ch12.markdown;
+  for (const cat of ["C 有、A 无", "A 有、C 无", "数值不同", "口径不同"]) {
+    assert(
+      md.includes(cat),
+      `§12.6 里没有「${cat}」这一类 —— 差异必须按**处理方式**分类，不是只列数值不同的那几条`,
+    );
+  }
+  // 每一条都要给**设计影响**与**测试影响**（客户点名要的）
+  // —— 只看 §12.6 这一节里的行，别把第 12 章其它小节的条目算进来。
+  const sec = md.slice(md.indexOf("## 12.6"));
+  const rows = sec.split("\n").filter((l) => /^\- \*\*.*\*（/.test(l));
+  assert(rows.length > 0, "§12.6 里一条明细都没有");
+  const noImpact = rows.filter((l) => !l.includes("**设计**") || !l.includes("**测试**"));
+  assert(
+    noImpact.length === 0,
+    `§12.6 有 ${noImpact.length} 条没给设计/测试影响 —— 客户点名要的就是这个`,
+  );
+  // 「某版没有这一条」必须是**核过的**，不是「没抽到」
+  const unverified = rows.filter((l) => l.includes("无此规定") && !l.includes("已核"));
+  assert(
+    unverified.length === 0,
+    `§12.6 有 ${unverified.length} 条把「没抽到」写成了「无此规定」—— 缺失结论必须是核过的`,
+  );
+  return `${rows.length} 条 A/C 主差异，四类齐全，每条都带设计影响与测试影响`;
+});
+
 check("交付件里没有近空白页（客户 DR-015）", () => {
   // 客户 DR-015：「仅保留导航句」的一页 —— 读者拿到的是一页纸和一句
   // 「逐条变化与数据核验见第 11 章」。**增加篇幅并中断阅读**。

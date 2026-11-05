@@ -16,7 +16,9 @@
  *    「less than **or equal to** X」= ≤；「equal **or less than** X」= ≤。
  *    而 R48 里最常见的「the deviation ... **differs by more than** 0.15」
  *    说的其实是「偏差**不得大于** 0.15」= ≤ ——
- *    裸的「more than」判成「>」就是**反的**。
+ *    **「by more than」与裸的「more than」不是一回事**：
+ *    前者是偏差的**上限**（≤），后者是下限（>）。
+ *    两者混为一谈就会把法规结论说反（2026-11-06 补，见下面的用例）。
  *
  * **留空优于猜**：认不出来的写法一律留空（`null`）——
  * 留空只是少一个维度，猜错是把法规结论说反。
@@ -72,10 +74,57 @@ const CASES = [
   ["not below ", "≥", "not below → ≥"],
 
   // ── **不判**的情形（宁可留空，不猜） ──────────────────────────
-  ["differs by more than ", null, "「differs by more than」→ 留空（限值关系其实是 ≤，但不猜）"],
-  ["a gap of more than ", null, "裸的「more than」→ 留空"],
   ["shall be ", null, "没有比较词 → 留空"],
   ["", null, "空文本 → 留空"],
+
+  // ── 英文：R48 的实际写法（2026-11-06 补）───────────────────────
+  //
+  // 原来「裸的 more than / greater than」一律留空，理由是
+  // 「the deviation ... differs by more than 0.15」（偏差**超过** 0.15 即不合格）。
+  // 但把**所有** more than 都留空，代价是**整列 C 的口径全丢** ——
+  // 于是 C 列看上去「只有数字、没有限值关系」，A 与 C 的差异被放大成一片假差异。
+  //
+  // 现在按**句子的真实限值关系**分别判：
+  //   「by more than X」= 偏差的**上限** → ≤（先于裸 more than 判）；
+  //   裸的「more than / greater than / exceeding / above」= 下限 → >。
+  ["not exceeding ", "≤", "not exceeding → ≤"],
+  ["exceeding ", ">", "exceeding → >（下限）"],
+  ["exceeds ", ">", "exceeds → >"],
+  ["vehicle speed is above ", ">", "above → >"],
+  ["not further than ", "≤", "not further than → ≤"],
+  ["not lower than ", "≥", "not lower than → ≥"],
+  ["lower than ", "<", "lower than → <"],
+  ["is greater than ", ">", "greater than → >"],
+  ["a gap of more than ", ">", "裸的「more than」→ >（下限，不是偏差上限）"],
+  ["differs by more than ", "≤", "「differs by more than」→ ≤（偏差的上限，不是下限）"],
+  ["may be reduced to ", "≥", "「可减至 X」→ X 是下限 → ≥"],
+  ["may be increased to ", "≤", "「可增至 X」→ X 是上限 → ≤"],
+
+  // ── 英文的**否定作用域**：否定离比较词可以很远 ──────────────────
+  //
+  // R48 的否定有两类：
+  //   紧邻否定   「not exceeding 140 mm」
+  //   **主语否定**「**None** of the additional lighting units … shall be
+  //                positioned **lower than** 250 mm」
+  //                —— 否定管的是主语（一个也不许低于 250），比较词紧挨取值。
+  //                只看前 24/40/64 个字都够不着否定，
+  //                「不得低于 250」会被判成「低于 250」（**把下限说成上限**）。
+  //
+  // 反过来，否定与比较词之间若隔着**并列词**，否定就不作用于那个比较词：
+  // 「shall not be more than 3 m **and** the gap shall be more than 250 mm」
+  // 里的 250 是**下限**（>），不是上限。
+  [
+    "None of the additional lighting units described in paragraph 6.22.4.1.2. above shall be positioned lower than ",
+    "≥",
+    "主语否定（None of …）→ 「不得低于 250」→ ≥",
+  ],
+  ["shall not be: Less than: ", "≥", "否定在冒号前一段 → ≥"],
+  [
+    "shall not be more than 3 m and the gap shall be more than ",
+    ">",
+    "否定被并列词 and 阻断 → 后面的 more than 仍是下限 → >",
+  ],
+  ["the outer edge of the apparent surface shall not be more than ", "≤", "not more than → ≤"],
 ];
 
 console.log("比较口径判据：");
