@@ -4430,6 +4430,73 @@ check("every manual finding is named in the executive summary", () => {
   return `${mf.findings.length} findings, each named in the summary`;
 });
 
+check("上传时按内容认版本，不靠文件名", () => {
+  // 这条链路上认版本**曾经只有一条路**：sidecar 按**文件名**正则认。
+  // 用户把文件改了名（很普通的事）→ 最后一步 400「未匹配任何已支持的标准」，
+  // 而**文件内容完全没问题**。换一套标准时这一处也要改 ——
+  // 而它**本可以不用改**：内容相似度那套不需要为新标准写任何声明。
+  //
+  // 现在查的是**整条链**：服务端按内容认 → 接口回传 → 界面显示 →
+  // 出报告时优先用它派标签 → sidecar 以它为准。
+  const sidecar = runPy(["scripts/test_label_source.py"], "test_label_source");
+  assert(
+    sidecar.ok,
+    `sidecar 的「内容优先」自测没过:\n        ${sidecar.out.slice(-800)}`,
+  );
+
+  const routes = read("server/_core/agentRoutes.ts");
+  assert(
+    routes.includes("recognizeUploadVersion("),
+    "上传接口没有调「按内容认版本」",
+  );
+  assert(
+    routes.includes("versionGuess"),
+    "上传接口没有把认版本的结果回传（versionGuess）—— 界面无从显示",
+  );
+
+  const home = read("client/src/pages/Home.tsx");
+  assert(home.includes("versionGuess"), "界面上没有显示认版本的结果");
+
+  const builder = read("client/src/components/ReportBuilder.tsx");
+  assert(
+    builder.includes("d.versionGuess?.label ?? LABELS[i]"),
+    "出报告时没有优先用「按内容认出来的标签」—— 上传顺序又盖回来了",
+  );
+  assert(
+    builder.includes("labelSource"),
+    "出报告时没有告诉 sidecar 这个标签的来源 —— sidecar 会退回按文件名认",
+  );
+
+  const py = read("python_service/main.py");
+  assert(
+    py.includes('label_source == "content"'),
+    "sidecar 不认 labelSource=content —— 内容认出来的标签会被文件名覆盖回去",
+  );
+  return "上传端认 → 接口回传 → 界面显示 → 派标签 → sidecar 以内容为准，全链贯通";
+});
+
+check("网站那条路不改写已入库的核验产物", () => {
+  // 「在网站上点一下」曾经会改写**入库的**核验产物：
+  // sidecar 的 `/verify` 顺手把 `dist/verified-comparison.json` 写了一份
+  // （紧凑 JSON，与 `verify_claims.py` 的缩进格式不同）。
+  //
+  // 后果有两条，第二条更要命：
+  //   ① 闸门「产物与重跑结果逐字一致」下一次必红 —— 而红的原因看着像
+  //      「产物过期了」，其实只是**格式不同**。真过期时没人查，
+  //      假过期时所有人都会去重算一遍：既浪费时间，又把真问题盖住。
+  //   ② 写进去的那份**未必是核验过的那份** —— 网站那条路用的抽取结果
+  //      与命令行那套不是同一份来源。而「入库产物 = 已核验的事实」
+  //      正是整个项目的地基。
+  //
+  // 这道闸门**真的跑一遍网站那条路**，然后比对入库产物的 sha256。
+  const { ok, out } = runPy(["scripts/test_no_side_effects.py"], "test_no_side_effects");
+  assert(
+    ok,
+    `网站那条路改写了已入库的产物:\n        ${out.slice(-800)}`,
+  );
+  return "sidecar /verify 跑完，入库产物一个字节都没动";
+});
+
 console.log("\n=== 5. renderer unit harness ===");
 for (const t of [
   "_test_math.mjs",
@@ -4460,6 +4527,9 @@ for (const t of [
   // 「标签 → 版本键」判据的**已知答案用例**：
   // 现在的写法要认得出、**换一套标准**也要认得出、认不出的不许瞎猜。
   "_test_version_labels.mjs",
+  // 「按内容认版本」的**已知答案用例**：
+  // 改了名不许改判、不相干的不许瞎猜、两版难分时不许硬认。
+  "_test_version_recognition.mjs",
 ]) {
   check(t, () => {
     const r = spawnSync("node", [t], { cwd: ROOT, encoding: "utf-8" });

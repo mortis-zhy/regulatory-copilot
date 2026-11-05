@@ -14,6 +14,97 @@ import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
+/**
+ * 语料（懒加载一次）—— 上传时认版本要用。
+ *
+ * 为什么认版本要**对着语料比**而不是看文件名：
+ * 认版本这件事项目里有三套实现（sidecar 按文件名、clause_split 按内容标记、
+ * matrix 按内容相似度），而**只有内容相似度那套不需要为新标准写任何声明** ——
+ * 语料里有哪几版，就认哪几版。
+ *
+ * 缓存的理由：语料 11.6 MB，每个上传请求都重新解析一遍是白花的 CPU。
+ */
+let CORPUS_CACHE: { data: Record<string, any> | null } | null = null;
+
+async function loadCorpus(): Promise<Record<string, any> | null> {
+  if (CORPUS_CACHE) return CORPUS_CACHE.data;
+  CORPUS_CACHE = { data: null };
+  try {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const p = path.join(PROJECT_ROOT, "dist", "mineru-v4-data.json");
+    if (fs.existsSync(p)) {
+      CORPUS_CACHE.data = JSON.parse(fs.readFileSync(p, "utf-8"));
+    }
+  } catch {
+    /* 语料不在 → 认不出版本（不影响别的功能） */
+  }
+  return CORPUS_CACHE.data;
+}
+
+/**
+ * 参考件的正文（**懒加载 + 缓存**）—— 用来认「同一份标准的另一个副本」。
+ *
+ * 参考件是**语料里各版的源 PDF**（`uploaded-docs/<sha 前 16 位>.pdf`），
+ * 文本用 **MuPDF** 取 —— 与上传文件的文本**同一种表示**。
+ *
+ * 为什么强调「同一种表示」：拿 MinerU 的语料文本去比 MuPDF 的上传文本，
+ * 实测相似度只有 0.21~0.24（那是两种排版版本在比）；
+ * 同表示互比（跨页采样）实测：同一份 **1.00** · 同标准的兄弟版 **0.52** · 跨标准 **0.14~0.16**。
+ */
+let REF_TEXTS_CACHE: { refs: Array<{ label: string; text: string }> | null } | null = null;
+
+async function loadReferenceTexts(): Promise<Array<{ label: string; text: string }>> {
+  if (REF_TEXTS_CACHE) return REF_TEXTS_CACHE.refs ?? [];
+  REF_TEXTS_CACHE = { refs: null };
+  const refs: Array<{ label: string; text: string }> = [];
+  try {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const { extractPdfTextServer } = await import("../ingestion/pdfExtract");
+    const corpus = await loadCorpus();
+    for (const [ver, doc] of Object.entries(corpus ?? {})) {
+      const sha = String(doc?.sourceSha256 ?? "").slice(0, 16);
+      if (!sha) continue;
+      const p = path.join(PROJECT_ROOT, "uploaded-docs", `${sha}.pdf`);
+      if (!fs.existsSync(p)) continue;
+      const r = await extractPdfTextServer(fs.readFileSync(p));
+      if (r?.fullText) refs.push({ label: ver, text: r.fullText });
+    }
+  } catch {
+    /* 参考件取不到 → 只剩 sha256 那条判据 */
+  }
+  REF_TEXTS_CACHE.refs = refs;
+  return refs;
+}
+
+/** 上传的文件是哪一版？—— **按内容认**（先 sha256，再相似度）。 */
+async function recognizeUploadVersion(
+  bytes: Buffer,
+  text: string,
+): Promise<{ label: string | null; score: number; source: string; reason: string }> {
+  const { recognizeBySha256, recognizeByReferences } = await import("../reports/versionRecognize");
+  const crypto = await import("node:crypto");
+  const corpus = await loadCorpus();
+  const sha = crypto.createHash("sha256").update(bytes).digest("hex");
+
+  // ① 逐字节相同 —— 零歧义，最常见
+  const bySha = recognizeBySha256(sha, corpus);
+  if (bySha.label) {
+    return { label: bySha.label, score: 1, source: bySha.source, reason: bySha.reason };
+  }
+
+  // ② 同一份标准的另一个副本 —— 内容相似度
+  const refs = await loadReferenceTexts();
+  const g = recognizeByReferences(text, refs);
+  return {
+    label: g.label,
+    score: Number(g.score.toFixed(3)),
+    source: g.source,
+    reason: g.reason,
+  };
+}
+
 const SYSTEM_PROMPT = `你是企业法规对比智能体（Regulatory Copilot）。所有回答必须按"结构对齐 → 内容对比 →专业参数 → 联网证据"四层组织。每条结论都要带原文锚点（章节号 / 页码 / 表格编号），并明确区分三类信息——【原文事实】、【模型推断】、【待人工确认】。不要凭空生成法规原文，不要把没有证据的联网信息当作最终结论；当模型无法验证时，必须使用【待人工确认】前缀并给出建议的核实途径。
 
 【版本角色——最高优先级规则】
@@ -110,6 +201,10 @@ export function registerAgentRoutes(router: Router) {
         serverExtractedText: serverText || undefined,
         serverPageCount: serverPages || undefined,
         localFilePath,
+        // **上传时就认版本** —— 不等四十分钟后看一份矩阵空掉的报告。
+        // 判据是**内容**（对着语料比），不是文件名：
+        // 用户把文件改名是很普通的事，而按文件名认版本会让整个流程在最后一步失败。
+        versionGuess: serverText ? await recognizeUploadVersion(bytes, serverText) : undefined,
       });
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : "Document upload failed" });

@@ -62,6 +62,16 @@ const ENTRIES = [
   // provenance 记录「这份报告是从哪几份上游算出来的」。
   // 单独列出来：闸门要**直接调用**它，比对「报告记的指纹」与「磁盘上现在的」。
   ["server/reports/provenance.ts", "dist/provenance.js"],
+  // 文本指纹（字符二元组 + Dice）—— 认版本的**判据**。
+  // 单独列出来：闸门要用**已知答案**驱动它。
+  ["server/reports/textFingerprint.ts", "dist/textFingerprint.js"],
+  // 「这份上传的文件是哪一版」—— 按内容认，不按文件名。
+  // 单独列出来：闸门要验「换个文件名，认出的版本不变」。
+  ["server/reports/versionRecognize.ts", "dist/versionRecognize.js"],
+  // pdfExtract 是服务端取 PDF 文本的实现（MuPDF/WASM）。
+  // 单独列出来：认版本的**内容**判据要拿它取参考件的正文 ——
+  // 而「同一种表示互比」是这条判据成立的前提，闸门必须能直接驱动它。
+  ["server/ingestion/pdfExtract.ts", "dist/pdfExtract.js"],
   // projectRoot 是服务端**唯一**的项目根解析器。
   // 单独列出来：闸门要直接 import 它，验「服务端解析到的路径 == 仓库根的路径」。
   ["server/_core/projectRoot.ts", "dist/projectRoot.js"],

@@ -210,19 +210,40 @@ def health() -> dict:
 
 @app.post("/extract")
 def extract_endpoint(payload: dict) -> ExtractResponse:
-    """payload: { "label": "A"|"B"|"C", "fileName": "name.pdf", "filePath": "C:\\...pdf" }"""
+    """payload: { "label": "A"|"B"|"C", "fileName": "name.pdf", "filePath": "C:\\...pdf",
+                   "labelSource": "content"|"positional" }"""
     requested_label = payload.get("label")
+    label_source = payload.get("labelSource") or "positional"
     file_name = payload.get("fileName", "doc.pdf")
     file_path = payload.get("filePath")
     if not file_path or not Path(file_path).exists():
         raise HTTPException(400, "label + filePath required, file must exist")
-    # Infer from the filename when the caller gave no label; otherwise validate
-    # and let the filename win if the two disagree.
-    label = infer_label(file_name, file_path) if not requested_label \
-        else _validate_doc(requested_label, file_name, file_path)
+    # 标签从哪来，决定谁说了算：
+    #
+    #   content   —— 调用方**按内容**认出来的（对着语料比相似度）。
+    #                内容是硬证据，文件名只是线索 —— 所以**内容说了算**，
+    #                文件名不同意就**说出来**，不偷偷改。
+    #   positional —— 调用方只是「按上传顺序」排的（第几个就是第几版）。
+    #                这种标签没有证据，**文件名说了算**（原来的行为）。
+    #
+    # 为什么要有这个区分：原来只有后者 ——
+    # 于是「用户把文件改了名」会让整个流程在最后一步失败，
+    # 而文件内容完全没问题。
+    if label_source == "content" and requested_label:
+        label = requested_label
+        guessed = infer_label(file_name, file_path)
+        label_inferred = guessed is not None and guessed != label
+        if label_inferred:
+            print("[sidecar] 内容识别为 %r，但文件名像 %r —— 以内容为准（内容是硬证据）"
+                  % (label, guessed))
+    else:
+        # Infer from the filename when the caller gave no label; otherwise validate
+        # and let the filename win if the two disagree.
+        label = infer_label(file_name, file_path) if not requested_label \
+            else _validate_doc(requested_label, file_name, file_path)
+        label_inferred = requested_label != label
     if label is None:
         raise HTTPException(400, f"{file_name!r} 未匹配任何已支持的标准。{_ACCEPT_HELP}")
-    label_inferred = requested_label != label
 
     file_hash = sha256(Path(file_path))
     cache_file = cache_path(label, file_hash, ".extracted.json")
@@ -323,10 +344,25 @@ def verify_endpoint(payload: dict) -> dict:
     sys.path.insert(0, str(ROOT))
     import verify_claims as vc
     out = vc.run_verify()
-    # cache it locally so the Node side can reuse
-    (ROOT / "dist" / "verified-comparison.json").write_text(
-        json.dumps(out, ensure_ascii=False), encoding="utf-8"
-    )
+    # **不许写 `dist/verified-comparison.json`。**
+    #
+    # 那个文件是**已入库的产物**（进版本库），而闸门会拿它与
+    # `python verify_claims.py` 的重跑结果**逐字比对**。
+    # 原来这里顺手写一份（而且是紧凑 JSON，与 verify_claims 的缩进格式不同）——
+    # 于是「在网站上点一下」就把入库产物改成了另一个字节序列：
+    # 闸门下一次必红，而红的原因看着像「产物过期了」，其实只是**格式不同**。
+    #
+    # 更要命的是它**没有任何证据**：网站那条路用的抽取结果与命令行那套
+    # 不是同一份来源，写进去的那份未必是核验过的那份。
+    #
+    # 所以这里只写**缓存**（gitignore 里的 sidecar-cache），
+    # 值本身通过 HTTP 响应回给 Node 侧 —— 那才是调用方要的东西。
+    try:
+        (CACHE_DIR / "verified-comparison.json").write_text(
+            json.dumps(out, ensure_ascii=False), encoding="utf-8"
+        )
+    except OSError:
+        pass
     return out
 
 
@@ -342,7 +378,12 @@ def report_data_endpoint(payload: dict) -> dict:
     for d in docs:
         try:
             r = extract_endpoint(d)
-            out["extracted"][d.get("label", "?")] = r.data
+            # **按「实际用的那个标签」存**，不是按请求里写的那个。
+            #
+            # 原来存的是 `d.get("label")` —— 而抽取时标签可能已经被文件名推断覆盖了。
+            # 于是「A 版的抽取结果」会存进 B 版的键里 ——
+            # 后面矩阵拿到的就是**错位的语料**，而且**不报错**。
+            out["extracted"][r.label] = r.data
         except Exception as e:
             out["errors"].append({"label": d.get("label"), "error": str(e)})
     return out

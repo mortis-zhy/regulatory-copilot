@@ -23,7 +23,15 @@ type ReportOutline = {
 
 type ChapterState = "pending" | "running" | "done";
 
-type ReportDoc = { label: string; fileName: string; text: string; pageCount?: number; meta?: string };
+type ReportDoc = {
+  label: string;
+  /** 这个标签是怎么来的：content = 按内容认出来的；positional = 按上传顺序兜底。 */
+  labelSource?: "content" | "positional";
+  fileName: string;
+  text: string;
+  pageCount?: number;
+  meta?: string;
+};
 
 type CompleteReport = {
   outline: ReportOutline;
@@ -52,7 +60,14 @@ type CompleteReport = {
 };
 
 type Props = {
-  docs: Array<{ fileName: string; pageCount?: number; extractedText?: string; localFilePath?: string }>;
+  docs: Array<{
+    fileName: string;
+    pageCount?: number;
+    extractedText?: string;
+    localFilePath?: string;
+    /** 上传时按内容认出来的版本。 */
+    versionGuess?: { label: string | null; score: number; source: string; reason: string };
+  }>;
   onClose: () => void;
 };
 
@@ -93,7 +108,11 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       return;
     }
     const documents: ReportDoc[] = ready.map((d, i) => ({
-      label: LABELS[i] ?? `D${i + 1}`,
+      // **按内容认出来的版本优先**；认不出才退回「按上传顺序」。
+      // 原来只有后者 —— 于是「上传顺序 = 版本」成了默认，
+      // 认版本这件事从头到尾没人真的做过。
+      label: d.versionGuess?.label ?? LABELS[i] ?? `D${i + 1}`,
+      labelSource: d.versionGuess?.label ? "content" : "positional",
       fileName: d.fileName,
       text: d.extractedText!,
       pageCount: d.pageCount,
@@ -222,7 +241,11 @@ export default function ReportBuilder({ docs, onClose }: Props) {
 
   // MinerU 高精度管线：走 Python sidecar + 确定性渲染，无 LLM 编造。
   const startMineru = useCallback(async () => {
-    const ready = docs.filter((d) => d.localFilePath) as Array<{ fileName: string; localFilePath: string }>;
+    const ready = docs.filter((d) => d.localFilePath) as Array<{
+      fileName: string;
+      localFilePath: string;
+      versionGuess?: { label: string | null; score: number; source: string; reason: string };
+    }>;
     if (ready.length < 2) {
       toast.error("MinerU 管线需要至少 2 份已上传到服务器的 PDF（不支持客户端本地提取）");
       return;
@@ -238,7 +261,9 @@ export default function ReportBuilder({ docs, onClose }: Props) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           documents: ready.map((d, i) => ({
-            label: LABELS[i] ?? `D${i + 1}`,
+            // 与草稿那条路同一个规矩：**按内容认出来的版本优先**。
+            label: d.versionGuess?.label ?? LABELS[i] ?? `D${i + 1}`,
+            labelSource: d.versionGuess?.label ? "content" : "positional",
             fileName: d.fileName,
             filePath: d.localFilePath,
           })),

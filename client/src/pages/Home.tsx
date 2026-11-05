@@ -63,6 +63,12 @@ type Doc = {
   parsedAt?: number;
   errorMessage?: string;
   localFilePath?: string; // server-side persisted path for the MinerU pipeline
+  /**
+   * 上传时**按内容**认出来的版本（不是按文件名）。
+   * 认不出就是 label=null —— 那时要在界面上说清楚，
+   * 而不是让用户等四分钟后看一份矩阵空掉的报告。
+   */
+  versionGuess?: { label: string | null; score: number; source: string; reason: string };
 };
 
 type ExtractionStage = {
@@ -215,6 +221,7 @@ async function uploadDocument(file: File): Promise<{
   extractedText?: string;
   parseError?: string;
   localFilePath?: string;
+  versionGuess?: { label: string | null; score: number; source: string; reason: string };
 }> {
   const blobUrl = URL.createObjectURL(file);
   if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
@@ -233,6 +240,7 @@ async function uploadDocument(file: File): Promise<{
         serverPageCount?: number;
         parseError?: string;
         localFilePath?: string;
+        versionGuess?: { label: string | null; score: number; source: string; reason: string };
       };
       if (data.serverExtractedText && data.serverExtractedText.length > 0) {
         return {
@@ -240,6 +248,7 @@ async function uploadDocument(file: File): Promise<{
           pageCount: data.serverPageCount,
           extractedText: data.serverExtractedText,
           localFilePath: data.localFilePath,
+          versionGuess: data.versionGuess,
         };
       }
       // Server reached but returned no text — fall through to the client.
@@ -633,7 +642,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       };
       setDocs((prev) => [...prev, doc]);
 
-      const { blobUrl, pageCount, extractedText, parseError, localFilePath } = await uploadDocument(file);
+      const { blobUrl, pageCount, extractedText, parseError, localFilePath, versionGuess } =
+        await uploadDocument(file);
       setDocs((prev) => prev.map((d) => (d.id === id ? { ...d, blobUrl, status: "parsing" } : d)));
 
       await animateExtraction(file.name, setExtracting, () => {
@@ -648,6 +658,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
                   parseError,
                   parsedAt: Date.now(),
                   localFilePath,
+                  versionGuess,
                 }
               : d,
           );
@@ -1217,6 +1228,25 @@ function DocStrip({
           >
             <FileText className="h-3.5 w-3.5 opacity-80" />
             <span className="max-w-[160px] truncate font-medium">{d.fileName}</span>
+            {/* 版本识别结果 —— **上传完就有**，不用等到出报告。
+                认不出时更要立刻说清楚：否则用户四分钟后拿到一份矩阵空掉的报告，
+                却不知道是自己的文件不对。 */}
+            {d.versionGuess && (
+              <span
+                title={d.versionGuess.reason}
+                className={`shrink-0 rounded px-1 py-px text-[10px] font-medium ${
+                  d.versionGuess.label
+                    ? isActive
+                      ? "bg-[#a17334] text-[#faf6ec]"
+                      : "bg-[#e8f0e6] text-[#3f6b46]"
+                    : isActive
+                      ? "bg-[#a23030] text-[#faf6ec]"
+                      : "bg-[#f6e3e3] text-[#a23030]"
+                }`}
+              >
+                {d.versionGuess.label ? `${d.versionGuess.label} 版` : "未识别"}
+              </span>
+            )}
             <span className={`text-[10px] ${isActive ? "text-[#d8cfb8]" : "text-[#9c8b6c]"}`}>{formatBytes(d.size)}</span>
             {d.status === "ready" ? (
               <CheckCircle2 className="h-3.5 w-3.5 text-[#5e8b66]" />

@@ -550,29 +550,11 @@ const EMPTY_CORPUS = emptyCorpus();
 /**
  * Text fingerprint used to tell which uploaded PDF is which document version.
  *
- * Page count was the original key and it is unsafe: `byCount.set(pages, file)`
- * silently overwrites when two documents run to the same length, and then both
- * versions resolve to the SAME file — a wrong-value path with no error. Compare
- * the opening text instead: two documents that start alike are the same
- * document, whatever its length.
+ * **实现已搬到 ./textFingerprint.ts** —— 认版本这件事原来有三套实现
+ * （sidecar 按文件名、clause_split 按内容标记、这里按内容相似度），
+ * 指纹与相似度是其中最该只有一份的部分。
  */
-function fingerprint(text: string, take = 600): Set<string> {
-  const clean = String(text ?? "")
-    .replace(/\[第\d+页\]/g, "")
-    .replace(/<[^>]*>|\$[^$]*\$/g, "")
-    .replace(/[^0-9A-Za-z一-鿿]/g, "");
-  const grams = new Set<string>();
-  for (let i = 0; i + 2 <= Math.min(clean.length, take); i++) grams.add(clean.slice(i, i + 2));
-  return grams;
-}
-
-/** Dice coefficient over character bigrams — 1 means identical opening text. */
-function similarity(a: Set<string>, b: Set<string>): number {
-  if (!a.size || !b.size) return 0;
-  let shared = 0;
-  for (const g of a) if (b.has(g)) shared++;
-  return (2 * shared) / (a.size + b.size);
-}
+import { fingerprint, similarity, sampleAcross } from "./textFingerprint";
 
 /** Read the uploaded PDFs and expose their fragment-joined text. */
 export async function loadSourceCorpus(
