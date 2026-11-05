@@ -210,6 +210,19 @@ export interface MatrixStats {
     unchecked: number;
     /** 证据类型分布 */
     byEvidence: Record<string, number>;
+    /**
+     * 四个维度的核验状态分布（客户 DR-012）。
+     *
+     * 「值在那一页上」**不等于**「这一格的语义是对的」——
+     * 语义配对 / 条件 / 符号 / 单位各有各的判据。
+     * 没有机械判据的一律写「未核」，不写「已核」。
+     */
+    byDimension: {
+      pairing?: Record<string, number>;
+      condition?: Record<string, number>;
+      symbol?: Record<string, number>;
+      unit?: Record<string, number>;
+    };
     /** 复核不通过的格子清单 */
     exceptions: Array<{
       id: string;
@@ -1112,7 +1125,7 @@ export function buildParameterMatrix(
   for (const v of versions) sourceIndex[v] = buildSourceIndex(corpus.pages[v]);
 
   /** 给一个已定位的取值做一次回源 PDF 复核。 */
-  const verify = (hit: Cell, v: Version): Cell => {
+  const verify = (hit: Cell, v: Version, rowName?: string, unit?: string): Cell => {
     if (hit.status !== "verified") return hit;
     return {
       ...hit,
@@ -1123,6 +1136,9 @@ export function buildParameterMatrix(
           nums: hit.nums,
           clause: hit.clause,
           page: hit.page,
+          unit,
+          rowName,
+          comparator: hit.comparator,
         },
         sourceIndex[v] ?? null,
       ),
@@ -1135,6 +1151,7 @@ export function buildParameterMatrix(
     absentReason?: string,
     clause?: string,
     unit?: string,
+    rowName?: string,
   ): Cell => {
     if (!re) {
       return absentReason
@@ -1143,10 +1160,10 @@ export function buildParameterMatrix(
     }
     // MinerU first; the source PDF only when MinerU produced nothing.
     const hit = locate(P[v], re, "MinerU", clause, unit);
-    if (hit.status === "verified") return verify(hit, v);
+    if (hit.status === "verified") return verify(hit, v, rowName, unit);
     const alt = corpus.pages[v] ?? [];
     const out = alt.length ? locate(alt, re, "源 PDF", clause, unit) : hit;
-    if (out.status === "verified") return verify(out, v);
+    if (out.status === "verified") return verify(out, v, rowName, unit);
     // A spec may claim "this version does not require it" — but only if the
     // pattern genuinely finds nothing. If it DOES match, the claim is a false
     // regulatory conclusion and must fail loudly rather than be printed.
@@ -1164,7 +1181,7 @@ export function buildParameterMatrix(
   const rows: Row[] = SPECS.map((spec) => {
     const cells: Record<Version, Cell> = {};
     for (const v of versions) {
-      cells[v] = cell(v, spec.p[v], spec.absent?.[v], spec.clause?.[v], spec.unit);
+      cells[v] = cell(v, spec.p[v], spec.absent?.[v], spec.clause?.[v], spec.unit, spec.name);
     }
     // A spec may not claim "this version does not require it" while its own
     // pattern still matches — that would be a false regulatory conclusion
@@ -1193,6 +1210,7 @@ export function buildParameterMatrix(
     notFound: 0,
     unchecked: 0,
     byEvidence: {},
+    byDimension: {},
     exceptions: [],
     weak: [],
   };
@@ -1242,6 +1260,19 @@ export function buildParameterMatrix(
             status: c.status,
             note: c.note,
           });
+        }
+        // ── 四个维度的核验状态（客户 DR-012）──────────────────────
+        //
+        // 「值在那一页上」**不等于**「这一格的语义是对的」。
+        // 语义配对 / 条件 / 符号 / 单位各有各的判据，
+        // 没有机械判据的写「未核」—— 不写「已核」。
+        const dims = c.dimensions;
+        if (dims) {
+          for (const k of ["pairing", "condition", "symbol", "unit"] as const) {
+            const st = dims[k];
+            const bucket = (corrob.byDimension[k] ??= {});
+            bucket[st] = (bucket[st] ?? 0) + 1;
+          }
         }
       }
     }

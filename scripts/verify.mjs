@@ -2561,8 +2561,8 @@ check("every matrix cell's value is corroborated against the source PDF", () => 
   assert(cross.ok, `两套复核实现逐格对不上（归一化不对称）：\n        ${cross.out.slice(-900)}`);
 
   // §12.5 必须把这件事写出来，且数字与数据源一致
-  const ch12 = (rep.chapters ?? []).find((c) => String(c.markdown ?? "").includes("## 12.5 取值回源复核"));
-  assert(ch12, "报告第 12 章里没有 §12.5 取值回源复核 —— 复核结论没有交给读者");
+  const ch12 = (rep.chapters ?? []).find((c) => String(c.markdown ?? "").includes("## 12.5 页面存在性复核"));
+  assert(ch12, "报告第 12 章里没有 §12.5 页面存在性复核 —— 复核结论没有交给读者");
   const md = ch12.markdown;
   assert(
     md.includes(`**${verified} 个取值格**`),
@@ -2581,7 +2581,69 @@ check("every matrix cell's value is corroborated against the source PDF", () => 
       `§12.5 的「${label}」档数与数据源对不上（应为 ${ev[k] ?? 0}）`,
     );
   }
-  return `${st.onPage}/${verified} 个取值格回源 PDF 复核通过（引文 ${ev.excerpt ?? 0} · 标签+取值 ${ev.match ?? 0} · 取值+条款 ${ev["value+clause"] ?? 0} · 取值 ${ev.value ?? 0}），查不到 0、页码不符 0`;
+
+  // ── 客户 DR-012 的四维状态另有一道闸门（下面单独一道）────────────
+  return `${st.onPage}/${verified} 个取值格页面存在性复核通过（引文 ${ev.excerpt ?? 0} · 标签+取值 ${ev.match ?? 0} · 取值+条款 ${ev["value+clause"] ?? 0} · 取值 ${ev.value ?? 0}），查不到 0、页码不符 0`;
+});
+
+// ---------------------------------------------------------------------------
+// 客户 DR-012（P1）：「值在这一页上」**不等于**「这一格的语义是对的」
+//
+// 报告原来写「796 个取值格每一个都回源 PDF 核过，页码与取值逐格对得上」——
+// 而那句话**只证明了值出现在那一页上**，它证明不了：
+//   语义配对（这个数配的是那个标签吗）· 条件 · 符号 · 单位
+//
+// 修法：① 这一节改名为「**页面存在性复核**」；
+//       ② 四个维度各有各的核验状态，**没有机械判据的写「未核」，不写「已核」**。
+//
+// 这一道闸门盯的就是这两件事 ——
+//   · 名字不许改回去（「回源核过」会被读成「语义也核过」）；
+//   · 四维状态不许消失、不许是空表、每一个数字都要与数据源对得上。
+// ---------------------------------------------------------------------------
+
+check("页面存在性 ≠ 语义正确性：四个维度各有状态（客户 DR-012，P1）", () => {
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const ch12 = (rep.chapters ?? []).find((c) => String(c.markdown ?? "").includes("## 12.5 页面存在性复核"));
+  assert(ch12, "报告第 12 章里没有 §12.5 **页面存在性复核** —— 复核结论没有交给读者");
+  const md = ch12.markdown;
+  assert(
+    !md.includes("## 12.5 取值回源复核"),
+    "§12.5 的标题又变回「取值回源复核」了 —— 「回源核过」会被读成「语义也核过」",
+  );
+  assert(
+    !md.includes("每一格都回源 PDF 核过"),
+    "§12.5 里还写着「每一格都回源 PDF 核过」 —— 这句话只证明值在那一页上（客户 DR-012）",
+  );
+
+  const st = rep.parameterMatrixStats ?? {};
+  const dim = st.corroboration?.byDimension ?? {};
+  for (const [key, label] of [
+    ["pairing", "语义配对"],
+    ["condition", "条件"],
+    ["symbol", "符号"],
+    ["unit", "单位"],
+  ]) {
+    assert(
+      md.includes(`**${label}**`),
+      `§12.5 里没有「${label}」这一维的核验状态 —— 客户 DR-012 要求逐项列出`,
+    );
+    const bucket = dim[key] ?? {};
+    const total = Object.values(bucket).reduce((a, b) => a + b, 0);
+    assert(total > 0, `「${label}」这一维一项都没核 —— 状态表是空的（空过）`);
+    const row = md.split("\n").find((l) => l.includes(`**${label}**`));
+    assert(row, `§12.5 的状态表里找不到「${label}」那一行`);
+    const cell = /\|\s*(\d+)\s*\|\s*(\d+)\s*\|/.exec(row);
+    assert(cell, `§12.5 的「${label}」行解析不出数字`);
+    assert(
+      Number(cell[1]) === (bucket["已核"] ?? 0),
+      `§12.5 的「${label}」已核数（${cell[1]}）与数据源（${bucket["已核"] ?? 0}）对不上`,
+    );
+  }
+  return (
+    `四维状态已列且与数据源对得上 —— ` +
+    `语义配对已核 ${dim.pairing?.["已核"] ?? 0} · 条件 ${dim.condition?.["已核"] ?? 0} · ` +
+    `符号 ${dim.symbol?.["已核"] ?? 0} · 单位 ${dim.unit?.["已核"] ?? 0}`
+  );
 });
 
 check("the parameter proposer still finds what the specs found", () => {

@@ -194,6 +194,11 @@ export interface Corroboration {
   rarity: number;
   /** 一句话说明，给报告直接用 */
   note: string;
+  /**
+   * 四个维度的核验状态 —— 「值在这一页上」**不等于**「这一格的语义是对的」
+   * （客户 DR-012）。没有机械判据的写「未核」，不写「已核」。
+   */
+  dimensions?: Dimensions;
 }
 
 /** 复核所需的格子字段（避免与 parameterMatrix.ts 循环依赖）。 */
@@ -203,6 +208,209 @@ export interface CorroborationTarget {
   nums: string[];
   clause: string;
   page: string;
+  /** 行声明的单位（`spec.unit`） */
+  unit?: string;
+  /** 行名（用来找适用条件） */
+  rowName?: string;
+  /** 取值口径（< / ≤ / ≥ / > / =）—— 取不到就是没取到 */
+  comparator?: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 四个维度 —— 「值在这一页上」不等于「这一格的语义是对的」                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * 客户 DR-012（P1）：报告写「796 个取值格每一个都回源 PDF 核过，页码与取值逐格对得上」，
+ * 而这句话**只证明了值出现在那一页上** —— 它证明不了：
+ *
+ *   · **语义配对**：这个数配的是那个标签吗（串行错位时，每个数都是真的）；
+ *   · **条件**：这个数在什么前提下才成立（车型、档位、触发条件）；
+ *   · **符号**：是「小于 750」还是「不大于 750」（客户 DR-002）；
+ *   · **单位**：值的单位与行声明的单位一致吗（1200mm 还是 1200cm）。
+ *
+ * 所以这四件事各有各的核验状态，**没有机械判据的写「未核」，不写「已核」**。
+ */
+export type DimStatus = "已核" | "部分核" | "未核" | "不一致" | "未判定" | "不适用";
+
+export interface Dimensions {
+  /** 语义配对：这个数配的是那个标签 */
+  pairing: DimStatus;
+  /** 条件：适用条件 */
+  condition: DimStatus;
+  /** 符号：比较口径 */
+  symbol: DimStatus;
+  /** 单位：值的单位与行声明的单位 */
+  unit: DimStatus;
+}
+
+/** 单位别名 → 规范形态。 */
+const UNIT_ALIASES: Array<[string[], string]> = [
+  [["㎜", "mm", "毫米"], "mm"],
+  [["cm²", "cm2", "平方厘米"], "cm²"],
+  [["cm", "厘米"], "cm"],
+  [["m²", "m2", "平方米"], "m²"],
+  [["m", "米"], "m"],
+  [["cd/m²", "cd/m2"], "cd/m²"],
+  [["cd", "坎德拉"], "cd"],
+  [["lx", "勒克斯"], "lx"],
+  [["lm", "流明"], "lm"],
+  [["km/h", "kmh", "公里每小时", "千米每小时"], "km/h"],
+  [["m/s"], "m/s"],
+  [["%", "％"], "%"],
+  [["ms", "毫秒"], "ms"],
+  [["s", "秒"], "s"],
+  [["v", "伏"], "V"],
+  [["°", "度", "degree", "degrees"], "°"],
+  [["n", "牛"], "N"],
+];
+
+/**
+ * 单位**种类** —— 判断「不一致」时用它。
+ *
+ * 「声明 mm、原文 cm」是**硬错**（同一类量纲，单位差 10 倍）；
+ * 「声明 s、原文 km/h」不是硬错 —— 那是**旁边另一个数**的单位，
+ * 只能判「未核」（我们没找到这个取值的单位），不能判「不一致」。
+ */
+const UNIT_KIND: Record<string, string> = {
+  mm: "长度",
+  cm: "长度",
+  m: "长度",
+  "cm²": "面积",
+  "m²": "面积",
+  cd: "光度",
+  lm: "光通量",
+  lx: "照度",
+  "cd/m²": "亮度",
+  "km/h": "速度",
+  "m/s": "速度",
+  "%": "比例",
+  ms: "时间",
+  s: "时间",
+  V: "电压",
+  "°": "角度",
+  N: "力",
+};
+
+/** 上标要拍平：'cm<sup>2</sup>' / 'cm²' → 'cm2'。 */
+function flattenSup(text: string): string {
+  return String(text ?? "")
+    .replace(/<sup>\s*2\s*<\/sup>/gi, "2")
+    .replace(/²/g, "2");
+}
+
+/** 把一个单位写法归一成规范形态（认不出来就返回原样）。 */
+export function normalizeUnit(u: string): string {
+  const s = String(u ?? "").trim();
+  if (!s) return "";
+  for (const [aliases, norm] of UNIT_ALIASES) {
+    if (aliases.some((a) => a.toLowerCase() === s.toLowerCase())) return norm;
+  }
+  return s;
+}
+
+/** 文本里出现了哪些单位（按别名长短优先，避免 'mm' 被 'm' 抢走）。 */
+function unitsIn(text: string): string[] {
+  const t = flattenSup(text);
+  const out: string[] = [];
+  const sorted = [...UNIT_ALIASES].sort((a, b) => b[0].length - a[0].length);
+  for (const [aliases, norm] of sorted) {
+    const hit = aliases.some((a) => {
+      // 拉丁单位要卡边界，但**数字紧挨着单位是常态**（'7000lx'、'1.5s'）
+      // —— 所以只挡字母，不挡数字。
+      // 后面的那个 lookahead 仍要挡数字：'20' 里的 '0' 不是单位。
+      if (/^[a-zA-Z%°\/0-9]+$/.test(a)) {
+        return new RegExp(`(?<![A-Za-z])${a.replace("/", "\\/")}(?![A-Za-z])`, "i").test(t);
+      }
+      return t.includes(a);
+    });
+    if (hit && !out.includes(norm)) out.push(norm);
+  }
+  return out;
+}
+
+/**
+ * 取值**紧邻**的那一小段（取值在引文里的位置 ±width 个字）。
+ *
+ * 为什么不能扫整段引文：引文里常有**别的数、别的单位**
+ * （「两个相邻发光单元之间的距离不应小于 600mm，且相邻单元的宽度为 20cm」）——
+ * 扫整段会把 'cm' 当成这个取值的单位，判成「不一致」，
+ * 而那是个**假警报**（实测 226 格）。
+ */
+function windowAround(value: string, match: string, width = 12): string {
+  const v = String(value ?? "");
+  const m = String(match ?? "");
+  if (!m) return "";
+  const at = v.indexOf(m);
+  if (at < 0) return "";
+  return v.slice(Math.max(0, at - width), at + m.length + width);
+}
+
+/**
+ * 行名里的适用条件标记 —— 取最后一个「（…）」里的**字母数字词**。
+ *
+ * 「终端稳态电压上限（6V 系统）」→「6V」
+ * 「制动灯低安装高度门槛（可见度角可减小的条件）」→ 没有字母数字词 → 未核
+ */
+function conditionTokens(rowName: string): string[] {
+  const m = /[（(]([^）)]*)[）)]\s*$/.exec(String(rowName ?? ""));
+  if (!m) return [];
+  return [...new Set(m[1].match(/[A-Za-z]*\d+[A-Za-z]*|\d+[A-Za-z]+/g) ?? [])];
+}
+
+/** 四个维度的核验状态。 */
+export function computeDimensions(
+  cell: CorroborationTarget,
+  evidence: Corroboration["evidence"],
+  numeric: boolean,
+): Dimensions {
+  // ── 语义配对：证据档直接决定 ──────────────────────────────────────
+  let pairing: DimStatus = "未核";
+  if (evidence === "excerpt" || evidence === "match") pairing = "已核";
+  else if (evidence === "value+clause") pairing = "部分核";
+  else if (evidence === "none") pairing = "未核";
+
+  // ── 符号：口径是**从原文紧贴取值的地方**取的 ──────────────────────
+  let symbol: DimStatus = "不适用";
+  if (cell.comparator) symbol = "已核";
+  else if (numeric) symbol = "未判定";
+
+  // ── 单位：值的单位与行声明的单位 ──────────────────────────────────
+  let unit: DimStatus = "未核";
+  const declared = normalizeUnit(cell.unit ?? "");
+  if (declared) {
+    // 只看**取值紧邻**的那一小段：整段引文里常有别的数、别的单位。
+    const near = `${cell.match ?? ""} ${windowAround(cell.value ?? "", cell.match ?? "")}`;
+    const found = unitsIn(near);
+    if (found.includes(declared)) {
+      unit = "已核";
+    } else if (found.length) {
+      // 只有**同量纲**的单位不同才是硬错（声明 mm、原文 cm）。
+      // 量纲都不同 → 那是旁边另一个数的单位，只能判「未核」。
+      const sameKind = found.some((f) => UNIT_KIND[f] && UNIT_KIND[f] === UNIT_KIND[declared]);
+      if (!sameKind) {
+        unit = "未核";
+      } else {
+        // **同量纲但写法不同**：可能是**原文就是另一种写法、已按 spec 换算**
+        // （A 草案写「6m」，GB 2019 与 R48 写「6000mm」，矩阵统一按 mm 报）。
+        // 换算过的判据是：**原文里的数与报出的数不一样**。
+        const rawNum = /(\d+(?:[.,]\d+)?)/.exec(cell.match ?? "")?.[1]?.replace(",", "");
+        const reported = (cell.nums ?? []).map((n) => String(n).replace(",", ""));
+        const converted = !!rawNum && reported.some((n) => n !== rawNum);
+        unit = converted ? "已核" : "不一致";
+      }
+    }
+  }
+
+  // ── 条件：行名带条件标记、且取值原文里能看到同一个标记 ────────────
+  let condition: DimStatus = "未核";
+  const toks = conditionTokens(cell.rowName ?? "");
+  if (toks.length) {
+    const hay = `${cell.match ?? ""} ${cell.value ?? ""}`;
+    condition = toks.every((t) => hay.includes(t)) ? "已核" : "未核";
+  }
+
+  return { pairing, condition, symbol, unit };
 }
 
 /** 从 '第36页' 里取出页码。 */
@@ -212,6 +420,17 @@ function citedPage(page: string): number | null {
 }
 
 export function corroborateCell(
+  cell: CorroborationTarget,
+  index: SourceIndex | null,
+): Corroboration {
+  const raw = corroborateCellRaw(cell, index);
+  return {
+    ...raw,
+    dimensions: computeDimensions(cell, raw.evidence, (cell.nums?.length ?? 0) > 0),
+  };
+}
+
+function corroborateCellRaw(
   cell: CorroborationTarget,
   index: SourceIndex | null,
 ): Corroboration {
