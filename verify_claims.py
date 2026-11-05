@@ -25,7 +25,18 @@ ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent
 MINERU = ROOT / "dist" / "mineru-v4-data.json"
 DIFF = ROOT / "diff-result.json"
 CACHE_DIR = ROOT / "dist" / "extract-cache"
-OUT = ROOT / "dist" / "verified-comparison.json"
+# 产物落点。默认写回 dist/（正常跑用）。
+#
+# VERIFY_CLAIMS_OUT_DIR 用来让**闸门**把产物写到临时目录 ——
+# 因为「跑一遍」本身就是一种**改写**：闸门如果直接写回 dist/，
+# 它就把「产物与上游不一致」这件事**当场修好了**，
+# 于是「上游变了但产物没重算」这条永远验不出来
+# （实测：闸门跑完，git status 里 dist/facts.json 变成 modified，
+#   而闸门自己对此**一言不发**）。
+#
+# 改成写临时目录再**比对**，闸门就从「修复者」变成「检查者」。
+OUT_DIR = Path(os.environ.get("VERIFY_CLAIMS_OUT_DIR", str(ROOT / "dist")))
+OUT = OUT_DIR / "verified-comparison.json"
 
 # scripts/diff_corrections.py — 差值表的机械清洗 + 人工更正。
 # 它住在 scripts/ 下（不是包），按路径加载。
@@ -1750,7 +1761,7 @@ def main():
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print(f"[verify] saved {OUT} ({OUT.stat().st_size // 1024} KB)")
     # SINGLE SOURCE OF TRUTH — one facts.json the report renderer reads.
-    facts_path = OUT.parent / "facts.json"
+    facts_path = OUT_DIR / "facts.json"
     facts = {
         "version": "v6.9",
         "sourceTracks": {

@@ -14,7 +14,7 @@
  * Exits non-zero on the first failing check so CI (or you) stops.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -35,6 +35,8 @@ import {
 } from "../dist/reportMeta.js";
 // 版本清单/展示名/文档名 —— 标题槽位全靠这三个推导。
 import { versionsOf, versionLabel, versionDoc } from "../dist/parameterMatrix.js";
+// 上游指纹 —— 让「这份报告是从哪几份上游算出来的」可判定。
+import { computeProvenance, describeProvenanceDiff } from "../dist/provenance.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf-8");
@@ -556,9 +558,33 @@ function runPy(args, label) {
   return { ok: r.status === 0, out: (r.stdout || "") + (r.stderr || ""), r };
 }
 
+/**
+ * 闸门跑 verify_claims.py —— **产物写到临时目录**，不碰仓库里那两份。
+ *
+ * ## 为什么不直接写回 dist/
+ *
+ * 「跑一遍」本身就是一种**改写**：闸门若直接写回 dist/facts.json，
+ * 它就把「产物与上游不一致」这件事**当场修好了** ——
+ * 于是「上游变了但产物没重算」这条**永远验不出来**。
+ *
+ * 实测（2026-11-04）：闸门跑完，git status 里 `dist/facts.json` 变成 modified，
+ * 而闸门对此**一言不发** —— 它刚把问题抹平了。
+ *
+ * 改成写临时目录再**比对**，闸门就从「修复者」变成「检查者」。
+ */
+const VERIFY_TMP_DIR = resolve(ROOT, "dist", ".verify-tmp");
+
+function runVerifyClaims() {
+  mkdirSync(VERIFY_TMP_DIR, { recursive: true });
+  return runPyEnv(
+    ["verify_claims.py"],
+    "verify_claims",
+    { VERIFY_CLAIMS_OUT_DIR: VERIFY_TMP_DIR },
+  );
+}
+
 /** 跑一个 node 探针脚本（泛化类的实测脚本都是 node）。 */
-function runNode(args, label) {
-  const r = spawnSync(process.execPath, args, {
+function runNode(args, label) {  const r = spawnSync(process.execPath, args, {
     cwd: ROOT,
     encoding: "utf-8",
     maxBuffer: 64 * 1024 * 1024,
@@ -577,7 +603,7 @@ function runPyEnv(args, label, extraEnv) {
 }
 
 check("verify_claims.py candidate partition closes", () => {
-  const { ok, out } = runPy(["verify_claims.py"], "verify_claims");
+  const { ok, out } = runVerifyClaims();
   assert(ok, `verify_claims.py exited non-zero:\n        ${out.slice(-600)}`);
   const json = JSON.parse(read("dist/verified-comparison.json"));
   const f = json.flow;
@@ -598,7 +624,7 @@ check("manual findings are hash-bound to the source PDFs", () => {
   const mf = JSON.parse(read("data/manual-findings.json"));
   assert(mf.findings.length > 0, "manual-findings.json has no findings");
   assert(mf.sources && Object.keys(mf.sources).length === 3, "expected sha256 for A/B/C sources");
-  const { out } = runPy(["verify_claims.py"], "verify_claims");
+  const { out } = runVerifyClaims();
   assert(
     !out.includes("降级为待重核"),
     "manualFindings were demoted — a source PDF changed and needs re-audit:\n        " +
@@ -641,7 +667,7 @@ check("topic page citations survive a source-PDF re-check", () => {
   // quote (A 安装位置与几何可见度 第102页, B 光色与色度坐标表 / 灯具光色对应表
   // 第16页, C 自动切换前照灯条件表 第65页). verify_claims.py now downgrades
   // those; this gate fails if that pass ever stops running.
-  const { ok, out } = runPy(["verify_claims.py"], "verify_claims");
+  const { ok, out } = runVerifyClaims();
   assert(ok, `verify_claims.py exited non-zero:\n        ${out.slice(-600)}`);
   assert(
     out.includes("源 PDF 页码复核"),
@@ -3065,6 +3091,127 @@ check("the welcome message is never exported as if it were an answer", () => {
     "单条消息的下载入口不再排除欢迎语了 —— 三处判据必须一致。",
   );
   return "欢迎语在三处判据里都被排除：导出挑消息 · 按钮禁用 · 单条消息入口";
+});
+
+check("the tracked facts are what verify_claims.py produces now", () => {
+  // ## 这道闸门在补一个「自己抹平问题」的行为
+  //
+  // `verify_claims.py` 会**写** `dist/verified-comparison.json` 与 `dist/facts.json`。
+  // 闸门以前直接跑它 —— 于是闸门每跑一次，就把这两份产物**重写一遍**：
+  // 「上游变了但产物没重算」这件事被**当场修好**，于是永远验不出来。
+  //
+  // 症状特别隐蔽：闸门跑完，`git status` 里 `dist/facts.json` 变成 modified，
+  // 而闸门**一言不发** —— 它刚把问题抹平了。
+  //
+  // 现在闸门把它跑到**临时目录**，再逐字比对仓库里那两份：
+  // 对不上 → 红（「重算一遍：python verify_claims.py」）。
+  const { ok, out } = runVerifyClaims();
+  assert(ok, `verify_claims.py exited non-zero:\n        ${out.slice(-600)}`);
+  for (const f of ["facts.json", "verified-comparison.json"]) {
+    const tmp = resolve(VERIFY_TMP_DIR, f);
+    const tracked = resolve(ROOT, "dist", f);
+    assert(existsSync(tmp), `verify_claims.py 没产出 ${f}（临时目录里没有）`);
+    assert(existsSync(tracked), `dist/${f} 不存在 —— 先跑 python verify_claims.py`);
+    const a = readFileSync(tmp, "utf-8");
+    const b = readFileSync(tracked, "utf-8");
+    assert(
+      a === b,
+      `dist/${f} 与重跑结果不一致 —— 产物是用**旧的上游**算出来的。\n` +
+        "        重算：python verify_claims.py\n" +
+        "        （然后 node rebuild_report.mjs → node render_to_pdfdir.mjs）",
+    );
+  }
+  return "facts.json 与 verified-comparison.json 都与重跑结果逐字一致";
+});
+
+check("the report says which upstream it was built from", () => {
+  // ## 这道闸门为什么存在
+  //
+  // 交付链是：
+  //   extract-cache ─(LLM 抽取)─> diff-result.json ─(程序化 diff)─> facts.json
+  //        └─(verify_claims.py 回源复核)─> verified-comparison.json
+  //                  ↓
+  //           reports/last-report.json ─(渲染)─> 交付件 PDF
+  //
+  // 每一段都是**确定性**的（除了最上游那次 LLM 抽取），
+  // 所以「上游变了、下游没跟着变」是**可以判定的** ——
+  // 前提是下游**记着自己是从哪份上游算出来的**。
+  //
+  // 实测（2026-11-04，动手之前先做的实验）：
+  //   · 改 `dist/extract-cache/*.json` 里的一个条款号 → 闸门 **131/131 全绿**；
+  //   · 把交付件 PDF 换成 249 页的旧版 → 闸门 **131/131 全绿**；
+  //   · 改 `data/diff-corrections.json` 里的人工更正 → **抓到了**（差值那一半本来就有判据）。
+  //
+  // 也就是说：**接缝有三处，只闭合了一处。**
+  //
+  // 修法：报告里记上游的 sha256，闸门比对「报告记的」与「磁盘上现在的」。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const recorded = rep.provenance;
+  assert(
+    recorded && typeof recorded === "object",
+    "报告里没有 provenance —— 这份报告不是带溯源信息生成的（重建它）",
+  );
+  const now = computeProvenance(ROOT);
+  const diffs = describeProvenanceDiff(recorded, now);
+  assert(
+    diffs.length === 0,
+    `报告是用**旧的上游**算出来的：\n        ${diffs.join("\n        ")}\n` +
+      "        重建报告：node rebuild_report.mjs",
+  );
+  const n = Object.keys(recorded.extractCacheSha256 ?? {}).length;
+  return `facts/diff-result/${n} 份 extract-cache 的指纹都对得上`;
+});
+
+check("the delivered PDF is the one the report renders to", () => {
+  // 上一道闸门盯的是「报告 ↔ 上游」；
+  // 这一道盯的是「**交付件文件** ↔ 报告」——
+  // 也就是链子的**最后一跳**。
+  //
+  // 实测（2026-11-04）：把 `delivery/PDF对比/` 里那个交付件换成 249 页的旧版，
+  // 闸门 **131/131 全绿** —— 因为闸门默认是**自己重新渲染一遍**
+  // `reports/last-report.json` 再检查那份，**从来不打开交付件那个文件**。
+  //
+  // 于是「改了报告忘了重出 PDF」这条最常见的错，**没有任何一道闸门会响**。
+  //
+  // 判据：交付件那个 PDF 与闸门渲染出来的那份，**逐页文本必须一致**。
+  // （不比字节 —— PDF 里的生成时刻每次都不同，比字节必然报「不一样」。）
+  //
+  // 交付件的文件名从 `render_to_pdfdir.mjs` 里读 —— **不另写一份**，
+  // 否则改了输出名这里就会指向一个不存在的文件。
+  const renderSrc = read("render_to_pdfdir.mjs");
+  const m = /OUT_NAME\s*=\s*"([^"]+)"/.exec(renderSrc);
+  assert(m, "render_to_pdfdir.mjs 里读不到 OUT_NAME —— 不知道交付件该是哪个文件");
+  const delivered = resolve(ROOT, "delivery", "PDF对比", m[1]);
+  assert(
+    existsSync(delivered),
+    `交付件不存在：delivery/PDF对比/${m[1]} —— 渲染它：node render_to_pdfdir.mjs`,
+  );
+  if (!GATE_PDF) return "skipped — 闸门没能渲染出 PDF";
+  const r = spawnSync("python", ["scripts/compare_pdfs.py"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+    input: JSON.stringify({ a: GATE_PDF, b: delivered }),
+  });
+  const out = (r.stdout || "").trim();
+  let res;
+  try {
+    res = JSON.parse(out.split("\n").pop());
+  } catch {
+    assert(false, `compare_pdfs.py 没给出 JSON：\n        ${out.slice(-300)}`);
+    return "";
+  }
+  assert(
+    !res.error,
+    `compare_pdfs.py 报错：${res.error}`,
+  );
+  assert(
+    res.diffCount === 0,
+    `交付件与当前报告**对不上**（${res.pagesA} 页 vs ${res.pagesB} 页，` +
+      `${res.diffCount} 页文本不同）——\n        ${res.firstDiff || ""}\n` +
+      "        重新出件：node render_to_pdfdir.mjs",
+  );
+  return `交付件与报告逐页一致（${res.pagesA} 页）`;
 });
 
 check("the report names no standard the corpus does not contain", () => {

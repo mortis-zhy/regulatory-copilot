@@ -40,6 +40,8 @@ import { buildChangePointsChapter, type ChangeChapterInput } from "./changePoint
 // 封面标题、章节标题、附录标题里点名的标准名全从这里来 ——
 // 以前是本文件里的字面量，换标准时**封面会讲错标准**。
 import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, type TitleSlots } from "./reportMeta";
+// 上游指纹（extract-cache → diff-result → facts）—— 让「报告对应哪一份上游」可判定。
+import { computeProvenance } from "./provenance";
 import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
 // 第 11.9 节 —— 定性义务变化清单（配备 / 禁止 / 适用范围 / 控制逻辑）。
 // 参数矩阵（第 12 章）只装得下数值；这一节装矩阵装不下的那半边，
@@ -3971,6 +3973,11 @@ export async function buildMinerUReport(
       };
     }),
     generatedAt: new Date().toISOString(),
+    // 上游指纹 —— 这份报告是从哪几份文件算出来的。
+    // 交付链的每一段都是确定性的（除了最上游那次 LLM 抽取），
+    // 所以「上游变了、下游没跟着变」是**可以判定的**：
+    // 闸门比对「报告里记的指纹」与「磁盘上现在的指纹」。
+    provenance: computeProvenance(ROOT),
   };
 
   return { report, indicatorResults };

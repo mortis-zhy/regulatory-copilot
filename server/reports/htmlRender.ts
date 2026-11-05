@@ -28,6 +28,19 @@ export type RenderableReport = {
    */
   parameterMatrix?: unknown[];
   parameterMatrixStats?: unknown;
+  /**
+   * 上游指纹 —— 这份报告是从哪几份上游文件（extract-cache / diff-result /
+   * facts）算出来的。由 reportV6 的 buildMinerUReport 写入。
+   *
+   * 有了它，「改了上游却忘了重建报告」就**可判定**了：
+   * 闸门比对报告里记的指纹与磁盘上现在的指纹。
+   */
+  provenance?: {
+    factsSha256: string;
+    diffResultSha256: string;
+    extractCacheSha256: Record<string, string>;
+    builtAt: string;
+  };
 };
 
 /** Escape HTML special characters. */

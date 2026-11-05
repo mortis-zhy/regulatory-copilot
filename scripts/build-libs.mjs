@@ -59,6 +59,9 @@ const ENTRIES = [
   // 单独列出来：闸门要**直接调用**它，验「标题与附录标题真的来自声明，
   // 而不是 reportV6.ts 里又写死了一遍」。
   ["server/reports/reportMeta.ts", "dist/reportMeta.js"],
+  // provenance 记录「这份报告是从哪几份上游算出来的」。
+  // 单独列出来：闸门要**直接调用**它，比对「报告记的指纹」与「磁盘上现在的」。
+  ["server/reports/provenance.ts", "dist/provenance.js"],
   // projectRoot 是服务端**唯一**的项目根解析器。
   // 单独列出来：闸门要直接 import 它，验「服务端解析到的路径 == 仓库根的路径」。
   ["server/_core/projectRoot.ts", "dist/projectRoot.js"],

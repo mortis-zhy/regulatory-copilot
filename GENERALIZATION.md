@@ -73,18 +73,24 @@ VERSION_FINGERPRINTS = [
 | `server/reports/parameterMatrix.ts` 的 `VERSION_META` | 版本的显示名与说明（**声明式，加一行**） |
 | `server/reports/htmlRenderV8.ts` 的 `DOC_META` | 版本的配色与短标签（未知版本有兜底调色板） |
 
-### 6. 跑闸门
+### 6. 跑闸门（**顺序有讲究**）
 
 ```bash
-python verify_claims.py                  # 分流闭合 + 差值判定
+python verify_claims.py                  # 重算事实表（产物）· 分流闭合 + 差值判定
 python scripts/coverage_audit.py         # 覆盖台账（真缺口）
 python scripts/diff_value_check.py       # 差值取值回原文复核
 python scripts/test_diff_corrections.py  # 清洗器自测
 python scripts/test_diff_evidence.py    # 取证模型自测（反例必须被挡住）
-npm run build && node rebuild_report.mjs
-npm run verify                           # 70 项
-node render_to_pdfdir.mjs
+npm run build && node rebuild_report.mjs # 重建报告（带上游指纹）
+node render_to_pdfdir.mjs                # 出交付件
+npm run verify                           # 134 项
 ```
+
+> **为什么是这个顺序**：交付链上每一段都是确定性的，
+> 所以闸门现在能验「产物 == 上游算出来的那份」与「交付件 == 报告渲染出来的那份」。
+> 顺序错了，闸门会**响着**告诉你错在哪 —— 顺序对了，它就全绿。
+>
+> 详见 `delivery/PDF对比/分析报告/交付链闭合性_实测_2026-11-04.md`。
 
 ---
 
@@ -115,7 +121,7 @@ the renderer derives its version list from the corpus
 
 ---
 
-## 四、十九条经验（从事故里长出来的）
+## 四、二十条经验（从事故里长出来的）
 
 ### 1. 「看不见」伪装成「没有缺口」
 
@@ -481,6 +487,42 @@ const port = await findAvailablePort(preferredPort);  // 3000 被占 → 3001、
 新判据与旧判据在真实语料上的分类差异，我用一份脚本逐格比对过 ——
 剩下的差异**全是旧判据判错的**（「UN R107」被当成 C 版、
 带「草案」两个字的说明文字被当成 A 版）。交付件逐页相同 = 没有回归。
+### 20. **一个会「顺手把问题修好」的检查器，比没有检查器更危险**
+
+2026-11-04，测试人员说「extract-cache 整个生成、保存、校验和交付链没有闭合」。
+动手之前先做了三个实验（每个都只改一处，然后跑闸门）：
+
+| 实验 | 改了什么 | 闸门 |
+|---|---|---|
+| ① | 交付件 PDF 换成 249 页的旧版 | **131/131 全绿** |
+| ② | `data/diff-corrections.json` 里一条人工更正 | 红了（差值那一半本来有判据） |
+| ③ | `dist/extract-cache/*.json` 里一个条款号 | **131/131 全绿** |
+
+结论：**接缝有四处，闭合的只有一处。**
+（而且不是 key 的问题 —— `.env` 里有 key，而 key 只卡在最上游那次 LLM 抽取，
+下游全是确定性代码。）
+
+真正扎眼的是**为什么实验 ③ 会全绿**：
+`verify_claims.py` 会**写** `dist/facts.json`，而闸门**直接跑它** ——
+于是闸门每跑一次，就把「产物与上游不一致」**当场修好**，
+那条不一致于是**永远验不出来**。
+
+> 症状特别隐蔽：闸门跑完，`git status` 里 `dist/facts.json` 变成 `modified`，
+> 而闸门**一言不发** —— 它刚把问题抹平了。
+>
+> **一个会顺手修好的检查器，制造的是「一切正常」的表象。**
+> 它比没有检查器更坏：没有检查器时，问题是**可见的**。
+
+修法三条：
+① **检查器不许写产物** —— 写临时目录，再逐字比对（闸门从「修复者」变「检查者」）；
+② **产物记着自己是从哪份上游算出来的** —— 报告里存上游的 sha256；
+③ **交付件本身要在检查范围内** —— 闸门默认是「自己重渲染再检查」，
+   **从来不打开交付件那个文件**，所以「改了报告忘了重出 PDF」没人管。
+
+配套的一条纪律：**「链」和「内容」是两件事。**
+链闭合了，只能保证「报告如实反映了 facts.json」；
+facts.json 本身对不对，仍要靠 spec 与人工裁定 ——
+测试人员那 16 条明细（电压档位混行、750 mm 的 `<` 丢失、UN R148→R10）**全属后者**。
 
 ---
 
@@ -513,9 +555,16 @@ const port = await findAvailablePort(preferredPort);  // 3000 被占 → 3001、
    （含被内联的 `data/*.json`），不是手维护的源码清单；
 10. **标题层不写死**：封面/章节/附录标题由 `data/report-meta.json` 声明、
     `server/reports/reportMeta.ts` 组装；目录里的标题与正文里的标题**必须是同一句**
-    （闸门逐字比对）。
+    （闸门逐字比对）；
+11. **产物记着自己是从哪份上游算出来的**：报告里存上游的 sha256
+    （`server/reports/provenance.ts`），闸门比对「报告记的」与「磁盘上现在的」；
+12. **交付件本身在检查范围内**：闸门默认「自己重渲染再检查」，
+    **不打开交付件那个文件** —— 所以必须另有一关
+    把交付件与报告渲染出来的那份**逐页文本**比一遍；
+13. **检查器不许写产物**：闸门跑校验脚本时写到临时目录再比对 ——
+    一个会顺手把问题修好的检查器，制造的是「一切正常」的表象。
 
 > 换标准之后，这几条**仍然是可证伪的**：
-> 跑 `npm run verify`（**131 项**）就够，不需要重新相信谁。
+> 跑 `npm run verify`（**134 项**）就够，不需要重新相信谁。
 > 跟 V8 一起不跑的还有 `_test_agent_e2e.mjs` —— 它调真模型，费钱且会抖，
 > 所以**不进闸门**，但要人工定期跑。
