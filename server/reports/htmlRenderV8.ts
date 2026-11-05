@@ -2140,6 +2140,24 @@ body {
 /* invisible anchor for two-pass TOC page numbering */
 .ch-anchor { font-size: 2pt; color: #ffffff; }
 
+/*
+ * 锚点必须**不占版面**。
+ *
+ * 两遍渲染：第一遍带锚点（用来找页码），第二遍去掉锚点（交付件里不留这串字）。
+ * 如果锚点在版面上占一行（哪怕只有 2pt），两遍的分页就会差那么一点点 ——
+ * 22 个章节各差 2pt，累积下来是**一页**。
+ *
+ * 后果实测（2026-11-05）：目录里第 13 / 14 章的页码比实际章节页**晚一页**
+ * （目录写 104 / 106，封面在 103 / 105）——
+ * 而第二遍渲染出来的 PDF 里，锚点已经不在了，页码自然对不上。
+ *
+ * 修法：锚点**绝对定位**，从版面流里拿出去。
+ * 文字仍然进 PDF 文本层（2pt 白字，MuPDF 搜得到），
+ * 但**不再影响任何东西的高度** —— 两遍分页从此逐页相同。
+ */
+.chapter { position: relative; }
+.ch-anchor { position: absolute; left: 0; top: 0; }
+
 /* ====== Cover ====== */
 .cover {
   page-break-after: always;

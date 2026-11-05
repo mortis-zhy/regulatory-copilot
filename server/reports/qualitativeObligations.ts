@@ -24,11 +24,34 @@ import fs from "node:fs";
 import path from "node:path";
 import { resolveInnerRoot } from "./innerRoot";
 
+export interface QOElsewhere {
+  /** 这一条登记覆盖的词（`absentTerms` 里的） */
+  terms: string[];
+  /** 「相关」= 同一义务确实在别处存在；「无关」= 同一个词出现在别的装置上 */
+  verdict: "相关" | "无关";
+  /** 在哪儿（条款号 / 脚注号 / 条目） */
+  where: string;
+  /** 「相关」的必须附上可在原文查到的引文 */
+  quote?: string;
+}
+
+export interface QOFootnote {
+  no: number;
+  text: string;
+  where: string;
+}
+
 export interface QOSide {
   clause: string;
   page: number;
   quote: string;
   absentTerms?: string[];
+  /** 缺失结论的范围：「条款正文」还是「本版全篇」 */
+  absentScope?: "clause" | "version";
+  /** 全版扫描在别处的命中，逐条登记 */
+  absentElsewhere?: QOElsewhere[];
+  /** 脚注 —— 规定常常躲在脚注里（客户 DR-006） */
+  footnote?: QOFootnote;
   status?: string;
   noteClause?: string;
 }
@@ -69,11 +92,94 @@ export function loadQualitativeObligations(): { file: QOFile | null; error?: str
   }
 }
 
-/** 一侧（版本）的渲染：条款号 + 页码 + 原文摘录。 */
+/** 一侧（版本）的渲染：条款号 + 页码 + 原文摘录（+ 状态 + 脚注）。 */
 function sideCell(v: string, side: QOSide | undefined): string {
   if (!side) return "—";
   const q = esc(side.quote);
-  return `**${v} §${esc(side.clause)}**（p${side.page}）<br>${q}`;
+  let out = `**${v} §${esc(side.clause)}**（p${side.page}）<br>${q}`;
+  if (side.status) out += `<br>**${v} 状态：${esc(side.status)}**`;
+  if (side.footnote) {
+    out +=
+      `<br>**${v} 脚注 ${side.footnote.no}**：${esc(side.footnote.text)}` +
+      `<br>（${esc(side.footnote.where)}）`;
+  }
+  return out;
+}
+
+/**
+ * 缺失结论的**范围** —— 这一段是客户 DR-006 逼出来的。
+ *
+ * 「本版没有这条义务」是**版本级**主张，
+ * 而条款正文扫描背书不了它（脚注、别的章节都在条款正文之外）。
+ * 所以这里把「扫了哪儿、那儿有什么」摆出来：
+ * 每个词在全版命中了没有、命中的是不是同一件事。
+ */
+function absenceScopeLine(e: QOEntry, corpus: Map<string, string>): string | null {
+  const lines: string[] = [];
+  for (const [v, side] of [
+    ["A", e.a],
+    ["B", e.b],
+    ["C", e.c],
+  ] as [string, QOSide][]) {
+    const terms = side?.absentTerms ?? [];
+    if (!terms.length) continue;
+    const full = corpus.get(v) ?? "";
+    const scope = side.absentScope ?? "clause";
+    const regs = side.absentElsewhere ?? [];
+    const flat = normForScan(full);
+    const groups: string[] = [];
+    const done = new Set<string>();
+    for (const t of terms) {
+      if (done.has(t)) continue;
+      const hit = !!flat && normForScan(t).length > 0 && flat.includes(normForScan(t));
+      if (!hit) {
+        groups.push(`「${t}」**全版无命中**`);
+        done.add(t);
+        continue;
+      }
+      const reg = regs.find((r) => (r.terms ?? []).includes(t));
+      if (!reg) {
+        groups.push(`「${t}」全版命中（**未登记**）`);
+        done.add(t);
+        continue;
+      }
+      // 同一条登记覆盖的词合成一句，不重复念同一段位置
+      const group = (reg.terms ?? []).filter((x) => terms.includes(x));
+      group.forEach((x) => done.add(x));
+      groups.push(`「${group.join(" / ")}」**${reg.verdict}**（${reg.where}）`);
+    }
+    const scopeLabel =
+      scope === "version" ? "**本版全篇**" : "**该条款正文**（另做全版复核）";
+    lines.push(`  - **${v}**（${scopeLabel}）：${groups.join("；")}`);
+  }
+  if (!lines.length) return null;
+  return ["- **缺失范围**（扫了哪儿、那儿有什么）：", ...lines].join("\n");
+}
+
+/** 扫描用的归一化：去标签、去空白、转小写。 */
+function normForScan(s: string): string {
+  return (s ?? "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+/** 各版全文 —— 供「缺失范围」那段做全版复核（读不到就不写那一段，不猜）。 */
+function loadCorpusTexts(): Map<string, string> {
+  const out = new Map<string, string>();
+  try {
+    const p = path.join(root(), "dist", "mineru-v4-data.json");
+    if (!fs.existsSync(p)) return out;
+    const data = JSON.parse(fs.readFileSync(p, "utf-8"));
+    for (const [k, v] of Object.entries(data)) {
+      if (v && typeof v === "object" && typeof (v as any).fullText === "string") {
+        out.set(k, (v as any).fullText);
+      }
+    }
+  } catch {
+    /* 读不到就不写那段 */
+  }
+  return out;
 }
 
 /**
@@ -117,7 +223,9 @@ export function build11_9(): string {
     "",
     "> **C 的位置**：本节每一行都给出 C 的对应状态。**C 不参与「A 相对 B 变了什么」的判定**，",
     "> 但它决定**这件事是不是国际法规已认可的做法** —— 标「C 无对应义务」的，是 A 单边加严；",
-    "> 标「C 部分对应」的，要看清差在哪一层（口径、范围、还是引用标准）。",
+    "> 标「C 部分对应」的，要看清差在哪一层（口径、范围、还是引用标准）；",
+    "> 标「C **条款正文**无…」的，**还要看它的脚注** —— 规定常常躲在脚注里，",
+    "> 而脚注不在条款正文之内（这一条是客户 DR-006 逼出来的）。",
     "",
   ];
 
@@ -137,6 +245,7 @@ export function build11_9(): string {
   parts.push("");
 
   // —— 逐条 ——
+  const corpus = loadCorpusTexts();
   let i = 1;
   for (const e of entries) {
     parts.push(`#### 11.9.${i} ${esc(e.device)} —— ${esc(e.title)}`, "");
@@ -145,10 +254,12 @@ export function build11_9(): string {
     parts.push("|---|---|");
     parts.push(`| **B 现行版**（GB 4785-2019） | ${sideCell("B", e.b)} |`);
     parts.push(`| **A 草案**（V4.3.5） | ${sideCell("A", e.a)} |`);
-    parts.push(`| **C 参照**（UN R48-09） | ${sideCell("C", e.c)}${e.c?.status ? `<br>**C 状态：${esc(e.c.status)}**` : ""} |`);
+    parts.push(`| **C 参照**（UN R48-09） | ${sideCell("C", e.c)} |`);
     parts.push("");
     parts.push(`- **设计影响**：${e.designImpact}`);
     parts.push(`- **测试影响**：${e.testImpact}`);
+    const scopeLine = absenceScopeLine(e, corpus);
+    if (scopeLine) parts.push(scopeLine);
     if (e.note) parts.push(`- **补充说明**：${e.note}`);
     parts.push(`- **证据状态**：${esc(e.evidence)}`);
     parts.push("");
@@ -162,6 +273,12 @@ export function build11_9(): string {
   parts.push(
     "- **「某版没有此规定」不是散文**：清单里的缺失结论由 `absentTerms` 在该版原文中扫描得出，" +
       "并由 `scripts/verify_qualitative_obligations.py` 逐条复现。",
+  );
+  parts.push(
+    "- **缺失结论有范围，范围要写出来**：「该条款正文没有」与「本版全篇没有」是两件事 —— " +
+      "**条款正文扫描背书不了版本级主张**（脚注、别的章节都在条款正文之外）。" +
+      "所以每条都标了范围，**全版扫描的每一处命中都登记了「相关 / 无关」与位置**；" +
+      "标「相关」的还附上可在原文查到的引文（客户 DR-006：把 C 脚注 11 的缔约方选择权写成「完全没有」）。",
   );
   parts.push(
     "- **本节不含数值判断**：凡涉及取值大小的，一律以第 12 章参数矩阵为准；本节只处理" +

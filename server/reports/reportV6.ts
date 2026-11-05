@@ -287,6 +287,33 @@ function normalize(s: string): string {
   return (s ?? "").replace(/\s+/g, "").replace(/[，。、；：]/g, ",").toLowerCase();
 }
 
+/**
+ * 第 14 章里那条定性义务的 **C 侧参照**（状态 + 脚注）。
+ *
+ * 为什么第 14 章也要摆 C（客户 DR-006 / DR-010）：
+ * 「C 无对应义务」这句话是**版本级**主张，而它曾经是靠**条款级**扫描得出的 ——
+ * C 脚注 11 其实写着「缔约方仍可禁止机械式清洗系统」。
+ * 读者在第 14 章看到「变了」时，若这里不摆 C 的状态与脚注，
+ * 他就会把「C 也没有」当成事实 —— 而那正是差评单上写的那个错。
+ */
+function qualitativeCRef(e: any): string | null {
+  const c = e?.c;
+  if (!c) return null;
+  const bits: string[] = [];
+  if (c.status) bits.push(String(c.status));
+  const fn = c.footnote;
+  if (fn?.text) {
+    bits.push(
+      `脚注 ${fn.no}：${String(fn.text).replace(/\s+/g, " ").trim()}` +
+        (fn.where ? `（${fn.where}）` : ""),
+    );
+  }
+  if (!bits.length) return null;
+  return (
+    `    - C 参照（§${c.clause}，第 ${c.page} 页）：${bits.join("；")}`
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 
 function build11_4_v62(results: IndicatorResult[]): string {
@@ -1317,6 +1344,8 @@ function build14_clauseTextDiff(
         const q = (x: any) => String(x?.quote ?? "").replace(/\s+/g, " ").trim();
         if (q(e.a)) out.push(`    - A 原文（§${e.a?.clause}，第 ${e.a?.page} 页）：「${q(e.a)}」`);
         if (q(e.b)) out.push(`    - B 原文（§${e.b?.clause}，第 ${e.b?.page} 页）：「${q(e.b)}」`);
+        const cLine = qualitativeCRef(e);
+        if (cLine) out.push(cLine);
       }
     } else if (qoHere.length) {
       // **定性变化**：数值没变，但「要不要改设计」变了。
@@ -1337,6 +1366,8 @@ function build14_clauseTextDiff(
         const q = (x: any) => String(x?.quote ?? "").replace(/\s+/g, " ").trim();
         if (q(e.a)) out.push(`    - A 原文（§${e.a?.clause}，第 ${e.a?.page} 页）：「${q(e.a)}」`);
         if (q(e.b)) out.push(`    - B 原文（§${e.b?.clause}，第 ${e.b?.page} 页）：「${q(e.b)}」`);
+        const cLine2 = qualitativeCRef(e);
+        if (cLine2) out.push(cLine2);
       }
     } else if (aa === bb) {
       out.push(`**变化判定**：📝 实质一致（仅标点/空白差异）。`);
@@ -2302,10 +2333,12 @@ function buildChapter12Matrix(
     `| **A/B 一致、${vs[2]} 不同** | ${groups.cDiverged.length} | 两版国标相同，**第三版不同** | **出口按 ${vs[2]} 核（12.1.2）** |`,
     `| **另两版一致、缺一版规定** | ${groups.singleSide.length} | 三版里**两版取值相同**，另一版**确实没有这条规定**（已核） | 确认该版确无此规定 |`,
     `| **只有一版有规定** | ${groups.incomplete.length} | 三版里**只有一版规定了它**，另两版**无此规定（已核）** | 见 12.3 的逐条依据 |`,
-    `| **三版一致** | ${groups.same.length} | ${vs.join("/")} 取值相同 | **不需要改设计** |`,
+    `| **三版一致** | ${groups.same.length} | ${vs.join("/")} 取值相同 | **数值未变**；定性义务另核（§11.9） |`,
     "",
     `> **${groups.same.length} 行「三版一致」（占 ${Math.round((groups.same.length / rows.length) * 100)}%）的明细在附录 G。**`,
-    "> 它们不是不重要 —— 是**逐条列出来供核对**，但不需要工程师动手。",
+    "> 它们不是不重要 —— 是**逐条列出来供核对**。",
+    "> **注意**：这一组说的是**数值一致**，不是「不需要改设计」 —— " +
+      "配备 / 禁止 / 适用范围这类**定性**义务，数值可以一个都不动却照样要改设计（见 §11.9）。",
     "> 按参数族分布：" + (famCount(groups.same) || "—"),
     "",
     "### 需要动作的 " + needAction.length + " 条（速览）",
@@ -2325,7 +2358,7 @@ function buildChapter12Matrix(
     "",
     "### 12.1.2 A/B 一致、" + vs[2] + " 不同（" + groups.cDiverged.length + " 条）",
     "",
-    "> **这两版国标一样，第三版不一样。** 旧口径把它们算进「三版一致 / 不需要改设计」——",
+    "> **这两版国标一样，第三版不一样。** 旧口径把它们算进「三版一致」那一组 ——",
     "> 那是**漏报**：做出口认证的人按第三版核，差的那一点就是硬指标。",
     "",
     renderMatrixSummaryTable(groups.cDiverged, vs),
@@ -2615,13 +2648,16 @@ function buildExecSummary(input: {
               `这类不进数值矩阵（例如「紧急制动信号由选装变强制安装」「塑料配光镜禁止机械式清洗装置」），` +
               `单列在 **§11.9**，每条给 A/B/C 三版原文与设计、测试影响。`
             : ""),
-        `2. **不需要改设计**：${diffCandidates} 条差值候选里 **${diffChanges} 项为实质变化**` +
+        `2. **未发现数值变化 —— 这不等于「不需要改设计」**：${diffCandidates} 条差值候选里 **${diffChanges} 项为实质变化**` +
           `（均已回原文核验，含在上条的 ${ledgerBd.total} 条之内；逐条判定见 11.3.3），` +
           `其余 **${diffNonChange} 项不是数值变化**：` +
           `两版原文完全相同 ${diffSameText} 项（已回原文核验）、` +
           `数值与限值口径相同 ${diffSameNum} 项（仅措辞/格式不同）、` +
           `条款号重排 ${diffRenumbered} 项、重复行 ${diffDuplicate} 项——` +
-          "这些只需更新内部引用文件编号，产品无需变更。",
+          "这些**只需更新内部引用文件编号**；" +
+          "**是否要改设计，仍须按 §11.9 的定性义务逐条复核** —— " +
+          "配备 / 禁止 / 适用范围 / 控制逻辑这类义务变化，**数值可以一个都不动**" +
+          "（例如「紧急制动信号由选装变强制安装」，数值全同）。",
         `3. **出口欧盟：请以第 12 章的参数矩阵为准**。该章逐参数给出 A/B/C 三版取值与条款页码，` +
           `是本版唯一可支撑 C 定量判断的部分。**每一个取值位都有明确归类**：` +
           `有值（带页码）或「无此规定（已核）」（附逐条依据）—— **没有「不知道」的格子**，` +
@@ -3183,10 +3219,11 @@ function buildAppendixG(matrixRows: any[], slots: TitleSlots): string {
     `# 附录 G ${composeAppendixTitle("G", slots)}`,
     "",
     `第 12 章的 ${matrixRows.length} 个参数里，有 **${groups.same.length} 个三版取值一致** ——`,
-    "**它们不需要改设计**，但逐条列在这里，供核对与留档。",
+    "**它们在数值上没有变化**，但逐条列在这里，供核对与留档。",
     "",
     "> 每条给出三版原文取值、条款号与页码，可直接回原文核对。",
-    "> 需要动手的那部分见第 12.1.1～12.1.4 节与第 12.2 节。",
+    "> 需要动手的那部分见第 12.1.1～12.1.4 节与第 12.2 节；",
+    "> **配备 / 禁止这类定性义务的变化见 §11.9** —— 数值一致不等于不需要改设计。",
     "",
     renderMatrixDetails(groups.same, versions),
   ].join("\n");
@@ -3318,7 +3355,8 @@ function buildAppendixH(slots: TitleSlots): string {
   lines.push(`## H.3 归一化后同文的条款（${sames.length} 条）`);
   lines.push("");
   lines.push(
-    "这些条款两版**逐字相同**（归一化后），**不需要改设计** —— 列出来是为了让人能核对「确实没改」。",
+    "这些条款两版**逐字相同**（归一化后），**数值上没有变化** —— 列出来是为了让人能核对「确实没改」；" +
+    "**配备 / 禁止这类定性义务的变化见 §11.9**（数值全同也可能要改设计）。",
   );
   lines.push("");
   const byDevice = new Map<string, string[]>();

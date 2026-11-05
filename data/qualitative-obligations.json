@@ -24,10 +24,11 @@
       "与 A 同义",
       "C 部分对应（口径/范围不同）",
       "C 更严",
-      "C 无对应义务"
+      "C 无对应义务",
+      "C 条款正文无对应禁止（脚注 11：缔约方仍可禁止）"
     ],
     "coverage": "本清单是**已逐条回原文核验的定性义务变化**，不是穷举。数值型变化一律不在这里，去第 12 章参数矩阵。",
-    "verify": "scripts/verify_qualitative_obligations.py 逐条把 A/B/C 的条款号、页码、原文摘录对回 data/clause-index.json；「某版没有此规定」一律用 absentTerms 在该条原文中扫过确认，不是凭印象写的。"
+    "verify": "scripts/verify_qualitative_obligations.py 逐条把 A/B/C 的条款号、页码、原文摘录对回 data/clause-index.json；「某版没有此规定」一律用 absentTerms 扫过确认，不是凭印象写的 —— 而且**扫的范围写清楚了**：条款正文扫描背书不了「本版全篇没有」这种版本级主张（脚注、别的章节都在条款正文之外），所以每条都标了范围，**全版扫描的每一处命中都登记了「相关 / 无关」与位置**，标「相关」的还附上可在原文查到的引文。"
   },
   "entries": [
     {
@@ -42,7 +43,18 @@
         "absentTerms": [
           "强制安装",
           "强制"
-        ]
+        ],
+        "absentElsewhere": [
+          {
+            "terms": [
+              "强制安装",
+              "强制"
+            ],
+            "verdict": "无关",
+            "where": "B §5.5.3.3（长度 >9m 的 M2/M3/N2/N3 类每侧强制安装 3 只 5 类附加灯具）、§5.7.4.2.1、§5.10.4.1 等 9 处；「强制」另见前言「本标准的全部技术内容为强制性」等 11 处 —— 都是别的装置或前言，与 ESS 无关"
+          }
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "7.2.1",
@@ -71,7 +83,8 @@
         "quote": "高度:无特殊要求。",
         "absentTerms": [
           "前挡风玻璃"
-        ]
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "5.1.4.2",
@@ -86,7 +99,17 @@
         "absentTerms": [
           "windscreen",
           "windshield"
-        ]
+        ],
+        "absentElsewhere": [
+          {
+            "terms": [
+              "windshield"
+            ],
+            "verdict": "无关",
+            "where": "C §5.35.9、§6.22.7.4.4（雨刷器与投影功能的关系）—— 与远光灯高度基准无关"
+          }
+        ],
+        "absentScope": "version"
       },
       "nature": "**新增安装基准（单边加严）** —— B 与 C 对远光灯高度都无要求，A 单独加了一条以车体为基准的高度上限。",
       "designImpact": "远光灯的发光面最高点必须落在前挡风玻璃下边缘之下。常规布置与常规车身高度的关系需重新校核；高车身/越野车型或外置灯组的方案风险最大。",
@@ -104,7 +127,8 @@
         "quote": "本条中的“车辆”指L、M、N、O 类车辆",
         "absentTerms": [
           "电动自行车"
-        ]
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "5.1.7.2",
@@ -114,14 +138,14 @@
       "c": {
         "clause": "6.1.9.3.1.2",
         "page": 39,
-        "quote": "(c) An oncoming bicycle at a distance extending to at least 75 m",
+        "quote": "An oncoming bicycle at a distance extending to at least 75 m, its illumination represented by a white lamp with a luminous intensity of 150 cd with a light emitting area of 10 cm² ± 3 cm² and a height above a ground of 0.8 m",
         "status": "C 部分对应（口径/范围不同）"
       },
       "nature": "**适用范围扩大** —— A 把「电动自行车」写进了本条「车辆」的定义，于是自动远光的探测义务延伸到迎面骑行的电动自行车。B 的定义里没有。",
       "designImpact": "自动远光传感器的探测对象必须覆盖迎面电动自行车。B 版方案只要满足 L/M/N/O 类车辆即可，升级到 A 需要复核传感器视场与识别策略。",
-      "testImpact": "自动远光的探测性能试验须加入迎面电动自行车场景（迎面、对方有照明）。",
+      "testImpact": "自动远光的探测性能试验须加入迎面电动自行车场景（迎面、对方有照明）。按 C 还要另核两项：探测距离**至少 75 m**，以及被探测车辆按**白灯 150 cd / 发光面积 10±3 cm² / 离地 0.8 m** 布置。",
       "evidence": "已核验（A §5.1.7.2 p24 / B §5.1.7.2 p22 / C §6.1.9.3.1.2 p39）",
-      "note": "C 把同一件事写在探测条款里而不是「车辆」定义里 —— **义务相同，条款位置不同**。这一条是三版里 C 唯一参与「等价性」判断的定性条目。"
+      "note": "C 把同一件事写在**探测条款**里而不是「车辆」定义里 —— 但只是**部分重叠**，不是义务相同：① C 的探测对象是 **bicycle（自行车，含非电动）**，**范围比 A 的「电动自行车」宽**；② C 带 **75 m 的距离条件**，A §5.1.7.2 的定义里没有；③ C 还规定了**被探测车辆的试验条件**（白灯 150 cd、发光面积 10±3 cm²、离地 0.8 m），A 没有。"
     },
     {
       "id": "headlampLevelling.manualScope",
@@ -138,7 +162,17 @@
           "N2G",
           "N3G",
           "卤素"
-        ]
+        ],
+        "absentElsewhere": [
+          {
+            "terms": [
+              "N3G"
+            ],
+            "verdict": "无关",
+            "where": "B §5.2.6.2 附近（前照灯高度 1200mm 的越野类）、§5.3.4.2（前雾灯高度） —— 与手动调光装置的适用范围无关"
+          }
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "5.2.6.2.1",
@@ -171,7 +205,19 @@
           "M1",
           "N1",
           "昼间行驶灯"
-        ]
+        ],
+        "absentElsewhere": [
+          {
+            "terms": [
+              "M1",
+              "N1",
+              "昼间行驶灯"
+            ],
+            "verdict": "无关",
+            "where": "B 全篇（M1 18 处、N1 9 处、昼间行驶灯 22 处） —— 都是别的条款里的车型类别或别的灯具，与 §5.2.7.5 的自动开闭要求无关"
+          }
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "5.2.7.5",
@@ -203,7 +249,8 @@
         "quote": "当单侧近光灯光源光通量或用于产生主近光的LED 模块总光通量超过2000lm 时,应配备符合 GB/T21260的前照灯清洗装置。",
         "absentTerms": [
           "塑料"
-        ]
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "5.2.9",
@@ -214,18 +261,42 @@
         "clause": "6.2.9.2",
         "page": 44,
         "quote": "shall only be installed in conjunction with the installation of headlamp cleaning device(s) according to UN Regulation No. 45",
-        "status": "C 无对应义务",
+        "status": "C 条款正文无对应禁止（脚注 11：缔约方仍可禁止）",
         "absentTerms": [
           "plastic",
           "prohibited",
           "shall not"
         ],
-        "note": "原文此处脚注 11：UN Regulation No. 45<sup>11</sup> —— **脚注号不是法规号的一部分**，OCR 会把法规号与脚注号粘成一个不存在的号（45 + 11）。"
+        "note": "原文此处脚注 11：UN Regulation No. 45<sup>11</sup> —— **脚注号不是法规号的一部分**，OCR 会把法规号与脚注号粘成一个不存在的号（45 + 11）。",
+        "absentScope": "clause",
+        "footnote": {
+          "no": 11,
+          "text": "Contracting Parties to the respective UN Regulations can still prohibit the use of mechanical cleaning systems when headlamps with plastic lenses, marked \"PL\", are installed.",
+          "where": "C 脚注 11（§6.2.9.2 里「UN Regulation No. 45」后的上标 11 指向它；同样的脚注以 16 号出现在 §6.22.9.1）"
+        },
+        "absentElsewhere": [
+          {
+            "terms": [
+              "plastic"
+            ],
+            "verdict": "相关",
+            "where": "C 脚注 11（§6.2.9.2 的上标 11 指向它）与脚注 16（§6.22.9.1 的上标 16 指向它） —— 讲的就是本条：塑料配光镜（PL）用机械式清洗系统",
+            "quote": "Contracting Parties to the respective UN Regulations can still prohibit the use of mechanical cleaning systems when headlamps with plastic lenses, marked \"PL\", are installed."
+          },
+          {
+            "terms": [
+              "prohibited",
+              "shall not"
+            ],
+            "verdict": "无关",
+            "where": "C §5.5.3（徽标）、§5.14.1（隐藏灯）、§6.2.1（挂车禁用）等 10 处，以及全篇 98 处「shall not」—— 都是别的装置的禁止式表述"
+          }
+        ]
       },
-      "nature": "**新增禁止性义务（A 单边）** —— B 与 C 都只规定「该装的时候要装」，都没有禁止机械式清洗装置；A 单独加了一条禁止。",
-      "designImpact": "使用塑料配光镜的前照灯产品，机械式（刮片式）清洗方案不可用，须改非机械式方案（高压水气、超声等）。这是一条会直接改 BOM 的义务，不是措辞差异。",
-      "testImpact": "型式认可须确认清洗装置型式；「塑料配光镜 + 机械式清洗装置」为不符合。",
-      "evidence": "已核验（A §5.2.9 p29 / B §5.2.9 p27 / C §6.2.9.2 p44）；「B/C 无此规定」已用「塑料 / plastic / prohibited / shall not」在两版原文中扫描确认。"
+      "nature": "**新增禁止性义务（A 单边加严）** —— B 的**该条款正文**没有禁止机械式清洗装置的规定；C 的**条款正文**也没有，但 C 的**脚注 11** 写明：「缔约方仍可在使用塑料配光镜（PL）的灯具上禁止机械式清洗系统」—— **C 把这件事交给缔约方决定，A 是统一禁止**：适用层级不同，不是「完全没有」。",
+      "designImpact": "按 A：使用塑料配光镜的前照灯产品，机械式（刮片式）清洗方案**不可用**，须改非机械式方案（高压水气、超声等）—— 这是一条会直接改 BOM 的义务，不是措辞差异。按 C：欧盟法规本身不禁，但**目标市场所在缔约方可以禁** —— 出口判断必须按**目的地国家**查该国是否行使了这个选择权，不能只看 R48 文本。",
+      "testImpact": "按 A：型式认可须确认清洗装置型式；「塑料配光镜 + 机械式清洗装置」为不符合。按 C：型式认可按 R48 走，但**还要单独确认目标缔约方是否禁止**（脚注 11 把决定权留给缔约方）。",
+      "evidence": "已核验（A §5.2.9 p29 / B §5.2.9 p27 / C §6.2.9.2 p44）。「该条款正文无此规定」是用「塑料 / plastic / prohibited / shall not」在**该条款正文**里扫过确认的；**全版**扫描另外命中 C 脚注 11/16，已登记在「别处命中」里 —— 那一处讲的是**同一件事**，所以 C 的结论只能是「条款正文无统一禁止，但缔约方可禁止」，不能写成「无对应义务」。"
     },
     {
       "id": "dippedBeam.cleaningScope",
@@ -249,9 +320,9 @@
         "status": "C 部分对应（口径/范围不同）",
         "note": "原文此处脚注 11：UN Regulation No. 45<sup>11</sup> —— **脚注号不是法规号的一部分**，OCR 会把法规号与脚注号粘成一个不存在的号（45 + 11）。"
       },
-      "nature": "**触发口径与配备范围变化** —— B 按「单侧」判、装该侧；A 按「任一侧」判、一旦触发**两侧都装**；C 按「至少一只灯」触发，且按**灯**（headlamp）而非按侧配备、判定标准指向 **UN R45**（原文「UN Regulation No. 45」，其后的 **11 / 16 是脚注号**，不是法规号的一部分 —— OCR 把法规号与脚注号粘在一起（45 + 11、45 + 16），看起来像另一个法规号）。",
-      "designImpact": "非对称灯具方案（单侧高配、另一侧低配）在 B 下只需高配侧装清洗器，A 下会被拉成两侧都装 —— 直接影响成本与布置。",
-      "testImpact": "试验须按「任一侧 / 至少一只」触发口径判定，并按 A 的口径核两侧配备；清洁装置的合格标准 A/B 引 GB/T 21260，C 引 **UN R45**（原文「UN Regulation No. 45」，其后的 11 / 16 是**脚注号**，不是法规号的一部分），是两套标准。",
+      "nature": "**触发口径与配备范围变化** —— B 按「**当单侧**…超过 2000lm」触发，**但 B 的原文没有写配备侧数**；A 按「**任一侧**…之和超过 2000lm」触发，并明确写「**两侧近光灯均应配备**」；C 按「**至少一只灯**」触发，且按**灯**（headlamp）而非按侧配备、判定标准指向 **UN R45**（原文「UN Regulation No. 45」，其后的 **11 / 16 是脚注号**，不是法规号的一部分）。",
+      "designImpact": "A 的原文明确要求**两侧都装**；B 的原文只写「当单侧…超过 2000lm 时应配备清洗装置」，**没有写装几侧** —— 非对称灯具方案（单侧高配、另一侧低配）在 B 下装几侧，**原文不足以判定，须由法规专家确认**。本报告不替原文下这个结论。",
+      "testImpact": "试验须按「任一侧 / 至少一只」的触发口径判定；**配备侧数按各自标准原文判定**（A 明确两侧，B 的原文未写）。清洁装置的合格标准 A/B 引 GB/T 21260，C 引 **UN R45**，是两套标准。",
       "evidence": "已核验（A §5.2.9 p29 / B §5.2.9 p27 / C §6.2.9.2 p44）",
       "note": "触发阈值三版都是 2000 lm，**变的是口径不是数值** —— 所以它不在第 12 章矩阵里（矩阵只比数值），只能在这张清单里出现。这正是矩阵装不下的那类差异。"
     },
@@ -266,7 +337,17 @@
         "quote": "其左右两侧光源总目标光通量之和超过 4000lm时,AFS应配备符合GB21260要求的前照灯清洗器。",
         "absentTerms": [
           "单侧"
-        ]
+        ],
+        "absentElsewhere": [
+          {
+            "terms": [
+              "单侧"
+            ],
+            "verdict": "无关",
+            "where": "B §3.11.2（AFS 发光面）、§5.1.6（弯道照明远光灯）、§5.2.9（近光灯清洗装置触发）、§5.2.6.2.2、§5.3.6.1.2（前雾灯光源）—— 与 AFS 合计 4000 lm 的触发条件无关"
+          }
+        ],
+        "absentScope": "version"
       },
       "a": {
         "clause": "5.3.9.1",
@@ -279,10 +360,10 @@
         "quote": "if the total objective luminous flux of the light source(s) and/or light source module(s) of these units exceeds 2,000 lm at least on one side, and which contribute to the Class C (basic) passing beam",
         "status": "C 部分对应（口径/范围不同）"
       },
-      "nature": "**触发条件由「一条」变「两条（并列）」** —— B 只有合计 > 4000 lm 一条触发；A 是「合计 > 4000 lm **或** 单侧 > 2000 lm」两条并列；C 是「至少一侧 > 2000 lm」，且限定限于贡献 Class C（基础）远光的那部分发光单元。",
-      "designImpact": "按 A，一个基础模式主近光总目标光通量不高（< 4000 lm）但单侧超过 2000 lm 的 AFS 也要配清洗器 —— B 版方案会漏。单侧光通量偏高的 AFS 布置是风险点。",
-      "testImpact": "试验须分别算合计值与单侧值，任一条触发即判定须配清洗器；C 的判定还要先确定哪些发光单元贡献 Class C 基础远光。",
-      "evidence": "已核验（A §5.3.9.1 p34 / B §5.22.9.1 p53 / C §6.22.9.1 p88）；「B 无单侧触发」已用「单侧」在 B 原文中扫描确认。"
+      "nature": "**触发条件由「一条」变「两条（并列）」** —— B 只有合计 > 4000 lm 一条触发；A 是「合计 > 4000 lm **或** 单侧 > 2000 lm」两条并列；C 是「至少一侧 > 2000 lm」，且限定限于贡献 Class C（基础）近光的那部分发光单元。",
+      "designImpact": "按 A，一个基础模式主近光总目标光通量不高（< 4000 lm）但单侧超过 2000 lm 的 AFS 也要配清洗器；**B 的触发条件只有合计 > 4000 lm 一条**，单侧 > 2000 lm 的布置在 B 下**不触发**。单侧光通量偏高的 AFS 布置是风险点。",
+      "testImpact": "试验须分别算合计值与单侧值，任一条触发即判定须配清洗器；C 的判定还要先确定哪些发光单元贡献 Class C 基础近光。",
+      "evidence": "已核验（A §5.3.9.1 p34 / B §5.22.9.1 p53 / C §6.22.9.1 p88）；「B 无单侧触发」已用「单侧」在 B **全版**扫描确认（全版 6 处命中都在别的条款上，登记在「缺失范围」里）。"
     },
     {
       "id": "frontFogLamp.aimMarkingAccuracy",
