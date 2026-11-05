@@ -31,6 +31,7 @@ import APPENDIX_TABLES from "../../data/appendix-tables.json";
 // GB 章节 → UN R48-09 章节的对应表（scripts/build_r48_chapters.py 生成，
 // 每条都回 R48 原文验过）。第 14 章的 C 列用它。
 import R48_CHAPTERS from "../../data/r48-chapters.json";
+import LAMP_COLOR_MAP from "../../data/lamp-color-map.json";
 // A 草案 ↔ B 现行的**定性条款**并排对照（scripts/build_qualitative_diff.py 生成）。
 // 客户抱怨的「仍然只有法规中有具体数值的内容的比较」——这一份是条款级的
 // 定性对照，数值那一半在第 12 章。
@@ -553,6 +554,70 @@ function build12_quantitativeTables(data: Record<string, any>): string {
 
 interface LampColorRow { name: string; color: string }
 
+/* --------------------------------------------------------------------------
+ * 客户 DR-011：第 13 章原来只做 A vs B，缺 C（UN R48-09）。
+ *
+ * C 的光色规定在 UN R48-09 §5.15（源 PDF 第 29–30 页），体例与 GB 表 5 同构。
+ * 这一层以前没做，缺的不是能力，是那张**人工核过的灯具名称对照表**。
+ *
+ * 对照表在 data/lamp-color-map.json，两侧来源是分开的：
+ *   - C 侧（灯名/光色/页码/引文）：**机器从源 PDF 的文本块逐行抽取**，一个字不改；
+ *   - GB ↔ C 的对应关系：**人工逐条判定**，每条带 C 的原文引文与页码，可回查。
+ *
+ * 这样改机器抽取时不会顺手把人工结论也改了。
+ * ------------------------------------------------------------------------ */
+
+interface LampMapRow {
+  gb: string;
+  cName: string;
+  cColour: string;
+  cColourClean: string;
+  cFootnotes: string[];
+  cColourZh: string;
+  cPage: number;
+  cQuote: string;
+  gbTerm: { clause: string; en: string; mode: "literal" | "manual" | "none" };
+  note: string;
+}
+interface LampMapFile {
+  _meta: Record<string, any>;
+  rows: LampMapRow[];
+  gbOnly: Array<{ gb: string; reason: string; inA: boolean; inB: boolean; gbTerm: { clause: string; en: string } | null }>;
+  cOnly: Array<{
+    cName: string; cColour: string; cColourClean: string; cFootnotes: string[];
+    cColourZh: string; cPage: number; cQuote: string; reason: string;
+  }>;
+  anomalies: Array<{ kind: string; cName: string; cPage: number; cQuote: string; explanation: string }>;
+}
+const LAMP_MAP = LAMP_COLOR_MAP as unknown as LampMapFile;
+
+/**
+ * 可机械判定的光色对照 —— **只有这些写法参与判定**。
+ *
+ * 白名单的意义：光色条款里大量带「例外条件」的复合表述
+ * （驻车灯、侧标志灯、醒目标志…），两边的**分项口径不同**，
+ * 拿字符串比会造出假差异。所以认不出来的写法一律落到
+ * 「表述不等价（见备注）」，**不判等也不判不等**。
+ */
+const SIMPLE_GB_COLOUR: Record<string, string> = {
+  "白色": "白",
+  "红色": "红",
+  "琥珀色": "琥珀",
+  "白色或选择性黄色": "白|选择黄",
+  "琥珀色或红色": "琥珀|红",
+  "与入射光相同": "入射",
+  "前面白色,后面红色": "前白|后红",
+};
+const SIMPLE_C_COLOUR: Record<string, string> = {
+  "White": "白",
+  "Red": "红",
+  "Amber": "琥珀",
+  "Whiteorselectiveyellow": "白|选择黄",
+  "Amberorred": "琥珀|红",
+  "Identicaltoincidentlight": "入射",
+  "Whiteinfront,redattherear": "前白|后红",
+};
+
 function parseLampColorTable(content: string): LampColorRow[] {
   const rows: LampColorRow[] = [];
   const lines = (content || "").split("\n").filter((l) => l.startsWith("|"));
@@ -581,21 +646,26 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   const bRows = findLampTable(data.B?.tables ?? []);
 
   const out: string[] = [
-    "# 第 13 章 灯具光色分配逐行 A vs B 对比",
+    "# 第 13 章 灯具光色分配逐行 A / B / C 三版对照",
     "",
-    "> **本章范围：仅 A 与 B 两版，不含 C（UN R48-09）。**",
+    "> **本章范围：A / B / C 三版。** A = GB 4785 草案 V4.3.5，B = GB 4785-2019，C = UN R48-09。",
     ">",
-    "> **为什么 C 不在这一章**：C 的光色规定在 **§5.15（p29–30）**，体例与 GB 表 5「灯具名称 – 光色」",
-    "> **是同构的**（C 表 29 行 vs GB 表 26 行），逐行对齐在技术上**做得到**。",
-    "> 本章只做 A vs B，是因为**逐行三版映射还没有建**（C 用英文灯具名与光色词，需要一张人工核过的对照表）——",
-    "> 属实的是「还没做」，不是「做不到」。**这一层不做，本报告就不在光色上给三版结论。**",
+    "> **C 侧的光色规定在 §5.15（源 PDF 第 29–30 页）**，体例与 GB 表 5「灯具名称 – 光色」同构，",
+    "> 因此本章按**逐行对应**给出 A / B / C 三列。",
     ">",
-    "> C 侧的材料已经在报告里：**附录 D**「灯具光色对应表」一行给出 A 表5 / B 4.15·表5 / **C 5.15** 的条款号与页码；",
-    "> **附录 C**「灯具光色对应表」主题给出 C §5.15 的**原文摘录**（可直接回查）。",
+    "> **C 列是怎么来的**：人工核验的灯具名称映射（`data/lamp-color-map.json`），两侧来源分开 ——",
+    "> **C 的灯名与光色原文是逐字抄自源 PDF 的行块**（一个字不改，带页码），",
+    "> **「C 说的是哪个灯」是逐条人工判定的**，并且**与 GB 自己的术语表交叉核对**",
+    "> （GB §3.9 的英文名与 R48 的灯名逐字相同的行见 13.5.4）。每一行都可回查。",
     ">",
-    "> **说明**：从 A/B 原文的「灯具名称 - 光色」表格逐行对照，供工程师做光色合规差距分析。",
+    "> **判定口径**：只有光色写法简单到可以逐项比对的行才给「光色要素相同 / 不同」；",
+    "> 带例外条件或两边分项口径不同的（驻车灯、侧标志灯、醒目标志…）标「表述不等价」，",
+    "> **不判等也不判不等** —— 那是需要法规专家看原文的判断，不是本表能替读者做的。",
+    ">",
+    "> **材料位置**：C 的条款号与页码见**附录 D**「灯具光色对应表」；C 的原文摘录见**附录 C**「灯具光色对应表」主题。",
     "",
-    `> A 共 ${aRows.length} 行 · B 共 ${bRows.length} 行`,
+    `> A 共 ${aRows.length} 行 · B 共 ${bRows.length} 行 · C §5.15 共 ${LAMP_MAP.rows.length + LAMP_MAP.cOnly.length + LAMP_MAP.anomalies.length} 行`,
+    `> 人工配对 ${LAMP_MAP.rows.length} 条 · GB 有 C 无 ${LAMP_MAP.gbOnly.length} 条 · C 有 GB 无 ${LAMP_MAP.cOnly.length} 条 · 源文件印刷异常 ${LAMP_MAP.anomalies.length} 条`,
     "",
   ];
 
@@ -653,31 +723,181 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   }
   out.push("");
 
-  out.push("## 13.4 完整对照表（A 列在 B 列右）");
+  out.push("## 13.4 三版光色完整对照表（GB 表5 ↔ UN R48 §5.15）");
   out.push("");
-  out.push("| 序号 | A 灯具 | A 光色 | B 灯具 | B 光色 | 状态 |", "|---|---|---|---|---|---|");
+  out.push(
+    "| 序号 | 灯具（GB 表5） | A 光色 | B 光色 | A/B | 对应灯具（R48 §5.15） | C 光色（原文 / 中译） | C 对照 |",
+    "|---|---|---|---|---|---|---|---|",
+  );
+  // GB ↔ C 的对应关系来自人工核验的映射表（按归一化后的 GB 灯具名查）
+  const lampByGb = new Map<string, LampMapRow>(LAMP_MAP.rows.map((r) => [normRow(r.gb), r]));
+  /** 只对「写法简单到能逐项比」的光色给结论；认不出来的不判。 */
+  const compareColour = (gb: string, c: string): string => {
+    const g = SIMPLE_GB_COLOUR[normRow(gb)];
+    const k = SIMPLE_C_COLOUR[normRow(c)];
+    if (!g || !k) return "表述不等价（见备注）";
+    return g === k ? "光色要素相同" : "光色要素不同";
+  };
   const allNames = Array.from(new Set([...aMap.keys(), ...bMap.keys()]));
-  let i = 1;
+  // 先算一遍 13.4 的每一行 —— §13.6 的结论要用这些数，**不许另算一遍**
+  const tableRows: Array<{
+    n: string; disp: string; ac: string; bc: string; abStatus: string;
+    m?: LampMapRow; cStatus: string;
+  }> = [];
   for (const n of allNames) {
     const ra = aMap.get(n);
     const rb = bMap.get(n);
     const ac = ra?.color ?? "—";
     const bc = rb?.color ?? "—";
     const disp = ra?.name ?? rb?.name ?? n;
-    let status = "一致";
-    if (!ra) status = "B 独有";
-    else if (!rb) status = "A 新增";
-    else if (normRow(ac) !== normRow(bc)) status = "光色变化";
-    out.push(`| ${i++} | ${disp} | ${ac} | ${disp} | ${bc} | ${status} |`);
+    let abStatus = "一致";
+    if (!ra) abStatus = "B 独有";
+    else if (!rb) abStatus = "A 新增";
+    else if (normRow(ac) !== normRow(bc)) abStatus = "光色变化";
+
+    const m = lampByGb.get(n);
+    // C 对照：以 GB 侧光色为准（B 有而 A 无时用 A，否则用 A/B 相同的那一版）
+    const gbColourForC = ra?.color ?? rb?.color ?? "";
+    const cStatus = m ? compareColour(gbColourForC, m.cColourClean) : "C 无对应";
+    tableRows.push({ n, disp, ac, bc, abStatus, m, cStatus });
+  }
+  let i = 1;
+  for (const r of tableRows) {
+    const cNameCell = r.m ? `${r.m.cName}（§5.15, p${r.m.cPage}）` : "C 无对应";
+    const cColourCell = r.m ? `${r.m.cColourClean}（${r.m.cColourZh}）` : "—";
+    out.push(`| ${i++} | ${r.disp} | ${r.ac} | ${r.bc} | ${r.abStatus} | ${cNameCell} | ${cColourCell} | ${r.cStatus} |`);
   }
   out.push("");
-  out.push("**使用提示**：本节是工程师检查光色合规差距的速查表。13.1 节列出 A 新增装置（A 必须为新装置配置合适光色并验证光色合规）；13.2 节列出 B 独有（工程师需确认 A 草案是删除、合并还是遗漏）；13.3 节显示光色调整（如有）。");
+  out.push(
+    "**使用提示**：本节是工程师检查光色合规差距的速查表。" +
+      "13.1 节列出 A 新增装置（A 必须为新装置配置合适光色并验证光色合规）；" +
+      "13.2 节列出 B 独有（工程师需确认 A 草案是删除、合并还是遗漏）；" +
+      "13.3 节显示 A/B 之间的光色调整。" +
+      "**C 对照列**给出该灯具在 UN R48-09 §5.15 的对应行与光色；" +
+      "「表述不等价」的行请回原文看备注（13.5），**本表不替法规专家下结论**。",
+  );
+  out.push("");
+
+  /* ---- 13.5 映射说明：未对应项、部分对应、源文件异常 ---- */
+  out.push("## 13.5 映射说明：未对应项、部分对应与源文件异常");
+  out.push("");
+  out.push("### 13.5.1 GB 表5 有、C §5.15 光色表没有的灯具");
+  out.push("");
+  out.push("| 灯具 | A 有 | B 有 | GB 术语表里的英文名 | 原因 |", "|---|---|---|---|---|");
+  for (const g of LAMP_MAP.gbOnly) {
+    const term = g.gbTerm ? `${g.gbTerm.en}（${g.gbTerm.clause}）` : "—";
+    out.push(`| ${g.gb} | ${g.inA ? "是" : "否"} | ${g.inB ? "是" : "否"} | ${term} | ${g.reason} |`);
+  }
+  out.push("");
+  out.push("### 13.5.2 C §5.15 光色表有、GB 表5 没有的灯具");
+  out.push("");
+  out.push("| 灯具（R48 §5.15） | C 光色（原文 / 中译） | 原因 |", "|---|---|---|");
+  for (const c of LAMP_MAP.cOnly) {
+    out.push(`| ${c.cName}（p${c.cPage}） | ${c.cColourClean}（${c.cColourZh}） | ${c.reason} |`);
+  }
+  out.push("");
+  const partial = LAMP_MAP.rows.filter((r) => r.note);
+  if (partial.length) {
+    out.push("### 13.5.3 需要人工判读或另行说明的行");
+    out.push("");
+    out.push("| GB 灯具 | 对应灯具 | 说明 |", "|---|---|---|");
+    for (const r of partial) {
+      out.push(`| ${r.gb} | ${r.cName} | ${r.note} |`);
+    }
+    out.push("");
+  }
+  /* ---- GB 术语表交叉核对：人工配对不是「凭感觉对出来的」 ---- */
+  const withTerm = LAMP_MAP.rows.filter((r) => r.gbTerm.mode !== "none");
+  const literal = withTerm.filter((r) => r.gbTerm.mode === "literal");
+  const manual = withTerm.filter((r) => r.gbTerm.mode === "manual");
+  out.push("### 13.5.4 GB 自己的术语表交叉核对");
   out.push("");
   out.push(
-    "> **关于 C（UN R48-09）**：C 的光色规定在 **§5.15（p29–30）**，与 GB 表 5 同构，**逐行可对齐**——" +
-      "本报告尚未建这一层映射，故本章表里没有 C 列。**这不等于 C 没有光色规定。**" +
-      "需要 C 侧内容时，请直接查**附录 D** 的章节对应（表5 ↔ 4.15/表5 ↔ **5.15**）与" +
-      "**附录 C**「灯具光色对应表」主题下的 C 原文摘录。",
+    `GB 4785-2019 前言写明其技术内容**参考 ECE R48 06 系**，所以 GB 的术语表本来就照 R48 的写法译。` +
+      `本章 ${LAMP_MAP.rows.length} 条人工配对里，**${literal.length} 条**可以直接用 GB 自己的英文术语核对：` +
+      `GB §3.9 写的英文名与 R48 §5.15 的灯名**逐字相同**，装置是同一个。` +
+      (manual.length
+        ? `另有 **${manual.length} 条**词形不同、需人工确认（表内逐条写明理由）。`
+        : "") +
+      `余下 ${LAMP_MAP.rows.length - withTerm.length} 条（回复反射器的细分项）在 GB 术语表里没有单独的术语，` +
+      `对应关系靠装置名称本身。`,
+  );
+  out.push("");
+  out.push("| GB 灯具 | GB 条款 | GB 英文术语（照录源 PDF） | R48 §5.15 灯名 | 核对 |", "|---|---|---|---|---|");
+  for (const r of LAMP_MAP.rows) {
+    const t = r.gbTerm;
+    const termCell = t.mode === "none" ? "—（无单独术语）" : t.en;
+    const verdict = t.mode === "literal" ? "逐字命中" : t.mode === "manual" ? "人工确认" : "无术语可核";
+    out.push(`| ${r.gb} | ${t.mode === "none" ? "—" : t.clause} | ${termCell} | ${r.cName} | ${verdict} |`);
+  }
+  out.push("");
+  out.push(
+    "> **术语一列是照录源 PDF 的**：GB 源 PDF 把英文术语印成 `driving-beamheadlamp` 这样" +
+      "（英文词之间不空格），下表原样保留，便于与 PDF 逐字对上；" +
+      "判「逐字命中」时比的是**去掉空格与连字符后**的字母序列。",
+  );
+  out.push("");
+  if (LAMP_MAP.anomalies.length) {
+    out.push("### 13.5.5 源文件的印刷异常（照录，不静默删行）");
+    out.push("");
+    for (const a of LAMP_MAP.anomalies) {
+      out.push(`> **${a.cName}（p${a.cPage}）**：${a.explanation}`);
+      out.push(">");
+      out.push(`> 原文照录：「${a.cQuote}」`);
+      out.push("");
+    }
+  }
+  out.push(
+    "**怎么核验这张映射**：C 侧的灯名与光色由 `scripts/build_lamp_color_map.py` 从**源 PDF 的文本块**逐行抽取，" +
+      "并逐条校验每段引文是源 PDF 该页的**逐字片段**；GB ↔ C 的对应关系是**人工判定**，写在该脚本的 PAIRS 表里，" +
+      "并与 **GB 自己的术语表**交叉核对（13.5.4）。" +
+      "`data/lamp-color-map.json` 是它的产物，**每行带 C 的页码与原文引文**，可直接回查。",
+  );
+  out.push("");
+
+  /* ---- 13.6 对照结论 ---- */
+  const sameCount = tableRows.filter((r) => r.cStatus === "光色要素相同").length;
+  const diffCount = tableRows.filter((r) => r.cStatus === "光色要素不同").length;
+  const notEqCount = tableRows.filter((r) => r.cStatus === "表述不等价（见备注）").length;
+  const noCCount = tableRows.filter((r) => r.cStatus === "C 无对应").length;
+  const abChanged = tableRows.filter((r) => r.abStatus === "光色变化");
+  out.push("## 13.6 三版光色的对照结论");
+  out.push("");
+  out.push("| 对照结果 | 条数 | 说的是什么 |", "|---|---|---|");
+  out.push(`| A/B/C 光色要素相同 | **${sameCount}** | 白/红/琥珀等光色要素三版一致（判定口径见 13.4 开头） |`);
+  out.push(`| A/B/C 光色要素不同 | **${diffCount}** | 写法能逐项比，但要素不一致 |`);
+  out.push(`| 表述不等价（未判定） | **${notEqCount}** | 两边都带例外条件或分项口径不同，**本表不判等也不判不等**，见 13.5.3 |`);
+  out.push(`| C 无对应 | **${noCCount}** | GB 表5 有、C §5.15 光色表没有，见 13.5.1 |`);
+  out.push(`| A 与 B 光色不同 | **${abChanged.length}** | ${abChanged.map((r) => r.disp).join("、") || "无"} |`);
+  out.push("");
+  out.push(
+    `- **光色不是本项目的差异点。** 逐行对照下来，${sameCount} 个对应灯具的光色要素三版一致，` +
+      `需要人来判读的只有 ${notEqCount} 个（都带例外条件），` +
+      `而 A 与 B 之间真正不同的只有 **${abChanged.length} 个**` +
+      (abChanged.length ? `（${abChanged.map((r) => r.disp).join("、")}）` : "") + `。` +
+      `这与 §12.6 的结论方向一致：**A 与 C 的 81 条差异不落在光色上。**`,
+  );
+  out.push(
+    `- **出口与内销在光色上要求一致**，所以光色这一项**不会单独成为出口认证的卡点**；` +
+      `真正的差异集中在**安装位置、几何可见度、光度与光轴**（第 12 章）。` +
+      `**光色一致不等于整件产品一致** —— 仍须按 §11.9 的定性义务逐条复核。`,
+  );
+  out.push(
+    `- **${notEqCount} 个「表述不等价」的灯具需要法规专家判读**：两边写的不是同一件事` +
+      `（驻车灯的琥珀色例外、侧标志灯与侧回复反射器的「最靠后可红」条件、` +
+      `醒目标志的两边分项口径不同），**本报告不替专家下结论**，原文已逐条列出。`,
+  );
+  out.push(
+    `- **${LAMP_MAP.cOnly.length} 个灯具只有 R48 有**（${LAMP_MAP.cOnly.map((c) => c.cName).join("、")}），` +
+      `**${LAMP_MAP.gbOnly.length} 个只有 GB 有**（${LAMP_MAP.gbOnly.map((g) => g.gb).join("、")}）—— ` +
+      `这些是**要求的有无**，不是限值之差，做出口合规时要按各自标准核。`,
+  );
+  out.push("");
+  out.push(
+    "> **本章边界**：本章只做**光色**的逐行对照。" +
+      "C 的**安装位置、几何可见度、光度与光轴**不在 §5.15，而在 §6 各装置条款；" +
+      "那部分见**第 12 章**与**第 14 章**。" +
+      "本章的映射表只覆盖**光色**，不覆盖**光色以外**的任何 R48 要求。",
   );
   return out.join("\n");
 }
@@ -4285,7 +4505,7 @@ export async function buildMinerUReport(
         ...narrativeChapters.map((c) => ({ id: c.id, title: c.title, sections: [] })),
         { id: 11, title: composeChapterTitle(11, slots), sections: composeChapter11Sections(slots) },
         { id: 12, title: composeChapterTitle(12, slots), sections: TABLE_CATEGORIES.map((c) => c.label) },
-        { id: 13, title: composeChapterTitle(13, slots), sections: ["A 新增灯具", "B 独有灯具", "光色发生变化", "完整对照表"] },
+        { id: 13, title: composeChapterTitle(13, slots), sections: ["A 新增灯具", "B 独有灯具", "光色发生变化", "三版光色完整对照表", "映射说明", "三版光色的对照结论"] },
         { id: 14, title: composeChapterTitle(14, slots), sections: [] },
       ],
       appendices: ["A", "B", "C", "D", "E", "F", "G", "H"].map((id) => ({ id, title: appTitle(id) })),

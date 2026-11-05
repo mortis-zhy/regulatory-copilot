@@ -1,0 +1,496 @@
+{
+  "_meta": {
+    "purpose": "GB 4785 表5「灯具名称–光色」 ↔ UN R48-09 §5.15 的逐行映射（客户 DR-011）",
+    "method": "C 侧（灯名/光色/页码/引文）由 `scripts/build_lamp_color_map.py` 从**源 PDF 的文本块**逐行抽取，一个字不改；GB 自己的英文术语表（A §3.3 / B §3.9）同样从源 PDF 抽取；**GB ↔ C 的对应关系是人工判定的**（PAIRS 表），并与 GB 术语表交叉核对 —— 术语逐字命中记为 literal，词形不同记为 manual（必须写明理由）。",
+    "cSource": {
+      "file": "uploaded-docs/92b2563197df022a.pdf",
+      "clause": "5.15",
+      "pages": [
+        29,
+        30
+      ],
+      "note": "C 版光色规定在 §5.15（源 PDF 第 29–30 页）"
+    },
+    "gbSource": {
+      "A": "GB 4785 草案 V4.3.5 表5「灯具名称–光色」；术语表 §3.1 / §3.3",
+      "B": "GB 4785-2019 4.15 表5「灯具名称–光色」；术语表 §3.9"
+    },
+    "rowCounts": {
+      "A": 27,
+      "B": 26,
+      "C": 28,
+      "pairs": 25,
+      "gbOnly": 2,
+      "cOnly": 2,
+      "termLiteral": 20,
+      "termManual": 1,
+      "termNone": 4,
+      "anomalies": 1
+    },
+    "caveats": [
+      "C 的 §5.15 在 MinerU 语料里被拆成「灯名块」和「光色块」两块，**无法机械配对**；所以 C 侧取自源 PDF 的行块（成对的「灯名行 + 光色行」），不是取自 MinerU。",
+      "C 侧光色原文一律保留英文；中文一列是人工译文，只为方便阅读，**判定依据永远是英文原文**。",
+      "C 版 §5.15 的脚注 8（Front retro-reflector 的别称）与脚注 9（Conspicuity marking 的缔约方选择权）不在光色行内，在正文与附录里另行处理。",
+      "GB 的术语表与 R48 的灯名逐字相同，是**交叉验证**而不是独立来源 —— GB 4785-2019 前言写明其技术内容参考 ECE R48 06 系，术语本就照 R48 译。"
+    ]
+  },
+  "rows": [
+    {
+      "gb": "远光灯",
+      "cName": "Main-beam headlamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 29,
+      "cQuote": "Main-beam headlamp: White",
+      "gbTerm": {
+        "clause": "3.9.7",
+        "en": "driving-beamheadlamp;main-beamheadlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "近光灯",
+      "cName": "Dipped-beam headlamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 29,
+      "cQuote": "Dipped-beam headlamp: White",
+      "gbTerm": {
+        "clause": "3.9.8",
+        "en": "passing-beamheadlamp;dipped-beamheadlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "前雾灯",
+      "cName": "Front fog lamp",
+      "cColour": "White or selective yellow",
+      "cColourClean": "White or selective yellow",
+      "cFootnotes": [],
+      "cColourZh": "白色或选择性黄色",
+      "cPage": 29,
+      "cQuote": "Front fog lamp: White or selective yellow",
+      "gbTerm": {
+        "clause": "3.9.17",
+        "en": "frontfoglamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "倒车灯",
+      "cName": "Reversing lamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 29,
+      "cQuote": "Reversing lamp: White",
+      "gbTerm": {
+        "clause": "3.9.19",
+        "en": "reversinglamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "转向信号灯",
+      "cName": "Direction-indicator lamp",
+      "cColour": "Amber",
+      "cColourClean": "Amber",
+      "cFootnotes": [],
+      "cColourZh": "琥珀色",
+      "cPage": 29,
+      "cQuote": "Direction-indicator lamp: Amber",
+      "gbTerm": {
+        "clause": "3.9.9",
+        "en": "direction-indicatorlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "危险警告信号",
+      "cName": "Hazard warning signal",
+      "cColour": "Amber",
+      "cColourClean": "Amber",
+      "cFootnotes": [],
+      "cColourZh": "琥珀色",
+      "cPage": 29,
+      "cQuote": "Hazard warning signal: Amber",
+      "gbTerm": {
+        "clause": "3.9.16",
+        "en": "hazardwarningsignal",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "制动灯",
+      "cName": "Stop lamp",
+      "cColour": "Red",
+      "cColourClean": "Red",
+      "cFootnotes": [],
+      "cColourZh": "红色",
+      "cPage": 29,
+      "cQuote": "Stop lamp: Red",
+      "gbTerm": {
+        "clause": "3.9.10",
+        "en": "stoplamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "紧急制动信号",
+      "cName": "Emergency stop signal",
+      "cColour": "Amber or red",
+      "cColourClean": "Amber or red",
+      "cFootnotes": [],
+      "cColourZh": "琥珀色或红色",
+      "cPage": 29,
+      "cQuote": "Emergency stop signal : Amber or red",
+      "gbTerm": {
+        "clause": "3.9.27",
+        "en": "emergencystopsignal",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "追尾警告信号",
+      "cName": "Rear-end collision alert signal",
+      "cColour": "Amber",
+      "cColourClean": "Amber",
+      "cFootnotes": [],
+      "cColourZh": "琥珀色",
+      "cPage": 29,
+      "cQuote": "Rear-end collision alert signal: Amber",
+      "gbTerm": {
+        "clause": "3.9.30",
+        "en": "rear-endcollisionalertsignal;RECAS",
+        "mode": "literal"
+      },
+      "note": "GB 术语表把「追尾警告信号」的英文名定为 **rear-end collision alert signal（RECAS）**（A §3.1.32.3 / B §3.9.30），与 R48 §2.6.3 同名 —— 这一行**不是**靠人工猜的"
+    },
+    {
+      "gb": "牌照灯",
+      "cName": "Rear registration plate lamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 29,
+      "cQuote": "Rear registration plate lamp: White",
+      "gbTerm": {
+        "clause": "3.9.11",
+        "en": "rear-registrationplateilluminatingdevice",
+        "mode": "manual"
+      },
+      "note": "GB 表5 的行名是「牌照灯」，而 GB 术语表 §3.9.11 定义的名称是「后牌照板照明装置 rear-registration plate illuminating device」，与 R48 的 rear registration plate lamp **不是同一个词形**（device vs lamp），指同一个装置 —— 机器逐字核对在这里判为「人工确认」"
+    },
+    {
+      "gb": "前位灯",
+      "cName": "Front position lamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 29,
+      "cQuote": "Front position lamp: White",
+      "gbTerm": {
+        "clause": "3.9.12",
+        "en": "frontpositionlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "后位灯",
+      "cName": "Rear position lamp",
+      "cColour": "Red",
+      "cColourClean": "Red",
+      "cFootnotes": [],
+      "cColourZh": "红色",
+      "cPage": 29,
+      "cQuote": "Rear position lamp: Red",
+      "gbTerm": {
+        "clause": "3.9.13",
+        "en": "rearpositionlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "后雾灯",
+      "cName": "Rear fog lamp",
+      "cColour": "Red",
+      "cColourClean": "Red",
+      "cFootnotes": [],
+      "cColourZh": "红色",
+      "cPage": 29,
+      "cQuote": "Rear fog lamp: Red",
+      "gbTerm": {
+        "clause": "3.9.18",
+        "en": "rearfoglamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "驻车灯",
+      "cName": "Parking lamp",
+      "cColour": "White in front, red at the rear, amber if reciprocally incorporated in the side direction-indicator lamps or in the side-marker lamps.",
+      "cColourClean": "White in front, red at the rear, amber if reciprocally incorporated in the side direction-indicator lamps or in the side-marker lamps.",
+      "cFootnotes": [],
+      "cColourZh": "前面白色、后面红色；若与侧转向信号灯或侧标志灯相互结合安装，则为琥珀色",
+      "cPage": 29,
+      "cQuote": "Parking lamp: White in front, red at the rear, amber if reciprocally incorporated in the side direction-indicator lamps or in the side-marker lamps.",
+      "gbTerm": {
+        "clause": "3.9.20",
+        "en": "parkinglamp",
+        "mode": "literal"
+      },
+      "note": "C 的 Parking lamp 同样带「与侧转向信号灯/侧标志灯结合则为琥珀色」的例外，与 GB 表述结构一致"
+    },
+    {
+      "gb": "侧标志灯",
+      "cName": "Side-marker lamp",
+      "cColour": "Amber; however the rearmost side- marker lamp can be red if it is grouped or combined or reciprocally incorporated with the rear position lamp, the rear end-outline marker lamp, the rear fog lamp, the stop lamp or is grouped or has part of the light emitting surface in common with the rear retro- reflector.",
+      "cColourClean": "Amber; however the rearmost side-marker lamp can be red if it is grouped or combined or reciprocally incorporated with the rear position lamp, the rear end-outline marker lamp, the rear fog lamp, the stop lamp or is grouped or has part of the light emitting surface in common with the rear retro-reflector.",
+      "cFootnotes": [],
+      "cColourZh": "琥珀色；但最靠后的侧标志灯可以为红色 —— 若其与后位灯、后示廓灯、后雾灯、制动灯组合或合并安装，或与后回复反射器组合、或与其共用部分发光面时",
+      "cPage": 30,
+      "cQuote": "Side-marker lamp: Amber; however the rearmost side- marker lamp can be red if it is grouped or combined or reciprocally incorporated with the rear position lamp, the rear end-outline marker lamp, the rear fog lamp, the stop lamp or is grouped or has part of the light emitting surface in common with the rear retro- reflector.",
+      "gbTerm": {
+        "clause": "3.9.22",
+        "en": "sidemarkerlamp",
+        "mode": "literal"
+      },
+      "note": "C 与 GB 的「最靠后可为红色」例外条件措辞不同（GB 另列与后位灯/后示廓灯/后雾灯/制动灯组合等），两边文字不完全对应"
+    },
+    {
+      "gb": "示廓灯",
+      "cName": "End-outline marker lamp",
+      "cColour": "White in front, red at the rear",
+      "cColourClean": "White in front, red at the rear",
+      "cFootnotes": [],
+      "cColourZh": "前面白色、后面红色",
+      "cPage": 30,
+      "cQuote": "End-outline marker lamp: White in front, red at the rear",
+      "gbTerm": {
+        "clause": "3.9.21",
+        "en": "end-outlinemarkerlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "昼间行驶灯",
+      "cName": "Daytime running lamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 30,
+      "cQuote": "Daytime running lamp: White",
+      "gbTerm": {
+        "clause": "3.9.23",
+        "en": "daytimerunninglamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "非三角形后回复反射器",
+      "cName": "Rear retro-reflector, non-triangular",
+      "cColour": "Red",
+      "cColourClean": "Red",
+      "cFootnotes": [],
+      "cColourZh": "红色",
+      "cPage": 30,
+      "cQuote": "Rear retro-reflector, non- triangular: Red",
+      "gbTerm": {
+        "clause": "",
+        "en": "",
+        "mode": "none"
+      },
+      "note": "GB 术语表只定义了总称「回复反射器 retro-reflector」（B §3.9.14 / A §3.3.10），细分项（前/后/侧 × 三角形/非三角形）没有单独术语 —— 这一行的对应靠装置名称本身"
+    },
+    {
+      "gb": "三角形后回复反射器",
+      "cName": "Rear retro-reflector, triangular",
+      "cColour": "Red",
+      "cColourClean": "Red",
+      "cFootnotes": [],
+      "cColourZh": "红色",
+      "cPage": 30,
+      "cQuote": "Rear retro-reflector, triangular: Red",
+      "gbTerm": {
+        "clause": "",
+        "en": "",
+        "mode": "none"
+      },
+      "note": "GB 术语表只定义了总称「回复反射器 retro-reflector」（B §3.9.14 / A §3.3.10），细分项（前/后/侧 × 三角形/非三角形）没有单独术语 —— 这一行的对应靠装置名称本身"
+    },
+    {
+      "gb": "非三角形前回复反射器（即白色或无色回复反射器）",
+      "cName": "Front retro-reflector, non-triangular",
+      "cColour": "Identical to incident light8",
+      "cColourClean": "Identical to incident light",
+      "cFootnotes": [
+        "8"
+      ],
+      "cColourZh": "与入射光相同",
+      "cPage": 30,
+      "cQuote": "Front retro-reflector, non- triangular: Identical to incident light8",
+      "gbTerm": {
+        "clause": "",
+        "en": "",
+        "mode": "none"
+      },
+      "note": "GB 术语表只定义了总称「回复反射器 retro-reflector」（B §3.9.14 / A §3.3.10），细分项（前/后/侧 × 三角形/非三角形）没有单独术语 —— 这一行的对应靠装置名称本身"
+    },
+    {
+      "gb": "非三角形侧回复反射器",
+      "cName": "Side retro-reflector, non-triangular",
+      "cColour": "Amber; however the rearmost side retro- reflector can be red if it is grouped or has part of the light emitting surface in common with the rear position lamp, the rear end outline marker lamp, the rear fog lamp, the stop-lamp, the red rearmost side-marker lamp or the rear retro-reflector, non- triangular.",
+      "cColourClean": "Amber; however the rearmost side retro-reflector can be red if it is grouped or has part of the light emitting surface in common with the rear position lamp, the rear end outline marker lamp, the rear fog lamp, the stop-lamp, the red rearmost side-marker lamp or the rear retro-reflector, non-triangular.",
+      "cFootnotes": [],
+      "cColourZh": "琥珀色；但最靠后的侧回复反射器可以为红色 —— 若其与后位灯、后示廓灯、后雾灯、制动灯、最靠后的红色侧标志灯或后回复反射器（非三角形）组合，或与其共用部分发光面时",
+      "cPage": 30,
+      "cQuote": "Side retro-reflector, non- triangular: Amber; however the rearmost side retro- reflector can be red if it is grouped or has part of the light emitting surface in common with the rear position lamp, the rear end outline marker lamp, the rear fog lamp, the stop-lamp, the red rearmost side-marker lamp or the rear retro-reflector, non- triangular.",
+      "gbTerm": {
+        "clause": "",
+        "en": "",
+        "mode": "none"
+      },
+      "note": "GB 术语表只定义了总称「回复反射器 retro-reflector」（B §3.9.14 / A §3.3.10），细分项（前/后/侧 × 三角形/非三角形）没有单独术语 —— 这一行的对应靠装置名称本身"
+    },
+    {
+      "gb": "角灯",
+      "cName": "Cornering lamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 30,
+      "cQuote": "Cornering lamp: White",
+      "gbTerm": {
+        "clause": "3.9.24",
+        "en": "corneringlamp",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "醒目标志",
+      "cName": "Conspicuity marking",
+      "cColour": "White to the front; White or yellow to the side; Red or yellow to the rear.9",
+      "cColourClean": "White to the front; White or yellow to the side; Red or yellow to the rear.",
+      "cFootnotes": [
+        "9"
+      ],
+      "cColourZh": "前面白色；侧面白色或黄色；后面红色或黄色",
+      "cPage": 30,
+      "cQuote": "Conspicuity marking: White to the front; White or yellow to the side; Red or yellow to the rear.9",
+      "gbTerm": {
+        "clause": "3.9.15",
+        "en": "conspicuitymarking",
+        "mode": "literal"
+      },
+      "note": "对应关系为**部分对应**：GB 醒目标志分「车身反光标识」与「车辆尾部标志板」两项，C 的 Conspicuity marking 按前/侧/后三个方位给光色，两边的分法不同，不能逐项等同；另外 GB 两版本身也不同（A 的车身反光标识含**橙色**，B 不含）"
+    },
+    {
+      "gb": "自适应前照明系统（AFS）",
+      "cName": "Adaptive front-lighting systems (AFS)",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 30,
+      "cQuote": "Adaptive front-lighting systems (AFS): White",
+      "gbTerm": {
+        "clause": "3.9.25",
+        "en": "adaptivefrontlightingsystem;AFS",
+        "mode": "literal"
+      },
+      "note": ""
+    },
+    {
+      "gb": "慢行灯",
+      "cName": "Manoeuvring lamp",
+      "cColour": "White",
+      "cColourClean": "White",
+      "cFootnotes": [],
+      "cColourZh": "白色",
+      "cPage": 30,
+      "cQuote": "Manoeuvring lamp: White",
+      "gbTerm": {
+        "clause": "3.9.29",
+        "en": "manoeuvringlamp",
+        "mode": "literal"
+      },
+      "note": "GB 术语表把「慢行灯」的英文名定为 **manoeuvring lamp**（A §3.3.21 / B §3.9.29），与 R48 的 Manoeuvring lamp 同名同义 —— 这一行**不是**靠人工猜的"
+    }
+  ],
+  "gbOnly": [
+    {
+      "gb": "牵引杆挂车标志灯",
+      "reason": "R48-09 §5.15 的光色表未列该灯具（全表逐行核对，无对应行）",
+      "inA": true,
+      "inB": true,
+      "gbTerm": {
+        "clause": "3.9.28",
+        "en": "markerlampfordraw-bar-trailer"
+      }
+    },
+    {
+      "gb": "ADS标志灯",
+      "reason": "R48-09 §5.15 的光色表未列该灯具（全表逐行核对，无对应行）；该行只在 A 草案表 5 中存在",
+      "inA": true,
+      "inB": false,
+      "gbTerm": {
+        "clause": "3.3.22",
+        "en": "automated driving system marker lamp ADS"
+      }
+    }
+  ],
+  "cOnly": [
+    {
+      "cName": "Exterior courtesy lamp",
+      "cColour": "White In addition, in accordance with the individual specifications applicable to the specific lamp used for the exterior courtesy lamp.",
+      "cColourClean": "White In addition, in accordance with the individual specifications applicable to the specific lamp used for the exterior courtesy lamp.",
+      "cFootnotes": [],
+      "cColourZh": "白色；此外，按所用具体灯具的个别规定执行",
+      "cPage": 30,
+      "cQuote": "Exterior courtesy lamp: White In addition, in accordance with the individual specifications applicable to the specific lamp used for the exterior courtesy lamp.",
+      "reason": "GB 表5「灯具名称–光色」未列该行"
+    },
+    {
+      "cName": "Answer-back signal",
+      "cColour": "In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal.",
+      "cColourClean": "In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal.",
+      "cFootnotes": [],
+      "cColourZh": "按所用应答信号灯的个别规定执行",
+      "cPage": 30,
+      "cQuote": "Answer-back signal: In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal.",
+      "reason": "GB 表5「灯具名称–光色」未列该行"
+    }
+  ],
+  "anomalies": [
+    {
+      "kind": "duplicate-row-in-source",
+      "cName": "Front fog lamp",
+      "cPage": 29,
+      "cQuote": "Front fog lamp White or selective yellow",
+      "explanation": "源 PDF 的 §5.15 里，「Rear position lamp: Red」之后又印了一行「Front fog lamp / White or selective yellow」（**该行没有冒号**），随后才是「Rear fog lamp: Red」。已渲染该页图像人工确认：这是**原文件如此**，不是抽取错误。照录并标出，不静默删除 —— 读者回原文数行数会对得上。"
+    }
+  ]
+}

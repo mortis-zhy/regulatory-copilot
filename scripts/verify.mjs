@@ -1656,9 +1656,15 @@ check("matrix covers every declared family", () => {
 });
 
 check("two-version chapters declare their scope", () => {
-  // Chapter 13 is still A-vs-B only: UN R48's clause system is not isomorphic
-  // with GB's, so no sentence-level mapping exists there, and the chapter has
-  // to say so.
+  // Chapter 13 is no longer A-vs-B only. The client (DR-011) pointed out that
+  // the chapter had no C column, and the reason was a missing artifact, not a
+  // structural impossibility: UN R48-09 §5.15 has the same shape as GB 表5
+  // (lamp name → colour). So chapter 13 now carries a REAL third column,
+  // built from a manually verified lamp-name mapping
+  // (data/lamp-color-map.json). What it must still declare is the LIMITS of
+  // that column: the mapping is manual, the C side is quoted verbatim from the
+  // source PDF, and the comparison verdict is only given where the wording is
+  // simple enough to compare item by item.
   //
   // Chapter 14 is no longer A/B-only. The client read the old A/B-only table as
   // 「仅有两版国标，无欧标」, so chapter 14 now carries a REAL third column:
@@ -1676,8 +1682,12 @@ check("two-version chapters declare their scope", () => {
 
   const c13 = get(13).markdown ?? "";
   assert(
-    c13.includes("本章范围：仅 A 与 B 两版"),
-    "chapter 13 does not declare that it excludes C",
+    !c13.includes("本章范围：仅 A 与 B 两版"),
+    "chapter 13 still declares that it excludes C — the C column was added, this declaration is stale",
+  );
+  assert(
+    c13.includes("本章范围：A / B / C 三版"),
+    "chapter 13 does not declare its three-version scope",
   );
   assert(
     /第 12 章|附录 C/.test(c13),
@@ -1736,7 +1746,32 @@ check("two-version chapters declare their scope", () => {
       );
     }
   }
-  return `ch13 声明排除 C · ch14 声明 C 列是欧标原文且为章节级 · ${pointers} 条 R48 指针全部带标记（有的给条款号、有的给理由）`;
+  return `ch13 声明三版范围 · ch14 声明 C 列是欧标原文且为章节级 · ${pointers} 条 R48 指针全部带标记（有的给条款号、有的给理由）`;
+});
+
+// ---------------------------------------------------------------------------
+// 客户 DR-011：第 13 章要有 A/B/C 三版光色表，且映射要站得住
+//
+// 客户写的是：
+//   「第 13 章 灯具光色 只做了 A/B 两版，缺 C」
+//   「属于明确未完成项，不应视为三版光色比较已完成」
+//   修改建议：建立人工核验的灯具名称映射并补 A/B/C 表
+//
+// 这一道闸门盯的是**那张人工核验的对照表**：
+//   1. C 侧每段引文必须是源 PDF 的**逐字**片段（不是「差不多」）；
+//   2. A/B 表5 与 C §5.15 的每一行都要有归属（没有「忘了对」的行）；
+//   3. 人工配对必须与 **GB 自己的术语表**交叉核对 —— GB §3.9 的英文名与
+//      R48 的灯名逐字相同才叫「逐字命中」，词形不同的必须写明理由；
+//   4. 报告里必须真的渲染出这张表 —— 数据对、报告没渲染，跟没做是一回事。
+// ---------------------------------------------------------------------------
+
+check("第 13 章的 A/B/C 光色映射站得住（客户 DR-011）", () => {
+  const { ok, out } = runPy(["scripts/verify_lamp_color_map.py"], "lamp color map");
+  assert(ok, `灯具光色映射核验失败：\n        ${out.slice(-900)}`);
+  const lit = (out.match(/逐字命中 (\d+) 条/) || [])[1];
+  const mapped = (out.match(/逐字命中 \d+ 条 \/ 共 (\d+) 条/) || [])[1];
+  assert(lit && mapped, "没有解析出映射条数");
+  return `${mapped} 条映射（GB 术语逐字命中 ${lit} 条）· 引文逐字核对 · 第 13 章已渲染`;
 });
 
 check("chapter 14 clause diff is a real side-by-side table", () => {
