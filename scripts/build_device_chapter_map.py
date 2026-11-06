@@ -66,6 +66,18 @@ CLAUSE_INDEX = os.path.join(ROOT, "data", "clause-index.json")
 CROSS_MAP = os.path.join(ROOT, "data", "r48-chapter-map.json")
 OUT = os.path.join(ROOT, "data", "device-chapter-map.json")
 
+# 路径可以由环境变量改 —— **「换标准」的实验要在临时目录里跑**，
+# 不能去动仓库里那几份数据。
+#   DEVICE_CHAPTER_MAP_SPECS   读哪份 spec
+#   DEVICE_CHAPTER_MAP_OUT      写到哪（`--check` 时比哪份）
+#   DEVICE_CHAPTER_MAP_CORPUS   读哪份语料
+if os.environ.get("DEVICE_CHAPTER_MAP_SPECS"):
+    SPECS = os.environ["DEVICE_CHAPTER_MAP_SPECS"]
+if os.environ.get("DEVICE_CHAPTER_MAP_OUT"):
+    OUT = os.environ["DEVICE_CHAPTER_MAP_OUT"]
+if os.environ.get("DEVICE_CHAPTER_MAP_CORPUS"):
+    CORPUS = os.environ["DEVICE_CHAPTER_MAP_CORPUS"]
+
 VERSIONS = ("A", "B", "C")
 
 

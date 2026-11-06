@@ -5640,6 +5640,10 @@ for (const t of [
   // scripts/run_spec_agent_regression.mjs 单独测，记账在
   // reports/spec-agent-baseline.json。
   "_test_spec_agent.mjs",
+  // 「换标准」实验：**没有手写 spec，还能不能产出装置↔章？**
+  // 这是 agent-native 的**死结** —— 解开了才算数。
+  // **不调模型**、不碰仓库里的数据（临时目录里跑）。
+  "_test_swap_standard.mjs",
   // 「批量采纳」的**确定性**用例：**不调模型**。
   // 验的是采纳这一步的规矩 —— 不覆盖已有取值 · 不采纳命不中的 ·
   // 采纳必须写 why · 落盘先备份。957 个槽位不可能逐条手点，
