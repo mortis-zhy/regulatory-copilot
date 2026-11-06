@@ -188,7 +188,10 @@ for (const [i, p] of picked.entries()) {
       (pass
         ? `（§${v.clause} 第${v.page}页 ${JSON.stringify(gotNums)}）`
         : `｜期望 §${expectedClause} 第${expectedPage}页 ${JSON.stringify(expectedNums)}` +
-          `｜实得 ${v.ok ? `§${v.clause} 第${v.page}页 ${JSON.stringify(gotNums)}` : (v.reason ?? "无产出")}`),
+          `｜实得 ${v.ok ? `§${v.clause} 第${v.page}页 ${JSON.stringify(gotNums)}` : (v.reason ?? "无产出")}` +
+          // **错误要打出来** —— 只写「没有产出正则」的话，
+          // 「模型调用失败」与「模型没找到」看起来一模一样。
+          (proposal.error ? `｜⚠ ${String(proposal.error).slice(0, 160)}` : "")),
   );
 }
 
@@ -295,7 +298,38 @@ if (fab > 0) {
   }
 }
 
-if (!dry) {
+/**
+ * 这一轮**是不是根本没跑成**。
+ *
+ * 全部槽位都失败、而且错的是**同一件事**（余额不足、模型不可用、网络断了）——
+ * 那不是「泛化率 0」，是**一次都没跑成**。
+ *
+ * 两者必须分开记：把「没跑成」记成「0 分」，会让人以为泛化能力崩了；
+ * 而它还会**覆盖掉上一次的真结果** ✗。
+ */
+function commonFailure(rows) {
+  const errs = rows
+    .map((r) => String(r.error ?? "").trim())
+    .filter(Boolean)
+    .map((e) => e.slice(0, 120));
+  if (!errs.length) return null;
+  if (errs.length < rows.length) return null; // 不是全盘同一个错 → 是质量问题
+  const first = errs[0];
+  if (!errs.every((e) => e === first)) return null;
+  return first;
+}
+
+const didNotRun = commonFailure(rows);
+if (didNotRun) {
+  console.log(
+    "\n[regression] ⚠⚠ 这一轮**根本没跑成** —— 不是泛化率问题：\n" +
+      `          ${didNotRun}\n` +
+      "          （余额 / 模型可用性 / 网络）—— 这次的结果**不写进** baseline，" +
+      "上一次的真结果保留。",
+  );
+}
+
+if (!dry && !didNotRun) {
   const outPath = path.join(ROOT, "reports", "spec-agent-baseline.json");
   fs.writeFileSync(
     outPath,

@@ -388,7 +388,32 @@ const productHeader = {
  * 不在这里另写一份（两个写者迟早漂移）。
  */
 
-if (!dry) {
+// **这一轮是不是根本没跑成**（余额不足 / 模型不可用 / 网络断了）。
+//
+// 全盘同一个错 → 那不是「agent 提不出正则」，是**一次都没跑成**。
+// 写出去会污染下游：一份「全是失败」的提议会流进采纳流程，
+// 而残余台账会凭空多出几十条 R1 —— 看着像「机器不行」，其实是「没跑」。
+
+function commonFailure(rs) {
+  const errs = rs
+    .map((r) => String(r.error ?? "").trim())
+    .filter(Boolean)
+    .map((e) => e.slice(0, 120));
+  if (!errs.length || errs.length < rs.length) return null;
+  const first = errs[0];
+  if (!errs.every((e) => e === first)) return null;
+  return first;
+}
+
+const didNotRun = commonFailure(results);
+if (didNotRun) {
+  console.log(
+    `[spec-agent] ⚠⚠ 这一轮**根本没跑成** —— 不是 agent 的问题：\n          ${didNotRun}\n` +
+      `          产物**不写**（免得污染残余台账与采纳流程）。`,
+  );
+}
+
+if (!dry && !didNotRun) {
   fs.writeFileSync(
     OUT,
     JSON.stringify(
