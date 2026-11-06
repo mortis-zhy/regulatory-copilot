@@ -35,14 +35,14 @@ import type { ReportOutline } from "./reportGenerator";
 /**
  * 当前语料里**实际有几版**。
  *
- * 这份清单住在 `versionMeta.ts`（声明旁边），不在渲染器里 ——
+ * 这份清单住在 `shared/versionMeta.ts`（声明旁边），不在渲染器里 ——
  * 因为**表格分类器**（typedTables.ts）也要用同一份，
  * 放在渲染器里的话那边就只能继续写死 A/B/C。
  *
  * 渲染层的版本列识别按它走：换一套标准（X/Y/Z）或加第四版时，
  * 对照表与卡片布局都会跟着变，而不是把新版本悄悄丢掉。
  */
-import { VERSION_META, setActiveVersions, activeVersions } from "./versionMeta";
+import { VERSION_META, setActiveVersions, activeVersions } from "@shared/versionMeta";
 export { setActiveVersions };
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };

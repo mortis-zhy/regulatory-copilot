@@ -41,7 +41,7 @@ export type ReportMetaDecl = {
   standardFamily: string;
   standardFamilyShort: string;
   clausesOfLastVersion: string;
-  /** 各版本的显示名表 —— 见 server/reports/versionMeta.ts。 */
+  /** 各版本的显示名表 —— 见 shared/versionMeta.ts。 */
   versions: Array<{
     key: string;
     label: string;

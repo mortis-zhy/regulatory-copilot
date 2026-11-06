@@ -3486,6 +3486,70 @@ check("every hard-coded standard name in the source is on the swap ledger", () =
   return `${total[1]} 处硬编码已登记（${rules[1]} 条规则）· 换标准清单无漏项`;
 });
 
+check("the declaration can recognize its own source files", () => {
+  // 标准声明说了两件事：
+  //   ① 哪些文件是源文件（`sourceFile` / `sourceDir`）
+  //   ② 怎么从文件名认出它是哪一版（`fileTokens` / `fileExclude`）
+  //
+  // 这两半必须**对得上** —— 否则 sidecar 认不出自己的源文件，
+  // 而症状是「上传后说要标版本，但标不出来」，**不报错**。
+  //
+  // 换标准时最容易出的错就是：改了声明里的文件名，却忘了改签名
+  //（或者反过来）—— 于是新标准的 PDF 一份都认不出来。
+  const pack = JSON.parse(read("data/standard-pack.json"));
+  const versions = pack.versions || [];
+  const problems = [];
+  const srcDir = pack.sourceDir || "delivery/PDF对比";
+
+  for (const v of versions) {
+    const name = v.sourceFile || "";
+    if (!name) {
+      problems.push(`${v.key} 没有声明源文件名（sourceFile）`);
+      continue;
+    }
+    if (!existsSync(resolve(ROOT, srcDir, name))) {
+      problems.push(`${v.key} 声明的源文件不存在：${srcDir}/${name}`);
+      continue;
+    }
+    // 文件名签名必须**认得出它自己**
+    for (const re of v.fileTokens || []) {
+      if (!new RegExp(re, "i").test(name)) {
+        problems.push(`${v.key} 的文件名签名 ${re} 认不出自己的源文件（${name}）`);
+      }
+    }
+    // 排除项必须**不误排除**它自己（否则 A/B 互相认错）
+    for (const re of v.fileExclude || []) {
+      if (new RegExp(re, "i").test(name)) {
+        problems.push(`${v.key} 的排除项 ${re} 把自己的源文件排除了（${name}）`);
+      }
+    }
+  }
+
+  // 客户端的「这套装是不是本标准」判据，也必须认得出源文件
+  for (const re of pack.clientSetProbe || []) {
+    const hit = versions.some((v) => v.sourceFile && new RegExp(re, "i").test(v.sourceFile));
+    if (!hit) {
+      problems.push(`clientSetProbe 的 ${re} 认不出任何一份源文件 —— 界面会一直用通用文案`);
+    }
+  }
+
+  // 声明里的版本键必须**覆盖**语料里实际有的版本
+  const corpus = JSON.parse(read("dist/mineru-v4-data.json"));
+  const corpusKeys = Object.keys(corpus).filter((k) => corpus[k]?.fullText);
+  const declared = new Set(versions.map((v) => v.key));
+  for (const k of corpusKeys) {
+    if (!declared.has(k)) {
+      problems.push(`语料里有版本 ${k}，但标准声明里没有这一版 —— 它的显示名会退化成键本身`);
+    }
+  }
+
+  assert(
+    problems.length === 0,
+    `标准声明与源文件对不上:\n        ${problems.join("\n        ")}`,
+  );
+  return `${versions.length} 份源文件都在 · 文件名签名都认得出 · 声明覆盖语料的 ${corpusKeys.join(",")}`;
+});
+
 check("the swap checklist is not stale", () => {
   // 清单是**生成的**：改了源码就必须重出，否则它会**静静地骗人** ——
   // 读者照着一份旧清单去改代码，改的是已经不存在的行。

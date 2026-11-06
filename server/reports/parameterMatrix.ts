@@ -38,7 +38,7 @@
 export type Version = string;
 
 /**
- * 版本的声明式显示名表 —— **实现在 ./versionMeta.ts**，这里只做转发。
+ * 版本的声明式显示名表 —— **实现在 ../shared/versionMeta.ts**，这里只做转发。
  *
  * 原来它在本文件里，而本文件会 import 整份 `data/parameter-specs.json`
  * （八百多条正则）—— 于是「只想拿一张显示名表」的模块
@@ -50,7 +50,7 @@ export type Version = string;
 import {
   VERSION_META, versionLabel, versionDoc, versionStd, versionStatus,
   versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys,
-} from "./versionMeta";
+} from "@shared/versionMeta";
 export {
   VERSION_META, versionLabel, versionDoc, versionStd, versionStatus,
   versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys,
@@ -1575,7 +1575,7 @@ export function renderMatrixTable(rows: Row[], versions: Version[]): string {
     `| \`未命中\` | ${cNoMatch} 格 | 规则写了，但在原文语料里没匹配上 | 该版**很可能**有规定，但取数失败 |`,
     "",
     "> 后两种都**不等于**「该版未规定」—— 从抽取失败推不出法规结论。原文表格 OCR 不可读是常见原因",
-    "> （GB 4785-2019 的色度表文本层会把三列串成一行）。判定列已把这种情况标为「未定位」，不参与一致性判断。",
+    `> （${versionDoc("B")} 的色度表文本层会把三列串成一行）。判定列已把这种情况标为「未定位」，不参与一致性判断。`,
     "> 第一种不同：它是**核对过的事实**，理由逐条写在 12.2 的明细里，可以回原文复核。",
     cNoSpec > 0
       ? `> **本版的实际情况：${cNoSpec} 个空格全部属于第一种（已核「该版无此规定」），` +

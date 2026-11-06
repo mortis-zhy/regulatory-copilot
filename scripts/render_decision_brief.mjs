@@ -32,6 +32,20 @@ import { fileURLToPath } from "node:url";
 import { renderPdfFromReportV8 } from "../dist/htmlRenderV8.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+// ── 标准声明 —— 讲稿里的标准名、版本名、版本数都从这儿来 ──────────────
+//
+// 以前写死在这个脚本里（换标准要改代码）；现在改声明就行。
+const PACK = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "standard-pack.json"), "utf-8"));
+const VBY = Object.fromEntries((PACK.versions || []).map((v) => [v.key, v]));
+const vLabel = (k) => VBY[k]?.label ?? k;
+const vDoc = (k) => VBY[k]?.doc ?? k;
+const vRev = (k) => VBY[k]?.rev ?? "";
+const FAM = PACK.standardFamily;
+const FAM_SHORT = PACK.standardFamilyShort;
+const N_VERSIONS = (PACK.versions || []).length;
+const CN_DIGITS = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九"];
+const N_ZHOU = `${N_VERSIONS <= CN_DIGITS.length ? CN_DIGITS[N_VERSIONS] : N_VERSIONS}版`;
+
 const OUTDIR = path.join(ROOT, "delivery", "PDF对比");
 
 const main = JSON.parse(fs.readFileSync(path.join(ROOT, "reports", "last-report.json"), "utf8"));
@@ -295,7 +309,7 @@ const ch2 = [
   "",
   "## 2.5 光色：不是差异点",
   "",
-  `附件 **§13.4–13.6** 逐行对照了 GB 表 5 与 UN R48-09 §5.15：**${N_COLOUR_SAME} 个对应灯具的光色要素三版一致**，` +
+  `附件 **§13.4–13.6** 逐行对照了 GB 表 5 与 ${vDoc("C")} §5.15：**${N_COLOUR_SAME} 个对应灯具的光色要素三版一致**，` +
     `**${N_COLOUR_PENDING} 个**带例外条件、需专家判读，**A 与 B 只差 1 个**（醒目标志）。`,
   "",
   "> **结论**：**光色不会单独成为出口认证的卡点**；差异集中在**安装位置、几何可见度、光度与光轴**。",
@@ -387,7 +401,7 @@ const ch4 = [
 /* ------------------------------------------------------------------ 组装 */
 const report = {
   outline: {
-    title: "GB 4785 多版本对比 —— 决策正文（证据见附件）",
+    title: `${FAM} 多版本对比 —— 决策正文（证据见附件）`,
     chapters: [
       { id: 0, title: "决策正文 —— 怎么读这份文件", sections: ["结论速览", "这份正文不说什么"] },
       { id: 1, title: "结论与影响", sections: ["A→B 的变化", "定性义务的实质差异", "出口视角的 A–C 差异", "光色"] },

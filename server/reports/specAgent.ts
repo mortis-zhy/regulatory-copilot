@@ -35,6 +35,7 @@
  * 校验层因此必须复刻「第一页命中」这个语义，而不是「能不能在全文命中」。
  */
 import { numbersOf, nearestClause, paginate } from "./parameterMatrix";
+import { versionLabel, versionDoc, versionRev } from "@shared/versionMeta";
 
 export type Version = string;
 
@@ -626,7 +627,7 @@ export const SPEC_AGENT_SYSTEM_PROMPT = `你是一个**法规取值抽取**助�
 
 # 输入
 - 参数中文名、参数族、单位
-- 标准代号（A=GB 4785 草案 V4.3.5，B=GB 4785-2019，C=UN R48-09）
+- 标准代号（A=${versionLabel("A")} ${versionRev("A")}，B=${versionDoc("B")}，C=${versionDoc("C")}）
 - 该装置在该版本下的**候选原文句**列表，每条带条款号与页码
 
 # 工具：写完必须自己验一遍

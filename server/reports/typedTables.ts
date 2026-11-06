@@ -24,7 +24,7 @@
 
 // 版本显示名表 —— 判据从它派生（见 normVersionLabel 的注释）。
 // 单独成模块正是为了**不把整份 spec 拖进这个包**。
-import { VERSION_META, normVersionText, activeVersions } from "./versionMeta";
+import { VERSION_META, normVersionText, activeVersions } from "@shared/versionMeta";
 
 export type TypedTableKind = "triptych" | "plain";
 
@@ -213,7 +213,7 @@ const LABEL_TAIL = /(草案|现行|国际法规|新编|旧版|修订版)$/;
  * UN R\d」这些形状。换一套标准，它们**全都不认** ——
  * 表会退化成普通表格（不报错，只是样式没了）。
  *
- * 现在判据从**声明式显示名表**（`versionMeta.ts` 的 `VERSION_META`）派生：
+ * 现在判据从**声明式显示名表**（`shared/versionMeta.ts` 的 `VERSION_META`）派生：
  * 每个版本的 `label`（"A 草案"）、`doc`（"GB 4785 草案 V4.3.5"）、
  * `std`（"GB 4785—XXXX"）都是判据的一部分。
  * 换标准 = 改那张表一行，**这里一个字都不用改**。

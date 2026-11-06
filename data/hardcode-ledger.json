@@ -67,21 +67,11 @@
       "files": [
         "data/standard-pack.json"
       ],
-      "why": "封面/章节/附录标题的标准名、末版条款号、**各版本的显示名表**（标签/短标签/文档名/标准号/状态/修订号）、**文件名识别签名**（认上传的 PDF 是哪一版）、**客户端的任务简报与界面文案**、**源 PDF 的文件名**。\n\n这一份是**内容里唯一已经声明化**的东西：换标准时改这一个 JSON，代码一行不动。\n\n搬进来的过程（每一处都核过「输出逐字不变」）：\n  · `server/reports/versionMeta.ts` 的 12 处字面量 → versions 数组\n  · `server/reports/reportV6.ts` 的 40 处版本显示名 → versionLabel/versionDoc/… 调用\n  · 六个 Python 脚本的源 PDF 文件名 → scripts/standard_pack.py\n  · `python_service/main.py` 的文件名签名与提示 → fileTokens/fileExclude/fileHelp\n  · `client/src/pages/Home.tsx` 的任务简报与判据 → clientBrief/clientSetProbe",
+      "why": "封面/章节/附录标题的标准名、末版条款号、**各版本的显示名表**（标签/短标签/文档名/标准号/状态/修订号）、**文件名识别签名**（认上传的 PDF 是哪一版）、**客户端的任务简报与界面文案**、**源 PDF 的文件名**。\n\n这一份是**内容里唯一已经声明化**的东西：换标准时改这一个 JSON，代码一行不动。\n\n搬进来的过程（每一处都核过「输出逐字不变」）：\n  · `server/reports/versionMeta.ts` 的 12 处字面量 → versions 数组\n  · `server/reports/reportV6.ts` 的 40 处版本显示名 → versionLabel/versionDoc/… 调用\n  · 六个 Python 脚本的源 PDF 文件名 → scripts/standard_pack.py\n  · `python_service/main.py` 的文件名签名与提示 → fileTokens/fileExclude/fileHelp\n  · `client/src/pages/Home.tsx` 的任务简报与判据 → clientBrief/clientSetProbe\n  · `client/src/components/ReviewWorkbench.tsx` 的版本表头 → versionLabel/versionDoc/versionRev\n  · `server/reports/specAgent.ts` 的提示词里的版本代号 → versionLabel/versionDoc\n  · `scripts/render_briefing.mjs` / `render_decision_brief.mjs` 的封面标题与文件名 → 声明",
       "swap": "改标准族名、末版条款号、版本清单、文件名签名、源文件名、客户端文案；有标准特有的表号（如「表 11.6」）要一并改掉。\n\n**改完跑 `npm run verify`** —— 里面有一关专门验「声明里的标准名语料里真有它」，还有一关验「报告的标题与版本显示名真的来自这份声明」。"
     }
   ],
   "rules": [
-    {
-      "id": "spec-agent-prompt",
-      "title": "写 spec 的提示词与矩阵入口",
-      "files": [
-        "server/reports/specAgent.ts",
-        "server/reports/parameterMatrix.ts"
-      ],
-      "why": "「自动提议参数」的提示词里点明了本标准的灯具名与条款结构；矩阵入口里写着「A/B/C」的默认键与缺规格时的提示。",
-      "swap": "提示词里换成新标准的灯具名与章节结构；矩阵入口的默认版本键改成新标准包的键。"
-    },
     {
       "id": "report-prose",
       "title": "报告正文的散文与说明",
@@ -152,17 +142,6 @@
       ],
       "why": "这些是**为这一套标准写的**分析脚本（光色映射、章节表、表格质量、覆盖率……）。换标准时它们**不会被复用** —— 新标准要另写一套同功能的。",
       "swap": "归档或删除；按新标准另写。**别直接改** —— 改了之后这些脚本就再也回答不了「上一套标准当时是怎么测的」。"
-    },
-    {
-      "id": "client-copy",
-      "title": "客户端文案与任务简报",
-      "files": [
-        "client/src/pages/Home.tsx",
-        "client/src/components/ReviewWorkbench.tsx",
-        "client/src/lib/templates.ts"
-      ],
-      "why": "界面上的任务简报（`GB4785_BRIEF`）、复核工作台里写死本标准版本标签与表号的文案、模板库里的说明。\n\n`GB4785_BRIEF` 只有在上传的文件**确实是**这一套标准时才会被用上（`isGb4785Set` 判据）—— 但那个判据本身也写死了标准名。",
-      "swap": "简报与文案换成新标准；`isGb4785Set` 改成「是不是当前标准包的那一套」（从声明里读，别写死）。"
     },
     {
       "id": "delivery-renderers",

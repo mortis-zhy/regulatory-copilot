@@ -1,6 +1,16 @@
 /**
  * 版本的**声明式显示名表** —— 从 `data/standard-pack.json` 读。
  *
+ * ## 为什么在 `shared/` 而不是 `server/reports/`
+ *
+ * 客户端与服务端**读的是同一份声明**：
+ * 服务端用它渲染报告，客户端用它认「这套装是不是本标准」、显示版本显示名。
+ * 两边各写一份查找逻辑，迟早漂移 —— 而漂移的表现是
+ * 「界面上的版本名和报告里的不一样」，**谁都不会发现**。
+ *
+ * 它仍然**不 import 整份 spec**（八百多条正则）——
+ * 只 import 一个几 KB 的 JSON，所以两边都拖得起。
+ *
  * ## 为什么单独成文件
  *
  * 原来它在 `parameterMatrix.ts` 里。而 `parameterMatrix.ts` 会 import
@@ -36,7 +46,7 @@
  * 它从分页文本数出来（见 reportV6 的 `pageCountsOf`）。
  * 写死的页数换一套标准就全错，而且**不报错**：报告照出，只是页数在骗人。
  */
-import PACK_JSON from "../../data/standard-pack.json";
+import PACK_JSON from "../data/standard-pack.json";
 
 /**
  * 版本键。

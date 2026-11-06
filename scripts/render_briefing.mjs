@@ -17,6 +17,20 @@ import { fileURLToPath } from "node:url";
 import { extractAuthoritativeChanges } from "../dist/closureLedger.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// ── 标准声明 —— 讲稿里的标准名、版本名、版本数都从这儿来 ──────────────
+//
+// 以前写死在这个脚本里（换标准要改代码）；现在改声明就行。
+const PACK = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "standard-pack.json"), "utf-8"));
+const VBY = Object.fromEntries((PACK.versions || []).map((v) => [v.key, v]));
+const vLabel = (k) => VBY[k]?.label ?? k;
+const vDoc = (k) => VBY[k]?.doc ?? k;
+const vRev = (k) => VBY[k]?.rev ?? "";
+const FAM = PACK.standardFamily;
+const FAM_SHORT = PACK.standardFamilyShort;
+const N_VERSIONS = (PACK.versions || []).length;
+const CN_DIGITS = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九"];
+const N_ZHOU = `${N_VERSIONS <= CN_DIGITS.length ? CN_DIGITS[N_VERSIONS] : N_VERSIONS}版`;
+
 // 讲稿输出在**仓库内**的 delivery/宣讲件 —— 不再写到仓库外的一个「工作台」目录。
 // 同事克隆下来 `node scripts/render_briefing.mjs` 就该在仓库里拿到讲稿。
 const OUT = path.join(ROOT, "delivery", "宣讲件");
@@ -188,7 +202,7 @@ const FIG = {
   arch: `
   <div class="fig">
     <div class="lane"><span class="lname">输入</span>
-      <div class="box src">A 草案 V4.3.5<br>B GB 4785-2019<br>C UN R48-09</div>
+      <div class="box src">${vLabel("A")} ${vRev("A")}<br>B ${vDoc("B")}<br>${vLabel("C")}</div>
     </div>
     <div class="arrow">↓</div>
     <div class="lane"><span class="lname">语料层</span>
@@ -607,7 +621,7 @@ function buildDeck(figData) {
   pages.push(`
   <section class="page cover">
     <div class="eyebrow">REGULATORY COMPARISON · 立项汇报</div>
-    <h1>GB 4785 三版法规横向对比<br/>从「罗列」到「可核验的决策依据」</h1>
+    <h1>${FAM} ${N_ZHOU}法规横向对比<br/>从「罗列」到「可核验的决策依据」</h1>
     <div class="sub">A 草案 V4.3.5　·　B 现行 GB 4785-2019　·　C UN R48-09<br/>
       交付件 249 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
     <div class="cards">
@@ -634,9 +648,9 @@ function buildDeck(figData) {
       </div>
       <h3 style="margin-top:16px">四条能当场验的能力</h3>
       <ul>
-        <li><b>数值对比</b>：${PARAMS} 个参数 × 3 版，每个取值带条款号、页码、原文摘录</li>
+        <li><b>数值对比</b>：${PARAMS} 个参数 × ${N_VERSIONS} 版，每个取值带条款号、页码、原文摘录</li>
         <li><b>定性并排</b>：附录 H 把 184 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
-        <li><b>欧标第三列</b>：UN R48-09 的条款号 + 页码 + 原文，${R48_MAPPED} 条章节级对应逐条回源验过</li>
+        <li><b>欧标第三列</b>：${vDoc("C")} 的条款号 + 页码 + 原文，${R48_MAPPED} 条章节级对应逐条回源验过</li>
         <li><b>可追责</b>：${GATES} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
       </ul>`,
     endline: `这四条合起来才是「能交给客户」—— <b>不是一份更厚的报告，是一条会自己证明自己没取错数的产线</b>。`,
@@ -758,8 +772,8 @@ function buildDeck(figData) {
       <h3>结构</h3>
       <ul>
         <li><b>第 11 章 变化点总结</b>：§11.0 一份权威变化清单（${CHANGES} 条），全报告各处只报这一个数</li>
-        <li><b>第 12 章 参数矩阵</b>：${PARAMS} 参数 × 3 版，每格带条款号 + 页码 + 原文，是唯一能支撑 C 定量判断的部分</li>
-        <li><b>第 14 章 欧标对照</b>：UN R48-09 的条款号 + 页码 + 原文摘录</li>
+        <li><b>第 12 章 参数矩阵</b>：${PARAMS} 参数 × ${N_VERSIONS} 版，每格带条款号 + 页码 + 原文，是唯一能支撑 C 定量判断的部分</li>
+        <li><b>第 14 章 欧标对照</b>：${vDoc("C")} 的条款号 + 页码 + 原文摘录</li>
         <li><b>附录 H 定性条款并排</b>：客户第一句抱怨的直接答复</li>
         <li><b>附录 E.5 要求台账</b>：448 条要求逐条归类，真缺口 0</li>
       </ul>`,
@@ -904,7 +918,7 @@ try {
   // —— 第二遍：组装讲稿页并出 PDF ——
   const deckHtml = buildDeck(figData);
   if (process.env.DUMP_DECK) fs.writeFileSync(process.env.DUMP_DECK, deckHtml, "utf-8");
-  const doc = `<!doctype html><html><head><meta charset="utf-8"><title>GB 4785 三版法规横向对比 · 项目宣讲</title>
+  const doc = `<!doctype html><html><head><meta charset="utf-8"><title>${FAM} ${N_ZHOU}法规横向对比 · 项目宣讲</title>
     <style>${SYSTEM_FONT_CSS}${BASE_CSS}${DECK_CSS}</style></head><body>${deckHtml}</body></html>`;
 
   await page.emulateMedia({ media: "print" });
@@ -917,7 +931,7 @@ try {
   await page.waitForTimeout(1200);
 
   fs.mkdirSync(OUT, { recursive: true });
-  const outFile = path.join(OUT, "项目宣讲_GB4785三版对比_讲稿版_2026-10-28.pdf");
+  const outFile = path.join(OUT, `项目宣讲_${FAM_SHORT}${N_ZHOU}对比_讲稿版_2026-10-28.pdf`);
   await page.pdf({
     path: outFile,
     width: "13.333in",
