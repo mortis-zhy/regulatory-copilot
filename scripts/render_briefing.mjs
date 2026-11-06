@@ -761,7 +761,7 @@ function buildDeck(figData) {
 
   // 9 闸门
   pages.push(page({
-    sec: "可信度", num: "09", title: "${GATES.total} 项闸门：改坏就红，不靠人盯",
+    sec: "可信度", num: "09", title: `${GATES.total} 项闸门：改坏就红，不靠人盯`,
     sub: "npm run verify —— 交付前的唯一判据",
     fig: F("gates"), layout: "fig",
     body: "",
