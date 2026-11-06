@@ -3946,6 +3946,111 @@ check("no standard-specific names in the gates themselves", () => {
   return `${hits.length} 处命中（全部登记过理由）· 闸门文件 ${gateFiles.size} 个`;
 });
 
+check("the report prose only says what the corpus can back up", () => {
+  // 散文机器判不了**措辞** —— 但能判**事实**：
+  // 它提到的**标准号**、**条款号**必须真的在语料里。
+  //
+  // 这一条就是「agent 写散文」的**验收标准**：
+  // 措辞随它写，**事实不许它编**。
+  //
+  // 标准号按**形状**认（GB / UN / ECE / R.E 开头）——
+  // 不认具体名字，所以这道闸门本身**与标准无关**
+  //（它要是写死了「GB 4785」，上一道闸门就该把它红掉）。
+  const ledger = JSON.parse(read("data/hardcode-ledger.json"));
+  const proseFiles = new Set(
+    (ledger.rules ?? []).find((r) => r.id === "report-prose")?.files ?? [],
+  );
+
+  const corpus = JSON.parse(read("dist/mineru-v4-data.json"));
+  const corpusText = Object.values(corpus)
+    .map((d) => String(d?.fullText ?? ""))
+    .join("\n")
+    .replace(/[\s\-—–_]/g, "");
+  const clauseIndex = JSON.parse(read("data/clause-index.json"))._clauses ?? {};
+  const knownClauses = new Set(Object.values(clauseIndex).flatMap((cs) => Object.keys(cs ?? {})));
+
+  // 标准号：**按形状**认
+  const STD_TOKEN = /\b(?:GB|UN|ECE|R\.E)(?:\/T)?[\s\-]*[A-Z0-9]+(?:\.[0-9]+)?(?:\s*-\s*20\d\d)?/g;
+  // 条款号
+  const CLAUSE_TOKEN = /(?<![\d.])(\d+(?:\.\d+){1,3})(?![\d])/g;
+
+  // **我们怎么称呼这一版** —— 声明说了算（`versions[].doc` 等）。
+  //
+  // 为什么要有这条：报告里写「UN R48」，而**语料**里写的是「ECE R48」
+  // （UN R48 就是 ECE R48 的联合国版，标准自己写的是 ECE 那套编号）——
+  // 所以「语料里找不到」**不等于**「说错了」。
+  // 报告用哪个名字称呼它是**声明**的事 ✓。
+  const declaredNames = (REPORT_META.versions ?? []).flatMap((v) => [
+    v.doc,
+    v.std,
+    v.cardName,
+    v.label,
+  ])
+    .map((x) => String(x ?? "").replace(/[\s\-—–_]/g, ""))
+    .filter(Boolean);
+
+  const checkText = (text, where, errors) => {
+    for (const m of String(text).matchAll(STD_TOKEN)) {
+      const norm = m[0].replace(/[\s\-—–_]/g, "");
+      if (!norm) continue;
+      const inCorpus = corpusText.includes(norm);
+      const matchesDecl = declaredNames.some((d) => d.includes(norm) || norm.includes(d));
+      if (!inCorpus && !matchesDecl) {
+        errors.push(
+          `${where}：标准号「${m[0]}」在语料里找不到，` +
+            `也不对得上声明里的任何一个版本名`,
+        );
+      }
+    }
+    for (const m of String(text).matchAll(CLAUSE_TOKEN)) {
+      if (!knownClauses.has(m[1])) {
+        errors.push(`${where}：条款号「${m[1]}」在条款索引里不存在`);
+      }
+    }
+  };
+
+  const errors = [];
+
+  // ① 数据文件里的散文
+  const proseDoc = JSON.parse(read("data/report-prose.json"));
+  const rows = proseDoc.rows ?? [];
+  const srcAll = [...proseFiles]
+    .map((f) => {
+      try {
+        return read(f);
+      } catch {
+        return "";
+      }
+    })
+    .join("\n");
+  for (const row of rows) {
+    checkText(row.text, `散文 ${row.id}`, errors);
+    // ③ 不许有孤儿：搬进数据文件却不引用 = 白搬
+    if (!srcAll.includes(`"${row.id}"`)) {
+      errors.push(`散文 ${row.id} 在代码里**没被用到** —— 搬进数据文件却不引用，等于白搬`);
+    }
+  }
+
+  // ② 留在代码里的散文（「模板里夹着插值」的那两段）—— 一样要核
+  const scan = runNode(["scripts/hardcode_scan.mjs"], "hardcode-scan");
+  assert(scan.ok, `硬编码扫描跑不起来：\n        ${(scan.out || "").slice(-300)}`);
+  for (const rec of JSON.parse(scan.out)) {
+    if (!proseFiles.has(rec.file)) continue;
+    if (rec.sub !== "文案") continue;
+    // 数据文件里已经搬走的那几段，不再在代码里（③ 反过来查）
+    if (rows.some((r) => r.file === rec.file && r.line === rec.line)) continue;
+    checkText(rec.text, `${rec.file}:${rec.line}`, errors);
+  }
+
+  assert(
+    errors.length === 0,
+    `报告散文里有 ${errors.length} 处**语料撑不住的说法**：\n        ` +
+      errors.slice(0, 8).join("\n        "),
+  );
+
+  return `${rows.length} 段散文（数据文件）· 事实全部回过语料`;
+});
+
 check("the swap checklist is not stale", () => {
   // 清单是**生成的**：改了源码就必须重出，否则它会**静静地骗人** ——
   // 读者照着一份旧清单去改代码，改的是已经不存在的行。

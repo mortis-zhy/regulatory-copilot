@@ -18,6 +18,7 @@
  *   11.6 修订重点章节对比    ← high-severity changes grouped by device
  *   11.7 关键变化点的影响分析← derived from locked facts above; no new facts
  */
+import { prose } from "./reportProse";
 import type { DiffResult, EngineChange, EngineParameter, EngineValueDiff } from "./diffEngine";
 import type { ChapterChange } from "./chapterDiff";
 import { isNewDevice } from "./chapterDiff";
@@ -558,7 +559,7 @@ function build11_7(
   }
   if (chapterAdded.length > 0 || mods.length > 0) {
     bullets.push(
-      `- **对法规对接的影响**：草案版与 UN R48-09（C）的章节体系对齐度提升，但 A 引入了 C 尚未涵盖的本地化概念（如 ADS 标志灯、发光徽标），属 GB 标准对国际法规的超集化趋势（仅作客观描述，不作规范性判断）。`,
+      prose("changePointChapter.561"),
     );
   }
 

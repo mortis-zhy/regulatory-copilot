@@ -1,0 +1,92 @@
+{
+  "_why": "**报告正文散文** —— 报告里那些「解释性的话」。\n\n它们换一套标准时**必须重写**（讲的是这一套标准怎么组织条款），\n而它们原来写在代码里 —— **改代码比改数据危险**：\n改坏了照样跑得出来，只是**说错话**。\n\n搬到这里之后：换标准时**只改这个文件**（agent 写、人核事实），\n而不是翻代码。\n\n每条都带 `facts`：**从散文里扫出来的**事实声明\n（它提到的标准号与条款号）—— 散文机器判不了**措辞**，\n但能判**事实**：事实不符 = 闸门红。\n\n**没搬进来的两段**（`refDiff` 的规范性引用段、`htmlRenderV8` 的术语对照段）\n是**模板里夹着插值**的，拆成片段的收益不抵「拼错了就悄悄少一句话」的风险 ——\n它们仍在台账清单里，事实由闸门从源码里扫出来核。",
+  "_generator": "scripts/extract_report_prose.py（从源码解析出来，逐字保真）",
+  "rows": [
+    {
+      "id": "changePointChapter.561",
+      "file": "server/reports/changePointChapter.ts",
+      "line": 561,
+      "text": "- **对法规对接的影响**：草案版与 UN R48-09（C）的章节体系对齐度提升，但 A 引入了 C 尚未涵盖的本地化概念（如 ADS 标志灯、发光徽标），属 GB 标准对国际法规的超集化趋势（仅作客观描述，不作规范性判断）。",
+      "facts": {
+        "standards": [
+          "un-r48"
+        ],
+        "clauses": []
+      }
+    },
+    {
+      "id": "reportV6.776",
+      "file": "server/reports/reportV6.ts",
+      "line": 776,
+      "text": "GB 4785-2019 前言写明其技术内容**参考 ECE R48 06 系**，所以 GB 的术语表本来就照 R48 的写法译。",
+      "facts": {
+        "standards": [
+          "ece-r48",
+          "gb4785-2019"
+        ],
+        "clauses": []
+      }
+    },
+    {
+      "id": "reportV6.1380",
+      "file": "server/reports/reportV6.ts",
+      "line": 1380,
+      "text": "> **C 列的粒度是「同一盏灯」，不是「同一条款」**：UN R48 与 GB 的条款编号体系",
+      "facts": {
+        "standards": [
+          "un-r48"
+        ],
+        "clauses": []
+      }
+    },
+    {
+      "id": "reportV6.1637",
+      "file": "server/reports/reportV6.ts",
+      "line": 1637,
+      "text": "GB 4785 按 `5.x` 组织、UN R48 按 `6.x` 组织，两套编号不同构，**不能逐号对读**。",
+      "facts": {
+        "standards": [
+          "gb4785",
+          "un-r48"
+        ],
+        "clauses": []
+      }
+    },
+    {
+      "id": "reportV6.2397",
+      "file": "server/reports/reportV6.ts",
+      "line": 2397,
+      "text": "（明细表页码后标注「· 源 PDF」）。GB 4785-2019 的色度表文本层会把三列串成一行",
+      "facts": {
+        "standards": [
+          "gb4785-2019"
+        ],
+        "clauses": []
+      }
+    },
+    {
+      "id": "reportV6.2662",
+      "file": "server/reports/reportV6.ts",
+      "line": 2662,
+      "text": "> （如 A 草案写「6m」、GB 4785-2019 与 R48 写「6000mm」，矩阵统一按 mm 报）；",
+      "facts": {
+        "standards": [
+          "gb4785-2019"
+        ],
+        "clauses": []
+      }
+    },
+    {
+      "id": "reportV6.3697",
+      "file": "server/reports/reportV6.ts",
+      "line": 3697,
+      "text": "> UN R48 与 GB 的条款编号体系**完全不同构**（§2 定义 / §5 通用 / §6 各灯具 / Annex），",
+      "facts": {
+        "standards": [
+          "un-r48"
+        ],
+        "clauses": []
+      }
+    }
+  ]
+}

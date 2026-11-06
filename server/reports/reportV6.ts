@@ -15,6 +15,7 @@
  *
  * Run: node dist/report-v6.mjs
  */
+import { prose } from "./reportProse";
 import fs from "node:fs";
 import path from "node:path";
 import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
@@ -773,7 +774,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   out.push("### 13.5.4 GB 自己的术语表交叉核对");
   out.push("");
   out.push(
-    `GB 4785-2019 前言写明其技术内容**参考 ECE R48 06 系**，所以 GB 的术语表本来就照 R48 的写法译。` +
+    prose("reportV6.776") +
       `本章 ${LAMP_MAP.rows.length} 条人工配对里，**${literal.length} 条**可以直接用 GB 自己的英文术语核对：` +
       `GB §3.9 写的英文名与 R48 §5.15 的灯名**逐字相同**，装置是同一个。` +
       (manual.length
@@ -1377,7 +1378,7 @@ function build14_clauseTextDiff(
     `> **${Object.keys((R48_CHAPTERS as any)?.map ?? {}).length} 条对应关系逐条回 R48 原文验过**：英文标题原文必须在语料里、R48 章节号必须`,
     "> 出现在该标题前后 400 字内、GB 章标题必须含该装置名）。",
     ">",
-    "> **C 列的粒度是「同一盏灯」，不是「同一条款」**：UN R48 与 GB 的条款编号体系",
+    prose("reportV6.1380"),
     "> （§2 定义 / §5 通用 / §6 各灯具 / Annex）完全不同构，逐号对读会造出假对应 ——",
     "> 例如 GB 5.4.5.1 与 R48 6.4.5.1 编号相似却不是同一条款。",
     "> **逐参数的条款级对照以第 12 章为准**（那里 915 个取值位每个都带条款与页码）。",
@@ -1634,7 +1635,7 @@ function buildNarrativeFromHeadings(
         "",
         "## 3.2 条款对应关系（A | B | C 三版逐主题）",
         "",
-        "GB 4785 按 `5.x` 组织、UN R48 按 `6.x` 组织，两套编号不同构，**不能逐号对读**。",
+        prose("reportV6.1637"),
         "下表按主题给出三版各自的条款号与页码，是本报告里唯一可核对的章节映射；",
         "带 ✓ 的页码已回源 PDF 逐句核对。",
         "",
@@ -2394,7 +2395,7 @@ function buildChapter12Matrix(
     "**没有「不知道」的格子** —— 不做推测填充；定位不到与定位到错误的区别是：前者读者知道要自己去翻，后者读者会当真。",
     `**取值来源**：MinerU 抽取 ${stats.cells - stats.fromSourcePdf} 处；` +
       `${stats.fromSourcePdf} 处 MinerU 未能读出，改由上传的源 PDF 直读补齐` +
-      "（明细表页码后标注「· 源 PDF」）。GB 4785-2019 的色度表文本层会把三列串成一行" +
+      prose("reportV6.2397") +
       "（WWWW34564561黄紫紫蓝色红色色边…），" +
       "直读源 PDF 并把碎片拼接后可完整还原。",
     `**页面存在性复核**：已定位的 ${stats.verified} 个取值格，每一个都拿**源 PDF 的那一页**当独立证据核过 —— ` +
@@ -2659,7 +2660,7 @@ function buildChapter12Matrix(
     "> 该行是数值行却取不到口径的，判「未判定」（**宁可留空，不猜**）。",
     "> · **单位** —— 取值原文里的单位与行声明的单位一致才算「已核」；",
     "> 「已核」也包含一种：**原文写了同量纲的另一种写法、已按 spec 换算**",
-    "> （如 A 草案写「6m」、GB 4785-2019 与 R48 写「6000mm」，矩阵统一按 mm 报）；",
+    prose("reportV6.2662"),
     "> **不一致**（声明 mm、原文是 cm，且没换算）是硬错，必须人工看。",
     "",
     ...(cb.exceptions.length
@@ -3694,7 +3695,7 @@ function buildAppendixH(slots: TitleSlots): string {
     "> 报告不替读者下结论；差异片段标出来，读者自己判。",
     "",
     `> **C（${versionDoc("C")}）侧不在这一节。**`,
-    "> UN R48 与 GB 的条款编号体系**完全不同构**（§2 定义 / §5 通用 / §6 各灯具 / Annex），",
+    prose("reportV6.3697"),
     "> 逐号对读会造出假对应 —— GB 5.4.5.1 与 R48 6.4.5.1 编号相似却不是同一条款。",
     "> R48 的对照在**章节级**（第 14 章，26 条对应逐条回原文验过）与",
     "> **参数级**（第 12 章，319 个取值位）。**不硬凑条款级对照。**",
