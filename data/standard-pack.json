@@ -5,7 +5,7 @@
   "standardFamilyShort": "GB4785",
   "_clausesOfLastVersion": "最后一个版本（当前是 C = UN R48-09）里「灯具安装」那一章的条款号。附录 D 的标题要写它。R48 是 §6；换标准要改这里。",
   "clausesOfLastVersion": "§6",
-  "_versions": "各版本的显示名表。\n\n以前这张表在 `server/reports/versionMeta.ts` 里（硬编码的 12 处字面量）。\n现在搬到这里：**换标准时改这一个 JSON，代码不用动**。\n\n字段：\n- `label` 短标签（表头、章节标题）\n- `desc` 一句话说明（执行摘要）\n- `doc`  **文档显示名**（不含页数）—— 源文档清单与下载文件名从它派生\n- `std`  标准号（第 2 章概况表那一列）\n- `status` 状态（草案/现行/国际法规…）\n\n**页数不在这里** —— 页数是语料的事实，从分页文本数出来。写死的页数换一套标准就全错，而且**不报错**：报告照出，只是页数在骗人。",
+  "_versions": "各版本的显示名表。\n\n以前这张表在 `server/reports/versionMeta.ts` 里（硬编码的 12 处字面量）。\n现在搬到这里：**换标准时改这一个 JSON，代码不用动**。\n\n字段：\n- `label` 短标签（表头、章节标题）\n- `desc` 一句话说明（执行摘要）\n- `doc`  **文档显示名**（不含页数）—— 源文档清单与下载文件名从它派生\n- `coverLine` 讲稿/封面上的**整行称呼**（如「A 草案 V4.3.5」）——\n  三段的拼法各不相同（有的用 `rev`、有的用 `doc`），**推导不出来**；\n  写死会在换标准时**静默讲错标准**，写规则会拼出**没人看得出来的错名字**。\n  **不给就退回 `label`**（短标签）—— 宁可少几个字，不可错着说。\n- `std`  标准号（第 2 章概况表那一列）\n- `status` 状态（草案/现行/国际法规…）\n\n**页数不在这里** —— 页数是语料的事实，从分页文本数出来。写死的页数换一套标准就全错，而且**不报错**：报告照出，只是页数在骗人。",
   "versions": [
     {
       "key": "A",
@@ -31,7 +31,8 @@
       "roleNote": "新版，待发布",
       "docInText": "GB 4785 草案",
       "consultOrder": 1,
-      "coverRole": "草案版"
+      "coverRole": "草案版",
+      "coverLine": "A 草案 V4.3.5"
     },
     {
       "key": "B",
@@ -57,7 +58,8 @@
       "roleNote": "现行版，旧版",
       "docInText": "GB 4785-2019",
       "consultOrder": 0,
-      "coverRole": "现行版"
+      "coverRole": "现行版",
+      "coverLine": "B 现行 GB 4785-2019"
     },
     {
       "key": "C",
@@ -80,7 +82,8 @@
       "roleNote": "国际法规，只做参照",
       "docInText": "UN R48-09",
       "consultOrder": 2,
-      "coverRole": "欧版"
+      "coverRole": "欧版",
+      "coverLine": "C UN R48-09"
     }
   ],
   "claimedIndicators": {
@@ -88,6 +91,8 @@
     "sectionNo": "11.4",
     "tableNo": "表 11.6"
   },
+  "_refDiffNarrative": "§2.3 那段叙述的**举例** —— 举例是这套标准特有的：哪些引用被新增/删除、它们叫什么、怎么称呼新增的那些。\n\n写死在代码里，换标准后它会**照旧讲旧标准**；推导又推不出来 —— 举例是**挑**出来的（新增 8 项里挑 2 个讲），不是 diff 算出来的。\n\n槽位 `{added}` / `{removed}` 是**数量**，由 diff 现算；其余文字逐字照抄。",
+  "refDiffNarrative": "A 草案对规范性引用文件做了**大规模更新**：新增 {added} 项（含新国标 GB 45831「机动车用光源 安全性要求」、GB/T 45603「机动车用光源的类型要求」，以及直接采纳联合国 R.E.5 决议与 UN 国际法规），同时移除 {removed} 项旧引用（如 ECE R48、GB 18408/18409 等旧灯具标准）。",
   "pdfMeta": {
     "creator": "{standardFamily} 多版本对比报告 pipeline",
     "subject": "{versionLabels} {countWord}法规横向对照（{countZhou}同框 · 4 维影响卡 · 参数总表 · 条款映射）",

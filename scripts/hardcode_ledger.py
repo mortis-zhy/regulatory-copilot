@@ -277,6 +277,18 @@ def analyse():
     return recs, rules, live, uncovered, used
 
 
+def _files_alive(rule) -> bool:
+    """这条规则列的文件**都还在**吗？
+
+    「0 处命中」不等于「规则是假的」——
+    文件还在而命中清零，说明这一族的标准名**已经不在源码里**了（成果）。
+    """
+    files = rule.get("files") or []
+    if not files:
+        return False
+    return all(os.path.exists(os.path.join(ROOT, f)) for f in files)
+
+
 # ---------------------------------------------------------------- 输出
 
 def print_report(recs, rules, live, uncovered, used):
@@ -294,7 +306,14 @@ def print_report(recs, rules, live, uncovered, used):
     print("-" * 88)
     print("台账规则 %d 条；未被任何规则覆盖的硬编码：%d 处" % (len(rules), len(uncovered)))
     for rule, n in used:
-        mark = "✓" if n else "✗ 已失效"
+        if n:
+            mark = "✓"
+        elif _files_alive(rule):
+            # 清零 —— 文件还在，只是这一族的标准名已经不在源码里了。
+            # 这是**成果**，不是「台账写错了」。
+            mark = "○ 已清零"
+        else:
+            mark = "✗ 已失效"
         print("  %s %-28s %3d 处   %s" % (mark, rule.get("id", "?"), n, rule.get("why", "")[:48]))
     if uncovered:
         print("-" * 88)
@@ -400,10 +419,15 @@ def main():
                "\n    ".join("%s:%d [%s] %s" % (r["file"], r["line"], r["sub"], (r["text"] or r["excerpt"])[:60])
                             for r in uncovered[:20])))
     # ② 规则失效 —— 台账里的这一项已经不存在了，清单会骗人
+    #
+    # 「0 处命中」有两种，性质完全不同：
+    #   · 文件还在 → 这一族**清零了**（标准名已经不在源码里）——
+    #     这是**成果**：保留规则，换标准时那几处**仍然要改**（改在数据文件里）；
+    #   · 文件没了 → 这一项是假的，删掉。
     for rule, n in used:
-        if n == 0:
-            problems.append("台账规则「%s」已经没有对应的代码了 —— 清单里的这一项是假的，删掉它"
-                            % rule.get("id"))
+        if n == 0 and not _files_alive(rule):
+            problems.append("台账规则「%s」列的文件已经不在仓库里了 —— "
+                            "清单里的这一项是假的，删掉它" % rule.get("id"))
         if not (rule.get("why") or "").strip():
             problems.append("台账规则「%s」没写 why —— 换标准时的人不知道这是干什么的" % rule.get("id"))
         if not (rule.get("swap") or "").strip():

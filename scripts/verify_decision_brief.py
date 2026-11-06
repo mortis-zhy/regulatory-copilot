@@ -32,6 +32,13 @@ BRIEF_PDF = ROOT / "delivery" / "PDF对比" / "决策正文_最新.pdf"
 MAIN_REPORT = ROOT / "reports" / "last-report.json"
 DECISION_REPORT = ROOT / "reports" / "decision-report.json"
 
+# 决策正文的**页眉**（每页都印着）—— 从声明取。
+#
+# 原来写死「GB 4785 多版本」：换标准后页眉换了，这条滤不掉 →
+# 页眉被当正文 → 「近空白页」检查**悄悄变松**（正文行数变多 → 少报空页）。
+_PACK = json.load(io.open(ROOT / "data" / "standard-pack.json", encoding="utf-8"))
+BRIEF_HEADER = f"{_PACK['standardFamily']} 多版本"
+
 MIN_PAGES = 20
 MAX_PAGES = 30
 
@@ -90,7 +97,7 @@ def main() -> int:
         lines = [l for l in p.get_text().split("\n") if l.strip()]
         body = [
             l for l in lines
-            if "GB 4785 多版本" not in l
+            if BRIEF_HEADER not in l
             and "汽车外部照明" not in l
             and not re.match(r"^\s*\d+\s*/\s*\d+\s*$", l)
         ]

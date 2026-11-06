@@ -23,6 +23,7 @@ import fs from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { extractTypedTables, type TypedTableEntry as ExtractedTypedTable } from "./typedTables";
+import { prose } from "./reportProse";
 import {
   extractClosureCounts as extractClosureCountsFromMd,
   reportMarkdown,
@@ -1214,11 +1215,7 @@ function renderGlossary(): string {
   return `
   <h2 class="legend-h2">术语对照 · 三个「面」不是同义词</h2>
   <div class="glossary-box">
-    <p class="gl-intro">
-      全文出现的<b>发光面 / 视表面 / 透光面</b>看似同义实则<b>指三个不同的物理面</b>。
-      GB 4785-2019 修订说明已明确「透光面、发光面、视表面等定义与 GB4785-2007 存在差异」，
-      本报告<b>按原文分别使用、不做统一替换</b>。换算时请对照下表。
-    </p>
+${prose("htmlRenderV8.1219")}
     <table class="gl-table">
       <thead><tr><th>中文</th><th>英文</th><th>出处</th><th>定义（原文口径）</th></tr></thead>
       <tbody>${tr}</tbody>

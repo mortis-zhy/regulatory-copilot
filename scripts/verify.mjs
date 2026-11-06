@@ -3912,12 +3912,28 @@ check("no standard-specific names in the gates themselves", () => {
   // 没登记的 → 红；登记了但其实用不上的 → **也红**（例外清单不许养僵尸）。
   const scan = runNode(["scripts/hardcode_scan.mjs"], "hardcode-scan");
   assert(scan.ok, `硬编码扫描跑不起来：\n        ${(scan.out || "").slice(-300)}`);
-  const recs = JSON.parse(scan.out);
 
   const ledger = JSON.parse(read("data/hardcode-ledger.json"));
   const rule = (ledger.rules ?? []).find((r) => r.id === "gate-assertions");
   assert(rule, "台账里没有「闸门里的断言」那条规则 —— 不知道哪些文件算闸门");
   const gateFiles = new Set(rule.files ?? []);
+
+  // **Python 那一半闸门** —— JS 那份扫描器只扫 .ts/.js，
+  // 不扫它的话，「闸门不许有标准名」在 Python 闸门里**形同虚设**。
+  const pyGateFiles = [...gateFiles].filter((f) => f.endsWith(".py"));
+  let pyRecs = [];
+  if (pyGateFiles.length) {
+    const pyScan = runPy(
+      ["scripts/scan_hardcodes.py", ...pyGateFiles],
+      "scan-python-hardcodes",
+    );
+    assert(
+      pyScan.ok,
+      `Python 闸门的硬编码扫描跑不起来：\n        ${(pyScan.out || "").slice(-300)}`,
+    );
+    pyRecs = JSON.parse(pyScan.out);
+  }
+  const recs = [...JSON.parse(scan.out), ...pyRecs];
   const exceptions = ledger.gateExceptions ?? [];
   const allowed = new Map(exceptions.map((e) => [`${e.file}\u0000${e.text}`, e]));
 
@@ -3953,7 +3969,10 @@ check("no standard-specific names in the gates themselves", () => {
     );
   }
 
-  return `${hits.length} 处命中（全部登记过理由）· 闸门文件 ${gateFiles.size} 个`;
+  return (
+    `${hits.length} 处命中（全部登记过理由）· 闸门文件 ${gateFiles.size} 个` +
+    `（含 Python 闸门 ${pyGateFiles.length} 个）`
+  );
 });
 
 check("the report prose only says what the corpus can back up", () => {
@@ -4047,8 +4066,10 @@ check("the report prose only says what the corpus can back up", () => {
   for (const rec of JSON.parse(scan.out)) {
     if (!proseFiles.has(rec.file)) continue;
     if (rec.sub !== "文案") continue;
-    // 数据文件里已经搬走的那几段，不再在代码里（③ 反过来查）
-    if (rows.some((r) => r.file === rec.file && r.line === rec.line)) continue;
+    // 数据文件里已经搬走的那几段：代码里**不该再有同一段文字**。
+    // （原来按「文件 + 行号」跳 —— 行号是**搬迁时**的位置，早过时了；
+    //   改成按**文字**跳：「同一句话两处维护」由散文台账自己查。）
+    if (rows.some((r) => r.text === rec.text)) continue;
     checkText(rec.text, `${rec.file}:${rec.line}`, errors);
   }
 
@@ -4059,6 +4080,95 @@ check("the report prose only says what the corpus can back up", () => {
   );
 
   return `${rows.length} 段散文（数据文件）· 事实全部回过语料`;
+});
+
+check("every product declaration names a script that exists", () => {
+  // 产物声明（`_generator`）说的是「这个文件是**哪个脚本**产的」。
+  //
+  // 如果那个脚本**根本不在仓库里**，这句话就是**假话**：
+  // 下一个人（或 agent）照着去跑，跑不起来；
+  // 更糟的是他可能以为「产物已经重出过了」——
+  // 而实际上它**已经过时很久**了。
+  //
+  // 真实踩过的坑：`data/report-prose.json` 的 `_generator` 写着一个
+  // 从来没有过的脚本名 —— 声明是假的，而**没有任何一道闸门会发现**。
+  //
+  // 这一关就是那道「会发现的闸门」。
+  const named = [];
+  const bad = [];
+  const errors = [];
+  for (const f of readdirSync(resolve(ROOT, "data")).filter((x) => x.endsWith(".json"))) {
+    let doc;
+    try {
+      doc = JSON.parse(read("data/" + f));
+    } catch (e) {
+      // **别把「读不出来」当成「没有声明」** ——
+      // `catch { continue; }` 会把代码错误伪装成「这东西不存在」。
+      errors.push(`data/${f} 读不出来：${e && e.message ? e.message : e}`);
+      continue;
+    }
+    // 声明里的信息散在 `_why` / `_comment` / `_how` 里 —— 那些地方同样可能
+    // 点名一个**不存在**的脚本（读者会照着去找，找不到）。
+    // 所以扫**所有** `_` 开头的字符串字段，不只 `_generator` 一个。
+    const meta = Object.entries(doc ?? {}).filter(
+      ([k, v]) => typeof k === "string" && k.startsWith("_") && typeof v === "string",
+    );
+    for (const [k, v] of meta) {
+      for (const m of v.matchAll(/((?:scripts|tools)\/[\w.\-/]+\.(?:py|mjs|js|ts))/g)) {
+        named.push(`${f}.${k} → ${m[1]}`);
+        if (!existsSync(resolve(ROOT, m[1]))) {
+          bad.push(`${f} 的 \`${k}\` 点了「${m[1]}」，但**这个脚本不在仓库里**`);
+        }
+      }
+    }
+  }
+  assert(
+    errors.length === 0,
+    `产物声明**读不出来**（${errors.length} 个文件）：\n        ` + errors.join("\n        "),
+  );
+  assert(
+    bad.length === 0,
+    `产物声明里有 ${bad.length} 处点名了**不存在的脚本** —— 声明是假的：\n        ` +
+      bad.join("\n        "),
+  );
+  assert(
+    named.length > 0,
+    "一份产物声明都没点名脚本 —— 这一关形同虚设（检查器自己得先有东西可查）",
+  );
+  return `${named.length} 份产物声明点名的脚本都在仓库里`;
+});
+
+check("the report prose ledger is self-consistent", () => {
+  // 散文台账（`data/report-prose.json`）的三条不变量：
+  //   ① 每条的 id 在代码里**被引用**（搬了不用 = 白搬）
+  //   ② 每条的 `usedAt` 与实际调用点**一致**（位置写错 → 人找不到地方）
+  //   ③ 每条的 `facts` 与散文里扫出来的**一致**（散文改了、事实没改 = 声明在骗人）
+  //   ④ 代码里没有**同一段**散文（同一句话两处维护 = 迟早对不上）
+  //
+  // 校验器**只读不写** —— 检查器顺手把产物修好 = 永远验不出来（经验 20）。
+  const { ok, out } = runPy(
+    ["scripts/extract_report_prose.py", "--check"],
+    "extract-report-prose",
+  );
+  assert(ok, `散文台账自洽性没过:\n        ${out.slice(-800)}`);
+  return out.trim().split("\n").slice(-1)[0].slice(0, 90);
+});
+
+check("the claimed-indicator ledger is self-consistent", () => {
+  // 声称指标那 9 条的两张表：
+  //   · `data/indicator-claims.json` —— **声称方说的**（值 / 正则 / 缺项说明）
+  //   · `data/indicator-verdicts.json` —— **核过的**（值 / 源 PDF 页码 / 必须查不到的）
+  //
+  // 两张表各写各的 → 迟早对不上，而「对不上」**没人会发现**：
+  // 声称方说 9 条、核过的是另外 9 条，报告照样出、闸门照样绿。
+  //
+  // 这一关还查：每条正则**编译得过**、槽位都认识。
+  const { ok, out } = runPy(
+    ["scripts/check_indicator_claims.py", "--check"],
+    "check-indicator-claims",
+  );
+  assert(ok, `声称指标台账自洽性没过:\n        ${out.slice(-800)}`);
+  return out.trim().split("\n").slice(-1)[0].slice(0, 90);
 });
 
 check("the swap checklist is not stale", () => {

@@ -5,6 +5,9 @@
  * This fills a real omission: the previous reports never compared 规范性引用
  * 文件, yet the reference report 11.6 explicitly flags "第2章 规范性引用 修改".
  */
+import PACK_JSON from "../../data/standard-pack.json";
+import { fill } from "./reportMeta";
+
 export type RefDiff = {
   added: string[];    // regulations A cites but B doesn't (new references)
   removed: string[];  // B cites but A dropped
@@ -54,6 +57,30 @@ function fmt(r: string): string {
   return r;
 }
 
+/**
+ * §2.3 那段叙述 —— **从声明取**（`data/standard-pack.json` 的 `refDiffNarrative`）。
+ *
+ * 里面的**举例**是这套标准特有的（哪些引用被新增/删除、叫什么），
+ * 写死在这里，换标准后它会照旧讲旧标准。
+ *
+ * 缺了就**抛错**：静默少掉一句「新增 N 项…」，读者看不出来 ——
+ * 那比留着一个明显的错误更糟。
+ */
+function narrative(addedCount: number, removedCount: number): string {
+  const tpl = String((PACK_JSON as any).refDiffNarrative ?? "").trim();
+  if (!tpl) {
+    throw new Error(
+      "标准声明里没有 `refDiffNarrative` —— §2.3「规范性引用文件对比」那段叙述" +
+        "的举例是这套标准特有的，不能靠推导；缺了它，报告会**少一句话**而读者看不出来。",
+    );
+  }
+  const out = fill(tpl, { added: String(addedCount), removed: String(removedCount) });
+  if (/\{/.test(out)) {
+    throw new Error(`refDiffNarrative 里有没填上的槽位：${out}`);
+  }
+  return out;
+}
+
 export function buildRefSection(refDiff: RefDiff): string {
   const { added, removed, kept } = refDiff;
   const rowsAdd = added.length ? added.map((r) => `| [新增] | ${cell(fmt(r))} |`).join("\n") : "| — | 无 |";
@@ -62,7 +89,7 @@ export function buildRefSection(refDiff: RefDiff): string {
   return [
     "## 2.3 规范性引用文件对比",
     "",
-    `A 草案对规范性引用文件做了**大规模更新**：新增 ${added.length} 项（含新国标 GB 45831「机动车用光源 安全性要求」、GB/T 45603「机动车用光源的类型要求」，以及直接采纳联合国 R.E.5 决议与 UN 国际法规），同时移除 ${removed.length} 项旧引用（如 ECE R48、GB 18408/18409 等旧灯具标准）。`,
+    narrative(added.length, removed.length),
     "",
     `**详情**：新增 ${added.length} 项 · 删除 ${removed.length} 项 · 两者共有 ${kept.length} 项（${keptList}）`,
     "",

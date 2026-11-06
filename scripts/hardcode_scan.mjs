@@ -191,6 +191,14 @@ function collectComments(sf, text, addComment) {
     for (const c of ts.getLeadingCommentRanges(text, node.getFullStart()) ?? []) {
       addComment(c.pos, c.end, text.slice(c.pos, c.end));
     }
+    // **行尾注释** —— 前导范围里没有它。
+    //
+    // `"光色与色度坐标表",   // GB 4785: 颜色` 这种：注释挂在逗号后面，
+    // 不取它 → 那行里的标准名被算到字符串头上 → 分类成「标识符」，
+    // 而它其实**在注释里**（无害）。分类错了，整本台账的可信度就打折。
+    for (const c of ts.getTrailingCommentRanges(text, node.getEnd()) ?? []) {
+      addComment(c.pos, c.end, text.slice(c.pos, c.end));
+    }
     for (const child of node.getChildren(sf)) visit(child);
   };
   visit(sf);

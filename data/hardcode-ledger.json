@@ -49,10 +49,11 @@
         "data/requirement-scope.json",
         "data/requirement-gaps.json",
         "data/indicator-adjudications.json",
-        "data/indicator-claims.json"
+        "data/indicator-claims.json",
+        "data/indicator-verdicts.json"
       ],
-      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。（§11.4 那 6 条声称指标的人工复核结论也在其中。）\n\n`data/indicator-claims.json` 是**声称指标**那 9 条（id / 标签 / 声称值 / 匹配正则）——**挑哪 9 条**是人判断的，正则是从语料扫出来验过的。它们原来写在 `server/reports/reportV6.ts` 的代码里，现在搬到了数据文件：换标准时重出这一个文件，而不是翻代码。",
-      "swap": "**必须重新核**。照搬会把上一套标准的结论带进新标准 —— 那不是「空着」，是「错着」。人工裁定与机器判定要分开存放（这一条已经是机制）。\n\n`data/indicator-claims.json`：按新标准的声称方重挑这 9 条（或增减条数），每条的正则要回新标准的原文验过（闸门「声称指标那一族与声明一致」守着表号与散文，正则本身由 `scripts/verify_indicators.py` 回源核）。"
+      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。（§11.4 那 6 条声称指标的人工复核结论也在其中。）\n\n`data/indicator-claims.json` 是**声称指标**那 9 条（id / 标签 / 声称值 / 匹配正则）——**挑哪 9 条**是人判断的，正则是从语料扫出来验过的。它们原来写在 `server/reports/reportV6.ts` 的代码里，现在搬到了数据文件：换标准时重出这一个文件，而不是翻代码。\n\n`data/indicator-verdicts.json` 是同一批 9 条的**核过**那侧（值 / 源 PDF 页码 / 必须查不到的关键词）——它原来整张写在闸门代码 `scripts/verify_indicators.py` 里，换标准时要翻**闸门**代码改；搬进数据文件后，闸门代码一个字都不用动 ✓。",
+      "swap": "**必须重新核**。照搬会把上一套标准的结论带进新标准 —— 那不是「空着」，是「错着」。人工裁定与机器判定要分开存放（这一条已经是机制）。\n\n`data/indicator-verdicts.json`：这 9 条的**已知答案**（哪条在第几页、值多少、哪些必须查不到）要按新标准**逐条重核** —— 照搬就是把上一套标准的页码带进新标准，而页码错了闸门会**判成「原文没有」**（一个假的「不存在」）。\n\n`data/indicator-claims.json`：按新标准的声称方重挑这 9 条（或增减条数），每条的正则要回新标准的原文验过（闸门「声称指标那一族与声明一致」守着表号与散文，正则本身由 `scripts/verify_indicators.py` 回源核）。"
     },
     {
       "id": "patch-files",
@@ -94,8 +95,8 @@
         "server/reports/refDiff.ts",
         "server/reports/changeLedger.ts"
       ],
-      "why": "报告正文里的说明句、章节引言、附录标题、agent 的系统提示词。**这一组最贵**：它不是「改个名」，是「为新标准重写一遍叙述」，而且改错了不报错 —— 报告照出，只是讲的还是上一个标准的事。",
-      "swap": "逐段重写。**优先把能声明化的挪进 `data/standard-pack.json`**（标题层已经声明化，散文还没有）。"
+      "why": "报告正文里的说明句、章节引言、附录标题、agent 的系统提示词。**这一组最贵**：它不是「改个名」，是「为新标准重写一遍叙述」，而且改错了不报错 —— 报告照出，只是讲的还是上一个标准的事。\n\n**2026-11-06 之后**：散文**搬进了 `data/report-prose.json`**（见「数据文件」那一档）—— 源码里这一族**已清零**。这一组仍留着，是为了闸门能扫到**留在代码里**的那几段（`refDiff.ts` 的规范性引用段：它的**举例**在声明的 `refDiffNarrative` 里，整句话留在代码，因为它夹着 diff 现算的数量）。",
+      "swap": "散文在 **`data/report-prose.json`**（数据文件那一档）：换标准时**重写那个文件**（agent 写、人核事实），**代码不用动** ✓。\n\n留在代码里的那几段（`refDiff.ts`）—— 换标准时改声明里的 `refDiffNarrative`（举例是**挑**出来的，推导不出来）。"
     },
     {
       "id": "gate-assertions",
@@ -150,8 +151,8 @@
         "scripts/render_briefing.mjs",
         "scripts/render_decision_brief.mjs"
       ],
-      "why": "讲稿封面标题、副标题、页脚文件名，以及决策正文的标题与「GB 表 11.6」这类专有表号。",
-      "swap": "封面/标题改成新标准；专有表号（「GB 表 11.6」）要连**内容**一起换 —— 那张表在另一套标准里不存在。"
+      "why": "讲稿封面标题、副标题、页脚文件名，以及决策正文的标题与「GB 表 11.6」这类专有表号。\n\n**2026-11-06 之后**：这一族**全部改成声明驱动**（`data/standard-pack.json`）——封面那行取 `versions[].coverLine`，表号取 `claimedIndicators.tableNo`，规范性引用段的举例取 `refDiffNarrative`。**源码里已清零** ✓。",
+      "swap": "换标准时改**声明**里的三处，**不用动这两个脚本** ✓：\n- `versions[].coverLine` —— 讲稿封面那一行（不给就退回 `label`）；\n- `claimedIndicators.tableNo` —— 「声称指标」那一族的表号；\n- `refDiffNarrative` —— §2.3 那段叙述的**举例**。"
     },
     {
       "id": "one-off-tests",

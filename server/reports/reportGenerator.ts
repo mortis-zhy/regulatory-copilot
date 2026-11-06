@@ -29,7 +29,7 @@ import { detectStructuralChapters } from "./chapterStructural";
 // 版本清单与角色 —— 声明里（`data/standard-pack.json`）。
 // 提示词里写死了版本与角色，换标准后会把**新版与现行说反**。
 import { versionKeys, versionDoc, versionRoleNote } from "@shared/versionMeta";
-import { cnNum, countWord } from "./reportMeta";
+import { cnNum, countWord, REPORT_META } from "./reportMeta";
 
 export type ChapterSpec = {
   id: number;
@@ -445,7 +445,7 @@ ${example ? `\n【格式范例——客户已认可的"变化点总结"标准写
 > 🔧 设计影响：灯具外壳需重新开模以容纳 AFS 单元（预估 15 天模具周期）
 > 🧪 测试影响：新增近光 4° 对称性测试 + 远光自动切换时序验证
 > 📋 认证影响：型式认证流程新增 1 道工序，整体认证周期延长 2-3 周
-> ⚠ 风险等级：中（GB 4785 §5.2.6 新增条款）
+> ⚠ 风险等级：中（${REPORT_META.standardFamily} §5.2.6 新增条款）
 
 【Regex 精确提取数据（可直接引用，含条款号与页码）】
 ${trimmedRegex}
@@ -784,9 +784,9 @@ ${chapterList}
 【要求】
 1. 这是数据型附录：优先输出**大表格**（markdown 表格），把散落在正文中的数据集中汇总
 2. 附录类型提示：
-   - 章节结构对照表 → 三列（A草案/B 2019/C UN R48）逐章对照
-   - 关键数值差异 → 数值 | A值 | B值 | C值 | 差异说明，至少 15 行
-   - 术语对照 → 中文 | 英文 | A出现位置 | B出现位置，至少 15 行
+   - 章节结构对照表 → ${countWord(docs.length)}列（${docs.map((d) => d.label).join("/")}）逐章对照
+   - 关键数值差异 → 数值 | ${versionKeys().map((k) => k + "值").join(" | ")} | 差异说明，至少 15 行
+   - 术语对照 → 中文 | 英文 | ${versionKeys().map((k) => k + "出现位置").join(" | ")}，至少 15 行
    - 数据溯源 → 条款号 | 原始 PDF 页码 | 版本批次，列出 20+ 条
 3. 每条数据带原文锚点（条款号/页码）
 4. 600~2000 字，不要写"以下是"引语，直接输出 markdown

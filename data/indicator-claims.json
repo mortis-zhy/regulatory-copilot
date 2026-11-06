@@ -1,6 +1,6 @@
 {
   "_why": "**声称指标**（第 11.4 节）—— 报告里指出「声称方说的值」与原文不一致的那些指标。\n\n它们原来在 `server/reports/reportV6.ts` 的 `INDICATORS` 常量里 ——\n**值与正则都写在代码里**。换一套标准时这 9 条必须重写，\n而改代码比改数据危险：改坏了照样跑得起来，只是**说错话**。\n\n搬到这里之后：换标准时**重出这一个文件**（agent 提议 + 校验层验），\n而不是翻代码。\n\n`patterns` 是**正则源码 + 旗标**（不是 `RegExp` 对象 —— 那是没法存进 JSON 的）。\n`absenceNote` 里的 `{standardFamily}` 是**槽位占位符**\n（照 `server/reports/reportMeta.ts` 的 `fill()` 那一套），\n所以这段文字**仍然跟着声明走** —— 换标准时不用改这个文件。",
-  "_generator": "scripts/build_indicator_claims.py（从 reportV6.ts 抽出，逐字保真）",
+  "_generator": "内容逐字取自 `server/reports/reportV6.ts` 的 `INDICATORS` 常量（一次性搬迁，搬迁工具是一次性脚本、未入库）· 校验：`scripts/check_indicator_claims.py --check`",
   "rows": [
     {
       "id": "drl_min_cd",

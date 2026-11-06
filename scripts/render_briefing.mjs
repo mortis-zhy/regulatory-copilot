@@ -26,6 +26,11 @@ const vLabel = (k) => VBY[k]?.label ?? k;
 const vDoc = (k) => VBY[k]?.doc ?? k;
 const vRev = (k) => VBY[k]?.rev ?? "";
 const FAM = PACK.standardFamily;
+// 讲稿封面那一行：各版本的整行称呼 —— **从声明取**（`coverLine`）。
+// 没给 `coverLine` 就退回 `label`（短标签）—— 宁可少几个字，不可错着说。
+const COVER_LINE = (PACK.versions || [])
+  .map((v) => v.coverLine || v.label)
+  .join("\u3000·\u3000");
 const FAM_SHORT = PACK.standardFamilyShort;
 const N_VERSIONS = (PACK.versions || []).length;
 const CN_DIGITS = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九"];
@@ -622,7 +627,7 @@ function buildDeck(figData) {
   <section class="page cover">
     <div class="eyebrow">REGULATORY COMPARISON · 立项汇报</div>
     <h1>${FAM} ${N_ZHOU}法规横向对比<br/>从「罗列」到「可核验的决策依据」</h1>
-    <div class="sub">A 草案 V4.3.5　·　B 现行 GB 4785-2019　·　C UN R48-09<br/>
+    <div class="sub">${COVER_LINE}<br/>
       交付件 249 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
     <div class="cards">
       <div class="card"><div class="v">${PARAMS}</div><div class="l">参数 × 3 版 = ${CELLS} 个取值位</div></div>

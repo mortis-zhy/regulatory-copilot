@@ -73,6 +73,23 @@ def standards_of(text: str) -> set:
     return out
 
 
+def own_codes() -> set:
+    """**本报告自己那几版**的代号 —— 从 `data/standard-pack.json` 算。
+
+    归一规则与 `standards_of` 同一套（`UN R48` → `UN48`、`GB 4785` → `GB4785`），
+    所以「自己那几版」与「引用别人的标准」用的是**同一种形状** ——
+    换标准时这一段不用动，声明换了就跟着换 ✓。
+    """
+    pack = json.load(io.open(os.path.join(ROOT, "data", "standard-pack.json"), encoding="utf-8"))
+    out = set()
+    for v in pack.get("versions") or []:
+        for field in ("doc", "std"):
+            t = str(v.get(field) or "")
+            if t:
+                out |= standards_of(t)
+    return out
+
+
 def cited_standards(text: str) -> set:
     """**引用里**点名的标准号 —— 与 standards_of 同一套归一，但要排除
     「GB 4785—XXXX」「UN R48-09」这类**本报告自己**的三版代号。"""
@@ -82,8 +99,12 @@ def cited_standards(text: str) -> set:
     for m in GB_RE.finditer(text):
         suffix = (m.group(1) or "").upper()
         out.add(f"GB{suffix}{m.group(2)}")
-    # 本报告的三版代号不算「引用」
-    for own in ("UN48", "GB4785", "UNR48"):
+    # 本报告自己那几版的代号不算「引用」—— **从声明取**。
+    #
+    # 原来写死 ("UN48", "GB4785", "UNR48")：换标准后这三个代号不再出现，
+    # 报告里引用自己那三版的地方就被判成「引用了别的标准」——
+    # 而且**不报错**，只是多出一堆假引用。
+    for own in own_codes():
         out.discard(own)
     return out
 

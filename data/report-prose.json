@@ -1,6 +1,6 @@
 {
-  "_why": "**报告正文散文** —— 报告里那些「解释性的话」。\n\n它们换一套标准时**必须重写**（讲的是这一套标准怎么组织条款），\n而它们原来写在代码里 —— **改代码比改数据危险**：\n改坏了照样跑得出来，只是**说错话**。\n\n搬到这里之后：换标准时**只改这个文件**（agent 写、人核事实），\n而不是翻代码。\n\n每条都带 `facts`：**从散文里扫出来的**事实声明\n（它提到的标准号与条款号）—— 散文机器判不了**措辞**，\n但能判**事实**：事实不符 = 闸门红。\n\n**没搬进来的两段**（`refDiff` 的规范性引用段、`htmlRenderV8` 的术语对照段）\n是**模板里夹着插值**的，拆成片段的收益不抵「拼错了就悄悄少一句话」的风险 ——\n它们仍在台账清单里，事实由闸门从源码里扫出来核。",
-  "_generator": "scripts/extract_report_prose.py（从源码解析出来，逐字保真）",
+  "_why": "**报告正文散文** —— 报告里那些「解释性的话」。\n\n它们换一套标准时**必须重写**（讲的是这一套标准怎么组织条款），\n而它们原来写在代码里 —— **改代码比改数据危险**：\n改坏了照样跑得出来，只是**说错话**。\n\n搬到这里之后：换标准时**只改这个文件**（agent 写、人核事实），\n而不是翻代码。闸门核它们的**事实**（标准号、条款号必须真在语料里）。\n\n每条都带 `facts`：**从散文里扫出来的**事实声明\n（它提到的标准号与条款号）—— 散文机器判不了**措辞**，\n但能判**事实**：事实不符 = 闸门红。\n\n`id` 里的行号是**搬迁时**它在源码里的位置（历史锚点）；\n它**现在用在哪**，看 `usedAt`。\n\n**还有一段散文留在代码里**（`refDiff.ts` 的规范性引用段）：\n它的**举例**（哪些引用被新增/删除、叫什么）已经搬进声明的\n`refDiffNarrative` —— 那几句推导不出来（举例是**挑**出来的，不是 diff 算的）；\n整句话留在代码里，因为它夹着 diff 现算的数量。事实由闸门从源码扫出来核 ✓。",
+  "_generator": "scripts/extract_report_prose.py（一次性搬迁：从源码解析出来，逐字保真；此后用 --check 逐条校验）",
   "rows": [
     {
       "id": "changePointChapter.561",
@@ -12,7 +12,8 @@
           "un-r48"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/changePointChapter.ts:562"
     },
     {
       "id": "reportV6.776",
@@ -25,7 +26,8 @@
           "gb4785-2019"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/reportV6.ts:797"
     },
     {
       "id": "reportV6.1380",
@@ -37,7 +39,8 @@
           "un-r48"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/reportV6.ts:1404"
     },
     {
       "id": "reportV6.1637",
@@ -50,7 +53,8 @@
           "un-r48"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/reportV6.ts:1661"
     },
     {
       "id": "reportV6.2397",
@@ -62,7 +66,8 @@
           "gb4785-2019"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/reportV6.ts:2421"
     },
     {
       "id": "reportV6.2662",
@@ -74,7 +79,8 @@
           "gb4785-2019"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/reportV6.ts:2686"
     },
     {
       "id": "reportV6.3697",
@@ -86,7 +92,21 @@
           "un-r48"
         ],
         "clauses": []
-      }
+      },
+      "usedAt": "server/reports/reportV6.ts:3721"
+    },
+    {
+      "id": "htmlRenderV8.1219",
+      "file": "server/reports/htmlRenderV8.ts",
+      "text": "    <p class=\"gl-intro\">\n      全文出现的<b>发光面 / 视表面 / 透光面</b>看似同义实则<b>指三个不同的物理面</b>。\n      GB 4785-2019 修订说明已明确「透光面、发光面、视表面等定义与 GB4785-2007 存在差异」，\n      本报告<b>按原文分别使用、不做统一替换</b>。换算时请对照下表。\n    </p>",
+      "facts": {
+        "standards": [
+          "gb4785",
+          "gb4785-2019"
+        ],
+        "clauses": []
+      },
+      "usedAt": "server/reports/htmlRenderV8.ts:1218"
     }
   ]
 }

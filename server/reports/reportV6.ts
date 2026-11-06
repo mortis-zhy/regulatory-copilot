@@ -79,7 +79,27 @@ const DATA = path.join(ROOT, "dist", "mineru-v4-data.json");
 // 生成物落在**仓库内** reports/。原来落在 path.dirname(ROOT) —— 也就是仓库**外面**
 // 的那个「工作台」目录：同事克隆仓库后跑网页端管线，PDF 会写到仓库外去，
 // 仓库里翻不到，交付件也就散了。
-const OUT_PDF = path.join(ROOT, "reports", "GB4785_多版本横向对比研究报告.pdf");
+/**
+ * PDF 页眉（"GB 4785—XXXX"）—— **从声明取**。
+ *
+ * 原来写死 `/^GB\s?4785/`：换标准时页眉上的名字会变，
+ * 这条过滤就**悄悄失效** → 页眉被当正文印进引文里。
+ */
+const PAGE_HEADER_RE = new RegExp(
+  "^" +
+    REPORT_META.standardFamily
+      .split(/\s+/)
+      .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("\\s?"),
+);
+
+// 文件名里的标准族名 —— **从声明取**（去掉空格）。
+// 文件名不变 ✓（声明里的 `standardFamily` 就是「GB 4785」）。
+const OUT_PDF = path.join(
+  ROOT,
+  "reports",
+  `${REPORT_META.standardFamily.replace(/\s+/g, "")}_多版本横向对比研究报告.pdf`,
+);
 // Full A/B/C value-diff set. verify_claims.py filters these down to a handful of
 // "survivors"; the report needs the unfiltered set too, because that is what
 // carries the C (UN R48) clause numbers the deliverable is judged on.
@@ -896,7 +916,10 @@ function textBetweenPages(pageMap: Map<number, string>, startPage: number, endPa
     // pollute excerpt cells
     const clean = txt
       .split("\n")
-      .filter((l) => !/^[\d]{1,3}\s*\|?\s*$/.test(l.trim()) && !/^GB\s?4785/.test(l.trim()))
+      .filter(
+        (l) =>
+          !/^[\d]{1,3}\s*\|?\s*$/.test(l.trim()) && !PAGE_HEADER_RE.test(l.trim()),
+      )
       .join("\n");
     lines.push(clean.length > remaining ? clean.slice(0, remaining) + "…" : clean);
     total += clean.length;

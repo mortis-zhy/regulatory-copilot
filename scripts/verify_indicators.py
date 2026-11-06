@@ -60,86 +60,16 @@ def norm(t):
 #   label / found = {版本: (值, 页)} 或 {}（缺失）
 #   absent_in    = 必须在这些版本全文里 0 命中的关键词
 #   probes       = 值必须在该页上出现的形态（多个候选，任一命中即可）
-INDICATORS = [
-    {
-        "id": "drl_min_cd",
-        "label": "DRL 转向冲突时减光后最大光强",
-        "found": {"A": ("140", 57)},
-        "absent_in": [],
-        "probes": {"A": [r"最大光强不大于140cd"]},
-        "why": "A 5.19.7.6 量化上限；B 无 cd 上限（5.19.7.5 只说「降低发光强度」）",
-    },
-    {
-        "id": "ess_freq_hz",
-        "label": "ESS 紧急制动信号闪烁频率",
-        "found": {"B": ("4.0", 54), "A": ("4.0", 70)},
-        "absent_in": [],
-        "probes": {
-            "B": [r"以\s*[(（]\s*4\s*\.\s*0\s*±\s*1\s*\.\s*0\s*[)）]\s*Hz"],
-            "A": [r"以\s*[(（]\s*4\s*\.\s*0\s*±\s*1\s*\.\s*0\s*[)）]\s*Hz"],
-        },
-        "why": "B 5.23.7.1 / A 7.2.7.1 —— 两版都是 4.0±1.0 Hz",
-    },
-    {
-        "id": "ess_cd",
-        "label": "ESS 光度",
-        "found": {},
-        "absent_in": ["紧急制动信号"],
-        "absent_probe": r"紧急制动信号[\s\S]{0,200}?(?:发光强度|光强|光度)\s*\d+\s*cd",
-        "why": "B 5.23 全节无光度条款；ESS 只规定闪烁频率",
-    },
-    {
-        "id": "drl_vis_deg",
-        "label": "DRL 可见度角度",
-        "found": {"B": ("20", 47), "A": ("20", 56)},
-        "absent_in": [],
-        "probes": {
-            "B": [r"水平方向角\s*[βb]?\s*[:：]\s*向外、向内各\s*20\s*°"],
-            "A": [r"水平方向角\s*[βb]?\s*[:：]\s*向外、向内各\s*20\s*°"],
-        },
-        "why": "B 5.19.5 / A 5.19.5 —— 两版都是各 20°（GB4785 声称的 25° 不存在）",
-    },
-    {
-        "id": "side_marker_m",
-        "label": "侧标志灯间距",
-        "found": {"B": ("3", 46), "A": ("3", 55)},
-        "absent_in": [],
-        "probes": {
-            "B": [r"两相邻侧标志灯的间距应不大于3m"],
-            "A": [r"两相邻侧标志灯的间距应不大于3m"],
-        },
-        "why": "B 5.18.4.3 / A 5.18.4.3 —— 两版都是 3m（可增至 4m）",
-    },
-    {
-        "id": "led_life_h",
-        "label": "LED 寿命",
-        "found": {},
-        "absent_in": ["寿命"],
-        "why": "三版全文 0 次「寿命」；光源寿命属光源标准（GB 15766 / UN R37 / R99 / R128）",
-    },
-    {
-        "id": "lumen_pct",
-        "label": "光通维持率",
-        "found": {},
-        "absent_in": ["光通维持率"],
-        "why": "三版只有「目标光通量」（A 3.2.2 / B 3.7.8），无「光通维持率」",
-    },
-    {
-        "id": "preheat_min",
-        "label": "预热点灯时间",
-        "found": {},
-        "absent_in": ["预热"],
-        "why": "三版全文 0 次「预热」",
-    },
-    {
-        "id": "afs_switch_s",
-        "label": "AFS 切换时间",
-        "found": {},
-        "absent_in": ["切换时间"],
-        "why": "B 5.22「自适应前照明系统」全节无「切换时间」；全文「切换」只在附录 H 与 4.9b",
-    },
-]
-
+# 已知答案表 —— **在数据文件里**（`data/indicator-verdicts.json`）。
+#
+# 原来写在代码里：换标准时要翻闸门代码改 —— 而闸门代码是**不许乱动**的地方，
+# 于是「换标准」和「不许碰闸门」两条规矩互相别扭。
+# 搬进数据文件后，换标准时**只改那个文件**，闸门代码一个字都不用动 ✓。
+INDICATORS = json.load(
+    io.open(
+        os.path.join(ROOT, "data", "indicator-verdicts.json"), encoding="utf-8"
+    )
+)["rows"]
 
 def main():
     docs = cs.pick_docs()
