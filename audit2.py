@@ -14,7 +14,21 @@ import json, re, sys, io
 from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-ROOT = Path(r"C:\Users\zsndz\Desktop\comparison_agent-main\comparison_agent-main")
+# 标准名 —— **从声明取**（`data/standard-pack.json`）。
+# 原来写死「GB4785」：换标准后这个一次性脚本会**照旧讲旧标准**。
+from scripts.standard_pack import load_pack
+
+_PACK = load_pack(Path(__file__).resolve().parent)
+FAM_SHORT = _PACK.get("standardFamilyShort", "")
+_CI = _PACK.get("claimedIndicators") or {}
+SEC_NO = _CI.get("sectionNo", "")
+TBL_NO = str(_CI.get("tableNo", "")).replace("表 ", "")
+
+# 项目根 —— **从本文件算**，不写死路径。
+# 原来写死 `C:\Users\zsndz\Desktop\comparison_agent-main\comparison_agent-main`：
+# 同事克隆仓库后跑这个脚本，它会去读**一个不存在的目录**
+#（而且是在**别人**的目录名上）—— 跑不出来，也不说为什么。
+ROOT = Path(__file__).resolve().parent
 m = json.load(open(ROOT / "dist" / "mineru-v4-data.json", encoding="utf-8"))
 v = json.load(open(ROOT / "dist" / "verified-comparison.json", encoding="utf-8"))
 b_text = m["B"]["fullText"]
@@ -89,7 +103,7 @@ for label, marker in [
 
 print()
 print("=" * 60)
-print("C. 9 GB4785 indicators — broad search (not just our patterns)")
+print(f"C. 9 {FAM_SHORT} indicators — broad search (not just our patterns)")
 print("=" * 60)
 # Also check 2 "kept" rows: ESS 4.0±1.0 Hz, side-marker 3m
 # and look at 7 "missing" to confirm truly missing (not our regex too strict)
@@ -143,7 +157,7 @@ print(f"  MinerU A fullText: {mineru_A_len} chars  vs  extract-cache A: {cache_a
 
 print()
 print("=" * 60)
-print("E. Audit on actual GB4785 chapter 11.4 table 11.6: are 9 'missing' wrong?")
+print(f"E. Audit on actual {FAM_SHORT} chapter {SEC_NO} table {TBL_NO}: are 9 'missing' wrong?")
 print("=" * 60)
 # Re-check that 9 indicators: how many ACTUALLY exist in original?  I'll
 # search MinerU text for each indicator's keyword

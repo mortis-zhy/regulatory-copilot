@@ -26,9 +26,16 @@ from pathlib import Path
 
 import fitz
 
-from scripts.standard_pack import source_dir, source_pdfs
+from scripts.standard_pack import source_dir, source_pdfs, load_pack
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 ROOT = Path(__file__).resolve().parent
+
+# 页脚上的标准号 —— **从声明取**。
+#
+# 原来写死「GB4785」：换标准后源 PDF 的页脚会印**新标准**的号，
+# 这条判据就**悄悄失配** → 页码读不出来 → 审计「跑完了」，
+# 其实没读到页码（WARN if no footer 那一档）。
+FAM_SHORT = load_pack(ROOT).get("standardFamilyShort", "")
 # 源 PDF 在**仓库内** delivery/PDF对比/。原来读的是仓库外那个「工作台」目录下的
 # 三份源 PDF（按外层的文件名匹配）—— 新克隆的同事那儿没有这些文件，
 # 这道闸门会当场红（红得响亮是好事，但闸门不该依赖仓库外的目录）。
@@ -74,7 +81,7 @@ def printed_page_of(doc, pno: int):
         if re.fullmatch(r"\d{1,3}", x):
             return int(x)
     # B: digits immediately before the trailing GB id, reversed
-    if lines and lines[-1].startswith("GB4785"):
+    if lines and lines[-1].startswith(FAM_SHORT):
         digits = [x for x in lines[-4:-1] if re.fullmatch(r"\d", x)]
         if digits:
             return int("".join(reversed(digits)))
