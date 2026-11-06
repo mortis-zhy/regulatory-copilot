@@ -135,16 +135,11 @@
         "scripts/build_lamp_color_map.py",
         "scripts/build_qualitative_diff.py",
         "scripts/build_r48_chapters.py",
-        "scripts/oxr_ab_tables.py",
-        "scripts/oxr_ab_chroma.py",
         "scripts/table_quality.py",
         "scripts/coverage_audit.py",
-        "scripts/add_specs_20261024.py",
-        "scripts/_probe_recognize.mjs",
-        "scripts/test_label_source.py",
-        "tools/export_manual_findings.py"
+        "scripts/test_label_source.py"
       ],
-      "why": "这些是**为这一套标准写的**分析脚本（光色映射、章节表、表格质量、覆盖率……）。换标准时它们**不会被复用** —— 新标准要另写一套同功能的。",
+      "why": "这些是**为这一套标准写的**分析脚本（光色映射、章节表、表格质量、覆盖率……）。换标准时它们**不会被复用** —— 新标准要另写一套同功能的。\n\n**2026-11-06 删掉 5 个零调用点的死脚本**（`oxr_ab_tables.py` / `oxr_ab_chroma.py` / `add_specs_20261024.py` / `_probe_recognize.mjs` / `export_manual_findings.py`）：留着它们，代价是**下一次有人以为能拿来用** —— 而它们**恰恰是不能复用的一次性脚本**（路径与预期都写死了本标准）。它们产出的结论留在 `GENERALIZATION.md` 与交付材料里。",
       "swap": "归档或删除；按新标准另写。**别直接改** —— 改了之后这些脚本就再也回答不了「上一套标准当时是怎么测的」。"
     },
     {
@@ -168,6 +163,28 @@
       ],
       "why": "当初为了定位某个具体问题写的一次性脚本，文件路径与预期文本写死了本标准。",
       "swap": "**不要为新标准改这些脚本** —— 它们的职责是回答「当时那个问题」。新标准另写新的排查脚本。"
+    }
+  ],
+  "gateExceptions": [
+    {
+      "file": "scripts/verify.mjs",
+      "text": "2026-08-26_GB 4785草案V4.3.5_1315_不带Comments的版本.pdf",
+      "reason": "**旧**源 PDF 的名字 —— 闸门要 grep 它，证明仓库里不再引用旧名。换标准时它要换成新标准的旧名。"
+    },
+    {
+      "file": "scripts/verify.mjs",
+      "text": "GB 4785-2019 《汽车及挂车外部照明和光信号装置的安装规定》.pdf",
+      "reason": "同上（旧源 PDF 的名字，闸门 grep 清单里的一行）。"
+    },
+    {
+      "file": "scripts/verify.mjs",
+      "text": "UN_R048-09_S01_Installation_entry into force_26-09-2025.pdf",
+      "reason": "同上（旧源 PDF 的名字，闸门 grep 清单里的一行）。"
+    },
+    {
+      "file": "scripts/verify.mjs",
+      "text": "delivery/宣讲件/项目宣讲_GB4785三版对比_讲稿版_2026-10-28.pdf",
+      "reason": "**交付材料清单**里的一行 —— 那是文件名（文件必须在仓库里），不是判据。"
     }
   ]
 }

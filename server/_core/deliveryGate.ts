@@ -76,7 +76,7 @@ export function checkDelivery(report: any, rootOverride?: string): GateResult {
   // 2. C (UN R48) must be a real column, not an empty one. The keyword filter
   //    used to be Chinese-only while R48 headings are English, so chapters 4–9
   //    rendered "源数据未提供" for C.
-  check("C UN R48 列", () => {
+  check("第三版（C）列", () => {
     const cRef = (source: string) => {
       const m = String(source ?? "").match(/C=((?:\d+(?:\.\d+)+)|Annex\s*\d+[A-Za-z]?)/i);
       return m ? m[1].replace(/\s+/g, " ") : null;

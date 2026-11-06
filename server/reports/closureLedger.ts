@@ -20,7 +20,7 @@
  */
 
 // 「声称指标」这一族的专有名词 —— 声明里（`data/standard-pack.json`）。
-import { CLAIM_META } from "./reportMeta";
+import { CLAIM_META, REPORT_META } from "./reportMeta";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -406,9 +406,18 @@ function harvestCandidates(md: string): LedgerEntry[] {
   return out;
 }
 
+/**
+ * 主题里的标准族名 —— **从声明取**。
+ *
+ * 原来这里写死 `/GB4785指标|网传/` —— 换一套标准，主题名会跟着换
+ * （「<新标准>指标」），写死的正则**悄悄失配** →
+ * 章节提示从 11.0 变成 null → **静默降级**，没有任何报错。
+ */
+const FAMILY_KEY = REPORT_META.standardFamily.replace(/\s+/g, "");
+
 /** Best-effort section hint from a row's topic cell. */
 function inferSection(topic: string): string | null {
-  if (/GB4785指标|网传/.test(topic)) return "11.0";
+  if (new RegExp(`${FAMILY_KEY}指标|网传`).test(topic)) return "11.0";
   if (/结构|章节/.test(topic)) return "11.1";
   return null;
 }

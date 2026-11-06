@@ -9,6 +9,9 @@ import { renderPdf, renderWordHtml, type ReportPayload } from "../reports/export
 import { extractPdfTextServer } from "../ingestion/pdfExtract";
 import { sidecarHealth, ensureSidecar, sidecarExtractDocs, sidecarVerify, buildSidecarReport, SIDECAR_URL } from "./sidecarClient";
 import { runDeliveryGate } from "./deliveryGate";
+// 版本角色（谁是新版、谁是现行、谁是参照）—— **从声明取**。
+// 原来写在系统提示词里，换标准时那句提示会**继续说旧标准**。
+import { REPORT_META } from "../reports/reportMeta";
 import { PROJECT_ROOT, REPORT_FILE, UPLOADED_DOCS_DIR } from "./projectRoot";
 import multer from "multer";
 
@@ -105,10 +108,18 @@ async function recognizeUploadVersion(
   };
 }
 
+/**
+ * 版本角色 —— **从声明取**（`versions[].desc`）。
+ * 原来这一行写死在提示词里，换标准时它会**继续说旧标准**。
+ */
+const VERSION_ROLE_LINE = REPORT_META.versions
+  .map((v) => `- ${v.key} = ${v.desc}`)
+  .join("；");
+
 const SYSTEM_PROMPT = `你是企业法规对比智能体（Regulatory Copilot）。所有回答必须按"结构对齐 → 内容对比 →专业参数 → 联网证据"四层组织。每条结论都要带原文锚点（章节号 / 页码 / 表格编号），并明确区分三类信息——【原文事实】、【模型推断】、【待人工确认】。不要凭空生成法规原文，不要把没有证据的联网信息当作最终结论；当模型无法验证时，必须使用【待人工确认】前缀并给出建议的核实途径。
 
 【版本角色——最高优先级规则】
-- A = GB 4785 草案 V4.3.5（新版）；B = GB 4785-2019（现行旧版）；C = UN R48-09（国际参照）
+${VERSION_ROLE_LINE}
 - 所有 changes 的语义 = **B → A**：oldExcerpt/原文 = B 的原文摘录，newExcerpt/新文 = A 的原文摘录
 - C 的内容只写进 anchor（如"C=6.1.1"），绝对不要拼进 newExcerpt
 - A 与 B 相同 = [保留]，不得作为 change 输出

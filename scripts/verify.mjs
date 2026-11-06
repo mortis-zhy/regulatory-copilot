@@ -251,7 +251,11 @@ check("仓库自足：代码不指向仓库外，源 PDF 只有一个名字", ()
      // 生成的「换标准操作清单」**引用**了源码原文（其中就有旧文件名）。
      // 它是**引用**，不是路径引用 —— 而且它由下面的「清单不许是旧的」那道闸门盯着，
      // 不会漂移。把它算成「代码还在用旧文件名」是误报。
-     ":(exclude)delivery/PDF对比/分析报告/换标准操作清单_*.md"],
+     ":(exclude)delivery/PDF对比/分析报告/换标准操作清单_*.md",
+     // 台账的 `gateExceptions` **登记着**旧名字 ——
+     // 那是「这几处允许出现标准名，理由是……」的**记录**，
+     // 同样不是路径引用。与上面那一条是同一个道理。
+     ":(exclude)data/hardcode-ledger.json"],
     { cwd: ROOT, encoding: "utf-8" },
   );
   const staleOut = (staleHits.stdout || "").trim();
@@ -595,7 +599,9 @@ check("抽取语料随仓库走（新克隆也能跑完整闸门）", () => {
 });
 
 console.log("\n=== 4. python verification layer ===");
-check("GB4785 表 11.6 的 9 条指标回源核验（直接读源 PDF，绕开 MinerU）", () => {
+check(
+  `${REPORT_META.standardFamilyShort} ${REPORT_META.claimedIndicators.tableNo} 的 9 条指标回源核验（直接读源 PDF，绕开 MinerU）`,
+  () => {
   const r = spawnSync("python", ["scripts/verify_indicators.py"], { cwd: ROOT, encoding: "utf-8" });
   const out = (r.stdout || "") + (r.stderr || "");
   assert(r.status === 0, `9 条指标回源核验失败：\n        ${out.slice(-600)}`);
@@ -1828,7 +1834,7 @@ check("two-version chapters declare their scope", () => {
   // rather than leaving the reader to guess whether the cell was forgotten.
   assert(
     c14.includes("无对应章"),
-    "chapter 14 must say what it prints where UN R48 has no corresponding chapter",
+    "chapter 14 must say what it prints where the third version has no corresponding chapter",
   );
 
   // Anti-rot: the scope marker must ride on EVERY pointer line, not just in the
@@ -3883,6 +3889,61 @@ check("the spec residue ledger is explicit and within its caps", () => {
   );
 
   return `${rows.length} 条残余（R1 ${n1} · R2 ${n2}）· 上限 ${caps.total}`;
+});
+
+check("no standard-specific names in the gates themselves", () => {
+  // 「闸门不许 agent 碰」怎么变成**可判定**的？
+  //
+  // 做法：闸门源码里**不许出现标准族的名字**（注释除外）——
+  // 于是 agent 想改闸门让自己通过，就会在改的时候**撞上这一关**。
+  //
+  // 允许出现的地方**不是白名单就算过**：每一处都要在台账
+  // （`data/hardcode-ledger.json` 的 `gateExceptions`）里**登记理由**；
+  // 没登记的 → 红；登记了但其实用不上的 → **也红**（例外清单不许养僵尸）。
+  const scan = runNode(["scripts/hardcode_scan.mjs"], "hardcode-scan");
+  assert(scan.ok, `硬编码扫描跑不起来：\n        ${(scan.out || "").slice(-300)}`);
+  const recs = JSON.parse(scan.out);
+
+  const ledger = JSON.parse(read("data/hardcode-ledger.json"));
+  const rule = (ledger.rules ?? []).find((r) => r.id === "gate-assertions");
+  assert(rule, "台账里没有「闸门里的断言」那条规则 —— 不知道哪些文件算闸门");
+  const gateFiles = new Set(rule.files ?? []);
+  const exceptions = ledger.gateExceptions ?? [];
+  const allowed = new Map(exceptions.map((e) => [`${e.file}\u0000${e.text}`, e]));
+
+  // 闸门文件里**非注释**的标准名命中
+  const hits = recs.filter((x) => gateFiles.has(x.file) && x.kind !== "comment");
+  const unexplained = hits.filter((x) => !allowed.has(`${x.file}\u0000${x.text}`));
+  assert(
+    unexplained.length === 0,
+    `闸门里有 ${unexplained.length} 处**没登记理由**的标准名 —— ` +
+      `闸门必须与标准无关（否则换标准时它会照旧按旧标准判）：\n        ` +
+      unexplained
+        .slice(0, 8)
+        .map((x) => `${x.file}:${x.line} 「${String(x.text).slice(0, 60)}」`)
+        .join("\n        "),
+  );
+
+  // **例外清单不许养僵尸** —— 登记了但其实已经没有命中了，说明它该删。
+  const used = new Set(hits.map((x) => `${x.file}\u0000${x.text}`));
+  const stale = exceptions.filter((e) => !used.has(`${e.file}\u0000${e.text}`));
+  assert(
+    stale.length === 0,
+    `${stale.length} 处例外**已经用不上了**（对应的标准名不在闸门里了）—— ` +
+      `例外清单要跟着删，否则它会变成一张没人看的通行证：\n        ` +
+      stale.map((e) => `${e.file} 「${String(e.text).slice(0, 60)}」`).join("\n        "),
+  );
+
+  // 每处例外都要**有理由** —— 没理由的例外等于没有闸门。
+  for (const e of exceptions) {
+    assert(
+      e.reason && String(e.reason).trim(),
+      `例外 ${e.file}「${String(e.text).slice(0, 40)}」没有写理由 —— ` +
+        `为什么这里可以出现标准名，得说清楚`,
+    );
+  }
+
+  return `${hits.length} 处命中（全部登记过理由）· 闸门文件 ${gateFiles.size} 个`;
 });
 
 check("the swap checklist is not stale", () => {
