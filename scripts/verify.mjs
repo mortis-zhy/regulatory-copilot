@@ -5474,6 +5474,11 @@ for (const t of [
   // scripts/run_spec_agent_regression.mjs 单独测，记账在
   // reports/spec-agent-baseline.json。
   "_test_spec_agent.mjs",
+  // 「批量采纳」的**确定性**用例：**不调模型**。
+  // 验的是采纳这一步的规矩 —— 不覆盖已有取值 · 不采纳命不中的 ·
+  // 采纳必须写 why · 落盘先备份。957 个槽位不可能逐条手点，
+  // 这条路走不通就还是人写。
+  "_test_adopt_proposals.mjs",
   // Word 导出的**已知答案用例**：缺 changes/parameters/evidence 时
   // 必须是空表，不是崩溃。以前它崩在 `.map` 上，吐一个裸的 500 HTML 页。
   "_test_word_export.mjs",
