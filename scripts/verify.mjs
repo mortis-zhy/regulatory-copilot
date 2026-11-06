@@ -42,6 +42,36 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf-8");
 
 /**
+ * 标准声明 —— 闸门里那些「本标准的名字」也从这儿取。
+ *
+ * ## 为什么闸门也要读声明
+ *
+ * 闸门是对着**这一套标准**的交付件写的：它断言表头是
+ * 「| 参数 | 单位 | A 草案 | … |」，断言第 14 章的 C 列是 UN R48 的原文。
+ *
+ * 换一套标准，这些断言**全都得改** —— 而它们散在几千行的闸门里，
+ * 是最容易漏的一类（漏了不会报错，只是闸门不再守着新标准）。
+ *
+ * 现在名字从声明来：**断言的行为一个字没变**，
+ * 换标准时只要改声明，闸门自动跟着走。
+ */
+const STANDARD_PACK = JSON.parse(read("data/standard-pack.json"));
+const VBY = Object.fromEntries((STANDARD_PACK.versions || []).map((v) => [v.key, v]));
+const vLabel = (k) => VBY[k]?.label ?? k;
+const vDoc = (k) => VBY[k]?.doc ?? k;
+const vRev = (k) => VBY[k]?.rev ?? "";
+/** 文档名去掉末尾的修订号：「GB 4785 草案 V4.3.5」→「GB 4785 草案」。 */
+const vDocNoRev = (k) => {
+  const rev = (vRev(k) || "").trim();
+  if (!rev) return vDoc(k);
+  const esc = rev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return vDoc(k).replace(new RegExp(`[-–—\\s]*${esc}\\s*$`), "").trimEnd();
+};
+/** 文件名里的样子：去掉空格（「GB 4785 草案 V4.3.5」→「GB4785草案V4.3.5」）。 */
+const vNameKey = (k) => vDoc(k).replace(/\s/g, "");
+const FAM = STANDARD_PACK.standardFamily;
+
+/**
  * 入库版本的内容（`git show HEAD:<path>`）。
  *
  * 要跟磁盘上的那份比，就不能用 `read` ——
@@ -1086,7 +1116,7 @@ check("decision-caliber counts match the audited buckets", () => {
   // boilerplate. Until C's quantitative clauses are extracted, that evidence
   // does not support a verdict and must not appear.
   assert(
-    !/项与 UN R48 条款存在数值交集/.test(md),
+    !new RegExp(`项与 ${vDocNoRev("C")} 条款存在数值交集`).test(md),
     "决策口径 3 仍在输出基于主题级摘录的 R48 数值重叠判定（C 定量抽取未完成）",
   );
 
@@ -1777,7 +1807,7 @@ check("two-version chapters declare their scope", () => {
   // The declaration has to name the third column and its caliber.
   assert(
     c14.includes("C 列是欧标原文"),
-    "chapter 14 must declare that its third column is real UN R48 text",
+    `chapter 14 must declare that its third column is real ${vDocNoRev("C")} text`,
   );
   assert(
     c14.includes("章节级") && c14.includes("非条款级"),
@@ -1915,7 +1945,12 @@ check("chapter 14 carries C at chapter level, and says so on every pointer", () 
   const md = ch.markdown ?? "";
   // Every value table under a chapter-14 clause must have a C column, or the
   // chapter would be printing an A/B table under a three-version heading.
-  const tables = md.match(/\| 参数 \| 单位 \| A 草案 \| B 现行 \| C UN R48-09 \| 判定 \|/g) ?? [];
+  const tables = md.match(
+    new RegExp(
+      `\\| 参数 \\| 单位 \\| ${vLabel("A")} \\| ${vLabel("B")} \\| ${vLabel("C")} \\| 判定 \\|`,
+      "g",
+    ),
+  ) ?? [];
   assert(tables.length > 0, "chapter 14 lost its three-version value tables");
   const pointers = md.match(/\*\*R48 对应章节（章节级，非条款级）\*\*/g) ?? [];
   assert(pointers.length > 0, "chapter 14 has no R48 chapter-level pointers");
@@ -2081,7 +2116,7 @@ check("the parameter matrix is still a MATRIX in the PDF, not three card columns
     "    # 矩阵有 199 行，总表横跨多页 —— 抽查必须覆盖**整张表**，\n" +
     "    # 否则表格中段的行落在窗口外，闸门会误报「缺行」。\n" +
     "    m='\\n'.join(pages[i12:(i122 if i122>i12 else i12+3)])\n" +
-    "    out['head']=bool(re.search(r'单位[\\s\\S]{0,80}A 草案[\\s\\S]{0,80}B 现行[\\s\\S]{0,80}C UN R48-09[\\s\\S]{0,80}判定', m))\n" +
+    `    out['head']=bool(re.search(r'单位[\\s\\S]{0,80}${vLabel("A")}[\\s\\S]{0,80}${vLabel("B")}[\\s\\S]{0,80}${vLabel("C")}[\\s\\S]{0,80}判定', m))\n` +
     "    out['rows']=[p for p in ['近光灯最大离地高度','转向信号灯闪烁频率','同时点亮远光灯最大发光强度之和'] if p in m]\n" +
     "out['cards']=len(re.findall(r'维度\\n[^\\n]{1,12}\\n条目\\n\\d+', all))\n" +
     "print(json.dumps(out,ensure_ascii=False))\n";
@@ -3068,15 +3103,15 @@ check("the download filename is derived from the report, not hardcoded", () => {
     {
       generator: "mineru",
       sourceDocuments: [
-        { name: "GB 4785 草案 V4.3.5（103 页）" },
-        { name: "GB 4785-2019（81 页）" },
-        { name: "UN R48-09（147 页）" },
+        { name: `${vDoc("A")}（103 页）` },
+        { name: `${vDoc("B")}（81 页）` },
+        { name: `${vDoc("C")}（147 页）` },
       ],
     },
     "pdf",
   );
   assert(
-    /GB4785草案V4\.3\.5/.test(now) && /UNR48-09/.test(now) && /多版本横向对比研究报告\.pdf$/.test(now),
+    now.includes(vNameKey("A")) && now.includes(vNameKey("C")) && /多版本横向对比研究报告\.pdf$/.test(now),
     `派生文件名不对：${now}`,
   );
 
@@ -3090,7 +3125,7 @@ check("the download filename is derived from the report, not hardcoded", () => {
   );
   assert(
     !/4785/.test(other),
-    `换标准后派生出来的文件名里还有 GB 4785：${other} —— ` +
+    `换标准后派生出来的文件名里还有 ${FAM}：${other} —— ` +
       `这正是原来写死标准名的后果。`,
   );
   assert(/UNR149/.test(other) && /GB24599/.test(other), `派生文件名不对：${other}`);
@@ -3104,7 +3139,7 @@ check("the download filename is derived from the report, not hardcoded", () => {
 
   // Content-Disposition 必须是 RFC 6266 的两段式（非 ASCII 名字不能裸进 header）
   const cd = contentDisposition(
-    { generator: "mineru", sourceDocuments: [{ name: "GB 4785 草案（103 页）" }] },
+    { generator: "mineru", sourceDocuments: [{ name: `${vDocNoRev("A")}（103 页）` }] },
     "pdf",
   );
   assert(
@@ -3602,11 +3637,11 @@ check("the report's title layer comes from the declaration, not from literals", 
   // ① 源码里不许有字面量
   const src = read("server/reports/reportV6.ts");
   const literals = [
-    "GB 4785 多版本横向对比研究报告",
-    "A/B/C 原始表格汇编",
-    "UN R48 §6 量化条款全量清单",
-    "UN R48-09 §6 量化条款全量清单",
-    "A|B|C 三版本主题对照",
+    `${FAM} 多版本横向对比研究报告`,
+    `${vKeys.join("/")} 原始表格汇编`,
+    `${vDocNoRev("C")} ${STANDARD_PACK.clausesOfLastVersion} 量化条款全量清单`,
+    `${vDoc("C")} ${STANDARD_PACK.clausesOfLastVersion} 量化条款全量清单`,
+    `${vKeys.join("|")} 三版本主题对照`,
   ];
   const found = literals.filter((t) => src.includes(t));
   assert(
@@ -3779,9 +3814,9 @@ check("a draft can never wear the deliverable's name", () => {
   //   ③ 服务端渲染草稿时，**封面标题也要打标** ——
   //      文件名会转发掉，封面不会。
   const docs = [
-    { name: "GB 4785 草案 V4.3.5（103 页）" },
-    { name: "GB 4785-2019（81 页）" },
-    { name: "UN R48-09（147 页）" },
+    { name: `${vDoc("A")}（103 页）` },
+    { name: `${vDoc("B")}（81 页）` },
+    { name: `${vDoc("C")}（147 页）` },
   ];  const verified = reportFileName({ generator: "mineru", sourceDocuments: docs }, "pdf");
   const draft = reportFileName({ generator: "llm-sse", sourceDocuments: docs }, "pdf");
   const unmarked = reportFileName({ sourceDocuments: docs }, "pdf");
@@ -4336,7 +4371,7 @@ check("交付件里没有近空白页（客户 DR-015）", () => {
     "thin=[]\n" +
     "for i,p in enumerate(d):\n" +
     "    lines=[l.strip() for l in p.get_text().split('\\n') if l.strip()]\n" +
-    "    body=[l for l in lines if not l.startswith('GB 4785 多版本') and not l.startswith('汽车外部照明') and not re.fullmatch(r'\\d+ / \\d+',l)]\n" +
+    `    body=[l for l in lines if not l.startswith('${FAM} 多版本') and not l.startswith('汽车外部照明') and not re.fullmatch(r'\\d+ / \\d+',l)]\n` +
     "    if len(body)<=2:\n" +
     "        thin.append((i+1,len(body),' '.join(body)[:60]))\n" +
     "print(json.dumps({'pages':d.page_count,'thin':thin[:6]},ensure_ascii=False))\n";
