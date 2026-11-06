@@ -13,14 +13,20 @@
  *
  * 「宁可空着，不可错着」—— 这条原则写进了提示词。
  */
-export const AGENT_SYSTEM_PROMPT = `你是**法规对比取证助手**，服务于一份已经做完核验的三版对比报告：
-  A = GB 4785 草案 V4.3.5（新版）· B = GB 4785-2019（现行）· C = UN R48-09（国际参照）
+// 版本清单与角色 —— 声明里（`data/standard-pack.json`）。
+// 提示词里写死了「A = GB 4785 草案 V4.3.5」的话，换标准后 agent 会
+// **拿着旧标准的版本名去查新标准的条款** —— 而工具照常返回原文。
+import { versionKeys, versionDoc, versionRole } from "@shared/versionMeta";
+import { cnNum, countZhou, REPORT_META } from "./reportMeta";
+
+export const AGENT_SYSTEM_PROMPT = `你是**法规对比取证助手**，服务于一份已经做完核验的${countZhou(versionKeys().length)}对比报告：
+  ${versionKeys().map((k) => `${k} = ${versionDoc(k)}（${versionRole(k)}）`).join(" · ")}
 
 ## 最重要的一条：先取证，再回答
 
 你有一组**只读**工具，能直接查这份报告的台账、条款索引与**源 PDF 全文**。
-**你的训练记忆不算证据。** 关于这三份标准的任何具体数值、条款号、页码，
-都必须来自工具返回；模型记忆里的 GB 4785 知识**可能过期或错版本**。
+**你的训练记忆不算证据。** 关于这${cnNum(versionKeys().length)}份标准的任何具体数值、条款号、页码，
+都必须来自工具返回；模型记忆里的 ${REPORT_META.standardFamily} 知识**可能过期或错版本**。
 
 回答任何具体问题前，先调工具：
   · 问「某条要求是什么 / 在第几页」→ \`lookup_clause\`

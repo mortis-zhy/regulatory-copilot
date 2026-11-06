@@ -17,6 +17,11 @@
  */
 
 import { buildLedger, ledgerToCounts } from "./closureLedger";
+// 版本清单与显示名 —— 声明里（`data/standard-pack.json`）。
+// 写死 A/B/C 的话，换一套标准（或加第四版）这个检查就会**认不出新版本**：
+// 它会说「缺少 A/B/C 版标记」，而报告里明明是 X/Y/Z。
+import { versionKeys, versionLabel } from "@shared/versionMeta";
+import { cnNum, countZhou } from "./reportMeta";
 
 export type TrustCounts = {
   confirmed: number;
@@ -398,10 +403,13 @@ export function checkPageAnchors(md: string): TrustWarning {
  * good horizontal report look like "no version markers at all".
  */
 export function checkVersionColumns(md: string): TrustWarning {
-  const vA = countOccurrences(md, "**A 草案**") + countOccurrences(md, "**A**");
-  const vB = countOccurrences(md, "**B 现行**") + countOccurrences(md, "**B**");
-  const vC = countOccurrences(md, "**C UN R48-09**") + countOccurrences(md, "**C**");
-  const vertical = vA + vB + vC;
+  const keys = versionKeys();
+  // 纵向标记：`**版本显示名**` 或 `**版本键**` —— 显示名来自声明。
+  const per = new Map<string, number>();
+  for (const k of keys) {
+    per.set(k, countOccurrences(md, `**${versionLabel(k)}**`) + countOccurrences(md, `**${k}**`));
+  }
+  const vertical = Array.from(per.values()).reduce((a, b) => a + b, 0);
 
   // Header row carrying all three version labels on one line. Avoid \b — it
   // behaves inconsistently before full-width brackets in JS regex. The
@@ -410,8 +418,8 @@ export function checkVersionColumns(md: string): TrustWarning {
   const horizontal = (
     md.match(
       new RegExp(
-        "^\\|[^\\n|]*\\|[^\\n|]*A" + OPEN + "[^\\n|]*\\|[^\\n|]*B" + OPEN +
-        "[^\\n|]*\\|[^\\n|]*C" + OPEN,
+        "^\\|[^\\n|]*\\|" +
+          keys.map((k) => `[^\\n|]*${k}${OPEN}`).join("[^\\n|]*\\|[^\\n|]*"),
         "gm",
       ),
     ) ?? []
@@ -419,27 +427,25 @@ export function checkVersionColumns(md: string): TrustWarning {
 
   if (vertical === 0 && horizontal === 0) {
     return {
-      label: "三栏对照 · 版本标记",
+      label: `${cnNum(keys.length)}栏对照 · 版本标记`,
       status: "fail",
-      detail: "全报告无任何 A/B/C 版本标记 — 无法区分三版内容，对照表已失效",
+      detail: `全报告无任何 ${keys.join("/")} 版本标记 — 无法区分${countZhou(keys.length)}内容，对照表已失效`,
     };
   }
 
   const missing: string[] = [];
   if (vertical > 0) {
-    if (vA === 0) missing.push("A");
-    if (vB === 0) missing.push("B");
-    if (vC === 0) missing.push("C");
+    for (const k of keys) if (!per.get(k)) missing.push(k);
   } else {
-    // Horizontal tables must carry A, B and C headers.
-    for (const v of ["A", "B", "C"]) {
-      if (!new RegExp(`^\\|[^\\n|]*\\|[^\\n|]*${v}[（(【 ]`, "m").test(md)) missing.push(v);
+    // Horizontal tables must carry every version's header.
+    for (const k of keys) {
+      if (!new RegExp(`^\\|[^\\n|]*\\|[^\\n|]*${k}[（(【 ]`, "m").test(md)) missing.push(k);
     }
   }
 
   if (missing.length) {
     return {
-      label: "三栏对照 · 版本标记",
+      label: `${cnNum(keys.length)}栏对照 · 版本标记`,
       status: "warn",
       detail: `缺少 ${missing.join("/")} 版标记 (纵向 ${vertical} 处 / 横向表头 ${horizontal} 张)`,
     };
@@ -451,7 +457,7 @@ export function checkVersionColumns(md: string): TrustWarning {
         ? `纵向 ${vertical} 处`
         : `横向表头 ${horizontal} 张`;
   return {
-    label: "三栏对照 · 版本标记",
+    label: `${cnNum(keys.length)}栏对照 · 版本标记`,
     status: "pass",
     detail: `${shape}`,
   };

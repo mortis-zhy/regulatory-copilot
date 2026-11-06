@@ -12,20 +12,20 @@
 import type { ReportOutline, AppendixSpec } from "./reportGenerator";
 // 认版本、兜底卡片、PDF 文件属性 —— 全部从声明取。
 import { cleanDocName } from "@shared/versionFileName";
-import { fallbackSourceCards, versionKeys, versionLabel, versionDoc, versionDocNoRev } from "@shared/versionMeta";
-import { composePdfMeta, titleSlots } from "./reportMeta";
+import { fallbackSourceCards, versionKeys, versionKeysByConsultOrder, versionCoverRole, versionLabel, versionDoc, versionDocNoRev } from "@shared/versionMeta";
+import { composePdfMeta, composeReportNumber, cnNum, titleSlots } from "./reportMeta";
 export { cleanDocName };
 
 /** PDF 文件属性 —— 声明里的模板 + 版本槽位。 */
 const _vKeys = versionKeys();
-const PDF_META = composePdfMeta(
-  titleSlots(
-    _vKeys,
-    _vKeys.map((k) => versionLabel(k)),
-    _vKeys.map((k) => versionDoc(k)),
-    _vKeys.map((k) => versionDocNoRev(k)),
-  ),
+const SLOTS = titleSlots(
+  _vKeys,
+  _vKeys.map((k) => versionLabel(k)),
+  _vKeys.map((k) => versionDoc(k)),
+  _vKeys.map((k) => versionDocNoRev(k)),
 );
+const PDF_META = composePdfMeta(SLOTS);
+const REPORT_NUMBER = composeReportNumber(SLOTS);
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
 export type ReportAppendix = { id: string; title: string; markdown?: string; page?: number };
@@ -356,10 +356,10 @@ export function buildHtml(report: RenderableReport): string {
 <!-- ===== COVER ===== -->
 <div class="cover">
   <h1>${esc(outline.title)}</h1>
-  <div class="sub">现行版 · 草案版 · 欧版 三维度对照分析</div>
+  <div class="sub">${versionKeysByConsultOrder().map((k) => versionCoverRole(k)).join(" · ")} ${cnNum(versionKeys().length)}维度对照分析</div>
   <div class="src-row">${sourceCards}</div>
   <div class="cover-meta">
-    报告编号：GB4785-CMP-2026-09-001<br>
+    报告编号：${REPORT_NUMBER}<br>
     编制日期：${esc(stamp)}<br>
     文档版本：V1.0
   </div>

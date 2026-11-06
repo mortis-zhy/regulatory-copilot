@@ -45,10 +45,11 @@ import type { ReportOutline } from "./reportGenerator";
 import {
   VERSION_META, setActiveVersions, activeVersions,
   versionLabel, versionLabelNoRev, versionDoc, versionDocNoRev, fallbackSourceCards,
+  versionKeys, versionKeysByConsultOrder, versionCoverRole, versionRev,
 } from "@shared/versionMeta";
 // 认版本 —— 判据在声明里（原来这里另写了一份正则，和上传校验那份是两份实现）。
 import { cleanDocName } from "@shared/versionFileName";
-import { composePdfMeta, titleSlots } from "./reportMeta";
+import { composePdfMeta, composeReportNumber, cnNum, titleSlots, CLAIM_META } from "./reportMeta";
 
 /**
  * PDF 文件属性 —— 声明里的模板 + **语料里实际有几版**的槽位。
@@ -56,16 +57,18 @@ import { composePdfMeta, titleSlots } from "./reportMeta";
  * 用 activeVersions() 而不是声明里的全部版本：语料只有两版时，
  * 文件属性里就不该写着「三版本」。
  */
-function pdfMeta(): { creator: string; subject: string; keywords: string } {
+function slots() {
   const keys = activeVersions();
-  return composePdfMeta(
-    titleSlots(
-      keys,
-      keys.map((k) => versionLabel(k)),
-      keys.map((k) => versionDoc(k)),
-      keys.map((k) => versionDocNoRev(k)),
-    ),
+  return titleSlots(
+    keys,
+    keys.map((k) => versionLabel(k)),
+    keys.map((k) => versionDoc(k)),
+    keys.map((k) => versionDocNoRev(k)),
   );
+}
+
+function pdfMeta(): { creator: string; subject: string; keywords: string } {
+  return composePdfMeta(slots());
 }
 export { setActiveVersions };
 
@@ -891,7 +894,7 @@ function surfaceDataGapGuard(tableText: string): string {
   return `<aside class="gap-guard">
     <strong>⚠ 数据缺口提示 — ${titleList}。</strong>
     草案 A 引入这些<strong>新装置类型</strong>时，A 页码列与 C 参照列同时标 "—"，意味着
-    国内对应国标体系中<strong>尚无明确的光度试验方法</strong>。落地路径仅有两条：① 参照 UN R48
+    国内对应国标体系中<strong>尚无明确的光度试验方法</strong>。落地路径仅有两条：① 参照 ${versionDocNoRev("C")}
     同类条款的测试程序作为过渡依据；② 待配套实施细则发布后补做型式试验。
     报告其余章节如涉及这些装置的<strong>光强／色度／配光</strong>数值，均<strong>不可直接
     视作已具备型式试验条件</strong>，请在认证材料中单列"待细则"说明。
@@ -1068,15 +1071,15 @@ function renderMappingIndex(rows: ClauseMapRow[]): string {
   <header class="mp-head">
     <span class="mp-eyebrow">Cross-Reference Index</span>
     <h2>三版条款 · 页码映射总表</h2>
-    <p class="mp-sub">按主题横向对应 A / B / C 三份文件的条款号与原文页码 · 共 ${rows.length} 条 · 用于全文反查定位</p>
+    <p class="mp-sub">按主题横向对应 ${versionKeys().join(" / ")} ${cnNum(versionKeys().length)}份文件的条款号与原文页码 · 共 ${rows.length} 条 · 用于全文反查定位</p>
   </header>
   <table class="mp-table">
     <thead>
       <tr>
         <th style="width:26%">主题</th>
-        <th style="--c:#a17334">A 草案 条款 · 页</th>
-        <th style="--c:#0c1a2b">B 现行 条款 · 页</th>
-        <th style="--c:#3a6b4f">C UN R48 条款 · 页</th>
+        <th style="--c:#a17334">${versionLabel("A")} 条款 · 页</th>
+        <th style="--c:#0c1a2b">${versionLabel("B")} 条款 · 页</th>
+        <th style="--c:#3a6b4f">${versionLabelNoRev("C")} 条款 · 页</th>
         <th>来源</th>
       </tr>
     </thead>
@@ -1414,7 +1417,7 @@ function renderClosureDashboard(
 
   ${isHighRisk
     ? `<p class="dashboard-disclaimer dashboard-risk">⚠ 风险提示：本报告 ${candidateShare}% 的差异尚未完成双源核验 — 切勿直接采信任何 ⚠ 条目结论。✅ 与 🧾 计入「实质技术变化」总数；🟡 / 🔢 / ✍ 不计入。</p>`
-    : `<p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（GB 4785-2019 / GB 4785 草案 V4.3.5 / UN R48-09）。</p>`}
+    : `<p class="dashboard-disclaimer">注：本报告为 AI 自动生成的辅助研究工具，合规判定必须查阅官方原始标准文本（${versionKeysByConsultOrder().map((k) => versionDoc(k)).join(" / ")}）。</p>`}
 
   <p class="dashboard-method">
     统计口径：以上数字由 <b>条目级台账</b>逐表统计得出（每个数字 = 对应表格的实际行数），
@@ -1424,7 +1427,7 @@ function renderClosureDashboard(
     <b>两套口径不可相加</b>：§11.3 的「候选差异条目」只统计"看起来像变更的参数"；
     上表的「待复核」统计的是全文所有 <code>⚠未找到 / 未核验</code> 标记行。
     <br><b>§11.4 的 9 条网传指标不计入待复核</b> —— 那一行行的 ⚠ 表示
-    「GB4785 声称值与原文不一致」，<b>结论已给</b>（3 条两版相同 [保留] ·
+    「${CLAIM_META.source} 声称值与原文不一致」，<b>结论已给</b>（3 条两版相同 [保留] ·
     1 条仅一版提到 [单边] · 5 条查过原文确实没有），逐条依据见 §11.4。
     二者成员不同、相交但不等价。<br>
     ${
@@ -1586,7 +1589,7 @@ function renderCandidateWorklist(ledger: ReturnType<typeof buildLedger>): string
     <tbody>${rows}</tbody>
   </table>
   <p class="cw-warn">⚠ 本清单条目<b>不得</b>直接作为合规判定依据。核验方式：打开对应页码，
-  逐字比对 A 草案 V4.3.5 与 B GB 4785-2019 原文，确认差异是否真实存在。</p>
+  逐字比对 ${versionLabel("A")} ${versionRev("A")} 与 ${versionKeys()[1]} ${versionDoc("B")} 原文，确认差异是否真实存在。</p>
 </section>`;
 }
 
@@ -2870,10 +2873,10 @@ export async function buildHtml(
 <div class="cover">
   <div class="cover-eyebrow">Regulatory Comparative Report · V8</div>
   <h1>${esc(outline.title)}</h1>
-  <div class="sub">现行版 · 草案版 · 欧版 — 三维度对照分析（条款级 · 参数级 · 影响级 · 映射级）</div>
+  <div class="sub">${versionKeysByConsultOrder().map((k) => versionCoverRole(k)).join(" · ")} — ${cnNum(versionKeys().length)}维度对照分析（条款级 · 参数级 · 影响级 · 映射级）</div>
   <div class="cover-strip">${sourceCards}</div>
   <div class="cover-meta">
-    报告编号：GB4785-CMP-2026-09-001<br>
+    报告编号：${composeReportNumber(slots())}<br>
     编制日期：${esc(stamp)}<br>
     文档版本：V8 · CJK 字体嵌入 · 公式排版 · 三版同框 · 4 维影响卡 · 映射索引 · 参数总表
   </div>

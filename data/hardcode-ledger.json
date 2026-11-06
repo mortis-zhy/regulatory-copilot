@@ -45,9 +45,10 @@
         "data/r48-chapter-map.json",
         "data/diff-corrections.json",
         "data/requirement-scope.json",
-        "data/requirement-gaps.json"
+        "data/requirement-gaps.json",
+        "data/indicator-adjudications.json"
       ],
-      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。",
+      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。（§11.4 那 6 条声称指标的人工复核结论也在其中。）",
       "swap": "**必须重新核**。照搬会把上一套标准的结论带进新标准 —— 那不是「空着」，是「错着」。人工裁定与机器判定要分开存放（这一条已经是机制）。"
     },
     {
@@ -67,8 +68,8 @@
       "files": [
         "data/standard-pack.json"
       ],
-      "why": "封面/章节/附录标题的标准名、末版条款号、**各版本的显示名表**（标签/短标签/文档名/标准号/状态/修订号）、**文件名识别签名**（认上传的 PDF 是哪一版）、**客户端的任务简报与界面文案**、**源 PDF 的文件名**。\n\n这一份是**内容里唯一已经声明化**的东西：换标准时改这一个 JSON，代码一行不动。\n\n搬进来的过程（每一处都核过「输出逐字不变」）：\n  · `server/reports/versionMeta.ts` 的 12 处字面量 → versions 数组\n  · `server/reports/reportV6.ts` 的 40 处版本显示名 → versionLabel/versionDoc/… 调用\n  · 六个 Python 脚本的源 PDF 文件名 → scripts/standard_pack.py\n  · `python_service/main.py` 的文件名签名与提示 → fileTokens/fileExclude/fileHelp\n  · `client/src/pages/Home.tsx` 的任务简报与判据 → clientBrief/clientSetProbe\n  · `client/src/components/ReviewWorkbench.tsx` 的版本表头 → versionLabel/versionDoc/versionRev\n  · `server/reports/specAgent.ts` 的提示词里的版本代号 → versionLabel/versionDoc\n  · `scripts/render_briefing.mjs` / `render_decision_brief.mjs` 的封面标题与文件名 → 声明",
-      "swap": "改标准族名、末版条款号、版本清单、文件名签名、源文件名、客户端文案；有标准特有的表号（如「表 11.6」）要一并改掉。\n\n**改完跑 `npm run verify`** —— 里面有一关专门验「声明里的标准名语料里真有它」，还有一关验「报告的标题与版本显示名真的来自这份声明」。"
+      "why": "封面/章节/附录标题的标准名、末版条款号、**各版本的显示名表**（标签/短标签/文档名/标准号/状态/修订号/角色/正文里用的文档名）、**文件名识别签名**（认上传的 PDF 是哪一版）、**声称指标的表号**（表 11.6）、**客户端的任务简报与界面文案**、**源 PDF 的文件名**、**PDF 的文件属性**、**封面卡片的兜底清单**。",
+      "swap": "改标准族名、末版条款号、版本清单（含角色与查证顺序）、文件名签名、源文件名、客户端文案、声称指标的表号与章节号、PDF 文件属性；有标准特有的表号（如「表 11.6」）**在这一份里**一并改掉。"
     }
   ],
   "rules": [

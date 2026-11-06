@@ -26,7 +26,12 @@
       ],
       "fileHelp": "含「GB 4785」且含「草案」的修订版",
       "cardMeta": "原文 PDF",
-      "cardName": "GB 4785 草案"
+      "cardName": "GB 4785 草案",
+      "role": "新版",
+      "roleNote": "新版，待发布",
+      "docInText": "GB 4785 草案",
+      "consultOrder": 1,
+      "coverRole": "草案版"
     },
     {
       "key": "B",
@@ -47,7 +52,12 @@
       ],
       "fileHelp": "含「GB 4785」且含「2019」的现行版",
       "cardMeta": "原文 PDF",
-      "cardName": "GB 4785-2019"
+      "cardName": "GB 4785-2019",
+      "role": "现行",
+      "roleNote": "现行版，旧版",
+      "docInText": "GB 4785-2019",
+      "consultOrder": 0,
+      "coverRole": "现行版"
     },
     {
       "key": "C",
@@ -65,14 +75,25 @@
       "fileExclude": [],
       "fileHelp": "含「UN R48」的 UN 法规",
       "cardMeta": "国际法规原文",
-      "cardName": "UN R48"
+      "cardName": "UN R48",
+      "role": "国际参照",
+      "roleNote": "国际法规，只做参照",
+      "docInText": "UN R48-09",
+      "consultOrder": 2,
+      "coverRole": "欧版"
     }
   ],
+  "claimedIndicators": {
+    "_why": "「声称指标」这一族的**专有名词** —— 表号、章节号、声称方的名字。\n\n§11.4 那张表核的是「某个参考报告里声称的 N 条数据指标，逐条与 A/B 原文对不对得上」。\n表号是**那套标准特有的**（换标准就是另一个表号），\n所以它属于声明，不属于代码。",
+    "sectionNo": "11.4",
+    "tableNo": "表 11.6"
+  },
   "pdfMeta": {
     "creator": "{standardFamily} 多版本对比报告 pipeline",
     "subject": "{versionLabels} {countWord}法规横向对照（{countZhou}同框 · 4 维影响卡 · 参数总表 · 条款映射）",
     "keywords": "{standardFamily}, {lastDocNoRev}, AFS, {countZhou}对比, 影响卡, 参数总表, 条款映射, CJK"
   },
+  "reportNumberTemplate": "{standardFamilyShort}-CMP-2026-09-001",
   "titleTemplate": "{standardFamily} 多版本横向对比研究报告（{versionLabels} {countWord}对照）",
   "chapterTitles": {
     "0": "执行摘要",

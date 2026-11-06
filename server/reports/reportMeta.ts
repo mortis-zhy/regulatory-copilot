@@ -53,6 +53,10 @@ export type ReportMetaDecl = {
     rev: string;
   }>;
   titleTemplate: string;
+  /** 封面「报告编号」的模板。 */
+  reportNumberTemplate: string;
+  /** 「声称指标」这一族的专有名词（表号、章节号）。 */
+  claimedIndicators: { sectionNo: string; tableNo: string };
   /** PDF 文件属性（creator / subject / keywords）—— 模板 + 槽位。 */
   pdfMeta: { creator: string; subject: string; keywords: string };
   chapterTitles: Record<string, string>;
@@ -80,6 +84,24 @@ export type TitleSlots = {
 };
 
 const CN_DIGITS = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九"];
+
+/**
+ * 阿拉伯数字的中文写法：9 → 「九」。
+ *
+ * 有些句子里版本数/条数要用汉字（「九条数据指标」「三份原文」）。
+ * 写死「九」的话，换一套标准（10 条指标）就会**说错**——
+ * 而且读者一眼看过去不会怀疑。
+ */
+export function cnNum(n: number): string {
+  if (n >= 0 && n < CN_DIGITS.length) return CN_DIGITS[n];
+  if (n >= 10 && n < 20) return "十" + (n % 10 ? CN_DIGITS[n % 10] : "");
+  if (n >= 20 && n < 100) {
+    const tens = Math.floor(n / 10);
+    const ones = n % 10;
+    return CN_DIGITS[tens] + "十" + (ones ? CN_DIGITS[ones] : "");
+  }
+  return String(n);
+}
 
 /** 版本数的中文说法：「3」→ 「三版本」。 */
 export function countWord(n: number): string {
@@ -129,6 +151,39 @@ export function slotValues(s: TitleSlots): Record<string, string> {
     lastDoc: s.docs[s.docs.length - 1] ?? "",
     lastDocNoRev: s.docsNoRev?.[s.docsNoRev.length - 1] ?? "",
   };
+}
+
+/**
+ * 「声称指标」这一族的专有名词 —— 表号、章节号、声称方。
+ *
+ * §11.4 那张表核的是「某份参考报告声称的 N 条数据指标，
+ * 逐条与 A/B 原文对不对得上」。
+ * 表号与章节号是**那套标准特有的**（换标准就是另一个表号），
+ * 所以它们住在声明里；判据侧（台账投影）也要用同一份 ——
+ * 两边各写一遍，投影就会在换标准后**认错那张表**。
+ */
+export const CLAIM_META = {
+  /** 声称方的短名（「GB4785」）。 */
+  source: REPORT_META.standardFamilyShort,
+  /** 声称指标的表号（「表 11.6」）。 */
+  tableNo: REPORT_META.claimedIndicators.tableNo,
+  /** 声称指标那一节的章节号（「11.4」）。 */
+  sectionNo: REPORT_META.claimedIndicators.sectionNo,
+  /** 表头那一格（「GB4785 声称」）。 */
+  header: `${REPORT_META.standardFamilyShort} 声称`,
+  /** 行内的不一致标记。 */
+  mismatchNote: ` ⚠ ${REPORT_META.standardFamilyShort} ${REPORT_META.claimedIndicators.tableNo} 声称值与原文不一致`,
+};
+
+/**
+ * 封面上的**报告编号**（「GB4785-CMP-2026-09-001」）。
+ *
+ * 编号里带着标准族名 —— 换标准后它必须跟着变，
+ * 否则客户的文件上印着**上一套标准的编号**，
+ * 而编号是用来归档的：印错的编号会进错档案。
+ */
+export function composeReportNumber(s: TitleSlots): string {
+  return fill(REPORT_META.reportNumberTemplate, slotValues(s));
 }
 
 /** 报告封面标题。 */

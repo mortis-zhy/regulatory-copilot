@@ -69,7 +69,22 @@ export type VersionMeta = {
   status: string;
   /** 修订号：「V4.3.5」「2019」「09」。 */
   rev: string;
-  /** 封面卡片上那一行副标题（「原文 PDF」「国际法规原文」）。 */
+  /** 这一版的**角色**（「新版」「现行」「国际参照」）—— 提示词里用它。 */
+  role?: string;
+  /** 角色的长说法（「新版，待发布」「国际法规，只做参照」）。 */
+  roleNote?: string;
+  /** **正文里**用的文档名（「GB 4785 草案」）—— 与 `doc` 未必一样。 */
+  docInText?: string;
+  /**
+   * 读者**查证时的先后顺序**（免责说明按这个顺序列标准）。
+   *
+   * 现行版排前面 —— 读者最常查的是「现在该怎么做」。
+   * 这是一个**内容判断**（不是机制），所以放在声明里。
+   */
+  consultOrder?: number;
+  /** 封面副标题里的**角色词**（「草案版」「现行版」「欧版」）。 */
+  coverRole?: string;
+  /** 封面卡片上的那一行副标题（「原文 PDF」「国际法规原文」）。 */
   cardMeta?: string;
   /** 封面卡片上的文档名 —— 语料没有清单时用的兜底。 */
   cardName?: string;
@@ -212,6 +227,60 @@ export function versionDocNoFamily(v: string): string {
  */
 export function versionRefLabel(v: string): string {
   return `${v} 参照`;
+}
+
+/**
+ * 这一版的**角色**（「新版」「现行」「国际参照」）。
+ *
+ * 角色是**这一版在本报告里扮演什么**，不是它叫什么 ——
+ * 提示词里要写清楚「A 是新版，B 是现行，C 只作参照」，
+ * 写死了换标准就会把新版与现行说反。
+ */
+export function versionRole(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.role ?? "";
+}
+
+/** 角色的长说法（「新版，待发布」）。 */
+export function versionRoleNote(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.roleNote ?? versionRole(v);
+}
+
+/**
+ * **正文里**用的文档名（「GB 4785 草案」）。
+ *
+ * 与 `doc`（「GB 4785 草案 V4.3.5」）未必一样：
+ * 正文里提「草案」时通常不写修订号，而文件名要写全。
+ * 两种都得有 —— 不能一处一种、另一处另一种。
+ */
+export function versionDocInText(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.docInText ?? versionDoc(v);
+}
+
+/**
+ * 封面副标题里的**角色词**（「草案版」「现行版」「欧版」）。
+ *
+ * 这一行是**这一套标准特有的叫法** ——
+ * 「欧版」预设了第三版是欧标，换成别的标准集就不该这么叫。
+ */
+export function versionCoverRole(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.coverRole ?? VERSION_META.find((m) => m.key === v)?.short ?? versionLabel(v);
+}
+
+/** 这一版的**查证顺序**（免责说明里按它排序）。 */
+export function versionConsultOrder(v: string): number {
+  return VERSION_META.find((m) => m.key === v)?.consultOrder ?? 99;
+}
+
+/**
+ * 各版本按**查证顺序**排好的键（现行版在前）。
+ *
+ * 免责说明里那串标准名要按这个顺序列 ——
+ * 顺序变了读者会觉得「怎么先列了草案版」。
+ */
+export function versionKeysByConsultOrder(): string[] {
+  return [...VERSION_META]
+    .sort((a, b) => (a.consultOrder ?? 99) - (b.consultOrder ?? 99))
+    .map((m) => m.key);
 }
 
 /** 封面卡片上的那一行副标题（声明里的 `cardMeta`）。 */

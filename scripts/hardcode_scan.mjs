@@ -35,7 +35,7 @@
  *
  * JSON 数组（stdout），每条：
  * ```
- * { file, line, col, cls, kind, sub, text, excerpt }
+ * { file, line, col, cls, kind, sub, text, excerpt, offset }
  * ```
  * - `cls`  —— 命中的是哪一类标准名（gb4785 / gb4785-2019 / un-r48 / ece-r48 / v4-3-5）
  * - `kind` —— comment / string / code
@@ -297,7 +297,11 @@ export function scanFile(rel) {
       regionClasses.get(reg.start).push(classOf(m[0]));
       if (seenRegions.has(reg.start)) continue;
       seenRegions.add(reg.start);
-      const { line, col } = at(reg.start);
+      // 位置记在**命中处**，不是字面量的开头 ——
+      // 多行模板字面量里的标准名可能在几十行之后，
+      // 而清单指着开头那一行的话，人打开会发现**那儿没有东西可改**。
+      const { line, col } = at(m.index);
+      const offset = m.index - reg.start;
       let kind;
       let sub;
       if (reg.kind === "comment") {
@@ -322,6 +326,7 @@ export function scanFile(rel) {
         sub,
         text: reg.text,
         excerpt: (lines[line - 1] || "").trim(),
+        offset,
       });
     } else {
       // 裸代码里的（变量名、键名）——没有字面量可依附，逐个记。
@@ -335,6 +340,7 @@ export function scanFile(rel) {
         sub: "标识符",
         text: null,
         excerpt: (lines[line - 1] || "").trim(),
+        offset: 0,
       });
     }
   }

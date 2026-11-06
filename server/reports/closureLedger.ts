@@ -19,6 +19,9 @@
  * 这样「39 vs 45」这类矛盾会在渲染期被拦下，而不是留给读者去发现。
  */
 
+// 「声称指标」这一族的专有名词 —— 声明里（`data/standard-pack.json`）。
+import { CLAIM_META } from "./reportMeta";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -301,9 +304,25 @@ function isProseFragment(row: string[], rawLine: string): boolean {
  * 判定：至少两个单元格是 `pNN` 页码格式，且整行不含「核验状态」字样
  * （§11.0.3 的「声称对照表」有 `核验状态` 列，那些是误传清单，该保留 ⚠）。
  */
+/**
+ * 「核验状态」那一列，或声称值那一格 —— 这两种行**不是**溯源行。
+ *
+ * 判据来自**声明**（`data/standard-pack.json`）：
+ * 换标准后表头会变成别的名字（「XX 声称」），判据必须跟着变 ——
+ * 否则这一族行会被**误判成溯源行**，而它们是误传清单，该保留 ⚠。
+ *
+ * （这一条是 §11.4 那张表从 §11.0 搬来时学到的：判据要跟着**形状**走，
+ *  而不是跟着**名字**走 —— 名字会变，形状不变。）
+ */
+const CLAIM_CELL_RE = new RegExp(
+  "核验状态|" +
+    CLAIM_META.source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+    "\\s*声称",
+);
+
 function isTraceabilityRow(row: string[]): boolean {
   if (row.length < 5) return false;
-  if (row.some((c) => /核验状态|GB4785\s*声称/.test(c))) return false;
+  if (row.some((c) => CLAIM_CELL_RE.test(c))) return false;
   const pageCells = row.filter((c) => /\*\*p\d+\*\*|^p\d+$/.test(c.trim()));
   return pageCells.length >= 2;
 }

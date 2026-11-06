@@ -36,11 +36,14 @@ import LAMP_COLOR_MAP from "../../data/lamp-color-map.json";
 // 客户抱怨的「仍然只有法规中有具体数值的内容的比较」——这一份是条款级的
 // 定性对照，数值那一半在第 12 章。
 import QUALITATIVE_DIFF from "../../data/qualitative-diff.json";
+// §11.4 那 6 条**人工复核结论** —— 人逐条回原文看过的东西，
+// 所以住在数据文件里，不住在代码里（见 data/indicator-adjudications.json）。
+import INDICATOR_ADJUDICATIONS from "../../data/indicator-adjudications.json";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 // 报告**标题层**的声明（data/report-meta.json）。
 // 封面标题、章节标题、附录标题里点名的标准名全从这里来 ——
 // 以前是本文件里的字面量，换标准时**封面会讲错标准**。
-import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, REPORT_META, type TitleSlots } from "./reportMeta";
+import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, REPORT_META, cnNum, type TitleSlots } from "./reportMeta";
 // 上游指纹（extract-cache → diff-result → facts）—— 让「报告对应哪一份上游」可判定。
 import { computeProvenance } from "./provenance";
 import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
@@ -104,8 +107,16 @@ type IndicatorDef = {
   id: string;
   label: string;
   unit?: string;
-  gb4785Old: string;   // what GB4785 表11.6 claims as 现行版
-  gb4785New: string;   // what GB4785 claims as 草案版
+  /**
+   * 声称值（某份参考报告声称的旧版 / 新版取值）。
+   *
+   * 字段名**不点标准的名** —— 声称方是谁由声明的 `standardFamilyShort` 决定，
+   * 表号由声明的 `claimedIndicators.tableNo` 决定。
+   * （原来那两个字段名带着标准族的前缀：换标准后字段名会指着旧标准，
+   * 而字段名是**接口** —— 换标准的人照着改，反而容易漏掉一处。）
+   */
+  claimOld: string;
+  claimNew: string;
   patterns: RegExp[];
   /**
    * 查不到时**要说清查过哪里、那里有什么**。
@@ -120,8 +131,8 @@ type IndicatorDef = {
 const INDICATORS: IndicatorDef[] = [
   {
     id: "drl_min_cd", label: "DRL 转向冲突时减光后最大光强", unit: "cd",
-    gb4785Old: "400 cd",
-    gb4785New: "500 cd",
+    claimOld: "400 cd",
+    claimNew: "500 cd",
     patterns: [
       // covers A 5.19.7.6 "最大光强不大于 N" + B alternatives
       /昼间行驶灯[\s\S]{0,100}?(?:最大|最小)光强[\s\S]{0,30}?(\d{2,4})\s*(?:cd|坎德拉)/i,
@@ -131,8 +142,8 @@ const INDICATORS: IndicatorDef[] = [
   },
   {
     id: "ess_freq_hz", label: "ESS 紧急制动信号闪烁频率", unit: "Hz",
-    gb4785Old: "4 Hz",
-    gb4785New: "5 Hz",
+    claimOld: "4 Hz",
+    claimNew: "5 Hz",
     patterns: [
       // tolerate full-width parens （）and half-width () around the number,
       // and full-width right paren ） between 1.0 and Hz:
@@ -144,8 +155,8 @@ const INDICATORS: IndicatorDef[] = [
   },
   {
     id: "ess_cd", label: "ESS 光度", unit: "cd",
-    gb4785Old: "400 cd",
-    gb4785New: "600 cd",
+    claimOld: "400 cd",
+    claimNew: "600 cd",
     patterns: [/紧急制动信号[\s\S]{0,100}?(?:发光强度|光强|光度)[\s\S]{0,30}?(\d{2,4})\s*cd/i],
     absenceNote:
       "已查：B §5.23「紧急制动信号」(PDF 第50–54页) 全文只含 配备/数量/布局/安装位置/几何可见度/方向/电路连接 七项，" +
@@ -153,8 +164,8 @@ const INDICATORS: IndicatorDef[] = [
   },
   {
     id: "drl_vis_deg", label: "DRL 可见度角度", unit: "°",
-    gb4785Old: "±20°",
-    gb4785New: "±25°",
+    claimOld: "±20°",
+    claimNew: "±25°",
     // **按条款锚定**，不按主题名 —— 按主题名首次命中会打到远光灯的
     // 几何可见度（5.1.5）上去，那不是 DRL 的角度。
     // 原文写法是「水平方向角:向外、向内各20°」，
@@ -168,26 +179,26 @@ const INDICATORS: IndicatorDef[] = [
   },
   {
     id: "side_marker_m", label: "侧标志灯间距", unit: "m",
-    gb4785Old: "≤6 m",
-    gb4785New: "≤4 m",
+    claimOld: "≤6 m",
+    claimNew: "≤4 m",
     // no /g flag — stale lastIndex across A/B regex reuse silently
     // drops the second doc's match. Capture the first number after 间距.
     patterns: [/侧标志灯[\s\S]{0,150}?间距[\s\S]{0,60}?(?:不小于|不大于|应不大于)?\s*(\d(?:\.\d+)?)\s*m/i],
   },
   {
     id: "led_life_h", label: "LED 寿命", unit: "h",
-    gb4785Old: "2000 h",
-    gb4785New: "3000 h",
+    claimOld: "2000 h",
+    claimNew: "3000 h",
     patterns: [/(?:LED|发光二极管)[\s\S]{0,60}?寿命[\s\S]{0,40}?(\d{3,4})\s*h/i],
     absenceNote:
       "已查：A/B/C 三版全文检索「寿命」**0 命中**。LED 相关只有术语定义" +
       "（A 3.2.1.x「发光二极管/LED模块」；B 3.7.6/3.7.7）。结论：光源寿命属光源标准" +
-      "（GB 15766 / UN R37 / UN R99 / UN R128）范畴，不在 GB 4785 外部照明装置标准内。",
+      `（GB 15766 / UN R37 / UN R99 / UN R128）范畴，不在 ${REPORT_META.standardFamily} 外部照明装置标准内。`,
   },
   {
     id: "lumen_pct", label: "光通维持率", unit: "%",
-    gb4785Old: "70%",
-    gb4785New: "80%",
+    claimOld: "70%",
+    claimNew: "80%",
     patterns: [/光通维持率[\s\S]{0,40}?(\d{1,3})\s*%/i],
     absenceNote:
       "已查：A/B/C 三版只有「**目标光通量**」（A 3.2.2 / B 3.7.8，指向光源标准数据页），" +
@@ -195,16 +206,16 @@ const INDICATORS: IndicatorDef[] = [
   },
   {
     id: "preheat_min", label: "预热点灯时间", unit: "min",
-    gb4785Old: "30 min",
-    gb4785New: "60 min",
+    claimOld: "30 min",
+    claimNew: "60 min",
     patterns: [/预热[\s\S]{0,40}?(\d{1,3})\s*min/i],
     absenceNote:
       "已查：A/B/C 三版全文检索「预热」**0 命中**。结论：预热点灯时间不在本标准内。",
   },
   {
     id: "afs_switch_s", label: "AFS 切换时间", unit: "s",
-    gb4785Old: "≤2 s",
-    gb4785New: "≤1.5 s",
+    claimOld: "≤2 s",
+    claimNew: "≤1.5 s",
     patterns: [/(?:AFS|自适应前照)[\s\S]{0,60}?切换[\s\S]{0,40}?[≤<]?\s*(\d\.?\d*)\s*s/i],
     absenceNote:
       "已查：B §5.22「自适应前照明系统(AFS)」(PDF 第45–53页) 全节无「切换时间」；" +
@@ -318,13 +329,22 @@ function qualitativeCRef(e: any): string | null {
 
 /* -------------------------------------------------------------------------- */
 
+/** 声称方的短名（「GB4785」）—— 声明里的标准族短名。 */
+const CLAIM_SOURCE = REPORT_META.standardFamilyShort;
+/** 声称指标的表号（「表 11.6」）—— 声明里的。 */
+const CLAIM_TABLE = REPORT_META.claimedIndicators.tableNo;
+/** 声称指标那一节的章节号（「11.4」）—— 声明里的。 */
+const CLAIM_SECTION = REPORT_META.claimedIndicators.sectionNo;
+/** 前两版的键斜杠连（「A/B」）—— 声称值要与「A/B 原文」对照。 */
+const CLAIM_PAIR = versionKeys().slice(0, 2).join("/");
+
 function build11_4_v62(results: IndicatorResult[]): string {
   // defensive: skip items without def metadata; use ?. on all def accesses
   const rows = (results || []).filter((r: any) => r && r.def).map((r, i) => {
     let tag = "[未找到]";
     let gbNote = "";
-    const cn = (r.def?.gb4785New || "").match(/\d+/);
-    const co = (r.def?.gb4785Old || "").match(/\d+/);
+    const cn = (r.def?.claimNew || "").match(/\d+/);
+    const co = (r.def?.claimOld || "").match(/\d+/);
     const claimedNew = cn ? cn[0] : null;
     const claimedOld = co ? co[0] : null;
     /**
@@ -353,18 +373,19 @@ function build11_4_v62(results: IndicatorResult[]): string {
       // 两版相同**不代表** GB4785 声称的相同 —— 声称 20→25 而原文两版都是 20，
       // 这是声称值错了，不是原文变了。不标 ⚠ 就会让读者以为「三版一致」。
       if (contradictsClaim) {
-        gbNote = " ⚠ GB4785 表 11.6 声称值与原文不一致";
+        gbNote = ` ⚠ ${CLAIM_SOURCE} ${CLAIM_TABLE} 声称值与原文不一致`;
       }
     } else if (r.status === "single-side") {
       tag = "[单边] " + (r.aValue ? "仅 A 提到" : "仅 B 提到");
       if (contradictsClaim) {
-        gbNote = " ⚠ GB4785 表 11.6 声称值与原文不一致";
+        gbNote = ` ⚠ ${CLAIM_SOURCE} ${CLAIM_TABLE} 声称值与原文不一致`;
       }
     }
     const aVal = r.aValue ? `${r.aValue}${r.aPage ? `（${r.aPage}）` : ""}` : "—";
     const bVal = r.bValue ? `${r.bValue}${r.bPage ? `（${r.bPage}）` : ""}` : "—";
-    return `| ${pad2(i + 1)} | ${cell(r.def?.label || "")} | ${tag}${gbNote} | ${cell(r.def?.gb4785Old || "")} → ${cell(r.def?.gb4785New || "")} | ${cell(bVal)} | ${cell(aVal)} |`;
+    return `| ${pad2(i + 1)} | ${cell(r.def?.label || "")} | ${tag}${gbNote} | ${cell(r.def?.claimOld || "")} → ${cell(r.def?.claimNew || "")} | ${cell(bVal)} | ${cell(aVal)} |`;
   });
+  const total = results.length;
   const found = results.filter((r) => r.status !== "missing").length;
   const kept = results.filter((r) => r.status === "kept").length;
   const modified = results.filter((r) => r.status === "modified").length;
@@ -375,31 +396,27 @@ function build11_4_v62(results: IndicatorResult[]): string {
     .filter((r) => r.status === "missing" && r.def?.absenceNote)
     .map((r) => `- **${r.def?.label}** —— ${r.def?.absenceNote}`);
   return [
-    "### 11.4 数据指标变化（GB4785 表 11.6 逐条核验）",
+    `### ${CLAIM_SECTION} 数据指标变化（${CLAIM_SOURCE} ${CLAIM_TABLE} 逐条核验）`,
     "",
-    "下表将 GB4785 参考报告表 11.6 声称的 9 条数据指标，逐条与 **A/B 原文**对照核验。⚠ 标记表示 GB4785 声称值与原文不一致。",
+    `下表将 ${CLAIM_SOURCE} 参考报告${CLAIM_TABLE} 声称的 ${total} 条数据指标，逐条与 **${CLAIM_PAIR} 原文**对照核验。⚠ 标记表示 ${CLAIM_SOURCE} 声称值与原文不一致。`,
     "",
-    "| 序号 | 指标 | 核验状态 | GB4785 声称 | B 现行版（原文） | A 草案（原文） |",
+    `| 序号 | 指标 | 核验状态 | ${CLAIM_SOURCE} 声称 | ${versionLabel("B")}版（原文） | ${versionLabel("A")}（原文） |`,
     "|---|---|---|---|---|---|",
     ...rows,
     "",
-    `**核验结论**：9 条中 ${found} 条在原文找到（${modified} 条实际变化、${kept} 条两版相同 [保留]、${single} 条仅一版提到 [单边]），${9 - found} 条当前文档未找到。`,
+    `**核验结论**：${total} 条中 ${found} 条在原文找到（${modified} 条实际变化、${kept} 条两版相同 [保留]、${single} 条仅一版提到 [单边]），${total - found} 条当前文档未找到。`,
     "",
     ...(absenceLines.length
       ? ["**逐条查证依据**（「未找到」= 查过了，原文里确实没有，不是没查对）：", "", ...absenceLines, ""]
       : []),
-    "> 说明：GB4785 第 11.4 表 11.6 中部分数值为推算或引用，未经 A/B 原文出现。⚠ 标记 = 本报告实测值与 GB4785 声称不一致，以原文为准。",
+    `> 说明：${CLAIM_SOURCE} 第 ${CLAIM_SECTION} ${CLAIM_TABLE} 中部分数值为推算或引用，未经 ${CLAIM_PAIR} 原文出现。⚠ 标记 = 本报告实测值与 ${CLAIM_SOURCE} 声称不一致，以原文为准。`,
     "",
     // No `**` here on purpose: this line gets absorbed into the preceding
     // table cell, which is rendered without inlineMd, so the asterisks would
     // print literally. The bullets below carry the emphasis anyway.
-    "GB4785 声称值的人工复核结论（fitz 对照三份原文，逐条回查）：",
-    "- **侧标志灯间距 \"≤6m→≤4m\" 属误读**：两版原文实为**两相邻侧标志灯间距不大于 3m（车型结构不能保证时可增至 4m）**——A p55 / B p46 逐字一致，\"3m [保留]\"判定正确；GB4785 引用的\"6m\"实际是**车长不大于 6m 车辆的侧回复反射器数量豁免**（A p54 / B p45），与间距无关。",
-    "- **DRL 可见度角度「±20°→±25°」：两版原文都是 20°，没有 25°**——A p56 §5.19.5「水平方向角β：向外、向内各20°」与 B p47 §5.19.5「水平方向角：向外、向内各20°」逐字一致，判 **[保留] 两版相同**；GB4785 声称的 25° 在 A/B 原文均不存在。",
-    "- **DRL 最小光度 400→500 cd、ESS 光度 400→600 cd：A/B 原文均未出现**——B §5.23「紧急制动信号」全节无光度条款，DRL 减光的 140cd 是**减光后的上限**、不是最小光度。两者均判 [未找到]，勿引用。",
-    "- **「DRL 转向冲突时减光后最大光强 140cd」是 A 独有的**——A p57 §5.19.7.6 把 B 的定性规定（B p48 §5.19.7.5「关闭；或……降低发光强度」）**量化**为「降低发光强度，使昼间行驶灯最大光强不大于 140cd」，并增加 HV 点 50% 豁免；A §5.19.7.7 对部分共用时剩余部分同样要求 ≤140cd。**注意：B 并非不允许降光，只是没有给 cd 上限**——把它写成「B 只允许关闭」是误述。",
-    "- **ADB / 矩阵式 LED：A/B 原文 0 命中**；A 的附录 D 实为\"近光光束倾斜度随装载变化的测量\"（非 ADB 测试程序），\"像素\"唯一出处是 3.2.1.3 术语注（灯丝、发光颗粒、像素）。",
-    "- **慢行灯速度阈值 10→15 km/h：GB4785 表 11.6 第 5 条声称正确**，两处子句均已改（B p30/p57 → A p58/p59）——因不在 18 主题内，已人工补录至 11.3.1。",
+    `${CLAIM_SOURCE} 声称值的人工复核结论（fitz 对照${cnNum(versionKeys().length)}份原文，逐条回查）：`,
+    // 六条人工复核结论 —— 住在数据文件里（人核过的东西不在代码里）。
+    ...INDICATOR_ADJUDICATIONS.bullets,
     "",
     "### 11.4.1 实际查得的原文数值（A/B 原文）",
     "",
@@ -3103,7 +3120,7 @@ function buildExecSummary(input: {
           "**65 与 40 都是下限**；B 版无「驾驶员辅助投射」这一功能。" +
           "结论是：全表未见 A 与 C 条件方向相反的条款，但这类差异**数值矩阵检不出来**，" +
           "换标准或改条款后仍须人工过一遍条件句。",
-        `5. **本版不能作为认证依据的项**：${missing.length} 条 GB4785 表 11.6 声称指标在 A/B 原文中未检索到；` +
+        `5. **本版不能作为认证依据的项**：${missing.length} 条 ${CLAIM_SOURCE} ${CLAIM_TABLE} 声称指标在 ${CLAIM_PAIR} 原文中未检索到；` +
           `差值候选里 **${diffPending} 项仍待人工裁定**（其余 ${diffCandidates - diffPending - diffChanges} 项已逐条回原文核验，` +
           `判定见 11.3.3；11.8 保留全部 ${wordingN} 条表述/术语候选差异供工程师复核）。` +
           "结论层面已逐条列在第 11 章，使用前须回原文确认。",
@@ -3142,7 +3159,7 @@ function buildExecSummary(input: {
     "",
     `**2. 数值变化**：共 ${num.length} 条 A/B 同名参数数值变化（**${numOk} 条已定位到原文页码**，第 11.3 节标注 [已核验]）+ ${(verified.manualFindings ?? []).length} 条人工对照补录（${manualBriefs}——均为 18 个固定对比主题之外的条款，见 11.3.1）。${cand} 条候选的**抽取流量口径**（尚未逐条裁定）：${num.length} 条入 11.3、${refN} 条引用编号变化单列 11.3.2、**${sameN} 条同文勘误见 11.3.0**（两版原文同文，非变化）、${wordingN} 条表述差异 + ${ruleD} 条非变化项过滤——合计 ${num.length + refN + sameN + wordingN + ruleD}，账目闭环。表述差异全部呈现于 **11.8 表述/术语候选差异（复核清单）**；其中 ${diffChanges - num.length} 条经回原文核验后**改判为实质变化**，其余改判为同文或数值口径相同 —— 逐条判定见 11.3.3。`,
     "",
-    `**3. GB4785 表 11.6 九条数据指标核验**：${keep.length} 条在 A/B 原文找到且**数值两版相同（[保留]）**（ESS 闪烁频率 4.0±1.0Hz、侧标志灯间距 3m），${single.length} 条仅一版提到（[单边]，如 DRL 减光后最大光强 140cd），${missing.length} 条在当前版本原文**未找到**——此前引用该 9 条数值属未经核验，本版如实标注。`,
+    `**3. ${CLAIM_SOURCE} ${CLAIM_TABLE} ${cnNum(9)}条数据指标核验**：${keep.length} 条在 A/B 原文找到且**数值两版相同（[保留]）**（ESS 闪烁频率 4.0±1.0Hz、侧标志灯间距 3m），${single.length} 条仅一版提到（[单边]，如 DRL 减光后最大光强 140cd），${missing.length} 条在当前版本原文**未找到**——此前引用该 9 条数值属未经核验，本版如实标注。`,
     "",
     `**4. 三版本主题对照**：${topics.length} 个核心主题做了 A|B|C 三列原文摘录对照，每条均标注原文页码，可直接回查。`,
     "",
@@ -4272,7 +4289,7 @@ export async function buildMinerUReport(
   console.log("[v6] building report...");
   console.log(`[v6] docs: ${Object.keys(data).join(", ")}`);
 
-  console.log("[v6] scanning 9 GB4785 indicators on MinerU text...");
+  console.log(`[v6] scanning ${INDICATORS.length} indicators on MinerU text...`);
   const indicatorResults = scanAllIndicators(data);
   for (const r of indicatorResults) {
     const a = r.aValue ? `${r.aValue}(${r.aPage})` : "-";
@@ -4445,7 +4462,7 @@ export async function buildMinerUReport(
   const singleSideIndicators = indicatorResults.filter((r) => r.status === "single-side").length;
   ch11Md = ch11Md.replace(
     /另有 \d+ 条重大修订条款、\d+ 条数据指标数值变化[^。]*。/,
-    `另有 ${numChanges} 条重大修订条款（数值级 · 见 11.3）+ ${manualN} 条人工审计补录（见 11.3.1）+ ${refChanges} 条引用编号变化（见 11.3.2）+ ${((verified.sameTextDropped ?? []).length)} 条同文勘误（见 11.3.0，非变化）+ ${DEVICE_RENUMBERING.length} 项装置级编号重排（见 11.6.2，非实质），以及 ${indicatorResults.length} 条 GB4785 指标核验（${keptIndicators} 保留 + ${singleSideIndicators} 单边，见 11.4）；另有 ${(verified.wordingOnly ?? []).length} 条表述/术语候选差异（抽取时的候选口径，已在 11.3.3 逐条回原文裁定，其中 ${diffChanges - numChanges} 条改判为**实质变化**；11.8 保留原始候选供工程师复核）。`,
+    `另有 ${numChanges} 条重大修订条款（数值级 · 见 11.3）+ ${manualN} 条人工审计补录（见 11.3.1）+ ${refChanges} 条引用编号变化（见 11.3.2）+ ${((verified.sameTextDropped ?? []).length)} 条同文勘误（见 11.3.0，非变化）+ ${DEVICE_RENUMBERING.length} 项装置级编号重排（见 11.6.2，非实质），以及 ${indicatorResults.length} 条 ${CLAIM_SOURCE} 指标核验（${keptIndicators} 保留 + ${singleSideIndicators} 单边，见 11.4）；另有 ${(verified.wordingOnly ?? []).length} 条表述/术语候选差异（抽取时的候选口径，已在 11.3.3 逐条回原文裁定，其中 ${diffChanges - numChanges} 条改判为**实质变化**；11.8 保留原始候选供工程师复核）。`,
   );
 
   // Chapters 2-10 from MinerU headings

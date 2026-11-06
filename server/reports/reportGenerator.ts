@@ -26,6 +26,10 @@ import { diffDocuments } from "./diffEngine";
 import { buildChangePointsChapter, type ChangeChapterInput } from "./changePointChapter";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
 import { detectStructuralChapters } from "./chapterStructural";
+// 版本清单与角色 —— 声明里（`data/standard-pack.json`）。
+// 提示词里写死了版本与角色，换标准后会把**新版与现行说反**。
+import { versionKeys, versionDoc, versionRoleNote } from "@shared/versionMeta";
+import { cnNum, countWord } from "./reportMeta";
 
 export type ChapterSpec = {
   id: number;
@@ -349,12 +353,10 @@ function trimRegexForChapter(chapter: ChapterSpec, regexJson: string): string {
  */
 const VERSION_RULES = `
 【版本角色——必须严格遵守，否则报告作废】
-- A = GB 4785 草案 V4.3.5（新版，待发布）
-- B = GB 4785-2019（现行版，旧版）
-- C = UN R48-09（国际法规，只做参照）
-- 一切"变化"都指 **B → A**：oldExcerpt/原文 = B 的原文，newExcerpt/新文 = A 的原文
-- C 的值只写进 anchor/定位（如"C=6.1"），绝对不要拼进"新文"字段
-- A 与 B 相同的内容 = [保留]，不是变化，不要列为 change
+${versionKeys().map((k) => `- ${k} = ${versionDoc(k)}（${versionRoleNote(k)}）`).join("\n")}
+- 一切"变化"都指 **${versionKeys()[1]} → ${versionKeys()[0]}**：oldExcerpt/原文 = ${versionKeys()[1]} 的原文，newExcerpt/新文 = ${versionKeys()[0]} 的原文
+- ${versionKeys()[2]} 的值只写进 anchor/定位（如"${versionKeys()[2]}=6.1"），绝对不要拼进"新文"字段
+- ${versionKeys()[0]} 与 ${versionKeys()[1]} 相同的内容 = [保留]，不是变化，不要列为 change
 - 每条变化必须是【条款级】的：给出条款号、具体技术内容或数值（如"5.24:新增 ADS 标志灯，透光面≤400cm²"），禁止只写"章节数不同"这类元数据
 `;
 
@@ -425,8 +427,8 @@ ${execHardRules}
 ${sections}
 ${example ? `\n【格式范例——客户已认可的"变化点总结"标准写法（参考报告第 11 章），照此结构与颗粒度撰写】\n${example}\n` : ""}
 【撰写要求——非常重要】
-1. 每个小节都必须包含**三版本对比表格**（列：项目 | ${docs.map((d) => d.label).join(" | ")}），把实际条款内容填入表格单元格
-2. **强制三栏对齐**：每张对比表都必须输出 A / B / C 三行（即使某版本无对应条款，也必须写一行 “本版未规定” 占位，**绝对不允许省略**——PDF 渲染器会基于此输出三栏卡片，缺一行就破布局）
+1. 每个小节都必须包含**${countWord(versionKeys().length)}对比表格**（列：项目 | ${docs.map((d) => d.label).join(" | ")}），把实际条款内容填入表格单元格
+2. **强制${cnNum(versionKeys().length)}栏对齐**：每张对比表都必须输出 ${versionKeys().join(" / ")} ${cnNum(versionKeys().length)}行（即使某版本无对应条款，也必须写一行 “本版未规定” 占位，**绝对不允许省略**——PDF 渲染器会基于此输出三栏卡片，缺一行就破布局）
 3. 每条对比必须给出**原文摘录 + 条款号 + 页码**作为锚点（例如：「A 5.3.4.1：…（第44页）」）
 4. 变更必须标注 [新增] / [删除] / [修改] / [保留]
 5. **每个 triptych 对比表之后必须输出一段「4 维影响卡」**（格式见下方），把这条差异的产品设计 / 测试 / 认证 / 风险影响写清楚——这是客户的核心需求，绝对不能省略：

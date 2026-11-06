@@ -299,7 +299,30 @@ def print_report(recs, rules, live, uncovered, used):
     if uncovered:
         print("-" * 88)
         for r in uncovered:
-            print("  · %s:%d  [%s] %s" % (r["file"], r["line"], r["sub"], (r["text"] or r["excerpt"])[:70]))
+            print("  · %s:%d  [%s] %s" % (r["file"], r["line"], r["sub"], _context(r, 80)))
+
+
+def _context(r, width=110):
+    """清单里那一行的显示文本 —— **命中处前后**的上下文。
+
+    早先显示的是字面量的开头，于是多行模板字面量里的标准名
+    （往往在几十行之后）指不到 —— 打开那一行**看不见任何标准名**。
+    """
+    text = r.get("text") or ""
+    off = int(r.get("offset") or 0)
+    if not text:
+        return (r.get("excerpt") or "")[:width]
+    if 0 < off < len(text):
+        start = max(0, off - width // 2)
+        frag = text[start : off + width // 2]
+        if start > 0:
+            frag = "…" + frag
+        if off + width // 2 < len(text):
+            frag = frag + "…"
+    else:
+        frag = text[:width]
+    frag = frag.replace("\n", "\\n").replace("\r", "").strip()
+    return frag
 
 
 def build_checklist(recs, rules, live, packs):
@@ -323,10 +346,10 @@ def build_checklist(recs, rules, live, packs):
         hits = sorted(hits, key=lambda r: (order.get(r["sub"], 9), r["file"], r["line"]))
         out.append("- **共 %d 处**：" % len(hits))
         for r in hits:
-            t = (r["text"] or "").replace("\n", "\\n").strip()
-            if len(t) > 96:
-                t = t[:96] + "…"
-            out.append("  - `%s:%d` **[%s]** %s" % (r["file"], r["line"], r["sub"], t or r["excerpt"][:96]))
+            # 显示**命中处前后**的上下文，而不是字面量的开头 ——
+            # 多行字面量的开头往往离标准名很远，指过去看不见东西可改。
+            t = _context(r)
+            out.append("  - `%s:%d` **[%s]** %s" % (r["file"], r["line"], r["sub"], t))
         out.append("")
     if packs:
         out.append("---\n")

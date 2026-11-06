@@ -3572,6 +3572,62 @@ check("the renderer recognizes versions by the declaration's own rules", () => {
   return rows.join(" · ");
 });
 
+check("the claimed-indicator family agrees with the declaration", () => {
+  // §11.4 那张表里有三处「声称指标」的专有名词：
+  //   ① 小节标题里的表号（「（GB4785 表 11.6 逐条核验）」）
+  //   ② 表头里「声称」那一列的列名（「GB4785 声称」）
+  //   ③ 行内的不一致标记（「⚠ GB4785 表 11.6 声称值与原文不一致」）
+  //
+  // 三处必须**说的是同一个表**。换标准时只改其中一处，报告里就会出现
+  // 「标题说表 11.7、行里说表 11.6」这种自相矛盾 ——
+  // 而读者不会去核（那只是一个 ⚠ 标记）。
+  //
+  // 这一关把它们与**声明**对齐：声明里是什么，报告里就得处处是什么，
+  // 而且**不许出现第二个表号**。
+  const pack = JSON.parse(read("data/standard-pack.json"));
+  const src = pack.standardFamilyShort;
+  const tableNo = pack.claimedIndicators.tableNo;
+  assert(src && tableNo, "声明里缺 claimedIndicators —— 换标准时就没有表号可改了");
+
+  const rep = loadReport();
+  const md = (rep.chapters ?? []).map((c) => c.markdown ?? "").join("\n");
+  const i = md.indexOf("数据指标变化");
+  assert(i >= 0, "报告里找不到「数据指标变化」那一节");
+  const j = md.indexOf("\n### ", i + 5);
+  const block = md.slice(i, j > 0 ? j : i + 12000);
+
+  // ① 标题里的表号
+  const heading = block.slice(0, block.indexOf("\n"));
+  assert(
+    heading.includes(`${src} ${tableNo}`),
+    `§11.4 的标题里没有声明的表号：期望「${src} ${tableNo}」，实际标题「${heading}」`,
+  );
+
+  // ② 表头里「声称」那一列
+  assert(
+    block.includes(`| ${src} 声称 |`),
+    `§11.4 的表头里没有「${src} 声称」这一列 —— 表头与声明不一致`,
+  );
+
+  // ③ 行内的不一致标记
+  const notes = block.match(new RegExp(`${src} ${tableNo} 声称值与原文不一致`, "g")) ?? [];
+  assert(
+    notes.length > 0,
+    `§11.4 里一个「${src} ${tableNo} 声称值与原文不一致」的标记都没有 —— ` +
+      "要么判定逻辑坏了，要么标记文案与声明脱节了",
+  );
+
+  // ④ **不许出现第二个表号** —— 这是这一关真正的牙齿
+  const seen = [...block.matchAll(/表\s*([\d.]+)/g)].map((m) => m[1]);
+  const wrong = [...new Set(seen.filter((n) => n !== tableNo.replace(/^表\s*/, "")))];
+  assert(
+    wrong.length === 0,
+    `§11.4 里出现了另一个表号：${wrong.join("、")}（声明里是「${tableNo}」）—— ` +
+      "标题、表头、行内标记说的不是同一个表",
+  );
+  return `§11.4 的表号与声称方一致（${src} ${tableNo}，${notes.length} 处标记）`;
+});
+
 check("the trust projection does not lose rows", () => {
   // 客户端「审阅工作台」的每个模块都是**投影** ——
   // 投影漏掉一行，界面上就少一行，而界面**不会说**「我漏了」。

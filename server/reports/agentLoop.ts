@@ -28,6 +28,10 @@
 import { type ChatMessage } from "../integrations/minimax";
 import { withKeyRotation } from "../_core/minimaxPool";
 import { runAgentTool, toolSchemas } from "./agentTools";
+// 版本清单 —— 声明里。收口指令要一份一份列全：
+// 少列一份，模型就会以为「那一版里没有」—— 而那是**错着说没有**。
+import { versionKeys, versionDocInText } from "@shared/versionMeta";
+import { cnNum } from "./reportMeta";
 
 /**
  * 工具回灌需要 role:"tool" —— integrations/minimax 的 ChatMessage 不含它。
@@ -393,7 +397,7 @@ export async function* runAgentLoop(opts: {
 function closeOutDirective(missed: string[]): string {
   return (
     "【取证指令】不要再调用任何工具。请现在就给结论，规则如下：\n" +
-    "1. 如实说明该内容在 GB 4785 草案 / GB 4785-2019 / UN R48-09 三份源 PDF 中**未找到**" +
+    `1. 如实说明该内容在 ${versionKeys().map((k) => versionDocInText(k)).join(" / ")} ${cnNum(versionKeys().length)}份源 PDF 中**未找到**` +
     "（必须写「未找到」「没有规定」「查不到」这类**明确措辞**，不要含糊成「未作明确规定」）；\n" +
     "2. 列出你**确实已经核实**的内容及其页码（若一条都没有，就写「未能核实到任何一条」）；\n" +
     "3. **绝对不要**编造页码、条款号或数值 —— 宁可空着，不可错着。\n" +
