@@ -545,7 +545,6 @@ check("交付材料在仓库里，且脚本不再写到仓库外", () => {
     !/✗/.test(srcPdfs.out || ""),
     `源 PDF 不在仓库里：\n        ${(srcPdfs.out || "").trim()}`,
   );
-  );
   return `${need.length} 项交付材料在库`;
 });
 
