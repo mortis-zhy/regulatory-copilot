@@ -14,7 +14,8 @@
       "doc": "GB 4785 草案 V4.3.5",
       "std": "GB 4785—XXXX",
       "status": "草案 V4.3.5（代替 GB 4785-2019）",
-      "short": "草案"
+      "short": "草案",
+      "rev": "V4.3.5"
     },
     {
       "key": "B",
@@ -23,7 +24,8 @@
       "doc": "GB 4785-2019",
       "std": "GB 4785—2019",
       "status": "现行（代替 GB 4785—2007，2020-07-01 实施）",
-      "short": "现行"
+      "short": "现行",
+      "rev": "2019"
     },
     {
       "key": "C",
@@ -32,7 +34,8 @@
       "doc": "UN R48-09",
       "std": "UN R48-09 + Suppl.1",
       "status": "国际法规（2025-09-26 生效，作参照）",
-      "short": "UN"
+      "short": "UN",
+      "rev": "09"
     }
   ],
   "titleTemplate": "{standardFamily} 多版本横向对比研究报告（{versionLabels} {countWord}对照）",

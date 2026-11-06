@@ -50,6 +50,7 @@ export type ReportMetaDecl = {
     doc: string;
     std: string;
     status: string;
+    rev: string;
   }>;
   titleTemplate: string;
   chapterTitles: Record<string, string>;

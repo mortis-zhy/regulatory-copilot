@@ -47,8 +47,14 @@ export type Version = string;
  *
  * 那张表的字段说明见 versionMeta.ts 的文件头注释。
  */
-import { VERSION_META, versionLabel, versionDoc, versionStd, versionStatus } from "./versionMeta";
-export { VERSION_META, versionLabel, versionDoc, versionStd, versionStatus };
+import {
+  VERSION_META, versionLabel, versionDoc, versionStd, versionStatus,
+  versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys,
+} from "./versionMeta";
+export {
+  VERSION_META, versionLabel, versionDoc, versionStd, versionStatus,
+  versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys,
+};
 
 /**
  * The versions actually present in this corpus, in display order.

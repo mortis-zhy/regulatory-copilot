@@ -21,7 +21,7 @@ import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
 // Aliased: reportV6.ts already has a local buildParameterMatrix() that builds
 // the §11.3.3 A-vs-B matrix. Same name, different job — the import below is the
 // three-version matrix and would be shadowed by the local declaration.
-import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel, versionsOf, versionDoc, versionStd, versionStatus, versionLabel } from "./parameterMatrix";
+import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel, versionsOf, versionDoc, versionStd, versionStatus, versionLabel, versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys } from "./parameterMatrix";
 // 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
 import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
 import COVERAGE_AUDIT from "../../data/coverage-audit.json";
@@ -40,7 +40,7 @@ import { buildChangePointsChapter, type ChangeChapterInput } from "./changePoint
 // 报告**标题层**的声明（data/report-meta.json）。
 // 封面标题、章节标题、附录标题里点名的标准名全从这里来 ——
 // 以前是本文件里的字面量，换标准时**封面会讲错标准**。
-import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, type TitleSlots } from "./reportMeta";
+import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, REPORT_META, type TitleSlots } from "./reportMeta";
 // 上游指纹（extract-cache → diff-result → facts）—— 让「报告对应哪一份上游」可判定。
 import { computeProvenance } from "./provenance";
 import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
@@ -461,9 +461,9 @@ function build12_quantitativeTables(data: Record<string, any>): string {
   const out: string[] = [
     "# 第 12 章 A/B/C 量化参数表横向对比",
     "",
-    "> **说明**：本章逐表对比 A 草案 / B 现行 / C (UN R48-09) 在量化参数上的差异，覆盖信号灯最关键的 **色度边界 / 光强限值 / 闪烁频率 / 几何可见度** 等类别，是工程师做合规差距分析的核心数据。",
+    `> **说明**：本章逐表对比 ${versionLabel("A")} / ${versionLabel("B")} / C (${versionDoc("C")}) 在量化参数上的差异，覆盖信号灯最关键的 **色度边界 / 光强限值 / 闪烁频率 / 几何可见度** 等类别，是工程师做合规差距分析的核心数据。`,
     "",
-    `> A 共 ${aTables.length} 个表 · B 共 ${bTables.length} 个表 · C (UN R48-09) 共 ${cTables.length} 个表 · 按主题分组对比。`,
+    `> A 共 ${aTables.length} 个表 · B 共 ${bTables.length} 个表 · C (${versionDoc("C")}) 共 ${cTables.length} 个表 · 按主题分组对比。`,
     "",
   ];
 
@@ -518,7 +518,7 @@ function build12_quantitativeTables(data: Record<string, any>): string {
       out.push("| 来源 | 页码 | 表头摘要 | 完整内容 |", "|---|---|---|---|");
       out.push(cmp("A 草案", at));
       out.push(cmp("B 现行", bt));
-      out.push(cmp("C UN R48-09", ct));
+      out.push(cmp(versionLabel("C"), ct));
       out.push("");
       const emit = (label: string, t: any | undefined) => {
         if (!t?.content) return;
@@ -527,7 +527,7 @@ function build12_quantitativeTables(data: Record<string, any>): string {
       };
       emit("A 草案", at);
       emit("B 现行", bt);
-      emit("C UN R48-09", ct);
+      emit(versionLabel("C"), ct);
       out.push("---");
       out.push("");
     }
@@ -544,7 +544,7 @@ function build12_quantitativeTables(data: Record<string, any>): string {
   };
   summary("A 草案", aTables.length, aCat);
   summary("B 现行", bTables.length, bCat);
-  summary("C UN R48-09", cTables.length, cCat);
+  summary(versionLabel("C"), cTables.length, cCat);
   out.push("**使用提示**：本节按主题逐表展示 A/B/C 三方原始表格内容（截断到 1500 字）。**已知提取缺陷**：B p23 传感器安装高度表在提取时出现列字符交错（源数据如此，非排版问题）——该表请回查 B 原件 p23 为准。");
   return out.join("\n");
 }
@@ -649,7 +649,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   const out: string[] = [
     "# 第 13 章 灯具光色分配逐行 A / B / C 三版对照",
     "",
-    "> **本章范围：A / B / C 三版。** A = GB 4785 草案 V4.3.5，B = GB 4785-2019，C = UN R48-09。",
+    `> **本章范围：A / B / C 三版。** A = ${versionDoc("A")}，B = ${versionDoc("B")}，C = ${versionDoc("C")}。`,
     ">",
     "> **C 侧的光色规定在 §5.15（源 PDF 第 29–30 页）**，体例与 GB 表 5「灯具名称 – 光色」同构，",
     "> 因此本章按**逐行对应**给出 A / B / C 三列。",
@@ -724,7 +724,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   }
   out.push("");
 
-  out.push("## 13.4 三版光色完整对照表（GB 表5 ↔ UN R48 §5.15）");
+  out.push(`## 13.4 三版光色完整对照表（GB 表5 ↔ ${versionDocNoRev("C")} §5.15）`);
   out.push("");
   out.push(
     "| 序号 | 灯具（GB 表5） | A 光色 | B 光色 | A/B | 对应灯具（R48 §5.15） | C 光色（原文 / 中译） | C 对照 |",
@@ -774,7 +774,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
       "13.1 节列出 A 新增装置（A 必须为新装置配置合适光色并验证光色合规）；" +
       "13.2 节列出 B 独有（工程师需确认 A 草案是删除、合并还是遗漏）；" +
       "13.3 节显示 A/B 之间的光色调整。" +
-      "**C 对照列**给出该灯具在 UN R48-09 §5.15 的对应行与光色；" +
+      `**C 对照列**给出该灯具在 ${versionDoc("C")} §5.15 的对应行与光色；` +
       "「表述不等价」的行请回原文看备注（13.5），**本表不替法规专家下结论**。",
   );
   out.push("");
@@ -1398,9 +1398,9 @@ function build14_clauseTextDiff(
 
   // Render
   const out: string[] = [
-    "# 第 14 章 条款正文 A vs B 逐条对照（附 C UN R48-09 对应章节与实质变化判定）",
+    `# 第 14 章 条款正文 A vs B 逐条对照（附 ${versionLabel("C")} 对应章节与实质变化判定）`,
     "",
-    "> **C 列是欧标原文，不是指针。** 每一行的第三列给出 UN R48-09 对应章节的条款号、页码与原文摘录。",
+    `> **C 列是欧标原文，不是指针。** 每一行的第三列给出 ${versionDoc("C")} 对应章节的条款号、页码与原文摘录。`,
     "> 数据来自 `data/r48-chapters.json`（GB 章节 → R48 章节对应表，",
     `> **${Object.keys((R48_CHAPTERS as any)?.map ?? {}).length} 条对应关系逐条回 R48 原文验过**：英文标题原文必须在语料里、R48 章节号必须`,
     "> 出现在该标题前后 400 字内、GB 章标题必须含该装置名）。",
@@ -1465,15 +1465,15 @@ function build14_clauseTextDiff(
       r48Hit
         ? `§${r48Hit.r48}（${r48Hit.pageLabel}）${r48Hit.excerpt}`
         : gbOnlyReason
-          ? `（UN R48-09 无对应章 —— ${gbOnlyReason}）`
-          : "（UN R48-09 无对应章）"
+          ? `（${versionDoc("C")} 无对应章 —— ${gbOnlyReason}）`
+          : `（${versionDoc("C")} 无对应章）`
     )
       .replace(/\s*\n+\s*/g, " ")
       .replace(/\|/g, "｜")
       .replace(/\s+/g, " ")
       .trim();
     out.push(
-      `| ${cell(aHead)} | ${cell(bHead)} | ${cell("C UN R48-09（对应章节）")} |`,
+      `| ${cell(aHead)} | ${cell(bHead)} | ${cell(`${versionLabel("C")}（对应章节）`)} |`,
       "|---|---|---|",
     );
     out.push(
@@ -1506,7 +1506,7 @@ function build14_clauseTextDiff(
     const related = relatedBox.rows;
     if (related.length) {
       out.push("**该灯具的三版取值（取自第 12 章参数矩阵）**", "");
-      out.push("| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |", "|---|---|---|---|---|---|");
+      out.push(`| 参数 | 单位 | ${versionLabel("A")} | ${versionLabel("B")} | ${versionLabel("C")} | 判定 |`, "|---|---|---|---|---|---|");
       for (const mr of related) {
         const cs = mr.cells ?? {};
         const v = (x: string) => {
@@ -1666,7 +1666,7 @@ function buildNarrativeFromHeadings(
         "下表按主题给出三版各自的条款号与页码，是本报告里唯一可核对的章节映射；",
         "带 ✓ 的页码已回源 PDF 逐句核对。",
         "",
-        "| 主题 | A 草案条款 | B 现行条款 | C UN R48 条款 | A 页 | B 页 | C 页 |",
+        `| 主题 | ${versionLabel("A")}条款 | ${versionLabel("B")}条款 | ${versionLabelNoRev("C")} 条款 | A 页 | B 页 | C 页 |`,
         "|---|---|---|---|---|---|---|",
       );
       for (const r of corr) {
@@ -1755,7 +1755,7 @@ function buildNarrativeFromHeadings(
       parts.push(`### ${th.label}`, "");
       parts.push(`> ${th.note}`, "");
       parts.push("| 文档 | 匹配条款数 | 页码 | 标题（最多 4 条） |", "|---|---|---|---|");
-      for (const [k, list] of [["A 草案", A], ["B 现行", B], ["C UN R48-09", C]] as const) {
+      for (const [k, list] of [[versionLabel("A"), A], [versionLabel("B"), B], [versionLabel("C"), C]] as const) {
         if (!list.length) {
           // **不写「0」**。客户读到「条款 0 页码 —」只会以为这一版没有这一档，
           // 而真相是「关键词没命中」—— 那是**检索口径**的问题，不是法规事实。
@@ -1952,7 +1952,7 @@ function buildParameterMatrix(
     "### 11.3.3 A/B/C 参数对照矩阵（安装高度 · 角度 · 频率 · 车速）",
     "",
     `本节是全报告的**参数级主对照表**：把 ${rows.length} 条 A/B 差值候选按参数维度归类，` +
-      "每行给出 B 现行值 → A 草案值，并单列 **变化判定**、**C UN R48 条款号**与**映射强度**。" +
+      `每行给出 ${versionLabel("B")}值 → ${versionLabel("A")}值，并单列 **变化判定**、**${versionLabelNoRev("C")} 条款号**与**映射强度**。` +
       "映射强度按 [完全对应 / 部分重叠 / 无对应 / 文本值·未判等价] 标注——**部分重叠不得按等价使用**。",
     "",
     "> **「变化判定」这一列是核验过的**，不是把两个取值当字符串一比。" +
@@ -2006,7 +2006,7 @@ function buildParameterMatrix(
     const famRows = byFamily.get(fam)!;
     parts.push(`#### ${fam}（${famRows.length} 项）`, "");
     parts.push(
-      "| # | 参数 | B 现行 GB 4785-2019 | A 草案 V4.3.5 | 变化判定 | C UN R48 条款 | 映射强度 |",
+      `| # | 参数 | ${versionLabel("B")} ${versionDoc("B")} | ${versionLabel("A")} ${versionRev("A")} | 变化判定 | ${versionLabelNoRev("C")} 条款 | 映射强度 |`,
       "|---|---|---|---|---|---|---|",
     );
     for (const r of famRows) {
@@ -2046,7 +2046,7 @@ function buildParameterMatrix(
       `、编号重排 ${vcount("引用编号变化（非实质）")} 项` +
       `、规则判定非变化 ${vcount("非变化（规则判定）")} 项` +
       `、重复行 ${vcount("重复行（已合并）")} 项。` +
-      `覆盖 ${ordered.length} 个参数维度；${rows.filter((r) => cClauseOf(r.source)).length} 项标注了 C UN R48 对应条款号。`,
+      `覆盖 ${ordered.length} 个参数维度；${rows.filter((r) => cClauseOf(r.source)).length} 项标注了 ${versionLabelNoRev("C")} 对应条款号。`,
     "",
     `> **口径说明**：本表的分布是**逐条裁定后**的；执行摘要第 2 条用的是**抽取流量**口径` +
       `（候选 = 数值变化 + 引用重排 + 同文 + 措辞差异 + 规则过滤）。两者的差额来自下面这 ` +
@@ -2156,7 +2156,7 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
       "",
       "工程师**无需**把这些当变化查证；本清单是勘误，页码可直接对照原文复核。",
       "",
-      "| # | 主题·参数 | B 现行版 | A 草案 | 降级依据 |",
+      `| # | 主题·参数 | ${versionLabel("B")}版 | ${versionLabel("A")} | 降级依据 |`,
       "|---|---|---|---|---|",
       ...sameT.map((s, i) => {
         const bCell = s.oldValue + (s.bPage ? `（${s.bPage}）` : "");
@@ -2172,7 +2172,7 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
       "",
       "下列变化经人工对照 A/B 原文确认，但因不在 18 个固定对比主题内而未被程序捕获，单独补录并注明来源。",
       "",
-      "| # | 主题·参数 | 核验 | B 现行版 | A 草案 | 来源 |",
+      `| # | 主题·参数 | 核验 | ${versionLabel("B")}版 | ${versionLabel("A")} | 来源 |`,
       "|---|---|---|---|---|---|",
     );
     manualFindings.forEach((m, i) => {
@@ -2192,7 +2192,7 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
       "",
       "下列差异为**句子/结构层面的表述不同**（两边都含文字叙述，非纯数字）。单列以免冒充数值变化；数值部分已在 11.3 上表体现。",
       "",
-      "| # | 主题·参数 | B 现行版 | A 草案 | 核验 |",
+      `| # | 主题·参数 | ${versionLabel("B")}版 | ${versionLabel("A")} | 核验 |`,
       "|---|---|---|---|---|",
     );
     textChanges.forEach((v, i) => {
@@ -2210,7 +2210,7 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
       "",
       "下列条目 A/B 的**实质内容完全相同**，仅所引用的条款编号因章节重组而改变。**不是技术内容变化**，不计入上表。",
       "",
-      "| # | 主题·参数 | B 现行版 | A 草案 |",
+      `| # | 主题·参数 | ${versionLabel("B")}版 | ${versionLabel("A")} |`,
       "|---|---|---|---|",
     );
     renumbered.forEach((c, i) => {
@@ -2796,7 +2796,7 @@ function buildACDiffSection(
     "",
     "## 12.6 A 与 C 的主差异清单（新国标 ↔ 欧标）",
     "",
-    "> **这一节回答的是业务问题**：新国标（A 草案）与欧标（UN R48-09）**在哪些地方不一样**。",
+    `> **这一节回答的是业务问题**：新国标（${versionLabel("A")}）与欧标（${versionDoc("C")}）**在哪些地方不一样**。`,
     "> 前面几节讲的是「A 相对 B 变了什么」—— 那是**国内**的视角；",
     "> 这一节是**出口**的视角：C 一直只作参照，而出口的人要按 C 核。",
     "",
@@ -2831,7 +2831,7 @@ function buildACDiffSection(
       ? [
           `### ② A 有、C 无（${aOnly.length} 条）—— **国内按 A 核**`,
           "",
-          "> 欧标（UN R48-09）没有这条要求，但**国标有** —— 国内型式认证必须满足 A 的规定；",
+          `> 欧标（${versionDoc("C")}）没有这条要求，但**国标有** —— 国内型式认证必须满足 A 的规定；`,
           "> 出口欧盟时欧盟不强制（仍建议满足）。",
           "",
           ...aOnly.map(
@@ -3136,7 +3136,7 @@ function buildExecSummary(input: {
     ...(mmNote.length ? ["", "---", ""] : []),
     "## 逐条统计",
     "",
-    "本报告对三份法规文件（A 草案 V4.3.5 / B 现行 GB 4785-2019 / C UN R48-09）做逐条横向对照。核心结论：",
+    `本报告对三份法规文件（${versionLabel("A")} ${versionRev("A")} / ${versionLabel("B")} ${versionDoc("B")} / ${versionLabel("C")}）做逐条横向对照。核心结论：`,
     "",
     `**1. 结构变化**：A 草案在 B 基础上新增 ${chapterAdded} 项（${chapterAdded - newDevices} 项章节级：第 6 从属功能章、第 7 扩展功能章；${newDevices} 项装置级新功能：ADS 标志灯、驾驶员辅助投射、图文交互、发光徽标、外部氛围功能、外部状态指示器等）。另有 ${DEVICE_RENUMBERING.length} 项装置级编号重排 + ${refN} 项引用编号变化（章节重组所致，非实质，见 11.6.2 / 11.3.2）。`,
     "",
@@ -3245,7 +3245,7 @@ function buildChapterTopics(topicColumns: any[], keywords: RegExp, matrixRows?: 
       : [];
     if (related.length) {
       parts.push("**该主题的三版取值（取自第 12 章参数矩阵）**", "");
-      parts.push("| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |", "|---|---|---|---|---|---|");
+      parts.push(`| 参数 | 单位 | ${versionLabel("A")} | ${versionLabel("B")} | ${versionLabel("C")} | 判定 |`, "|---|---|---|---|---|---|");
       for (const m of related) {
         const cs = m.cells ?? {};
         const v = (x: string) => {
@@ -3330,7 +3330,7 @@ function buildChangeLedgerSection(ledger: ChangeRow[]): string {
       "合并表是显式的、每条都写了理由，并由数值自动复核。" +
       "**宁可多列一行，也不把两条不同的变化并成一条** —— 并错了就是少报了一条真变化。",
     "",
-    "| # | 装置 · 参数 | 变化性质 | B 现行版 | A 草案 | 页码 | 出处 |",
+    `| # | 装置 · 参数 | 变化性质 | ${versionLabel("B")}版 | ${versionLabel("A")} | 页码 | 出处 |`,
     "|---|---|---|---|---|---|---|",
   ];
   for (const [i, r] of ledger.entries()) {
@@ -3387,9 +3387,9 @@ function buildAppendixE(matrixRows: any[], slots: TitleSlots): string {
   const vs = A.versions ?? {};
   const order = ["A", "B", "C"];
   const label: Record<string, string> = {
-    A: "GB 4785 草案 V4.3.5",
-    B: "GB 4785-2019",
-    C: "UN R48-09",
+    A: versionDoc("A"),
+    B: versionDoc("B"),
+    C: versionDoc("C"),
   };
   const t0 = A.totals ?? {};
 
@@ -3442,7 +3442,7 @@ function buildAppendixE(matrixRows: any[], slots: TitleSlots): string {
     `# 附录 E ${composeAppendixTitle("E", slots)}`,
     "",
     "> **这一节是为了让「有没有漏」可以被核对，而不是让读者相信报告作者没漏。**",
-    "> 附录 D 只覆盖 UN R48-09 的 §6；GB 4785 草案与 2019 版此前**没有**任何覆盖清单。",
+    `> 附录 D 只覆盖 ${versionDoc("C")} 的 §6；${versionDocNoRev("A")}与 ${versionRev("B")} 版此前**没有**任何覆盖清单。`,
     "> 本附录把三份标准都按**条款**清点：每一条带限值的法规陈述，逐一比对第 12 章的参数矩阵。",
     "",
     "> 清单是**每次出报告时现算**的（`scripts/coverage_audit.py` 读源 PDF 的文本层，",
@@ -3549,9 +3549,9 @@ function buildAppendixE(matrixRows: any[], slots: TitleSlots): string {
     if (g && g.version && g.clause) gapReasons.set(`${g.version}|${g.clause}`, String(g.reason ?? ""));
   }
   const verLabel: Record<string, string> = {
-    A: "GB 4785 草案 V4.3.5",
-    B: "GB 4785-2019",
-    C: "UN R48-09",
+    A: versionDoc("A"),
+    B: versionDoc("B"),
+    C: versionDoc("C"),
   };
   lines.push(
     `**三版合计 ${esc(String(T.requirements ?? 0))} 条要求条款**：`,
@@ -3721,7 +3721,7 @@ function buildAppendixH(slots: TitleSlots): string {
     "> 报告**不判「实质变化」** —— 那是工程判断（同样的两个数，方向可以相反），",
     "> 报告不替读者下结论；差异片段标出来，读者自己判。",
     "",
-    "> **C（UN R48-09）侧不在这一节。**",
+    `> **C（${versionDoc("C")}）侧不在这一节。**`,
     "> UN R48 与 GB 的条款编号体系**完全不同构**（§2 定义 / §5 通用 / §6 各灯具 / Annex），",
     "> 逐号对读会造出假对应 —— GB 5.4.5.1 与 R48 6.4.5.1 编号相似却不是同一条款。",
     "> R48 的对照在**章节级**（第 14 章，26 条对应逐条回原文验过）与",
@@ -3838,7 +3838,7 @@ function buildAppendixH(slots: TitleSlots): string {
     byDevice2.get(d)!.push(p);
   }
   lines.push(
-    "| 条款 | A 草案 · 开头原文 | A 页 | B 现行 · 开头原文 | B 页 | 字面相似度 | 怎么读 |",
+    `| 条款 | ${versionLabel("A")} · 开头原文 | A 页 | ${versionLabel("B")} · 开头原文 | B 页 | 字面相似度 | 怎么读 |`,
     "|---|---|---|---|---|---|---|",
   );
   // 「字面相似度」= 两版开头原文归一化后的 difflib ratio（scripts/build_qualitative_diff.py
@@ -3888,9 +3888,9 @@ function buildAppendixH(slots: TitleSlots): string {
 function buildAppendixF(slots: TitleSlots): string {
   const T = (APPENDIX_TABLES as any) ?? { groups: [] };
   const label: Record<string, string> = {
-    A: "GB 4785 草案 V4.3.5",
-    B: "GB 4785-2019",
-    C: "UN R48-09",
+    A: versionDoc("A"),
+    B: versionDoc("B"),
+    C: versionDoc("C"),
   };
   const lines = [
     `# 附录 F ${composeAppendixTitle("F", slots)}`,
@@ -4154,7 +4154,7 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[], slots: Tit
     `# 附录 D ${composeAppendixTitle("D", slots)}`,
     "",
     "> **这一节是为了让「有没有漏」可以被核对，而不是让读者相信报告作者没漏。**",
-    "> 下表把 UN R48-09 §6 里**每一条带数字的法规陈述**都列出来：条款号、页码、",
+    `> 下表把 ${versionDoc("C")} §6 里**每一条带数字的法规陈述**都列出来：条款号、页码、`,
     "> 数值、单位、原文，以及它有没有进第 12 章参数矩阵。",
     "",
     `> 实测：R48 §6 共 **${items.length}** 条唯一量化陈述（同一句里重复出现的同一数值只算一条），`,
@@ -4227,7 +4227,7 @@ function buildAppendixC(topicColumns: any[], slots: TitleSlots): string {
     "",
     "本附录为 **三份文档同一主题的横向对照**：每格给出条款号 + 原文摘录（≥30 字）+ 页码。每条摘录均标注页码，状态 [已核验] = 已定位到原文页码，[未核验] = 未定位成功。",
     "",
-    "- **A** = GB 4785 草案 V4.3.5（新版） · **B** = GB 4785-2019（现行） · **C** = UN R48-09（国际参照，仅作对照不做变化判定）",
+    `- **A** = ${versionDesc("A")} · **B** = ${versionDesc("B")} · **C** = ${versionDesc("C")}`,
     "",
   ];
   for (const row of topicColumns) {
@@ -4400,7 +4400,7 @@ export async function buildMinerUReport(
       const withNote =
         nl > 0
           ? matrixMd.slice(0, nl + 1) +
-            "\n> **本节范围：仅 A 与 B 两版的逐条差异**，不含 C（UN R48-09）。" +
+            `\n> **本节范围：仅 ${versionKeys().slice(0, 2).join(" 与 ")} 两版的逐条差异**，不含 ${versionKeys()[2] ?? ""}（${versionDoc(versionKeys()[2] ?? "C")}）。` +
             "需要三版取值对照请看**第 12 章 参数矩阵** —— 那里按参数给出 A/B/C 各自的取值、条款与页码。\n" +
             ">\n> ⚠ 本表的「映射强度」列由主题级原文摘录推得，**不能作为 R48 等价性判据**；" +
             "C 的定量条款请以第 12 章矩阵为准。\n" +
@@ -4678,9 +4678,9 @@ ${msg}`);
     execFileSync("python", [
       script("set_pdf_meta.py"), OUT_PDF,
       "--title", report.outline.title,
-      "--author", "GB 4785 多版本对比报告 pipeline",
-      "--subject", "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照",
-      "--keywords", "GB 4785, UN R48, 法规对比, 核验追溯",
+      "--author", `${REPORT_META.standardFamily} 多版本对比报告 pipeline`,
+      "--subject", `${versionLabel("A")} / ${versionLabel("B")} / ${versionLabel("C")} 三版本法规横向对照`,
+      "--keywords", `${REPORT_META.standardFamily}, ${versionDocNoRev("C")}, 法规对比, 核验追溯`,
       "--pipeline-version", ver,
     ], { encoding: "utf8", windowsHide: true, cwd: scriptDir, stdio: ["ignore", "pipe", "pipe"] });
     console.log(`[v6] pdf-meta patched (${ver})`);

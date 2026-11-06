@@ -57,6 +57,8 @@ export type VersionMeta = {
   doc: string;
   std: string;
   status: string;
+  /** 修订号：「V4.3.5」「2019」「09」。 */
+  rev: string;
 };
 
 export const VERSION_META: ReadonlyArray<VersionMeta> = (
@@ -96,6 +98,57 @@ export function versionDoc(v: string): string {
 /** 这一版的**标准号**（第 2 章概况表那一列）。 */
 export function versionStd(v: string): string {
   return VERSION_META.find((m) => m.key === v)?.std ?? String(v);
+}
+
+/** 这一版的**一句话说明**（执行摘要与「本章范围」那几行用它）。 */
+export function versionDesc(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.desc ?? String(v);
+}
+
+/** 这一版的**修订号**（「V4.3.5」「2019」「09」）。 */
+export function versionRev(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.rev ?? "";
+}
+
+/**
+ * 剥掉末尾的**修订号**。
+ *
+ * 按声明里的 `rev` 字段**精确**剥，不靠正则猜 ——
+ * 「V4.3.5」「2019」「09」三种写法长得完全不一样，
+ * 用一条正则去猜，迟早把标准号的一部分也削掉。
+ */
+function stripRev(text: string, v: string): string {
+  const rev = (VERSION_META.find((m) => m.key === v)?.rev ?? "").trim();
+  if (!rev) return text;
+  // 转义正则元字符：修订号里有 `.`（V4.3.5），不转义就会变成通配。
+  const esc = rev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // 模板字符串里 `\s` 会被当成普通字符 —— 要写 `\\s`。
+  return text.replace(new RegExp(`[-–—\\s]*${esc}\\s*$`), "").trimEnd();
+}
+
+/**
+ * 版本标签去掉末尾的修订号：「C UN R48-09」→「C UN R48」。
+ *
+ * 报告里说的是「**UN R48** 的条款」—— 指的是**那部法规**，
+ * 不是它的第 09 号修订件。两者在法规上不是一回事。
+ */
+export function versionLabelNoRev(v: string): string {
+  return stripRev(versionLabel(v), v);
+}
+
+/** 文档名去掉末尾的修订号：「GB 4785 草案 V4.3.5」→「GB 4785 草案」。 */
+export function versionDocNoRev(v: string): string {
+  return stripRev(versionDoc(v), v);
+}
+
+/**
+ * 各版本的**键**（按声明顺序）—— 「A」「B」「C」。
+ *
+ * 键本身也是内容（换一套标准可能叫 X/Y/Z），
+ * 所以要写「仅 A 与 B 两版」这种话，也得从声明里取。
+ */
+export function versionKeys(): string[] {
+  return VERSION_META.map((m) => m.key);
 }
 
 /** 这一版的**状态**（第 2 章概况表那一列）。 */
