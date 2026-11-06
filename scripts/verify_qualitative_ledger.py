@@ -106,6 +106,7 @@ def main() -> int:
     doc = fitz.open(str(bql.C_PDF))
     pages = {i + 1: re.sub(r"\s+", " ", p.get_text()) for i, p in enumerate(doc)}
     doc.close()
+    corpus_text = " ".join(pages.values())
     n_c = 0
     for e in entries:
         c = e.get("c")
@@ -119,8 +120,16 @@ def main() -> int:
             if first not in pages.get(c["page"], ""):
                 errors.append(
                     f"C 侧标题不在源 PDF 第 {c['page']} 页：{c['clause']} {head}")
-        if not re.match(r"^6\.\d+\.\d+$", str(c.get("clause", ""))):
-            errors.append(f"C 侧条款号形态不对：{c.get('clause')}")
+        clause = str(c.get("clause", ""))
+        # 条款号的**形态**只要求「像条款号」——
+        # 原来这里写死了 R48 的形态（`6.\d+.\d+`），
+        # 换一套标准会把**正确的**台账判成错的。
+        if not re.match(r"^\d+(?:\.\d+)+$", clause):
+            errors.append(f"C 侧条款号形态不对：{clause}")
+        # **这一版的原文里真的有这个条款号** ——
+        # 这比形态强得多，而且与标准无关。
+        elif not re.search(r"(?<![\d.])" + re.escape(clause) + r"(?![\d])", corpus_text):
+            errors.append(f"C 侧条款号在这一版原文里找不到：{clause}")
     notes.append(f"C 侧条款定位核对 {n_c} 条")
 
     # ---- 4) 计数自洽

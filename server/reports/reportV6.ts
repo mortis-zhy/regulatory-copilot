@@ -43,7 +43,7 @@ import { buildChangePointsChapter, type ChangeChapterInput } from "./changePoint
 // 报告**标题层**的声明（data/report-meta.json）。
 // 封面标题、章节标题、附录标题里点名的标准名全从这里来 ——
 // 以前是本文件里的字面量，换标准时**封面会讲错标准**。
-import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, REPORT_META, cnNum, type TitleSlots } from "./reportMeta";
+import { composeTitle, composeChapterTitle, composeChapter11Sections, composeAppendixTitle, titleSlots, REPORT_META, cnNum, fill, type TitleSlots } from "./reportMeta";
 // 上游指纹（extract-cache → diff-result → facts）—— 让「报告对应哪一份上游」可判定。
 import { computeProvenance } from "./provenance";
 import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedger";
@@ -53,7 +53,14 @@ import { buildChangeLedger, ledgerBreakdown, type ChangeRow } from "./changeLedg
 import { build11_9, loadQualitativeObligations } from "./qualitativeObligations";
 import { build11_10, ledgerSummary } from "./qualitativeLedger";
 import { detectDeviceClasses, deviceClassesAsChapterChanges } from "./deviceClassScan";
-import { detectStructuralChapters, DEVICE_RENUMBERING } from "./chapterStructural";
+// 声称指标（9 条）—— **在数据文件里**，不在代码里。
+import INDICATOR_CLAIMS from "../../data/indicator-claims.json";
+import {
+  detectStructuralChapters,
+  DEVICE_RENUMBERING,
+  CHAPTER_RENUMBERING,
+  CHAPTER_RENUMBERING_PAIRS,
+} from "./chapterStructural";
 import { diffRefs, buildRefSection } from "./refDiff";
 import { resolveInnerRoot } from "./innerRoot";
 
@@ -128,101 +135,36 @@ type IndicatorDef = {
   absenceNote?: string;
 };
 
-const INDICATORS: IndicatorDef[] = [
-  {
-    id: "drl_min_cd", label: "DRL 转向冲突时减光后最大光强", unit: "cd",
-    claimOld: "400 cd",
-    claimNew: "500 cd",
-    patterns: [
-      // covers A 5.19.7.6 "最大光强不大于 N" + B alternatives
-      /昼间行驶灯[\s\S]{0,100}?(?:最大|最小)光强[\s\S]{0,30}?(\d{2,4})\s*(?:cd|坎德拉)/i,
-      /昼间行驶灯[\s\S]{0,100}?(?:最大|最小)(?:发光强度|光度)[\s\S]{0,30}?(\d{2,4})\s*(?:cd|坎德拉)/i,
-      /DRL[\s\S]{0,100}?(\d{2,4})\s*cd/i,
-    ],
-  },
-  {
-    id: "ess_freq_hz", label: "ESS 紧急制动信号闪烁频率", unit: "Hz",
-    claimOld: "4 Hz",
-    claimNew: "5 Hz",
-    patterns: [
-      // tolerate full-width parens （）and half-width () around the number,
-      // and full-width right paren ） between 1.0 and Hz:
-      // A: （4.0±1.0）Hz ; B: (4.0±1.0)Hz
-      /紧急制动[\s\S]{0,120}?[（(](\d\.?\d*)\s*[±±]\s*1\.?\d*\s*[）)]?\s*Hz/i,
-      /紧急制动信号[\s\S]{0,120}?闪烁频率[\s\S]{0,40}?[（(]?(\d\.?\d*)\s*[±±]\s*1\.?\d*\s*[）)]?\s*Hz/i,
-      /追尾警告[\s\S]{0,120}?[（(]?(\d\.?\d*)\s*[±±]\s*1\.?\d*\s*[）)]?\s*Hz/i,
-    ],
-  },
-  {
-    id: "ess_cd", label: "ESS 光度", unit: "cd",
-    claimOld: "400 cd",
-    claimNew: "600 cd",
-    patterns: [/紧急制动信号[\s\S]{0,100}?(?:发光强度|光强|光度)[\s\S]{0,30}?(\d{2,4})\s*cd/i],
-    absenceNote:
-      "已查：B §5.23「紧急制动信号」(PDF 第50–54页) 全文只含 配备/数量/布局/安装位置/几何可见度/方向/电路连接 七项，" +
-      "**无光度条款**；A §7.2 同构。全文检索「紧急制动信号…cd」0 命中。结论：ESS 只规定闪烁频率，不规定光强。",
-  },
-  {
-    id: "drl_vis_deg", label: "DRL 可见度角度", unit: "°",
-    claimOld: "±20°",
-    claimNew: "±25°",
-    // **按条款锚定**，不按主题名 —— 按主题名首次命中会打到远光灯的
-    // 几何可见度（5.1.5）上去，那不是 DRL 的角度。
-    // 原文写法是「水平方向角:向外、向内各20°」，
-    // **没有 ± 号**（旧正则要求 ±，所以永远匹配不上 → 被误判成「未找到」）。
-    patterns: [
-      /5\.\s*19\s*\.\s*5[\s\S]{0,80}?水平方向角[^。]{0,20}?各\s*(\d{1,2})\s*°/i,
-      /昼间行驶灯[\s\S]{0,300}?几何可见度[\s\S]{0,60}?水平方向角[^。]{0,20}?各\s*(\d{1,2})\s*°/i,
-      // 兼容真的带 ± 的写法
-      /5\.\s*19\s*\.\s*5[\s\S]{0,80}?[±±]\s*(\d{1,2})\s*°/i,
-    ],
-  },
-  {
-    id: "side_marker_m", label: "侧标志灯间距", unit: "m",
-    claimOld: "≤6 m",
-    claimNew: "≤4 m",
-    // no /g flag — stale lastIndex across A/B regex reuse silently
-    // drops the second doc's match. Capture the first number after 间距.
-    patterns: [/侧标志灯[\s\S]{0,150}?间距[\s\S]{0,60}?(?:不小于|不大于|应不大于)?\s*(\d(?:\.\d+)?)\s*m/i],
-  },
-  {
-    id: "led_life_h", label: "LED 寿命", unit: "h",
-    claimOld: "2000 h",
-    claimNew: "3000 h",
-    patterns: [/(?:LED|发光二极管)[\s\S]{0,60}?寿命[\s\S]{0,40}?(\d{3,4})\s*h/i],
-    absenceNote:
-      "已查：A/B/C 三版全文检索「寿命」**0 命中**。LED 相关只有术语定义" +
-      "（A 3.2.1.x「发光二极管/LED模块」；B 3.7.6/3.7.7）。结论：光源寿命属光源标准" +
-      `（GB 15766 / UN R37 / UN R99 / UN R128）范畴，不在 ${REPORT_META.standardFamily} 外部照明装置标准内。`,
-  },
-  {
-    id: "lumen_pct", label: "光通维持率", unit: "%",
-    claimOld: "70%",
-    claimNew: "80%",
-    patterns: [/光通维持率[\s\S]{0,40}?(\d{1,3})\s*%/i],
-    absenceNote:
-      "已查：A/B/C 三版只有「**目标光通量**」（A 3.2.2 / B 3.7.8，指向光源标准数据页），" +
-      "**无「光通维持率」**。结论：光通维持率不在本标准内，同属光源标准范畴。",
-  },
-  {
-    id: "preheat_min", label: "预热点灯时间", unit: "min",
-    claimOld: "30 min",
-    claimNew: "60 min",
-    patterns: [/预热[\s\S]{0,40}?(\d{1,3})\s*min/i],
-    absenceNote:
-      "已查：A/B/C 三版全文检索「预热」**0 命中**。结论：预热点灯时间不在本标准内。",
-  },
-  {
-    id: "afs_switch_s", label: "AFS 切换时间", unit: "s",
-    claimOld: "≤2 s",
-    claimNew: "≤1.5 s",
-    patterns: [/(?:AFS|自适应前照)[\s\S]{0,60}?切换[\s\S]{0,40}?[≤<]?\s*(\d\.?\d*)\s*s/i],
-    absenceNote:
-      "已查：B §5.22「自适应前照明系统(AFS)」(PDF 第45–53页) 全节无「切换时间」；" +
-      "全文「切换」只出现在「自动切换前照灯近光」（附录 H）与「切换为另一个功能」（4.9b）。" +
-      "该节有的是 5.22.9.4「远光最大发光强度限值 430000cd」等条款。结论：AFS 切换时间不在本标准内。",
-  },
-];
+/**
+ * **声称指标**（第 11.4 节）—— 「声称方说的值」与原文不一致的那些指标。
+ *
+ * 它们的**值与正则**原来写在这个文件里（`INDICATORS` 常量）。
+ * 换一套标准时这 9 条必须重写，而**改代码比改数据危险**：
+ * 改坏了照样跑得起来，只是**说错话**。
+ *
+ * 现在它们在 `data/indicator-claims.json` 里 ——
+ * 换标准时**重出那一个文件**（agent 提议 + 校验层验），而不是翻代码。
+ *
+ * 正则以**源码 + 旗标**存放（`RegExp` 对象没法存进 JSON）；
+ * 缺证说明里的 `{standardFamily}` 是**槽位占位符**，
+ * 照 `reportMeta.ts` 的 `fill()` 填 —— 文字仍然跟着**声明**走。
+ */
+const INDICATORS: IndicatorDef[] = (INDICATOR_CLAIMS.rows ?? []).map((r) => ({
+  id: r.id,
+  label: r.label,
+  unit: r.unit,
+  claimOld: r.claimOld,
+  claimNew: r.claimNew,
+  patterns: (r.patterns ?? []).map((p) => new RegExp(p.source, p.flags || "i")),
+  ...(r.absenceNote
+    ? {
+        absenceNote: fill(r.absenceNote, {
+          standardFamily: REPORT_META.standardFamily,
+          standardFamilyShort: REPORT_META.standardFamilyShort,
+        }),
+      }
+    : {}),
+}));
 
 type IndicatorResult = {
   def: IndicatorDef;
@@ -1200,9 +1142,19 @@ function build14_clauseTextDiff(
     return 0;
   });
 
-  // B→A chapter-level mapping (from chapterStructural knowledge):
-  // B6 检验规则→A8, B6.1 同一型式→A9, B7 实施日期→A10; others identity.
-  const CH_MAP: Record<string, string> = { "6": "8", "6.1": "9", "7": "10" };
+  // B→A 章级映射 —— **从声明推导**（`CHAPTER_RENUMBERING`），
+  // 不再手抄一份：换标准时漏改一处，第 14 章的 A 侧定位会**静默降级**
+  // 成「宽松定位」，而没有任何报错。
+  const CH_MAP: Record<string, string> = CHAPTER_RENUMBERING;
+  // 章级**前缀规则**：只有「不带点」的键有（B 6 → A 8，于是 B 6.2 → A 8.2）。
+  // B 6.1 是**节级**（→ A 9），它没有前缀规则 —— 6.1.x 不落到 A 8.x 下。
+  const CH_PREFIX_RULES = CHAPTER_RENUMBERING_PAIRS.filter(([b]) => !b.includes(".")).map(
+    ([b, a]) => ({ b, a }),
+  );
+  // 散文里那句「章节映射：B6→A8、B6.1→A9、B7→A10」——
+  // **从同一张表生成**，读者看到的与实际用的必然一致。
+  const chapterMapText =
+    CHAPTER_RENUMBERING_PAIRS.map(([b, a]) => `B${b}→A${a}`).join("、") || "（无）";
   // B→A section-level mapping from DEVICE_RENUMBERING.
   const SEC_MAP = new Map(DEVICE_RENUMBERING.map((r) => [r.bNumber, r.aNumber]));
 
@@ -1270,13 +1222,16 @@ function build14_clauseTextDiff(
   };
 
   const mapToA = (bNum: string): string => {
-    // Chapter-level special cases FIRST (B 6.1 同一型式 → A 9, not 8.1).
+    // 章级**完全相等**的先判（B 6 → A 8、B 6.1 → A 9、B 7 → A 10）。
+    // 顺序与原来一致：6.1 比 6 更具体，所以它先命中自己的键。
     if (CH_MAP[bNum]) return CH_MAP[bNum];
     // B ch6 检验规则 subsections (6.2 型式检验 …) live under A ch8 检验规则 —
     // identity-mapping them to A ch6 (从属功能的特殊规定) paired UNRELATED
     // clauses and produced fake "实质差异" rows (second evaluation).
-    if (bNum.startsWith("6.")) return "8." + bNum.slice(2);
-    if (bNum.startsWith("7.")) return "10." + bNum.slice(2);
+    // 规则从 CH_MAP 推导（章级键才有前缀规则），不是手写的「6.」「7.」。
+    for (const rule of CH_PREFIX_RULES) {
+      if (bNum.startsWith(rule.b + ".")) return rule.a + bNum.slice(rule.b.length);
+    }
     if (bNum.startsWith("5.")) return SEC_MAP.get(bNum) ?? bNum;
     return bNum;
   };
@@ -1434,7 +1389,7 @@ function build14_clauseTextDiff(
     "> 都逐条回原文核验过。本章只回答一件事：**这一节有没有实质变化**；",
     "> 有 → 列出是哪几条（编号 + B 值 → A 值；定性义务给出条款与页码），没有 → 明写「无实质数值变化」。",
     ">",
-    "> **说明**：以 B 现行的完整章节结构为骨架，逐条映射到 A 对应条款（章节映射：B6→A8、B6.1→A9、B7→A10；装置节映射见 11.6.2），并排对照条款正文（每条截断 600 字）。A 独有的第 6/7 章追加在末尾。",
+    `> **说明**：以 B 现行的完整章节结构为骨架，逐条映射到 A 对应条款（章节映射：${chapterMapText}；装置节映射见 11.6.2），并排对照条款正文（每条截断 600 字）。A 独有的第 6/7 章追加在末尾。`,
     "",
     `> 对比条目：${clauses.length}（B 驱动 ${clauses.length - aOnly.length} + A 独有 ${aOnly.length}）· A 侧定位成功 ${clauses.filter((c) => c.aPage).length} / ${clauses.length}` +
       (aLocatorFallbacks

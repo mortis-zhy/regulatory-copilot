@@ -48,10 +48,11 @@
         "data/diff-corrections.json",
         "data/requirement-scope.json",
         "data/requirement-gaps.json",
-        "data/indicator-adjudications.json"
+        "data/indicator-adjudications.json",
+        "data/indicator-claims.json"
       ],
-      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。（§11.4 那 6 条声称指标的人工复核结论也在其中。）",
-      "swap": "**必须重新核**。照搬会把上一套标准的结论带进新标准 —— 那不是「空着」，是「错着」。人工裁定与机器判定要分开存放（这一条已经是机制）。"
+      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。（§11.4 那 6 条声称指标的人工复核结论也在其中。）\n\n`data/indicator-claims.json` 是**声称指标**那 9 条（id / 标签 / 声称值 / 匹配正则）——**挑哪 9 条**是人判断的，正则是从语料扫出来验过的。它们原来写在 `server/reports/reportV6.ts` 的代码里，现在搬到了数据文件：换标准时重出这一个文件，而不是翻代码。",
+      "swap": "**必须重新核**。照搬会把上一套标准的结论带进新标准 —— 那不是「空着」，是「错着」。人工裁定与机器判定要分开存放（这一条已经是机制）。\n\n`data/indicator-claims.json`：按新标准的声称方重挑这 9 条（或增减条数），每条的正则要回新标准的原文验过（闸门「声称指标那一族与声明一致」守着表号与散文，正则本身由 `scripts/verify_indicators.py` 回源核）。"
     },
     {
       "id": "patch-files",

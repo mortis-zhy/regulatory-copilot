@@ -115,8 +115,13 @@ export function countZhou(n: number): string {
   return `${n}版`;
 }
 
-/** 把占位符填上。未知占位符原样留着 —— 留着才看得出模板写错了。 */
-function fill(template: string, slots: Record<string, string>): string {
+/**
+ * 把占位符填上。未知占位符原样留着 —— 留着才看得出模板写错了。
+ *
+ * **导出**：数据文件里的文字（声称指标的缺证说明）也要用同一套占位符 ——
+ * `{standardFamily}` 那种形状，跟着**声明**走，换标准时不用改数据。
+ */
+export function fill(template: string, slots: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (whole, name) =>
     Object.prototype.hasOwnProperty.call(slots, name) ? slots[name] : whole,
   );

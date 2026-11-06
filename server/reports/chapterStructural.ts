@@ -115,6 +115,33 @@ export const DEVICE_RENUMBERING: Array<{
   { name: "追尾警告信号", bNumber: "5.26", aNumber: "7.3", bPage: "第57页", aPage: "第70页" },
 ];
 
+/**
+ * 章级编号重排（B → A）—— **从 `STRUCTURAL_CHAPTERS` 推导**，不要另抄一份。
+ *
+ * 原来 `reportV6.ts` 里手写着 `{ "6": "8", "6.1": "9", "7": "10" }`，
+ * 与这里的数据**各有一份**。换标准时改了一处忘了另一处，
+ * 第 14 章的 A 侧定位就会**静默降级**到「宽松定位」——
+ * 报告照出，只是那一段不再指向准确的条款，**没有任何报错**。
+ *
+ * 那句散文里的「章节映射：B6→A8、B6.1→A9、B7→A10」是**第三份**，
+ * 现在也从这张表生成（读者看到的与实际用的必然一致）。
+ */
+export const CHAPTER_RENUMBERING_PAIRS: Array<[string, string]> = STRUCTURAL_CHAPTERS.filter(
+  (c) => c.category === "renumbered" && c.bNumber && c.aNumber,
+).map((c) => [c.bNumber!, c.aNumber!]);
+
+/**
+ * 查表用的副产品 —— **顺序不能靠它的键序**。
+ *
+ * JS 对象里「6」「7」这种**数组下标样的键**会被排到前面，
+ * `Object.entries` 出来是 `6, 7, 6.1` —— 与声明里的顺序不一样，
+ * 那句散文的顺序就变了（报告的字跟着变）。
+ * 所以**以 `CHAPTER_RENUMBERING_PAIRS` 为准**，记录只是查表用的。
+ */
+export const CHAPTER_RENUMBERING: Record<string, string> = Object.fromEntries(
+  CHAPTER_RENUMBERING_PAIRS,
+);
+
 export function detectStructuralChapters(): {
   added: StructuralChapterChange[];
   removed: StructuralChapterChange[];

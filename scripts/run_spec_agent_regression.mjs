@@ -131,7 +131,9 @@ const ctx = {
     return corpus[v];
   },
   prefixesFor: (d, v) => deviceChapterPrefixes(specs, d, v),
-  candidatesFor: (d, v, p) => candidateSentences(clauseIndex, v, p, { limit: 400 }),
+  // **按单位过滤** —— 不传单位时 `numbersOf(sentence, undefined)` 放行所有数字，
+  // 单位不对的候选句也会进池子（那是模型挑错灯的温床）。
+  candidatesFor: (d, v, p, unit) => candidateSentences(clauseIndex, v, p, { limit: 400, unit }),
 };
 
 const rows = [];
@@ -144,7 +146,7 @@ for (const [i, p] of picked.entries()) {
     version: p.version,
     device: p.device,
   };
-  const candidates = ctx.candidatesFor(p.device, p.version, p.prefixes);
+  const candidates = ctx.candidatesFor(p.device, p.version, p.prefixes, p.spec.unit);
   const label = `[${i + 1}/${picked.length}] ${p.spec.id} · ${p.version}`;
   let proposal;
   try {
@@ -230,7 +232,7 @@ for (const [i, p] of absentSample.entries()) {
     version: p.version,
     device: p.device,
   };
-  const candidates = ctx.candidatesFor(p.device, p.version, p.prefixes);
+  const candidates = ctx.candidatesFor(p.device, p.version, p.prefixes, p.spec.unit);
   let proposal;
   try {
     proposal = await proposeSpec(ctx, slot, candidates, callModel);

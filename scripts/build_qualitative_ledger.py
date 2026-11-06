@@ -58,7 +58,35 @@ from pathlib import Path
 import fitz
 
 ROOT = Path(__file__).resolve().parent.parent
-C_PDF = ROOT / "uploaded-docs" / "92b2563197df022a.pdf"
+def _c_pdf_path():
+    """C 版的源 PDF —— **按内容指纹找**，不写死文件名。
+
+    `uploaded-docs/<sha256前16位>.pdf` 是**内容寻址**的文件名，
+    指纹从 `data/clause-index.json` 的 `_sourcePdfs` 读 ——
+    换一套标准时那份 JSON 跟着换，这里就跟着换，**代码不用动**。
+
+    写死文件名不是「认版本」，是「认这一版」——
+    换标准时不改它，脚本要么找不到文件（响亮失败），
+    要么找到了**别的**标准的那份（更坏：静默拿错原文）。
+    """
+    index = json.loads((ROOT / "data" / "clause-index.json").read_text(encoding="utf-8"))
+    sha = ((index.get("_sourcePdfs") or {}).get("C") or {}).get("sha256", "")
+    if not sha:
+        raise SystemExit(
+            "data/clause-index.json 里没有 C 版的源 PDF 指纹 —— "
+            "认不出哪份 PDF 是 C 版（宁可停，不要拿错的原文）"
+        )
+    path = ROOT / "uploaded-docs" / f"{sha[:16]}.pdf"
+    if not path.exists():
+        raise SystemExit(f"按指纹找不到 C 版源 PDF：{path}")
+    return path
+
+
+def __getattr__(name):
+    # 惰性求值：找不到文件时给一句人话，而不是 import 就崩。
+    if name == "C_PDF":
+        return _c_pdf_path()
+    raise AttributeError(name)
 
 # ---------------------------------------------------------------- 归一化
 
