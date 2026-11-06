@@ -18,6 +18,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import {
@@ -137,9 +138,11 @@ const ctx = {
   prefixesFor(dev, v) {
     return deviceChapterPrefixes(workingSpecs, dev, v);
   },
-  candidatesFor(dev, v, prefixes) {
+  candidatesFor(dev, v, prefixes, unit) {
     if (!prefixes.length) return [];
-    return candidateSentences(clauseIndex, v, prefixes, { limit: 400 });
+    // **按单位过滤** —— 不传单位时 `numbersOf(sentence, undefined)` 放行所有数字，
+    // 单位不对的候选句也会进池子（模型挑错灯的温床）。
+    return candidateSentences(clauseIndex, v, prefixes, { limit: 400, unit });
   },
 };
 
@@ -195,7 +198,7 @@ console.log(
 const results = [];
 for (const [i, slot] of todo.entries()) {
   const prefixes = ctx.prefixesFor(slot.device, slot.version);
-  const candidates = ctx.candidatesFor(slot.device, slot.version, prefixes);
+  const candidates = ctx.candidatesFor(slot.device, slot.version, prefixes, slot.unit);
   const label = `[${i + 1}/${todo.length}] ${slot.id} · ${slot.version} · ${slot.name}`;
   if (!prefixes.length) {
     console.log(`${label} —— 跳过：这个装置在这一版没有兄弟正则，章号未知`);
@@ -224,6 +227,35 @@ for (const [i, slot] of todo.entries()) {
     proposal = { ...slot, error: `agent 失败：${e.message}` };
   }
   const v = validateProposal(proposal, corpus[slot.version], prefixes, { unit: slot.unit });
+
+  // ---- 口径对账：与**同族其他版本**比口径 ------------------------------
+  //
+  // 数值层看不出「不大于」与「小于」的差别。口径不一样却判成「一致」，
+  // 比判成「有变化」更坏 —— 客户照着「一致」就以为不用改设计。
+  //
+  // 所以拿**抽取器自己的口径判定**（`validateProposal` 复刻同一套语义）
+  // 算一遍同族其他版本的口径，与提议比。对不上 → **进残余，不自动采纳**。
+  let comparatorNote = null;
+  if (v.ok && v.comparator) {
+    for (const ov of versions) {
+      if (ov === slot.version) continue;
+      const osp = specs.find((s) => s.id === slot.id);
+      const pat = (osp?.patterns ?? {})[ov];
+      if (!pat?.source) continue;
+      const oPrefixes = ctx.prefixesFor(slot.device, ov);
+      const ov2 = validateProposal(
+        { id: slot.id, version: ov, device: slot.device, name: osp.name ?? slot.id, source: pat.source, flags: pat.flags ?? "i" },
+        corpus[ov],
+        oPrefixes,
+        { unit: slot.unit },
+      );
+      if (!ov2.ok || !ov2.comparator) continue;
+      if (ov2.comparator !== v.comparator) {
+        comparatorNote = `口径与 ${ov} 版不同（${ov2.comparator} vs ${v.comparator}）`;
+        break;
+      }
+    }
+  }
   const rec = {
     id: slot.id,
     name: slot.name,
@@ -238,6 +270,10 @@ for (const [i, slot] of todo.entries()) {
     absent: proposal.absent ?? null,
     error: proposal.error ?? null,
     validation: v,
+    // 口径（≤/</≥/>/=）—— 数值层看不出它，报告里却按它判「一致 / 变化」。
+    comparator: v.comparator ?? null,
+    // 与同族其他版本口径对不上 —— **进残余，不自动采纳**。
+    comparatorNote,
     // 独立复核模式下，这一条**人工核过的理由**记在这里 ——
     // 但**不给模型看**（模型只看到参数名/单位/候选句），
     // 否则就不是独立复核，而是让模型照抄结论。
@@ -303,6 +339,55 @@ if (verifyAbsent) {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* 产物声明 —— 项目统一的形状                                                  */
+/* -------------------------------------------------------------------------- */
+/**
+ * 「这份产物是谁、用什么、从哪份原料、什么时候做的」。
+ *
+ * 为什么要有：**源 PDF 一换，产物立刻作废**（指纹变了）；
+ * 换个 prompt 跑出来的结果**分得清**（`_promptVersion`）；
+ * 模型换了也**看得见**（`_model`）。
+ *
+ * 没有这三样，一份产物放在那儿，谁也说不清它是不是还作数。
+ */
+const gitSha = (() => {
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+      cwd: ROOT,
+      encoding: "utf-8",
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+})();
+
+const sourceSha = (() => {
+  const doc = readJson(INDEX, {});
+  const out = {};
+  for (const [v, info] of Object.entries(doc._sourcePdfs ?? {})) {
+    out[v] = info?.sha256 ?? "";
+  }
+  return out;
+})();
+
+const productHeader = {
+  _generator: `scripts/run_spec_agent.mjs @ ${gitSha}`,
+  _model: process.env.MINIMAX_MODEL ?? "MiniMax-M3",
+  _promptVersion: process.env.SPEC_AGENT_PROMPT_VERSION ?? "spec-agent/2026-11-06",
+  _sourceSha256: sourceSha,
+  _builtAt: new Date().toISOString(),
+};
+
+/* -------------------------------------------------------------------------- */
+/* 残余台账 —— 由**唯一写者**生成                                              */
+/* -------------------------------------------------------------------------- */
+/**
+ * 残余（机器判不了的那些）由 `scripts/build_spec_residue.mjs` 生成 ——
+ * 那是它的**唯一写者**。这里跑完调它一下，
+ * 不在这里另写一份（两个写者迟早漂移）。
+ */
+
 if (!dry) {
   fs.writeFileSync(
     OUT,
@@ -310,7 +395,9 @@ if (!dry) {
       {
         _comment:
           "**提议**，不是 spec。人工确认后并进 data/parameter-specs.json。" +
-          "每条都带校验结果 —— 没通过校验的不要采纳。",
+          "每条都带校验结果 —— 没通过校验的不要采纳。" +
+          "机器判不了的那些在 data/spec-residue.json（按 R1/R2/R3 分档）。",
+        ...productHeader,
         generatedBy: "scripts/run_spec_agent.mjs",
         rows: results,
       },
@@ -320,6 +407,17 @@ if (!dry) {
     "utf-8",
   );
   console.log(`[spec-agent] 已写出 ${path.relative(ROOT, OUT)}`);
+
+  // 残余台账 —— **唯一写者**是 `scripts/build_spec_residue.mjs`
+  try {
+    const out = execFileSync(process.execPath, [path.join(ROOT, "scripts", "build_spec_residue.mjs")], {
+      cwd: ROOT,
+      encoding: "utf-8",
+    });
+    console.log(String(out).trim());
+  } catch (e) {
+    console.log(`[spec-agent] ⚠ 残余台账没生成：${e.message}`);
+  }
 } else {
   console.log("[spec-agent] --dry：未写文件");
 }

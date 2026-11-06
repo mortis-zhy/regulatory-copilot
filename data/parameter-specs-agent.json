@@ -1,0 +1,207 @@
+{
+ "_comment": "**提议**，不是 spec。人工确认后并进 data/parameter-specs.json。每条都带校验结果 —— 没通过校验的不要采纳。机器判不了的那些在 data/spec-residue.json（按 R1/R2/R3 分档）。",
+ "_generator": "scripts/run_spec_agent.mjs @ 73ad34f",
+ "_model": "MiniMax-M3",
+ "_promptVersion": "spec-agent/2026-11-06",
+ "_sourceSha256": {
+  "A": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7",
+  "B": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085",
+  "C": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
+ },
+ "_builtAt": "2026-11-06T08:23:03.696Z",
+ "generatedBy": "scripts/run_spec_agent.mjs",
+ "rows": [
+  {
+   "id": "corneringLamp.maxHeight",
+   "name": "角灯最大离地高度",
+   "family": "安装高度 / 离地距离",
+   "unit": "mm",
+   "version": "A",
+   "device": "corneringLamp",
+   "prefixes": [
+    "5.5"
+   ],
+   "source": "5\\.5\\.4\\.3[\\s\\S]{0,400}?离地高度不小于\\s*250\\s*mm[\\s\\S]{0,300}?不大于\\s*(900)\\s*mm",
+   "flags": "i",
+   "why": "条款 5.5.4.3（角灯安装位置-高度，A 版第37页）原文为「离地高度不小于250mm，不大于900mm」。用条款号锚定并用窗口连接，捕获组只框住上限值 900 mm，即参数「角灯最大离地高度」。250mm 为下限已排除在捕获组外。",
+   "absent": null,
+   "error": null,
+   "validation": {
+    "ok": true,
+    "nums": [
+     "900"
+    ],
+    "clause": "5.5.4.3",
+    "page": 37,
+    "hitPages": [
+     37
+    ],
+    "comparator": "≤"
+   },
+   "comparator": "≤",
+   "comparatorNote": null,
+   "absentReason": null,
+   "kind": "proposes"
+  },
+  {
+   "id": "corneringLamp.maxHeight",
+   "name": "角灯最大离地高度",
+   "family": "安装高度 / 离地距离",
+   "unit": "mm",
+   "version": "B",
+   "device": "corneringLamp",
+   "prefixes": [
+    "5.20"
+   ],
+   "source": "5\\.20\\.4\\.3[\\s\\S]{0,300}?最大值[:：]?\\s*离地高度不大于\\s*(900)\\s*mm",
+   "flags": "i",
+   "why": "GB 4785-2019 中角灯（5.20 角灯）安装高度见 5.20.4.3「3 高度」：最小值离地高度不小于250mm，最大值离地高度不大于900mm。本参数取「最大值」，故锚定 5.20.4.3 并只框住 900mm（与 250mm 的最小值区分，避免误取下限）。5.20.4.2 的 1000mm 是纵向距车辆前部的位置要求，不是离地高度，已由条款锚点排除。",
+   "absent": null,
+   "error": null,
+   "validation": {
+    "ok": true,
+    "nums": [
+     "900"
+    ],
+    "clause": "5.20.4.3",
+    "page": 49,
+    "hitPages": [
+     49
+    ],
+    "comparator": "≤"
+   },
+   "comparator": "≤",
+   "comparatorNote": null,
+   "absentReason": null,
+   "kind": "proposes"
+  },
+  {
+   "id": "corneringLamp.maxHeight",
+   "name": "角灯最大离地高度",
+   "family": "安装高度 / 离地距离",
+   "unit": "mm",
+   "version": "C",
+   "device": "corneringLamp",
+   "prefixes": [
+    "6.20"
+   ],
+   "source": "6\\.20\\.4\\.3\\.[\\s\\S]{0,200}?In height:[\\s\\S]{0,200}?maximum:[\\s\\S]{0,100}?Not more than\\s*(900)\\s*mm",
+   "flags": "i",
+   "why": "UN R48-09 角灯（cornering lamps）安装高度条款 6.20.4.3「In height: minimum: Not less than 250 mm above the ground; maximum: Not more than 900 mm above the ground.」。用条款号 6.20.4.3 锚定，并强制经过「In height:」与「maximum:」标签后再捕获「Not more than 900 mm」，确保取到的是最大离地高度上限而非下限 250 mm（也不受同页 6.20.4.2 的 1,000 mm 前向距离干扰）。捕获组只框住数值 900，单位 mm 与参数单位一致；值与条款锚点同在第 76 页。",
+   "absent": null,
+   "error": null,
+   "validation": {
+    "ok": true,
+    "nums": [
+     "900"
+    ],
+    "clause": "6.20.4.3",
+    "page": 76,
+    "hitPages": [
+     76
+    ],
+    "comparator": "≤"
+   },
+   "comparator": "≤",
+   "comparatorNote": null,
+   "absentReason": null,
+   "kind": "proposes"
+  },
+  {
+   "id": "dippedBeam.maxHeight",
+   "name": "近光灯最大离地高度",
+   "family": "安装高度 / 离地距离",
+   "unit": "mm",
+   "version": "A",
+   "device": "dippedBeam",
+   "prefixes": [
+    "5.2"
+   ],
+   "source": "5\\.2\\.4\\.2[\\s\\S]{0,300}?离地高度不小于\\s*500\\s*mm[\\s\\S]{0,30}?不大于\\s*(1200)\\s*mm",
+   "flags": "i",
+   "why": "A 版 5.2.4.2 规定「高度：离地高度不小于500mm，不大于1200mm。对于N3G类（越野）车辆，最大高度可增加到1500mm。」。近光灯最大离地高度即上限1200mm（N3G类越野车例外可到1500mm，常规值取1200mm）。正则以条款号5.2.4.2锚定，在同页内用窗口连接「离地高度不小于500mm」与「不大于(1200)mm」，只把上限1200框入第1捕获组，避免误取下限500与N3G的1500。test_regex 验证命中条款5.2.4.2、第26页、取值1200。",
+   "absent": null,
+   "error": null,
+   "validation": {
+    "ok": true,
+    "nums": [
+     "1200"
+    ],
+    "clause": "5.2.4.2",
+    "page": 26,
+    "hitPages": [
+     26
+    ],
+    "comparator": "≤"
+   },
+   "comparator": "≤",
+   "comparatorNote": null,
+   "absentReason": null,
+   "kind": "proposes"
+  },
+  {
+   "id": "dippedBeam.maxHeight",
+   "name": "近光灯最大离地高度",
+   "family": "安装高度 / 离地距离",
+   "unit": "mm",
+   "version": "B",
+   "device": "dippedBeam",
+   "prefixes": [
+    "5.2"
+   ],
+   "source": "5\\.2\\.4\\.2[\\s\\S]{0,900}?高度[:：]离地高度不小于\\s*500\\s*mm\\s*[,，]?\\s*不大于\\s*(1200)\\s*mm",
+   "flags": "i",
+   "why": "GB 4785-2019 第24页 5.2.4.2（近光灯安装位置/高度）原文为「高度:离地高度不小于500mm,不大于1200mm。对于N3G 类(越野)车辆,最大高度可增加到1500mm。」。本参数为近光灯最大离地高度，取一般车辆的最大值1200 mm；N3G（越野）类车辆可增至1500 mm 属特殊车型加严放宽，不作为通用上限。捕获组只框住1200，mm 留在组外，符合「值+单位」格式；条款锚定 5.2.4.2 保证取值归到高度条款而非 5.2.4.1 的横向间距条款。已用 test_regex 在版本B 验证：clause=5.2.4.2、page=24、nums=[1200]。",
+   "absent": null,
+   "error": null,
+   "validation": {
+    "ok": true,
+    "nums": [
+     "1200"
+    ],
+    "clause": "5.2.4.2",
+    "page": 24,
+    "hitPages": [
+     24
+    ],
+    "comparator": "≤"
+   },
+   "comparator": "≤",
+   "comparatorNote": null,
+   "absentReason": null,
+   "kind": "proposes"
+  },
+  {
+   "id": "dippedBeam.maxHeight",
+   "name": "近光灯最大离地高度",
+   "family": "安装高度 / 离地距离",
+   "unit": "mm",
+   "version": "C",
+   "device": "dippedBeam",
+   "prefixes": [
+    "6.2"
+   ],
+   "source": "6\\.2\\.4\\.2\\.[\\s\\S]{0,900}?not more than\\s*(1[ ,]?200)\\s*mm",
+   "flags": "i",
+   "why": "UN R48-09 §6.2.4.2「In height: not less than 500 mm and not more than 1,200 mm above the ground.」给出近光灯（dipped-beam）安装高度下限 500 mm、上限 1,200 mm，本参数取「最大离地高度」故捕获 1,200 mm（原文带千分位逗号，故写作 1[ ,]?200）。同条款后半句的 1,500 mm 是 N2G/N3G/M2G/M3G 越野车的例外提高值，不是本参数的通用最大离地高度，故不作为取值。§6.2.4.1 的 400/600/1,300 mm 属于横向间距要求，与离地高度无关。锚点 6.2.4.2 与值同在第 40 页，已用 test_regex 验证：命中条款 6.2.4.2、第 40 页、抽取值 1200。",
+   "absent": null,
+   "error": null,
+   "validation": {
+    "ok": true,
+    "nums": [
+     "1200"
+    ],
+    "clause": "6.2.4.2",
+    "page": 40,
+    "hitPages": [
+     40
+    ],
+    "comparator": "≤"
+   },
+   "comparator": "≤",
+   "comparatorNote": null,
+   "absentReason": null,
+   "kind": "proposes"
+  }
+ ]
+}

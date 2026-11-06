@@ -3815,6 +3815,76 @@ check("the declaration can recognize its own source files", () => {
   return `${versions.length} 份源文件都在 · 文件名签名都认得出 · 声明覆盖语料的 ${corpusKeys.join(",")}`;
 });
 
+check("the spec residue ledger is explicit and within its caps", () => {
+  // 残余 = 机器判不了的那些槽位。**残余是产物，不是事故** ——
+  // 换一套标准时，人的工作量就等于这份清单。
+  //
+  // 但「残余」如果没人管，它会变成一个**没人看的清单** ——
+  // 机器以为它写了就算数了。这一关把它钉死。
+
+  // ① **新鲜度**：现算一遍与入库那份逐字相同（**检查器不写产物**）。
+  const r = runNode(["scripts/build_spec_residue.mjs", "--check"], "spec-residue");
+  assert(r.ok, `残余台账**过期**了（agent 跑过了或 spec 变了）：\n        ${(r.out || "").slice(-400)}`);
+
+  const doc = JSON.parse(read("data/spec-residue.json"));
+
+  // 产物声明 —— 「这份产物是谁、用什么、从哪份原料、什么时候做的」。
+  for (const k of ["_generator", "_model", "_promptVersion", "_sourceSha256", "_builtAt"]) {
+    assert(doc[k] !== undefined, `残余台账缺产物声明字段 ${k} —— 不知道它是哪次跑的、用什么跑的`);
+  }
+  assert(
+    Object.keys(doc._sourceSha256 ?? {}).length > 0,
+    "残余台账没记**源 PDF 的指纹** —— 源 PDF 一换，这份产物就作废了，而没人会知道",
+  );
+
+  const rows = Array.isArray(doc.rows) ? doc.rows : [];
+  const caps = doc._caps ?? { R1: 30, R2: 16, R3: 0, total: 60 };
+
+  // ② **每条都有理由** —— 没有理由的残余，没人知道该怎么办。
+  for (const row of rows) {
+    assert(
+      row.basis && String(row.basis).trim(),
+      `残余条目 ${row.id}@${row.version} 没有理由 —— 机器接不上的地方，人也不知道该怎么补`,
+    );
+    assert(
+      ["R1", "R2", "R3"].includes(row.grade),
+      `残余条目 ${row.id}@${row.version} 的档位是「${row.grade}」—— 分档是按**病因**分的，病因不同治法不同`,
+    );
+    assert(
+      row.adjudicated === false,
+      `残余条目 ${row.id}@${row.version} 自己写着「已核」—— 机器不许给自己盖章，` +
+        `人工裁决另存 data/spec-residue-adjudications.json`,
+    );
+  }
+
+  // ③ **R3 = 0** —— 机器认的章与人的背书不一致，不允许有（归 W1 修）。
+  const r3 = rows.filter((x) => x.grade === "R3");
+  assert(
+    r3.length === 0,
+    `有 ${r3.length} 条 R3（机器认的章与手写 spec 反推的不一致）：\n        ` +
+      r3.slice(0, 5).map((x) => `${x.id}@${x.version} ${x.basis}`).join("\n        "),
+  );
+
+  // ④ **不超上限** —— 超了就是人核不过来（那说明机器还没学会）。
+  const n1 = rows.filter((x) => x.grade === "R1").length;
+  const n2 = rows.filter((x) => x.grade === "R2").length;
+  assert(n1 <= caps.R1, `R1（机器可以重试的）有 ${n1} 条，上限 ${caps.R1}`);
+  assert(n2 <= caps.R2, `R2（必须逐条人核的）有 ${n2} 条，上限 ${caps.R2}`);
+  assert(rows.length <= caps.total, `残余共 ${rows.length} 条，上限 ${caps.total}`);
+
+  // ⑤ **不许同时出现在两个文件里** —— 残余 vs 已采纳。
+  const specs = JSON.parse(read("data/parameter-specs.json")).specs ?? [];
+  const byId = new Map(specs.map((s) => [s.id, s]));
+  const both = rows.filter((row) => byId.get(row.id)?.patterns?.[row.version]);
+  assert(
+    both.length === 0,
+    `${both.length} 条残余对应的槽位**已经有取值了** —— 同一条槽位不能同时在残余台账与已采纳的 spec 里：\n        ` +
+      both.slice(0, 5).map((x) => `${x.id}@${x.version}`).join("\n        "),
+  );
+
+  return `${rows.length} 条残余（R1 ${n1} · R2 ${n2}）· 上限 ${caps.total}`;
+});
+
 check("the swap checklist is not stale", () => {
   // 清单是**生成的**：改了源码就必须重出，否则它会**静静地骗人** ——
   // 读者照着一份旧清单去改代码，改的是已经不存在的行。

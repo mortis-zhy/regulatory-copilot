@@ -13,8 +13,8 @@
         "data/parameter-candidates.json",
         "data/parameter-candidates-c.json"
       ],
-      "why": "第 12 章矩阵的每个取值都来自 `parameter-specs.json` 的一条 spec。**这是本项目最贵的一块内容**（约 800 条正则，每条带 `why`）。",
-      "swap": "**不要改现有的** —— 另写一套（新标准的 spec 包），否则已交付的 GB 报告再也重跑不出来。人工量由提议层兜着（候选池召回 79.7%），审 593 条候选 + 补那 20%。"
+      "why": "第 12 章矩阵的每个取值都来自 `parameter-specs.json` 的一条 spec。**这是本项目最贵的一块内容**（约 800 条正则，每条带 `why`）。\n\n`parameter-specs-agent.json` 是 **agent 的取值提议** —— 它带**产物声明**（模型 / prompt 版本 / 源 PDF 指纹），是残余台账的**上游**。",
+      "swap": "**不要改现有的** —— 另写一套（新标准的 spec 包），否则已交付的 GB 报告再也重跑不出来。人工量由提议层兜着（候选池召回 79.7%），审 593 条候选 + 补那 20%。\n\n`parameter-specs-agent.json` 是**生成物**：跑 `node scripts/run_spec_agent.mjs` 重出（它会带上这次的模型与 prompt 版本；源 PDF 一换，指纹就变，产物当场作废）。"
     },
     {
       "id": "derived-data",
@@ -26,12 +26,13 @@
         "data/clause-index.json",
         "data/coverage-audit.json",
         "data/device-chapter-map.json",
+        "data/spec-residue.json",
         "data/r48-chapters.json",
         "data/table-clauses.json",
         "data/requirement-ledger.json"
       ],
-      "why": "这些是从语料与脚本里**推导**出来的（条款索引、附录表范围、覆盖率审计、要求台账）。",
-      "swap": "换标准后**重跑脚本**重出，不要手工改。改了也不会有人发现 —— 闸门会比对。"
+      "why": "这些是从语料与脚本里**推导**出来的（条款索引、附录表范围、覆盖率审计、要求台账、**装置↔章映射**、**残余台账**）。",
+      "swap": "换标准后**重跑脚本**重出，不要手工改。改了也不会有人发现 —— 闸门会比对。\n\n- `data/device-chapter-map.json`：`python scripts/build_device_chapter_map.py`（章表从**语料**扫出，不依赖手写 spec）\n- `data/spec-residue.json`：`node scripts/build_spec_residue.mjs`（残余台账，另有**上限**：R1 ≤ 30 / R2 ≤ 16 / R3 = 0，超了闸门红）"
     },
     {
       "id": "manual-adjudications",

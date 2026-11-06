@@ -34,7 +34,15 @@
  * 抽取器就会取出错的值 —— 「值对、条款错」是这里最贵的一类 bug。
  * 校验层因此必须复刻「第一页命中」这个语义，而不是「能不能在全文命中」。
  */
-import { numbersOf, nearestClause, paginate } from "./parameterMatrix";
+// `comparatorBefore` 是抽取器的**口径**判定 —— 校验层要用**同一个**函数、同一个位置，
+// 否则校验层算出来的口径与交付件里显示的口径会不一致。
+import {
+  numbersOf,
+  nearestClause,
+  paginate,
+  comparatorBefore,
+  type Comparator,
+} from "./parameterMatrix";
 import { versionLabel, versionDoc, versionRev } from "@shared/versionMeta";
 // 装置↔章映射 —— **从语料扫出来的**表（`scripts/build_device_chapter_map.py` 生成）。
 // 它是换标准时唯一能用的那条路：旧路（从手写 spec 反推）在新标准上是死结。
@@ -94,6 +102,14 @@ export interface Validation {
   page?: number;
   /** 整份语料里**所有**命中页（第一个才是抽取器会用的） */
   hitPages?: number[];
+  /**
+   * 这个值的**口径**（≤ / < / ≥ / > / =）—— 抽取器会显示的那一个。
+   *
+   * 为什么校验层要算它：数值层看不出「不大于」与「小于」的差别。
+   * 口径不一样却判成「一致」，比判成「有变化」更坏 ——
+   * 客户照着「一致」就以为不用改设计。
+   */
+  comparator?: Comparator | null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -358,7 +374,11 @@ export function validateProposal(
   const hitPages: number[] = [];
   let first: { page: number; text: string; m: RegExpExecArray } | null = null;
   for (const [page, text] of pages) {
-    const rx = new RegExp(re.source, re.flags.replace("g", ""));
+    // `d` 旗标给出**捕获组在原文里的位置**（ES2022）——
+    // 口径要按**捕获组的起点**往前找比较词，跟 `locate()` 一模一样。
+    // 没有它只能用 `m[0].indexOf(m[1])`，而那是**第一次出现**：
+    // 同一段文本里出现两次时，取到的位置是前一个，口径会被读反。
+    const rx = new RegExp(re.source, re.flags.replace("g", "") + "d");
     const m = rx.exec(text);
     if (!m) continue;
     hitPages.push(page);
@@ -401,12 +421,18 @@ export function validateProposal(
     };
   }
 
+  // **口径** —— 与 `locate()` 同一个函数、同一个位置。
+  const groupSpan = first.m.indices?.[1];
+  const focusStart = groupSpan ? groupSpan[0] : first.m.index;
+  const comparator = comparatorBefore(first.text, focusStart);
+
   return {
     ok: true,
     nums,
     clause: firstClause,
     page: first.page,
     hitPages,
+    comparator,
   };
 }
 
@@ -420,7 +446,18 @@ export interface SpecAgentCtx {
   /** 某一版的 MinerU 文档（`{fullText}`）—— `test_regex` 要用 */
   docFor(version: Version): any;
   prefixesFor(device: string, version: Version): string[];
-  candidatesFor(device: string, version: Version, prefixes: string[]): Candidate[];
+  /**
+   * 候选句 —— **按单位过滤**。
+   *
+   * 不传单位时 `numbersOf(sentence, undefined)` 放行**所有**数字，
+   * 于是单位不对的候选句也进了池子（模型挑错灯的温床）。
+   */
+  candidatesFor(
+    device: string,
+    version: Version,
+    prefixes: string[],
+    unit?: string,
+  ): Candidate[];
 }
 
 /** 一次模型调用的结果。`call` 由调用方注入（真实 MiniMax 或假模型）。 */
@@ -517,6 +554,7 @@ export const SPEC_AGENT_TOOLS = [
         properties: {
           version: { type: "string", enum: ["A", "B", "C"] },
           device: { type: "string", description: "装置前缀，如 dippedBeam" },
+          unit: { type: "string", description: "参数单位（如 mm、°），用于按单位筛候选句" },
           offset: { type: "number", description: "从第几条开始（0 起）" },
           limit: { type: "number", description: "要几条（默认 30）" },
         },
@@ -566,7 +604,7 @@ function runAgentTool(ctx: SpecAgentCtx, name: string, a: any): any {
     const v = String(a?.version ?? "");
     const dev = String(a?.device ?? "");
     const prefixes = ctx.prefixesFor(dev, v);
-    const all = ctx.candidatesFor(dev, v, prefixes);
+    const all = ctx.candidatesFor(dev, v, prefixes, a?.unit ? String(a.unit) : undefined);
     const off = Number(a?.offset ?? 0) || 0;
     const lim = Number(a?.limit ?? 30) || 30;
     return {

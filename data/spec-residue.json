@@ -1,0 +1,19 @@
+{
+ "_comment": "**残余台账** —— 机器判不了的那些槽位。残余是**产物**，不是事故。R1 可以让机器重试；R2 必须逐条人核；R3 不允许有。人工裁决另存 data/spec-residue-adjudications.json。",
+ "_generator": "scripts/build_spec_residue.mjs @ 73ad34f",
+ "_model": "MiniMax-M3",
+ "_promptVersion": "spec-agent/2026-11-06",
+ "_sourceSha256": {
+  "A": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7",
+  "B": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085",
+  "C": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
+ },
+ "_builtAt": "2026-11-06T08:23:03.830Z",
+ "_caps": {
+  "R1": 30,
+  "R2": 16,
+  "R3": 0,
+  "total": 60
+ },
+ "rows": []
+}

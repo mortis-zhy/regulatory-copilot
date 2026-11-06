@@ -256,13 +256,27 @@ export function registerParameterProposalRoutes(router: Router) {
         continue;
       }
 
-      // 坑 1：条款归属。页面上选的章节必须真的罩住这次命中。
+      // 坑 1：条款归属。**这一版的**章节区间必须真的罩住这次命中。
+      //
+      // 章节区间表是**从 C 版（R48）**的章节号算出来的字符区间 ——
+      // 拿它去比 A/B 版的命中位置是**比错了东西**（两版文本的偏移完全不同）。
+      // 所以：R48 的区间只用于 C 版；A/B 版走下面的**章号校验**。
       //
       // **选了但章节表里没有 → 拒绝**（原来写成 `spans[it.section] && …`，
       // 章节不存在时整道检查被**静默跳过** —— 于是「§6.99」这种
       // 不存在的章节可以直接落盘，一个字都不报错）。
       // 「宁可空着，不可错着」：校验做不了的时候，正确答案是**不放行**。
-      if (it.section) {
+      if (version === "C") {
+        if (!it.section) {
+          rejected.push({
+            id: it.id,
+            source: it.source,
+            reason:
+              `没有选章节 —— 章节归属这道校验做不了，不放行。` +
+              `（R48 章节表来自 data/parameter-candidates-c.json）`,
+          });
+          continue;
+        }
         const span = spans[it.section];
         if (!span) {
           rejected.push({
@@ -282,31 +296,56 @@ export function registerParameterProposalRoutes(router: Router) {
           });
           continue;
         }
+      } else if (!it.fromAgent) {
+        // A/B 版没有 R48 的章节区间表 —— 这道校验做不了。
+        // 「宁可空着，不可错着」：不放行（agent 的那批走下面的章号校验）。
+        rejected.push({
+          id: it.id,
+          source: it.source,
+          reason:
+            `${version} 版没有章节区间表（R48 的章节号只对 C 版成立）—— ` +
+            `章节归属这道校验做不了，不放行。`,
+        });
+        continue;
       }
 
       // **agent 的提议走更严的那套校验** ——
       // 抽取器是**逐页扫描、取第一页命中**的，所以「能在更早的别的章命中」
       // 的正则会**静默产出错值**。`validateProposal` 用**同一套语义**
-      // （paginate + numbersOf + nearestClause）复刻这一点。
-      // 装置的章号从**兄弟参数已有的正则**里反推（自校准，不另建映射表）。
+      // （paginate + numbersOf + nearestClause + comparatorBefore）复刻这一点。
+      //
+      // **agent 条目一律走这道校验** —— 原来它被写在 `if (it.section)` 之外
+      // 是「有 section 才查」，而 agent 的提议**不带 section**（它给的是
+      // 带条款锚点的正则，不是「我选了第几章」），于是整道检查被跳过。
+      //
+      // **章号未知 → 不放行**：章号是这道校验的输入，
+      // 没有它就等于没有校验 —— 「校验做不了的时候，正确答案是不放行」。
       if (it.fromAgent) {
         const device = String(it.id).split(".")[0];
         const prefixes = deviceChapterPrefixes(specs, device, version);
-        if (prefixes.length) {
-          const val = validateProposal(
-            { id: it.id, version, device, name: spec.name ?? it.id, source: it.source, flags: it.flags ?? "i" },
-            mineru[version],
-            prefixes,
-            { unit: spec.unit },
-          );
-          if (!val.ok) {
-            rejected.push({
-              id: it.id,
-              source: it.source,
-              reason: `抽取器语义下不成立：${val.reason}`,
-            });
-            continue;
-          }
+        if (!prefixes.length) {
+          rejected.push({
+            id: it.id,
+            source: it.source,
+            reason:
+              `章号未知（这个装置在 ${version} 版住在哪一章还没定）—— ` +
+              `「命中落在对的章」这道校验做不了，不放行。`,
+          });
+          continue;
+        }
+        const val = validateProposal(
+          { id: it.id, version, device, name: spec.name ?? it.id, source: it.source, flags: it.flags ?? "i" },
+          mineru[version],
+          prefixes,
+          { unit: spec.unit },
+        );
+        if (!val.ok) {
+          rejected.push({
+            id: it.id,
+            source: it.source,
+            reason: `抽取器语义下不成立：${val.reason}`,
+          });
+          continue;
         }
       }
 

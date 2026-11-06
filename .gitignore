@@ -203,9 +203,13 @@ _t_*.pdf
 _verify_fonts.py
 _demo_*.png
 _gap_probe.json
-# agent 的取值提议是**生成物**（跑 scripts/run_spec_agent.mjs 重新生成）；
-# 实测记录 reports/spec-agent-baseline.json 要进版本库。
-data/parameter-specs-agent.json
+# agent 的取值提议**进版本库**了（2026-11-06 起）：
+# 它现在带**产物声明**（模型 / prompt 版本 / 源 PDF 指纹），
+# 而 `data/spec-residue.json`（残余台账）是**从它算出来的** ——
+# 提议不进版本库，残余就没法在别的机器上复现，那道「残余不许过期」的闸门
+# 在别人 clone 下来时一定是红的。
+#
+# 实测记录 reports/spec-agent-baseline.json 也要进版本库。
 reports/_*.json
 reports/*.err
 server.err
