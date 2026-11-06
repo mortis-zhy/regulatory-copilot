@@ -5,8 +5,10 @@ import { parseAllTables, extractCanonicalIndicators, pairIndicatorsById } from "
 
 // 仓库根 —— **唯一实现**在 _core/projectRoot.ts。
 import { PROJECT_ROOT as ROOT } from "./_core/projectRoot";
-const PDF_A = `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf`;
-const PDF_B = `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf`;
+// 源 PDF 的路径 —— **从声明取**。
+import { sourcePdfPath } from "../shared/versionMeta";
+const PDF_A = sourcePdfPath("A", ROOT);
+const PDF_B = sourcePdfPath("B", ROOT);
 
 async function main() {
   for (const [name, path] of [["A", PDF_A], ["B", PDF_B]] as const) {

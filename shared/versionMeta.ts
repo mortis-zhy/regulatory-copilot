@@ -88,11 +88,36 @@ export type VersionMeta = {
   cardMeta?: string;
   /** 封面卡片上的文档名 —— 语料没有清单时用的兜底。 */
   cardName?: string;
+  /**
+   * 这一版的**源 PDF 文件名**（在 `sourceDir` 下面）。
+   *
+   * 文件名里带着**版本号与页数**（`源文件_A_…_103页.pdf`）——
+   * 换一套标准时**必然全换**，所以它只能写在**声明**里，
+   * 不能在各个脚本里各写一份（改漏一处 = 那个脚本静静地读错文件）。
+   */
+  sourceFile?: string;
 };
 
 export const VERSION_META: ReadonlyArray<VersionMeta> = (
   (PACK_JSON as unknown as { versions?: VersionMeta[] }).versions ?? []
 );
+
+/** 源 PDF 所在目录（相对仓库根）—— 从声明取。 */
+export const SOURCE_DIR: string = (PACK_JSON as unknown as { sourceDir?: string }).sourceDir ?? "";
+
+/**
+ * 某一版**源 PDF 的绝对路径** —— 从声明取。
+ *
+ * 找不到就抛错：拼一个「看起来对」的路径，读出来的是**别的文件**，
+ * 比报「找不到文件」坏得多（数字会静静地错）。
+ */
+export function sourcePdfPath(v: string, root: string): string {
+  const meta = VERSION_META.find((m) => m.key === v);
+  if (!meta?.sourceFile) {
+    throw new Error(`声明里没有 ${v} 版的源 PDF（sourceFile）—— 认不出哪份 PDF 是哪一版`);
+  }
+  return `${root}/${SOURCE_DIR}/${meta.sourceFile}`;
+}
 
 /**
  * 当前语料里**实际有几版**。

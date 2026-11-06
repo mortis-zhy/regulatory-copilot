@@ -65,6 +65,12 @@ import sys
 from pathlib import Path
 
 import fitz  # PyMuPDF
+# 标准声明 —— **唯一读法**（scripts/declaration.py）。
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "scripts"))
+from declaration import decl, family, version_doc, version_docs
+
 
 ROOT = Path(__file__).resolve().parent.parent
 C_PDF = ROOT / "uploaded-docs" / "92b2563197df022a.pdf"    # UN R48-09
@@ -525,7 +531,7 @@ def main() -> int:
 
     payload = {
         "_meta": {
-            "purpose": "GB 4785 表5「灯具名称–光色」 ↔ UN R48-09 §5.15 的逐行映射（客户 DR-011）",
+            "purpose": f"{family()} 表5「灯具名称–光色」 ↔ {version_doc('C')} §5.15 的逐行映射（客户 DR-011）",
             "method": (
                 "C 侧（灯名/光色/页码/引文）由 `scripts/build_lamp_color_map.py` 从"
                 "**源 PDF 的文本块**逐行抽取，一个字不改；"
@@ -541,8 +547,8 @@ def main() -> int:
                 "note": "C 版光色规定在 §5.15（源 PDF 第 29–30 页）",
             },
             "gbSource": {
-                "A": "GB 4785 草案 V4.3.5 表5「灯具名称–光色」；术语表 §3.1 / §3.3",
-                "B": "GB 4785-2019 4.15 表5「灯具名称–光色」；术语表 §3.9",
+                "A": f"{version_doc('A')} 表5「灯具名称–光色」；术语表 §3.1 / §3.3",
+                "B": f"{version_doc('B')} 4.15 表5「灯具名称–光色」；术语表 §3.9",
             },
             "rowCounts": {
                 "A": len(gb["A"]),
@@ -565,7 +571,7 @@ def main() -> int:
                 "（Conspicuity marking 的缔约方选择权）不在光色行内，"
                 "在正文与附录里另行处理。",
                 "GB 的术语表与 R48 的灯名逐字相同，是**交叉验证**而不是独立来源 —— "
-                "GB 4785-2019 前言写明其技术内容参考 ECE R48 06 系，术语本就照 R48 译。",
+                f"{version_doc('B')} 前言写明其技术内容参考 ECE R48 06 系，术语本就照 R48 译。",
             ],
         },
         "rows": rows_out,

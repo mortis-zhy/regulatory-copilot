@@ -35,6 +35,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python_service"))
 
 import main  # noqa: E402  (sidecar 本体)
+# 标准声明 —— **唯一读法**（scripts/declaration.py）。
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "scripts"))
+from declaration import decl, family, version_doc, version_docs
+
 
 FAILURES = 0
 
@@ -99,11 +105,17 @@ def main_run() -> int:
 
     # ③ 内容与文件名矛盾 → 以内容为准，且说出来
     ver_a, ver_b = sorted(sources)[:2]
-    disagree_name = {
-        "A": "GB4785_V4.3.5_draft.pdf",
-        "B": "GB4785-2019.pdf",
-        "C": "UN-R48-09.pdf",
-    }.get(ver_b, "something-else.pdf")
+    # 「文件名说一套、内容是另一套」→ 必须**以内容为准**。
+    #
+    # 假文件名取**声明里另一版**的源文件名 —— 语义不变（名字指向别的版本），
+    # 而**不再写死标准名**（写死的名字换标准时就是**悄悄说错**的那一类）。
+    # 名字要说 **ver_b**，而内容是 **ver_a** —— 两者**不一致**，
+    # 「以内容为准」才验得到 ✓。
+    _src_files = {
+        v.get("key"): v.get("sourceFile")
+        for v in (decl().get("versions") or [])
+    }
+    disagree_name = _src_files.get(ver_b) or "something-else.pdf"
     try:
         r = main.extract_endpoint(
             {

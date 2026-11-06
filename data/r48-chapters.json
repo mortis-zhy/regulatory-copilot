@@ -1,5 +1,5 @@
 {
- "_comment": "由 scripts/build_r48_chapters.py 生成 —— **不要手改**。GB 章节 → UN R48-09 章节的对应关系，每条都回 R48 原文验过。",
+ "_comment": "由 scripts/build_r48_chapters.py 生成 —— **不要手改**。GB 4785 章节 → UN R48-09 章节的对应关系，每条都回 UN R48-09 原文验过。",
  "generatedFrom": "dist/mineru-v4-data.json",
  "map": {
   "1": {

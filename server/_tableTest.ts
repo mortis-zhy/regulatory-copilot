@@ -11,10 +11,12 @@ import { parseAllTables, extractCanonicalIndicators, pairIndicatorsById } from "
 
 // 仓库根 —— **唯一实现**在 _core/projectRoot.ts。
 import { PROJECT_ROOT as ROOT } from "./_core/projectRoot";
-const PDFS: Array<{ label: string; path: string }> = [
-  { label: "A", path: `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf` },
-  { label: "B", path: `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf` },
-];
+// 源 PDF 的路径 —— **从声明取**。
+import { sourcePdfPath } from "../shared/versionMeta";
+const PDFS: Array<{ label: string; path: string }> = ["A", "B"].map((label) => ({
+  label,
+  path: sourcePdfPath(label, ROOT),
+}));
 
 async function getText(p: { label: string; path: string }): Promise<string> {
   const cacheFile = `${ROOT}/.text-cache/${p.label}.txt`;

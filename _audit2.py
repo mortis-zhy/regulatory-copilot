@@ -8,11 +8,13 @@ import json, io, os, re, sys
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-SRC = {'A': '源文件_A_GB4785草案V4.3.5_103页.pdf',
-       'B': '源文件_B_GB4785-2019_81页.pdf',
-       'C': '源文件_C_UN-R48-09_147页.pdf'}
+# 源 PDF 是哪几份 —— **从声明取**（`data/standard-pack.json` 的
+# `sourceDir` + `versions[].sourceFile`）。文件名里带版本号与页数，
+# 换一套标准必然全换 —— 在这儿各写一份，改漏一处就会**静静地读错文件**。
+sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+from source_pdfs import source_pdfs
 import fitz
-DOCS = {k: fitz.open(os.path.join(ROOT, 'delivery', 'PDF对比', f)) for k, f in SRC.items()}
+DOCS = {k: fitz.open(p) for k, p in source_pdfs().items()}
 def _fold_latex(s):
     """LaTeX 宏 → 源 PDF 的纯文本写法。
 

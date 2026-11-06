@@ -14,11 +14,13 @@ import { diffDocuments } from "./reports/diffEngine";
 // 原来这里自己算了一份（`path.resolve(import.meta.dirname, "..")`），
 // 认据与认环境变量的方式各写各的，改一处忘另一处就会指向不同的目录。
 import { PROJECT_ROOT as ROOT } from "./_core/projectRoot";
-const PDFS: Array<{ label: string; path: string }> = [
-  { label: "A", path: `${ROOT}/delivery/PDF对比/源文件_A_GB4785草案V4.3.5_103页.pdf` },
-  { label: "B", path: `${ROOT}/delivery/PDF对比/源文件_B_GB4785-2019_81页.pdf` },
-  { label: "C", path: `${ROOT}/delivery/PDF对比/源文件_C_UN-R48-09_147页.pdf` },
-];
+// 源 PDF 的路径 —— **从声明取**（`versions[].sourceFile` + `sourceDir`）。
+// 文件名里带着版本号与页数，换标准时必然全换 —— 各写一份就会改漏。
+import { sourcePdfPath } from "../shared/versionMeta";
+const PDFS: Array<{ label: string; path: string }> = ["A", "B", "C"].map((label) => ({
+  label,
+  path: sourcePdfPath(label, ROOT),
+}));
 
 function uploadPdf(filePath: string): Promise<{ fileName: string; text: string; pageCount: number }> {
   const fileBuffer = fs.readFileSync(filePath);

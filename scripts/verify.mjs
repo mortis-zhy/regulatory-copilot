@@ -532,8 +532,19 @@ check("交付材料在仓库里，且脚本不再写到仓库外", () => {
   );
   const audit = code(read("_audit2.py"));
   assert(
-    audit.includes("'delivery'") && !audit.includes("os.path.abspath('..')"),
-    "_audit2.py 得从仓库根找源 PDF —— delivery/PDF对比/",
+    !audit.includes("os.path.abspath('..')") && !audit.includes('os.path.abspath("..")'),
+    "_audit2.py 不该从仓库根的**外面**找源 PDF —— 源 PDF 在仓库内（路径从声明解析）",
+  );
+  // 源 PDF 的**实际路径** —— 从声明解析（`scripts/source_pdfs.py` 是唯一实现）。
+  //
+  // 这一关要问的是「路径在不在仓库里」，**不是**「代码里含不含某个字面量」——
+  // 路径声明化之后，字面量自然不见了，而它要查的那件事**一件没少** ✓。
+  const srcPdfs = runPy(["scripts/source_pdfs.py"], "source-pdfs");
+  assert(srcPdfs.ok, `源 PDF 解析失败：\n        ${(srcPdfs.out || "").slice(-300)}`);
+  assert(
+    !/✗/.test(srcPdfs.out || ""),
+    `源 PDF 不在仓库里：\n        ${(srcPdfs.out || "").trim()}`,
+  );
   );
   return `${need.length} 项交付材料在库`;
 });

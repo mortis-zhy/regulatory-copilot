@@ -37,6 +37,18 @@ import json
 import os
 import re
 import sys
+# 标准声明 —— **唯一读法**（scripts/declaration.py）。
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "scripts"))
+from declaration import decl, family, version_doc, version_docs
+
+# 页眉/页脚上的标准名 —— **从声明取**（原来写死「GB 4785」）。
+# 换标准时页眉上的名字会变，写死的正则就**悄悄失配** →
+# 页码与页眉会被当正文印出来。
+FAMILY_RE = re.escape(family()).replace(r"\ ", r"\s*")
+
+
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX = os.path.join(ROOT, "data", "clause-index.json")
@@ -137,8 +149,8 @@ def clean_body(text, clause):
     """
     t = text
     t = re.sub(r"(?m)^\s*\d{1,3}\s*$", " ", t)              # 独立成行的页码
-    t = re.sub(r"\d{1,3}\s*(?=GB\s*4785)", " ", t)         # 紧贴页脚的页码
-    t = re.sub(r"GB\s*4785[—\-–]?\s*(?:X+|\d{4})", " ", t)  # 页眉/页脚
+    t = re.sub(r"\d{1,3}\s*(?=" + FAMILY_RE + ")", " ", t)         # 紧贴页脚的页码
+    t = re.sub(FAMILY_RE + r"[—\-–]?\s*(?:X+|\d{4})", " ", t)  # 页眉/页脚
     t = re.sub(r"^\s*" + re.escape(clause) + r"\s*", "", t)  # 行首条款号
     t = re.sub(r"^\s*\d+(\.\d+)*\s*", "", t)                # B 侧被拆成 "1 配备"
     t = re.sub(r"(?:\d+\s*\.\s*\n?\s*)+$", "", t)           # 尾部下一条款号的碎片

@@ -32,6 +32,12 @@ import json
 import os
 import re
 import sys
+# 标准声明 —— **唯一读法**（scripts/declaration.py）。
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "scripts"))
+from declaration import decl, family, version_doc, version_docs
+
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAP_PATH = os.path.join(ROOT, "data", "r48-chapter-map.json")
@@ -229,7 +235,7 @@ def main():
 
     out = {
         "_comment": "由 scripts/build_r48_chapters.py 生成 —— **不要手改**。"
-                    "GB 章节 → UN R48-09 章节的对应关系，每条都回 R48 原文验过。",
+                    f"{family()} 章节 → {version_doc('C')} 章节的对应关系，每条都回 {version_doc('C')} 原文验过。",
         "generatedFrom": "dist/mineru-v4-data.json",
         "map": built,
         "gbOnly": gb_only,

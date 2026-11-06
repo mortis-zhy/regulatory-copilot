@@ -42,6 +42,10 @@ from collections import defaultdict
 
 import fitz
 
+# 源 PDF 是哪几份 —— **从声明取**（scripts/source_pdfs.py 是唯一实现）。
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+from source_pdfs import source_pdfs, source_pdf
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -98,18 +102,15 @@ def mineru_cells(doc):
 
 def main():
     mineru = json.load(io.open(os.path.join(ROOT, "dist", "mineru-v4-data.json"), encoding="utf-8"))
-    SRC = {
-        "A": "源文件_A_GB4785草案V4.3.5_103页.pdf",
-        "B": "源文件_B_GB4785-2019_81页.pdf",
-        "C": "源文件_C_UN-R48-09_147页.pdf",
-    }
+    # 源 PDF 是哪几份 —— **从声明取**（文件名里带版本号与页数，换标准时全换）。
+    SRC = {k: os.path.basename(p) for k, p in source_pdfs().items()}
     report = json.load(io.open(os.path.join(ROOT, "reports", "last-report.json"), encoding="utf-8"))
     rows = report["parameterMatrix"]
 
     per_version = {}
     risky = []
     for tag, fname in SRC.items():
-        path = os.path.join(ROOT, "delivery", "PDF对比", fname)
+        path = source_pdf(tag)
         doc = fitz.open(path)
         mu = mineru_cells(mineru[tag])
         pages = sorted(set(mu.keys()))

@@ -27,6 +27,12 @@ _vs = importlib.util.spec_from_file_location(
 versions = importlib.util.module_from_spec(_vs)
 _vs.loader.exec_module(versions)
 from collections import defaultdict
+# 标准声明 —— **唯一读法**（scripts/declaration.py）。
+import os as _os
+import sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "scripts"))
+from declaration import decl, family, version_doc, version_docs
+
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 spec = importlib.util.spec_from_file_location("cs", os.path.join(ROOT, "scripts", "clause_split.py"))
@@ -407,8 +413,7 @@ def main():
                         print("      %-14s %-10s %-6s %s" % (clause, val, unit, pg))
         report.append((v, dev_hits, misses))
         out_json["versions"][v] = {
-            "label": {"A": "GB 4785 草案 V4.3.5", "B": "GB 4785-2019",
-                      "C": "UN R48-09"}[v],
+            "label": version_docs()[v],
             "clauses": n_clause,
             "limits": n_value,
             "same": len(same_hits),

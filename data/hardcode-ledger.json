@@ -140,7 +140,7 @@
         "scripts/coverage_audit.py",
         "scripts/test_label_source.py"
       ],
-      "why": "这些是**为这一套标准写的**分析脚本（光色映射、章节表、表格质量、覆盖率……）。换标准时它们**不会被复用** —— 新标准要另写一套同功能的。\n\n**2026-11-06 删掉 5 个零调用点的死脚本**（`oxr_ab_tables.py` / `oxr_ab_chroma.py` / `add_specs_20261024.py` / `_probe_recognize.mjs` / `export_manual_findings.py`）：留着它们，代价是**下一次有人以为能拿来用** —— 而它们**恰恰是不能复用的一次性脚本**（路径与预期都写死了本标准）。它们产出的结论留在 `GENERALIZATION.md` 与交付材料里。",
+      "why": "这些是**为这一套标准写的**分析脚本（光色映射、章节表、表格质量、覆盖率……）。换标准时它们**不会被复用** —— 新标准要另写一套同功能的。\n\n**2026-11-06 之后**：这些脚本里的**标准名**全部**从声明取**了（`data/standard-pack.json`），所以脚本**不会按旧标准判** ✓；剩下的是**结构知识**（表 5、§5.15、§3.9、ECE R48 06 系 这些**这一套标准特有的位置**）—— 换标准时**必须重新核** ✓。\n\n**「源 PDF 是哪几份」也声明化了**：`sourceDir` + `versions[].sourceFile`\n- Python：`scripts/source_pdfs.py`（唯一实现）\n- TS：`shared/versionMeta.ts` 的 `sourcePdfPath(v)`\n\n**2026-11-06 删掉 5 个零调用点的死脚本**（`oxr_ab_tables.py` / `oxr_ab_chroma.py` / `add_specs_20261024.py` / `_probe_recognize.mjs` / `export_manual_findings.py`）：留着它们，代价是**下一次有人以为能拿来用** —— 而它们**恰恰是不能复用的一次性脚本**（路径与预期都写死了本标准）。它们产出的结论留在 `GENERALIZATION.md` 与交付材料里。",
       "swap": "归档或删除；按新标准另写。**别直接改** —— 改了之后这些脚本就再也回答不了「上一套标准当时是怎么测的」。"
     },
     {
