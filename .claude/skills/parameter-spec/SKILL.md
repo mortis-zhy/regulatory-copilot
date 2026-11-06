@@ -145,7 +145,7 @@ node scripts/run_spec_agent.mjs --versions C --limit 20
   不要退回按页数识别：GB 4785 草案与 2019 版封面几乎相同，只看第一页打分会打成 0.234 vs 0.233，无法区分。
 - 表格自动发现不可行（73 张表里只有 13 张含数值+单位），数值参数绝大多数在**正文**里。
 - **标题层是声明的，不是写死的**：封面标题、章节标题、附录标题在
-  `data/report-meta.json` 里声明，由 `server/reports/reportMeta.ts` 组装。
+  `data/standard-pack.json` 里声明，由 `server/reports/reportMeta.ts` 组装。
   换标准时改那个 JSON（标准族名、末版条款号），**不要**去改 reportV6.ts ——
   那里写了字面量，闸门 `the report's title layer comes from the declaration`
   会当场变红。
