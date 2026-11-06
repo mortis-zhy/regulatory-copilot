@@ -33,15 +33,17 @@ import { checkConsistency } from "./consistency";
 import type { ReportOutline } from "./reportGenerator";
 
 /**
- * 当前语料里**实际有几版**。渲染层的版本列识别按它走，
- * 不再写死 A/B/C —— 换一套标准（X/Y/Z）或加第四版时，
+ * 当前语料里**实际有几版**。
+ *
+ * 这份清单住在 `versionMeta.ts`（声明旁边），不在渲染器里 ——
+ * 因为**表格分类器**（typedTables.ts）也要用同一份，
+ * 放在渲染器里的话那边就只能继续写死 A/B/C。
+ *
+ * 渲染层的版本列识别按它走：换一套标准（X/Y/Z）或加第四版时，
  * 对照表与卡片布局都会跟着变，而不是把新版本悄悄丢掉。
  */
-let ACTIVE_VERSIONS: string[] = ["A", "B", "C"];
-export function setActiveVersions(v: string[]): void {
-  const clean = (v ?? []).map((x) => String(x ?? "").trim()).filter(Boolean);
-  if (clean.length) ACTIVE_VERSIONS = clean;
-}
+import { VERSION_META, setActiveVersions, activeVersions } from "./versionMeta";
+export { setActiveVersions };
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
 export type ReportAppendix = { id: string; title: string; markdown?: string; page?: number };
@@ -436,12 +438,63 @@ function findVersionIdx(header: string[]): number {
   return -1;
 }
 
-/** Normalize a raw version label ("A 草案", "**B 现行**", "C") to A/B/C. */
-function normVersion(label: string): "A" | "B" | "C" | null {
+/**
+ * 版本键后面可以跟的那截 —— **从声明里来**，不写死。
+ *
+ * 「草案」「现行」「UN R48-09」这些后缀全都出自 `data/standard-pack.json`
+ * 的 `label` / `doc` / `std`，所以换一套标准时这段不用改。
+ *
+ * 除了整串，还收它的**词**（「UN」「R48」）与**去掉修订号后缀**的写法
+ * （「UN R48-09」→「UN R48」）—— 表头里写的就是后者。
+ */
+function versionTails(v: string): string[] {
+  const out = new Set<string>();
+  const push = (raw: string) => {
+    const t = (raw ?? "").trim();
+    if (!t) return;
+    out.add(t);
+    const noRev = t.replace(/[-–—]\d{1,3}$/, "");
+    out.add(noRev);
+    for (const w of noRev.split(/[\s/·、]+/)) if (w.length >= 2) out.add(w);
+  };
+  const d = VERSION_META.find((m) => m.key === v);
+  if (d) {
+    const key = d.key.toUpperCase();
+    const label = (d.label ?? "").trim();
+    if (label.toUpperCase().startsWith(key)) push(label.slice(key.length));
+    push(d.doc);
+    push(d.std);
+  }
+  push("版");
+  // Array.from 而不是 [...out] —— 这个 tsconfig 是 ES5 目标且没开 downlevelIteration，
+  // 展开 Set 会多一条类型错误（与本文件里已有的同类错误一致，但没必要新增）。
+  return Array.from(out);
+}
+
+/**
+ * Normalize a raw version label ("A 草案", "**B 现行**", "C") to its version key.
+ *
+ * **版本键从语料来**（`activeVersions()`），不写死 A/B/C ——
+ * 换一套标准（X/Y/Z）或加第四版时，版本列照样认得出来。
+ */
+function normVersion(label: string): string | null {
   const t = (label ?? "").replace(/\*/g, "").trim().toUpperCase();
-  if (/^A(\s|$|版|草案)/.test(t)) return "A";
-  if (/^B(\s|$|版|现行)/.test(t)) return "B";
-  if (/^C(\s|$|版|UN|R48)/.test(t)) return "C";
+  if (!t) return null;
+  for (const v of activeVersions()) {
+    const key = v.toUpperCase();
+    if (t === key) return v;
+    if (!t.startsWith(key)) continue;
+    const rest = t.slice(key.length);
+    // 键后面跟空白 / 结束 / 「版」—— 原来写死的就是这三样。
+    if (/^(\s|$|版)/.test(rest)) return v;
+    const rt = rest.trim();
+    if (rt.length < 2) continue;
+    for (const tail of versionTails(v)) {
+      const tl = tail.toUpperCase();
+      if (!tl) continue;
+      if (rt === tl || rt.startsWith(tl) || tl.startsWith(rt)) return v;
+    }
+  }
   return null;
 }
 
@@ -1012,30 +1065,44 @@ function renderMappingIndex(rows: ClauseMapRow[]): string {
 // 8. Triptych (always 3 cards) + plain table
 // ---------------------------------------------------------------------------
 
-const DOC_META: Record<string, { label: string; short: string; name: string; color: string; bg: string }> = {
-  A: { label: "A", short: "草案", name: "GB 4785 草案 V4.3.5", color: "#a17334", bg: "#fdf3df" },
-  B: { label: "B", short: "现行", name: "GB 4785-2019", color: "#0c1a2b", bg: "#eef1f5" },
-  C: { label: "C", short: "UN", name: "UN R48-09", color: "#3a6b4f", bg: "#e3f2e8" },
-};
-
 /**
- * 显示元数据：**未知版本也要有兜底**。
- * 换一套标准（键叫 X/Y/Z）时 DOC_META 里没有对应项，
- * 直接取 `DOC_META[v]` 会是 undefined —— 卡片渲染会崩。
- * 这里按 DOC_META 的长度取调色板，未知版本拿得到标签、颜色与背景。
+ * 版本配色 —— **按位置给，不按版本键写死**。
+ *
+ * 前三档是当前这一套标准沿用的颜色（琥珀 / 深蓝灰 / 绿），
+ * 往后是兜底色：换一套标准（或加第四版）时，
+ * 新版本拿得到颜色，不会因为「没有这一项」而崩。
  */
-const DOC_META_FALLBACK_COLORS = [
+const DOC_PALETTE = [
+  { color: "#a17334", bg: "#fdf3df" },
+  { color: "#0c1a2b", bg: "#eef1f5" },
+  { color: "#3a6b4f", bg: "#e3f2e8" },
   { color: "#7a4b8f", bg: "#f3ecf7" },
   { color: "#8f5b2e", bg: "#f7f0e6" },
   { color: "#2f6f7a", bg: "#e8f3f5" },
   { color: "#5a5f8a", bg: "#eeeff6" },
 ];
+
+/**
+ * 显示元数据：**名字从声明来，配色按位置给，未知版本也有兜底**。
+ *
+ * 以前这张表是三项硬编码（A/B/C 各一行，连文档名都写死）。
+ * 换一套标准时 `DOC_META[v]` 会是 undefined —— 卡片渲染会崩；
+ * 而且就算不崩，卡片上写的也是**旧标准的文档名**。
+ *
+ * 现在：文档名与短标签取自 `data/standard-pack.json`，
+ * 颜色按版本在语料里的位置取（前三档与原来一致，所以版面不变）。
+ */
 function docMeta(v: string): { label: string; short: string; name: string; color: string; bg: string } {
-  const known = DOC_META[v];
-  if (known) return known;
-  const i = Object.keys(DOC_META).length % DOC_META_FALLBACK_COLORS.length;
-  const pal = DOC_META_FALLBACK_COLORS[i];
-  return { label: v, short: v, name: `第 ${v} 版`, color: pal.color, bg: pal.bg };
+  const i = Math.max(0, activeVersions().indexOf(v));
+  const pal = DOC_PALETTE[i % DOC_PALETTE.length];
+  const d = VERSION_META.find((m) => m.key === v);
+  return {
+    label: v,
+    short: d?.short || v,
+    name: d?.doc || `第 ${v} 版`,
+    color: pal.color,
+    bg: pal.bg,
+  };
 }
 
 /**
@@ -1518,7 +1585,7 @@ export function findHorizontalVersionCols(header: string[]): Record<string, numb
   // 版本列按**当前语料实际有的版本**认 —— 写死 A/B/C 的话，
   // 语料里多一版时整张横向对照表会退回普通表格（卡片布局整个消失）。
   const found: Record<string, number> = {};
-  for (const v of ACTIVE_VERSIONS) {
+  for (const v of activeVersions()) {
     const i = idx(v);
     if (i >= 0 && !Object.values(found).includes(i)) found[v] = i;
   }
@@ -1526,7 +1593,7 @@ export function findHorizontalVersionCols(header: string[]): Record<string, numb
   // **当前语料的每一版都要在这一行里**（与旧版「A/B/C 齐全」同义）——
   // 少一版就退回普通表格：卡片布局是给「三版逐项对照」用的，
   // 两版对照用普通表格更清楚。
-  if (keys.length < ACTIVE_VERSIONS.length) return null;
+  if (keys.length < activeVersions().length) return null;
   if (new Set(Object.values(found)).size !== keys.length) return null;
   // The card layout shows ONE label and ONE value per row, so it can only carry
   // a topic column plus A/B/C. Every extra column is silently dropped — and for
@@ -1616,7 +1683,7 @@ function renderTriptych(t: ParsedTable): string {
   // 卡片按**当前语料实际有的版本**排（不再写死 A/B/C）。
   // 注意：不是「表里出现过的版本」—— 少了 C 的行时，旧版仍然会画第三张卡，
   // 卡片里安静地写「本条 C 版无对应条款行」，栅格才不会塌成两列。
-  const cols: string[] = orderVersions(ACTIVE_VERSIONS);
+  const cols: string[] = orderVersions(activeVersions());
   const body = t.rows.slice(1);
   const byVersion = new Map<string, string[]>();
   for (const row of body) {

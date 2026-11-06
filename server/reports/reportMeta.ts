@@ -13,7 +13,7 @@
  *
  * ## 怎么组装
  *
- * `data/report-meta.json` 声明**模板**与**标准特有的那几个词**；
+ * `data/standard-pack.json` 声明**模板**与**标准特有的那几个词**；
  * 模板里的 `{…}` 占位符由**语料推导**的版本清单填充：
  *
  * | 占位符 | 含义 | 现在填什么 |
@@ -35,12 +35,22 @@
  * 所以「版本 → 展示名 / 文档名」由调用方以函数参数传进来：
  * 报告层传 `versionLabel`/`versionDoc`，闸门可以传自己造的假版本名来驱动。
  */
-import META_JSON from "../../data/report-meta.json";
+import META_JSON from "../../data/standard-pack.json";
 
 export type ReportMetaDecl = {
   standardFamily: string;
   standardFamilyShort: string;
   clausesOfLastVersion: string;
+  /** 各版本的显示名表 —— 见 server/reports/versionMeta.ts。 */
+  versions: Array<{
+    key: string;
+    label: string;
+    short: string;
+    desc: string;
+    doc: string;
+    std: string;
+    status: string;
+  }>;
   titleTemplate: string;
   chapterTitles: Record<string, string>;
   chapter11Sections: string[];

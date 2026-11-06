@@ -24,7 +24,7 @@
 
 // 版本显示名表 —— 判据从它派生（见 normVersionLabel 的注释）。
 // 单独成模块正是为了**不把整份 spec 拖进这个包**。
-import { VERSION_META, normVersionText } from "./versionMeta";
+import { VERSION_META, normVersionText, activeVersions } from "./versionMeta";
 
 export type TypedTableKind = "triptych" | "plain";
 
@@ -39,8 +39,8 @@ export type TypedTableEntry = {
   rows: string[][];
   /** Index of the version column within header (triptych only), else -1. */
   versionIdx: number;
-  /** Present when A/B/C are header columns rather than row labels. */
-  horizontalCols?: { A: number; B: number; C: number };
+  /** Present when the versions are header columns rather than row labels. */
+  horizontalCols?: Record<string, number>;
 };
 
 export type TypedTablesBundle = {
@@ -225,7 +225,7 @@ const LABEL_TAIL = /(草案|现行|国际法规|新编|旧版|修订版)$/;
  */
 export function buildVersionMatcher(
   meta: ReadonlyArray<{ key: string; label: string; doc: string; std: string }>,
-): (label: string) => "A" | "B" | "C" | null {
+): (label: string) => string | null {
   const aliases: VersionAliases[] = meta.map((m) => {
     const keyNorm = m.key.toUpperCase();
     const docNorm = normVersionText(m.doc);
@@ -246,22 +246,22 @@ export function buildVersionMatcher(
     };
   });
 
-  return (label: string): "A" | "B" | "C" | null => {
+  return (label: string): string | null => {
     const t = normVersionText(label);
     if (!t) return null;
 
     // ① 版本键打头
     for (const a of aliases) {
-      if (t === a.keyNorm) return a.key as "A" | "B" | "C";
+      if (t === a.keyNorm) return a.key;
       if (!t.startsWith(a.keyNorm)) continue;
       const rest = t.slice(a.keyNorm.length);
-      if (!rest) return a.key as "A" | "B" | "C";
-      if (rest.startsWith("版")) return a.key as "A" | "B" | "C";
+      if (!rest) return a.key;
+      if (rest.startsWith("版")) return a.key;
       // 键后面的那截，拿这个版本的**各种写法**去比，**两个方向**都认 ——
       //   rest 以它开头：「A 草案 V4.3.5」「A 草案（第 72 页）」「C UN R48 条款」；
       //   它以 rest 开头：「C UN」之于「C UN R48-09」。
       for (const f of a.forms) {
-        if (f && (rest.startsWith(f) || f.startsWith(rest))) return a.key as "A" | "B" | "C";
+        if (f && (rest.startsWith(f) || f.startsWith(rest))) return a.key;
       }
     }
 
@@ -283,7 +283,7 @@ export function buildVersionMatcher(
     if (bestLen === 0) return null;
     // ③ 同样长却分属不同版本 → 分不出是哪一版，**不猜**
     if (bestVersions.size !== 1) return null;
-    return [...bestVersions][0] as "A" | "B" | "C";
+    return [...bestVersions][0];
   };
 }
 
@@ -314,7 +314,7 @@ const defaultVersionMatcher = buildVersionMatcher(VERSION_META);
  * frequently writes just "**A**" and a bare-letter miss would silently
  * downgrade a real comparison table to a plain table.
  */
-export function normVersionLabel(label: string): "A" | "B" | "C" | null {
+export function normVersionLabel(label: string): string | null {
   return defaultVersionMatcher(label);
 }
 
@@ -337,33 +337,41 @@ function findVersionCol(header: string[]): number {
  * The LLM emits this orientation on some runs; treating it as "plain" makes
  * every comparison table in such a report degrade to an unstyled grid.
  */
-function findHorizontalVersionCols(header: string[]): { A: number; B: number; C: number } | null {
+function findHorizontalVersionCols(header: string[]): Record<string, number> | null {
   const clean = header.map((h) => (h ?? "").replace(/\*/g, "").trim());
-  const idx = (v: "A" | "B" | "C") =>
+  const idx = (v: string) =>
     clean.findIndex((h) => new RegExp(`^\\s*${v}(?![A-Za-z])[（(【\\s]|${v}\\s*$`).test(h));
-  const A = idx("A");
-  const B = idx("B");
-  const C = idx("C");
-  if (A < 0 || B < 0 || C < 0) return null;
-  if (new Set([A, B, C]).size !== 3) return null;
+  // 版本列按**当前语料实际有的版本**认 —— 写死 A/B/C 的话，
+  // 换一套标准（X/Y/Z）或加第四版时，整张横向对照表会退回普通表格
+  // （不报错，只是样式没了 —— 但那正是「只有罗列，没有比较」）。
+  const keys = activeVersions();
+  const found: Record<string, number> = {};
+  for (const k of keys) {
+    const i = idx(k);
+    if (i >= 0 && !Object.values(found).includes(i)) found[k] = i;
+  }
+  const got = Object.keys(found);
+  if (got.length !== keys.length) return null;
+  if (new Set(Object.values(found)).size !== got.length) return null;
   // The card layout shows ONE label and ONE value per row, so it can only carry
-  // a topic column plus A/B/C. Every extra column is silently dropped — and for
+  // a topic column plus the version columns. Every extra column is silently
+  // dropped — and for
   // `| 参数 | 单位 | A 草案 | B 现行 | C UN R48-09 | 判定 |` the two dropped
   // columns are the unit and the verdict, i.e. the whole point of the table.
   // Chapter 12.1 was printing 73 parameters as three unaligned number lists with
   // no units and no A=C≠B call-out, which is what 「只有罗列，没有比较」 meant.
   //
   // Measured on this report: every table that reached the card layout had 6 or 7
-  // columns; the only 4-column horizontal tables carry no A/B/C at all and were
-  // already rejected above. Anything wider belongs in a plain table.
-  if (header.length !== 4) return null;
-  return { A, B, C };
+  // columns; the only 4-column horizontal tables carry no version columns at all
+  // and were already rejected above. Anything wider belongs in a plain table.
+  if (header.length !== got.length + 1) return null;
+  return found;
 }
 
 function classifyTable(
   header: string[],
   rows: string[][],
-): { kind: TypedTableKind; versionIdx: number; horizontalCols?: { A: number; B: number; C: number } } {
+): { kind: TypedTableKind; versionIdx: number; horizontalCols?: Record<string, number> } {
   const versionCol = findVersionCol(header);
 
   if (versionCol >= 0) {

@@ -40,6 +40,18 @@ import { computeProvenance, describeProvenanceDiff } from "../dist/provenance.js
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf-8");
+
+/**
+ * 入库版本的内容（`git show HEAD:<path>`）。
+ *
+ * 要跟磁盘上的那份比，就不能用 `read` ——
+ * 检查器**不许写产物**（经验 20）：它把文件重生成一遍就等于把问题「顺手修好」，
+ * 那样永远验不出「清单过期了」。
+ */
+const gitShow = (rel) => {
+  const r = spawnSync("git", ["show", `HEAD:${rel}`], { cwd: ROOT, encoding: "utf-8" });
+  return r.status === 0 ? r.stdout : null;
+};
 const sha256 = (rel) => createHash("sha256").update(readFileSync(resolve(ROOT, rel))).digest("hex");
 
 let failures = 0;
@@ -196,7 +208,13 @@ check("仓库自足：代码不指向仓库外，源 PDF 只有一个名字", ()
   const staleHits = spawnSync(
     "git",
     ["grep", "-n", "-I", "-e", stale[0], "-e", stale[1], "-e", stale[2],
-     "--", ".", ":(exclude)scripts/verify.mjs"],
+     "--", ".",
+     // verify.mjs 自己列着这三个名字（排除）。
+     ":(exclude)scripts/verify.mjs",
+     // 生成的「换标准操作清单」**引用**了源码原文（其中就有旧文件名）。
+     // 它是**引用**，不是路径引用 —— 而且它由下面的「清单不许是旧的」那道闸门盯着，
+     // 不会漂移。把它算成「代码还在用旧文件名」是误报。
+     ":(exclude)delivery/PDF对比/分析报告/换标准操作清单_*.md"],
     { cwd: ROOT, encoding: "utf-8" },
   );
   const staleOut = (staleHits.stdout || "").trim();
@@ -3466,6 +3484,37 @@ check("every hard-coded standard name in the source is on the swap ledger", () =
         .join("\n        "),
   );
   return `${total[1]} 处硬编码已登记（${rules[1]} 条规则）· 换标准清单无漏项`;
+});
+
+check("the swap checklist is not stale", () => {
+  // 清单是**生成的**：改了源码就必须重出，否则它会**静静地骗人** ——
+  // 读者照着一份旧清单去改代码，改的是已经不存在的行。
+  //
+  // 这一关把清单重新生成一遍，与入库那份**逐字比对**。
+  // 对不上就红，并告诉他怎么重出。
+  const FILE = "delivery/PDF对比/分析报告/换标准操作清单_2026-11-06.md";
+  const { ok, out } = runPy(
+    ["scripts/hardcode_ledger.py", "--checklist", "--out", resolve(ROOT, "tmp", "hardcode-checklist.md")],
+    "hardcode-checklist",
+  );
+  assert(ok, `换标准清单生成失败:\n        ${out.slice(-600)}`);
+  // 生成到 **tmp/**（gitignore 里的临时目录），不碰入库那份 ——
+  // 检查器写产物 = 把问题顺手修好 = 永远验不出来（经验 20）。
+  const fresh = readFileSync(resolve(ROOT, "tmp", "hardcode-checklist.md"), "utf-8");
+  const committed = gitShow(FILE);
+  assert(
+    committed !== null,
+    `找不到入库的清单 ${FILE} —— 跑 python scripts/hardcode_ledger.py --checklist --out "${FILE}"`,
+  );
+  assert(
+    // 归一化行尾：Windows 上 Python 写出来是 CRLF，git 里可能是 LF ——
+    // 那不是「清单过期了」，是行尾不一样。
+    fresh.replace(/\r\n/g, "\n") === String(committed).replace(/\r\n/g, "\n"),
+    `入库的「换标准操作清单」已经**过期**（源码改了，清单没重出）——\n` +
+      "        清单上写的是已经不存在的行，照着改会改错地方。\n" +
+      `        重出：python scripts/hardcode_ledger.py --checklist --out "${FILE}"`,
+  );
+  return `清单与当前源码一致（${(fresh.match(/^- `/gm) || []).length} 处定位）`;
 });
 
 check("the report's title layer comes from the declaration, not from literals", () => {
