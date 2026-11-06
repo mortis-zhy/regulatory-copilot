@@ -77,7 +77,27 @@ const GATES = (() => {
   if (!s.total || s.failed) {
     throw new Error(`verify-summary.json 内容异常（total=${s.total} failed=${s.failed}）—— 先把闸门跑绿。`);
   }
-  return String(s.total);
+  return s;
+})();
+
+/**
+ * 交付件的**页数** —— 同样从机器产物读。
+ *
+ * 讲稿里写死过「249 页」（5 处），而交付件**早就是 278 页**
+ * （交付件自己的文件名里就写着「㊷_定性义务台账_278页_2026-11-06.pdf」）。
+ * 对外的稿子说的页数与交付件对不上 —— **那就是「错着」**。
+ *
+ * 读不到就**拒绝出稿**：宁可不出，也不拿一个猜的页数糊过去。
+ */
+const PAGES = (() => {
+  const n = Number(GATES.pages);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(
+      "verify-summary.json 里没有页数 —— 讲稿不写死页数。" +
+        "先跑一次 `npm run verify`（闸门渲染 PDF 时会记下页数），再出讲稿。",
+    );
+  }
+  return String(n);
 })();
 
 /**
@@ -228,7 +248,7 @@ const FIG = {
     <div class="arrow">↓</div>
     <div class="lane"><span class="lname">呈现层</span>
       <div class="box">reportV6 · 14 章 + 8 附录</div>
-      <div class="box hi">htmlRenderV8 → 249 页 PDF</div>
+      <div class="box hi">htmlRenderV8 → ${PAGES} 页 PDF</div>
     </div>
     <div class="note">模型<b>不</b>出现在这条链上 —— 凡是会印进客户手里的数字，都走确定性抽取 + 机器回源复核。</div>
   </div>`,
@@ -339,7 +359,7 @@ const FIG = {
       <tr><td>把每个参数在三个版本里的值抄进表里</td><td>spec 驱动 + 机器校验</td><td>${CELLS} 个取值位</td></tr>
       <tr><td>判断"哪些差异是真变化"</td><td>差值裁定 + 勘误表逐条回原文</td><td>57 条闭环条目 → ${CHANGES} 条真实变化</td></tr>
       <tr><td>把定性条款挑出来给客户看</td><td>装置感知的 A/B 自动配对</td><td>${H_COMPARABLE} 条可比 + ${H_UNPAIRED} 条只登记</td></tr>
-      <tr><td>逐条核对自己印出来的数字有没有错</td><td>${GATES} 项闸门，改坏就红</td><td>每一条结论都带页码</td></tr>
+      <tr><td>逐条核对自己印出来的数字有没有错</td><td>${GATES.total} 项闸门，改坏就红</td><td>每一条结论都带页码</td></tr>
     </table>
     <div class="note">人工没被替代 —— 人工被挪到了<b>该由人判断的地方</b>（方向相反的条件句、工程影响、编号重排）。</div>
   </div>`,
@@ -352,7 +372,7 @@ const FIG = {
         <h4>还没做的（说清楚比藏着好）</h4>
         <ul>
           <li><b>/projects、/documents 是占位页</b>（"该功能即将上线"），不是坏了，是没做</li>
-          <li><b>Word 导出只导最近一条问答</b>，不是整份报告；PDF 按钮才是 249 页全文</li>
+          <li><b>Word 导出只导最近一条问答</b>，不是整份报告；PDF 按钮才是 ${PAGES} 页全文</li>
           <li><b>欧标只到章节级 + 参数级</b>，条款级刻意不做 —— R48 与 GB 编号体系不同构，逐号对读会造假对应</li>
           <li><b>差值方向相反的条件句</b>（如"低于 65 不得开启" vs "开启上限 65"）无法从数值矩阵自动检出，要人工过一遍</li>
           <li>参数取值位 ${CELLS} 里 ${HITS} 有值，其余 ${EMPTY} 格是"该版确实没规定"，<b>不是</b>抽取失败 —— 但也确实没填</li>
@@ -403,7 +423,7 @@ const FIG = {
   <div class="fig">
     <table class="tbl cmd">
       <tr><th style="width:34%">命令</th><th>干什么</th></tr>
-      <tr><td><code>npm run verify</code></td><td><b>交付闸门</b> —— ${GATES} 项检查。改完必跑，绿了才准交付</td></tr>
+      <tr><td><code>npm run verify</code></td><td><b>交付闸门</b> —— ${GATES.total} 项检查。改完必跑，绿了才准交付</td></tr>
       <tr><td><code>npm run build</code></td><td>构建（vite + 15 个可加载模块）</td></tr>
       <tr><td><code>node rebuild_report.mjs</code></td><td>重建 <code>reports/last-report.json</code>（14 章 + 8 附录）</td></tr>
       <tr><td><code>node render_to_pdfdir.mjs</code></td><td>出交付 PDF → <code>delivery/PDF对比/</code></td></tr>
@@ -628,10 +648,10 @@ function buildDeck(figData) {
     <div class="eyebrow">REGULATORY COMPARISON · 立项汇报</div>
     <h1>${FAM} ${N_ZHOU}法规横向对比<br/>从「罗列」到「可核验的决策依据」</h1>
     <div class="sub">${COVER_LINE}<br/>
-      交付件 249 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
+      交付件 ${PAGES} 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
     <div class="cards">
       <div class="card"><div class="v">${PARAMS}</div><div class="l">参数 × 3 版 = ${CELLS} 个取值位</div></div>
-      <div class="card"><div class="v">${GATES}</div><div class="l">项交付闸门（改坏就红）</div></div>
+      <div class="card"><div class="v">${GATES.total}</div><div class="l">项交付闸门（改坏就红）</div></div>
       <div class="card"><div class="v">0</div><div class="l">真缺口 · 别装置顶替</div></div>
       <div class="card"><div class="v">517/517</div><div class="l">定性引文回源命中</div></div>
     </div>
@@ -656,7 +676,7 @@ function buildDeck(figData) {
         <li><b>数值对比</b>：${PARAMS} 个参数 × ${N_VERSIONS} 版，每个取值带条款号、页码、原文摘录</li>
         <li><b>定性并排</b>：附录 H 把 184 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
         <li><b>欧标第三列</b>：${vDoc("C")} 的条款号 + 页码 + 原文，${R48_MAPPED} 条章节级对应逐条回源验过</li>
-        <li><b>可追责</b>：${GATES} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
+        <li><b>可追责</b>：${GATES.total} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
       </ul>`,
     endline: `这四条合起来才是「能交给客户」—— <b>不是一份更厚的报告，是一条会自己证明自己没取错数的产线</b>。`,
     note: `开场先说这四条，不展开。领导如果只关心一件事，多半是「凭什么信」—— 直接跳到第 10 页（闸门）比讲功能有用。`,
@@ -690,7 +710,7 @@ function buildDeck(figData) {
         <li><b>一份报告里两个数打架</b> —— 首页说「10 条待复核」，§11.0 说「0 条」。根因：§11.4 那 9 条是<b>已裁定</b>项，不是待办</li>
       </ul>
       <p style="margin-top:14px">这三条全部是被<b>机器闸门</b>抓住的，不是靠人眼看出来的。</p>`,
-    endline: `所以这个项目的核心资产不是那份 PDF，<b>是那 ${GATES} 项闸门</b> —— 它们让下一版不可能再犯同样的错。`,
+    endline: `所以这个项目的核心资产不是那份 PDF，<b>是那 ${GATES.total} 项闸门</b> —— 它们让下一版不可能再犯同样的错。`,
     note: `这一页的作用是<b>建立可信度</b>：不是辩解「我们已经很小心」，而是「我们踩过坑，而且坑现在有闸门盯着」。如果领导问「那你们怎么保证不会再犯」，直接翻到第 10 页。`,
   }));
 
@@ -741,7 +761,7 @@ function buildDeck(figData) {
 
   // 9 闸门
   pages.push(page({
-    sec: "可信度", num: "09", title: "${GATES} 项闸门：改坏就红，不靠人盯",
+    sec: "可信度", num: "09", title: "${GATES.total} 项闸门：改坏就红，不靠人盯",
     sub: "npm run verify —— 交付前的唯一判据",
     fig: F("gates"), layout: "fig",
     body: "",
@@ -771,7 +791,7 @@ function buildDeck(figData) {
   // 12 交付件
   pages.push(page({
     sec: "结果", num: "12", title: "交付件长什么样",
-    sub: "249 页 · 14 章 + 8 附录",
+    sub: `${PAGES} 页 · 14 章 + 8 附录`,
     layout: "shot",
     body: `
       <h3>结构</h3>
@@ -838,13 +858,13 @@ function buildDeck(figData) {
     body: `
       <h3>网页（客户/业务自己用）</h3>
       <ul>
-        <li><code>/</code> 上传三份源 PDF → 生成完整报告 → 下载 PDF（<b>249 页全文</b>）</li>
+        <li><code>/</code> 上传三份源 PDF → 生成完整报告 → 下载 PDF（<b>${PAGES} 页全文</b>）</li>
         <li><code>/review</code> 审阅工作台：可信度仪表盘、假差异逐条确认、网传指标证伪</li>
         <li><code>/proposals</code> 参数提议确认：agent 提的候选，逐条人工确认后才进数据</li>
       </ul>
       <h3 style="margin-top:12px">命令行（我们自己）</h3>
       <ul>
-        <li><code>npm run verify</code> —— <b>交付闸门，${GATES} 项。改完必跑</b></li>
+        <li><code>npm run verify</code> —— <b>交付闸门，${GATES.total} 项。改完必跑</b></li>
         <li><code>node rebuild_report.mjs</code> → <code>node render_to_pdfdir.mjs</code> —— 重建并出 PDF</li>
       </ul>`,
     endline: `红线只有一条：<b>verify 红了就不许交付</b>。其余都可以商量。`,
@@ -866,7 +886,7 @@ function buildDeck(figData) {
     <div class="eyebrow">下一步</div>
     <h1>我们不是在交一份报告<br/>是在交一条能重复跑、能追责的产线</h1>
     <div class="sub">
-      现在这台机器能：吃进三份法规，吐出 249 页带页码的横向对比，<br/>
+      现在这台机器能：吃进三份法规，吐出 ${PAGES} 页带页码的横向对比，<br/>
       并且在吐出之前自己证明自己没取错数、没编数、没把没规定的地方写成规定。
     </div>
     <div class="cards">

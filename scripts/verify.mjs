@@ -342,6 +342,9 @@ check("仓库自足：代码不指向仓库外，源 PDF 只有一个名字", ()
  * would leave the assertions unreached all over again.
  */
 let GATE_PDF = null;
+// 闸门渲染出来的 PDF 的**页数** —— 讲稿那句「交付件 N 页」从这儿走。
+// 手写的页数一定会过期（讲稿里那个「249 页」就过期了，交付件早就是 278 页）。
+let GATE_PAGES = null;
 
 async function prepareGatePdf() {
   if (process.env.VERIFY_PDF) {
@@ -5253,6 +5256,8 @@ check("built PDF has no unrendered markdown (needs PyMuPDF + a PDF)", () => {
   });
   if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 80)}`;
   const m = JSON.parse(r.stdout.trim().split("\n").pop());
+  // 页数落进机器产物 —— 讲稿从这儿取（不手写）。
+  GATE_PAGES = m.pages;
   assert(m.bold === 0, `${m.bold / 2} unrendered markdown bold marker(s) in the PDF text`);
   assert(m.tofu === 0, `${m.tofu} tofu/replacement glyph(s) — CJK font embedding regressed`);
   assert(m.empty.length === 0, `blank page(s): ${m.empty.join(", ")}`);
@@ -5809,7 +5814,19 @@ console.log(`\n=== ${checks - failures}/${checks} checks passed ===`);
 try {
   writeFileSync(
     resolve(ROOT, "dist", "verify-summary.json"),
-    JSON.stringify({ at: new Date().toISOString(), total: checks, passed: checks - failures, failed: failures }, null, 2) + "\n",
+    JSON.stringify(
+      {
+        at: new Date().toISOString(),
+        total: checks,
+        passed: checks - failures,
+        failed: failures,
+        // 交付件页数 —— 讲稿那句「交付件 N 页」从这儿读。
+        // 手写的页数一定会过期（讲稿里的「249 页」就比交付件少了 29 页）。
+        pages: GATE_PAGES,
+      },
+      null,
+      2,
+    ) + "\n",
     "utf-8",
   );
 } catch (e) {
