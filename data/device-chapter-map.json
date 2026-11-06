@@ -1,0 +1,1928 @@
+{
+  "_why": "**装置↔章映射** —— 取值规格提议 agent 的输入。\n\n它替代的是 `deviceChapterPrefixes()` 原来「从现有手写 spec 的正则反推章号」的做法 ——\n那一处在换标准时是**死结**：没有手写 spec 就推不出章号，没有章号就没有候选，\nagent 跑不起来，最后还是得手写 spec。\n\n本文件由 `scripts/build_device_chapter_map.py` 从**语料**扫出（确定性），\n章号与标题的对照不依赖任何手写 spec。\n\n换标准时：**重跑这个脚本**（语料换了 → 章表全变），\n装置↔章的接续由 agent 补（探针必须过校验）。",
+  "_generator": "scripts/build_device_chapter_map.py @ f35ca6c",
+  "_sourceSha256": {
+    "A": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7",
+    "B": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085",
+    "C": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
+  },
+  "chapters": {
+    "A": {
+      "1.1": {
+        "title": "前 言",
+        "probes": [
+          "前 言"
+        ],
+        "source": "heading"
+      },
+      "3.1": {
+        "title": "基础定义",
+        "probes": [
+          "基础定义"
+        ],
+        "source": "heading"
+      },
+      "3.2": {
+        "title": "光源定义",
+        "probes": [
+          "光源定义"
+        ],
+        "source": "heading"
+      },
+      "3.3": {
+        "title": "灯具定义",
+        "probes": [
+          "灯具定义"
+        ],
+        "source": "heading"
+      },
+      "3.5": {
+        "title": "（规范性）",
+        "probes": [
+          "（规范性）"
+        ],
+        "source": "heading"
+      },
+      "3.18": {
+        "title": "（规范性）",
+        "probes": [
+          "（规范性）"
+        ],
+        "source": "heading"
+      },
+      "5.1": {
+        "title": "远光灯（无自适应模式）",
+        "probes": [
+          "远光灯（无自适应模式）"
+        ],
+        "source": "toc"
+      },
+      "5.2": {
+        "title": "近光灯（无自适应模式）",
+        "probes": [
+          "近光灯（无自适应模式）"
+        ],
+        "source": "toc"
+      },
+      "5.3": {
+        "title": "带有自适应模式的前照灯（近光灯和/或远光灯）",
+        "probes": [
+          "带有自适应模式的前照灯（近光灯和/或远光灯）"
+        ],
+        "source": "toc"
+      },
+      "5.4": {
+        "title": "前雾灯",
+        "probes": [
+          "前雾灯"
+        ],
+        "source": "toc"
+      },
+      "5.5": {
+        "title": "角灯",
+        "probes": [
+          "角灯"
+        ],
+        "source": "toc"
+      },
+      "5.6": {
+        "title": "转向信号灯（转向灯）",
+        "probes": [
+          "转向信号灯（转向灯）"
+        ],
+        "source": "toc"
+      },
+      "5.7": {
+        "title": "制动灯",
+        "probes": [
+          "制动灯"
+        ],
+        "source": "toc"
+      },
+      "5.8": {
+        "title": "后牌照板照明装置（牌照灯）",
+        "probes": [
+          "后牌照板照明装置（牌照灯）"
+        ],
+        "source": "toc"
+      },
+      "5.9": {
+        "title": "前位灯",
+        "probes": [
+          "前位灯"
+        ],
+        "source": "toc"
+      },
+      "5.10": {
+        "title": "后位灯",
+        "probes": [
+          "后位灯"
+        ],
+        "source": "toc"
+      },
+      "5.11": {
+        "title": "后雾灯",
+        "probes": [
+          "后雾灯"
+        ],
+        "source": "toc"
+      },
+      "5.12": {
+        "title": "驻车灯",
+        "probes": [
+          "驻车灯"
+        ],
+        "source": "toc"
+      },
+      "5.13": {
+        "title": "示廓灯",
+        "probes": [
+          "示廓灯"
+        ],
+        "source": "toc"
+      },
+      "5.14": {
+        "title": "非三角形后回复反射器",
+        "probes": [
+          "非三角形后回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.15": {
+        "title": "三角形后回复反射器",
+        "probes": [
+          "三角形后回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.16": {
+        "title": "非三角形前回复反射器",
+        "probes": [
+          "非三角形前回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.17": {
+        "title": "非三角形侧回复反射器",
+        "probes": [
+          "非三角形侧回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.18": {
+        "title": "侧标志灯",
+        "probes": [
+          "侧标志灯"
+        ],
+        "source": "toc"
+      },
+      "5.19": {
+        "title": "昼间行驶灯",
+        "probes": [
+          "昼间行驶灯"
+        ],
+        "source": "toc"
+      },
+      "5.20": {
+        "title": "醒目标志",
+        "probes": [
+          "醒目标志"
+        ],
+        "source": "toc"
+      },
+      "5.21": {
+        "title": "倒车灯",
+        "probes": [
+          "倒车灯"
+        ],
+        "source": "toc"
+      },
+      "5.22": {
+        "title": "慢行灯",
+        "probes": [
+          "慢行灯"
+        ],
+        "source": "toc"
+      },
+      "5.23": {
+        "title": "牵引杆挂车标志灯",
+        "probes": [
+          "牵引杆挂车标志灯"
+        ],
+        "source": "toc"
+      },
+      "5.24": {
+        "title": "自动化驾驶系统标志灯（ADS 标志灯）",
+        "probes": [
+          "自动化驾驶系统标志灯（ADS 标志灯）"
+        ],
+        "source": "toc"
+      },
+      "6.1": {
+        "title": "驾驶员辅助投射功能",
+        "probes": [
+          "驾驶员辅助投射功能"
+        ],
+        "source": "toc"
+      },
+      "6.2": {
+        "title": "光信号投射功能",
+        "probes": [
+          "光信号投射功能"
+        ],
+        "source": "toc"
+      },
+      "6.3": {
+        "title": "图文交互",
+        "probes": [
+          "图文交互"
+        ],
+        "source": "toc"
+      },
+      "6.4": {
+        "title": "发光徽标",
+        "probes": [
+          "发光徽标"
+        ],
+        "source": "toc"
+      },
+      "7.1": {
+        "title": "危险警告信号",
+        "probes": [
+          "危险警告信号"
+        ],
+        "source": "toc"
+      },
+      "7.2": {
+        "title": "紧急制动信号",
+        "probes": [
+          "紧急制动信号"
+        ],
+        "source": "toc"
+      },
+      "7.3": {
+        "title": "追尾警告信号",
+        "probes": [
+          "追尾警告信号"
+        ],
+        "source": "toc"
+      },
+      "8.1": {
+        "title": "同一型式判定及检验",
+        "probes": [
+          "同一型式判定及检验"
+        ],
+        "source": "heading"
+      },
+      "8.2": {
+        "title": "型式检验",
+        "probes": [
+          "型式检验"
+        ],
+        "source": "heading"
+      },
+      "8.3": {
+        "title": "生产一致性检验",
+        "probes": [
+          "生产一致性检验"
+        ],
+        "source": "heading"
+      }
+    },
+    "B": {
+      "1.1": {
+        "title": "前 言",
+        "probes": [
+          "前 言"
+        ],
+        "source": "heading"
+      },
+      "3.7": {
+        "title": "灯丝灯泡",
+        "probes": [
+          "灯丝灯泡"
+        ],
+        "source": "heading"
+      },
+      "3.9": {
+        "title": "转向灯",
+        "probes": [
+          "转向灯"
+        ],
+        "source": "heading"
+      },
+      "5.1": {
+        "title": "远光灯",
+        "probes": [
+          "远光灯"
+        ],
+        "source": "toc"
+      },
+      "5.2": {
+        "title": "近光灯",
+        "probes": [
+          "近光灯"
+        ],
+        "source": "toc"
+      },
+      "5.3": {
+        "title": "前雾灯",
+        "probes": [
+          "前雾灯"
+        ],
+        "source": "toc"
+      },
+      "5.4": {
+        "title": "倒车灯",
+        "probes": [
+          "倒车灯"
+        ],
+        "source": "toc"
+      },
+      "5.5": {
+        "title": "转向信号灯",
+        "probes": [
+          "转向信号灯"
+        ],
+        "source": "toc"
+      },
+      "5.6": {
+        "title": "危险警告信号",
+        "probes": [
+          "危险警告信号"
+        ],
+        "source": "toc"
+      },
+      "5.7": {
+        "title": "制动灯",
+        "probes": [
+          "制动灯"
+        ],
+        "source": "toc"
+      },
+      "5.8": {
+        "title": "后牌照板照明装置",
+        "probes": [
+          "后牌照板照明装置"
+        ],
+        "source": "toc"
+      },
+      "5.9": {
+        "title": "前位灯",
+        "probes": [
+          "前位灯"
+        ],
+        "source": "toc"
+      },
+      "5.10": {
+        "title": "后位灯",
+        "probes": [
+          "后位灯"
+        ],
+        "source": "toc"
+      },
+      "5.11": {
+        "title": "后雾灯",
+        "probes": [
+          "后雾灯"
+        ],
+        "source": "toc"
+      },
+      "5.12": {
+        "title": "驻车灯",
+        "probes": [
+          "驻车灯"
+        ],
+        "source": "toc"
+      },
+      "5.13": {
+        "title": "示廓灯",
+        "probes": [
+          "示廓灯"
+        ],
+        "source": "toc"
+      },
+      "5.14": {
+        "title": "非三角形后回复反射器",
+        "probes": [
+          "非三角形后回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.15": {
+        "title": "三角形后回复反射器",
+        "probes": [
+          "三角形后回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.16": {
+        "title": "非三角形前回复反射器",
+        "probes": [
+          "非三角形前回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.17": {
+        "title": "非三角形侧回复反射器",
+        "probes": [
+          "非三角形侧回复反射器"
+        ],
+        "source": "toc"
+      },
+      "5.18": {
+        "title": "侧标志灯",
+        "probes": [
+          "侧标志灯"
+        ],
+        "source": "toc"
+      },
+      "5.19": {
+        "title": "昼间行驶灯",
+        "probes": [
+          "昼间行驶灯"
+        ],
+        "source": "toc"
+      },
+      "5.20": {
+        "title": "角灯",
+        "probes": [
+          "角灯"
+        ],
+        "source": "toc"
+      },
+      "5.21": {
+        "title": "醒目标志",
+        "probes": [
+          "醒目标志"
+        ],
+        "source": "toc"
+      },
+      "5.22": {
+        "title": "自适应前照明系统(AFS)",
+        "probes": [
+          "自适应前照明系统(AFS)"
+        ],
+        "source": "toc"
+      },
+      "5.23": {
+        "title": "紧急制动信号",
+        "probes": [
+          "紧急制动信号"
+        ],
+        "source": "toc"
+      },
+      "5.24": {
+        "title": "牵引杆挂车标志灯",
+        "probes": [
+          "牵引杆挂车标志灯"
+        ],
+        "source": "toc"
+      },
+      "5.25": {
+        "title": "慢行灯",
+        "probes": [
+          "慢行灯"
+        ],
+        "source": "toc"
+      },
+      "5.26": {
+        "title": "追尾警告信号",
+        "probes": [
+          "追尾警告信号"
+        ],
+        "source": "toc"
+      },
+      "6.1": {
+        "title": "同一型式判定及检验",
+        "probes": [
+          "同一型式判定及检验"
+        ],
+        "source": "toc"
+      },
+      "6.2": {
+        "title": "型式检验",
+        "probes": [
+          "型式检验"
+        ],
+        "source": "toc"
+      },
+      "6.3": {
+        "title": "生产一致性检验",
+        "probes": [
+          "生产一致性检验"
+        ],
+        "source": "toc"
+      },
+      "6.4": {
+        "title": "车辆照明和光信号装置的变动和扩充",
+        "probes": [
+          "车辆照明和光信号装置的变动和扩充"
+        ],
+        "source": "toc"
+      }
+    },
+    "C": {
+      "1.1": {
+        "title": "Position of lamps",
+        "probes": [
+          "Position of lamps"
+        ],
+        "source": "heading"
+      },
+      "1.2": {
+        "title": "Visibility of lamps",
+        "probes": [
+          "Visibility of lamps"
+        ],
+        "source": "heading"
+      },
+      "1.5": {
+        "title": "Light intensities",
+        "probes": [
+          "Light intensities"
+        ],
+        "source": "heading"
+      },
+      "2.1": {
+        "title": "General",
+        "probes": [
+          "General"
+        ],
+        "source": "heading"
+      },
+      "2.2": {
+        "title": "Type definitions",
+        "probes": [
+          "Type definitions"
+        ],
+        "source": "heading"
+      },
+      "2.3": {
+        "title": "Vehicle",
+        "probes": [
+          "Vehicle"
+        ],
+        "source": "heading"
+      },
+      "2.4": {
+        "title": "Lamp generalities",
+        "probes": [
+          "Lamp generalities"
+        ],
+        "source": "heading"
+      },
+      "2.5": {
+        "title": "Lamps",
+        "probes": [
+          "Lamps"
+        ],
+        "source": "heading"
+      },
+      "2.6": {
+        "title": "Dense traffic situations shall be taken into account",
+        "probes": [
+          "Dense traffic situations shall be taken into account"
+        ],
+        "source": "heading"
+      },
+      "2.7": {
+        "title": "System",
+        "probes": [
+          "System"
+        ],
+        "source": "heading"
+      },
+      "2.8": {
+        "title": "Lens",
+        "probes": [
+          "Lens"
+        ],
+        "source": "heading"
+      },
+      "2.9": {
+        "title": "Light sources",
+        "probes": [
+          "Light sources"
+        ],
+        "source": "heading"
+      },
+      "2.10": {
+        "title": "Photometry",
+        "probes": [
+          "Photometry"
+        ],
+        "source": "heading"
+      },
+      "2.11": {
+        "title": "Colour",
+        "probes": [
+          "Colour"
+        ],
+        "source": "heading"
+      },
+      "4.6": {
+        "title": "The approval mark shall be clearly legible and be indelible.",
+        "probes": [
+          "The approval mark shall be clearly legible and be indelible."
+        ],
+        "source": "heading"
+      },
+      "5.14": {
+        "title": "Concealable lamps",
+        "probes": [
+          "Concealable lamps"
+        ],
+        "source": "heading"
+      },
+      "5.28": {
+        "title": "General provisions relating to geometric visibility",
+        "probes": [
+          "General provisions relating to geometric visibility"
+        ],
+        "source": "heading"
+      },
+      "5.32": {
+        "title": "External status indicator",
+        "probes": [
+          "External status indicator"
+        ],
+        "source": "heading"
+      },
+      "6.1": {
+        "title": "Main-beam headlamp",
+        "probes": [
+          "Main-beam headlamp"
+        ],
+        "source": "cross-map"
+      },
+      "6.2": {
+        "title": "Dipped-beam headlamp",
+        "probes": [
+          "Dipped-beam headlamp"
+        ],
+        "source": "heading"
+      },
+      "6.3": {
+        "title": "Front fog lamp",
+        "probes": [
+          "Front fog lamp"
+        ],
+        "source": "heading"
+      },
+      "6.4": {
+        "title": "Reversing lamp",
+        "probes": [
+          "Reversing lamp"
+        ],
+        "source": "heading"
+      },
+      "6.5": {
+        "title": "Direction-indicator lamp",
+        "probes": [
+          "Direction-indicator lamp"
+        ],
+        "source": "heading"
+      },
+      "6.6": {
+        "title": "Hazard warning signal",
+        "probes": [
+          "Hazard warning signal"
+        ],
+        "source": "heading"
+      },
+      "6.7": {
+        "title": "Stop lamp",
+        "probes": [
+          "Stop lamp"
+        ],
+        "source": "heading"
+      },
+      "6.8": {
+        "title": "Rear registration plate lamp",
+        "probes": [
+          "Rear registration plate lamp"
+        ],
+        "source": "heading"
+      },
+      "6.9": {
+        "title": "Front position lamp",
+        "probes": [
+          "Front position lamp"
+        ],
+        "source": "heading"
+      },
+      "6.10": {
+        "title": "Rear position lamp",
+        "probes": [
+          "Rear position lamp"
+        ],
+        "source": "heading"
+      },
+      "6.11": {
+        "title": "Rear fog lamp",
+        "probes": [
+          "Rear fog lamp"
+        ],
+        "source": "heading"
+      },
+      "6.12": {
+        "title": "Parking lamp",
+        "probes": [
+          "Parking lamp"
+        ],
+        "source": "heading"
+      },
+      "6.13": {
+        "title": "End-outline marker lamp",
+        "probes": [
+          "End-outline marker lamp"
+        ],
+        "source": "heading"
+      },
+      "6.14": {
+        "title": "Rear retro-reflector, non-triangular",
+        "probes": [
+          "Rear retro-reflector, non-triangular"
+        ],
+        "source": "cross-map"
+      },
+      "6.15": {
+        "title": "Rear retro-reflector, triangular",
+        "probes": [
+          "Rear retro-reflector, triangular"
+        ],
+        "source": "heading"
+      },
+      "6.16": {
+        "title": "Front retro-reflector, non-triangular",
+        "probes": [
+          "Front retro-reflector, non-triangular"
+        ],
+        "source": "heading"
+      },
+      "6.17": {
+        "title": "Side retro-reflector, non-triangular",
+        "probes": [
+          "Side retro-reflector, non-triangular"
+        ],
+        "source": "heading"
+      },
+      "6.18": {
+        "title": "Side-marker lamps",
+        "probes": [
+          "Side-marker lamps"
+        ],
+        "source": "heading"
+      },
+      "6.19": {
+        "title": "Daytime running lamp",
+        "probes": [
+          "Daytime running lamp"
+        ],
+        "source": "heading"
+      },
+      "6.20": {
+        "title": "Cornering lamp",
+        "probes": [
+          "Cornering lamp"
+        ],
+        "source": "heading"
+      },
+      "6.21": {
+        "title": "Conspicuity markings",
+        "probes": [
+          "Conspicuity markings"
+        ],
+        "source": "heading"
+      },
+      "6.22": {
+        "title": "Adaptive front lighting system",
+        "probes": [
+          "Adaptive front lighting system"
+        ],
+        "source": "cross-map"
+      },
+      "6.23": {
+        "title": "Emergency stop signal",
+        "probes": [
+          "Emergency stop signal"
+        ],
+        "source": "heading"
+      },
+      "6.24": {
+        "title": "Exterior courtesy lamp",
+        "probes": [
+          "Exterior courtesy lamp"
+        ],
+        "source": "heading"
+      },
+      "6.25": {
+        "title": "Rear-end collision alert signal",
+        "probes": [
+          "Rear-end collision alert signal"
+        ],
+        "source": "cross-map"
+      },
+      "6.26": {
+        "title": "Manoeuvring lamps",
+        "probes": [
+          "Manoeuvring lamps"
+        ],
+        "source": "heading"
+      },
+      "12.1": {
+        "title": "General",
+        "probes": [
+          "General"
+        ],
+        "source": "heading"
+      }
+    }
+  },
+  "devices": {
+    "adaptiveHighBeam": {
+      "A": [
+        "5.3"
+      ],
+      "B": [
+        "5.22"
+      ],
+      "C": [
+        "6.22"
+      ]
+    },
+    "adsMarker": {
+      "A": [
+        "5.24"
+      ]
+    },
+    "afs": {
+      "A": [
+        "5.3"
+      ],
+      "B": [
+        "5.22"
+      ],
+      "C": [
+        "6.22"
+      ]
+    },
+    "ambientLighting": {},
+    "answerBackSignal": {
+      "C": [
+        "6.27"
+      ]
+    },
+    "aperture": {},
+    "bandStripLamp": {},
+    "brakeLamp": {
+      "A": [
+        "5.7"
+      ],
+      "B": [
+        "5.7"
+      ],
+      "C": [
+        "6.7"
+      ]
+    },
+    "chromaticity": {},
+    "conspicuityMarking": {
+      "B": [
+        "5.21"
+      ],
+      "C": [
+        "6.21"
+      ]
+    },
+    "corneringLamp": {
+      "A": [
+        "5.5"
+      ],
+      "B": [
+        "5.20"
+      ],
+      "C": [
+        "6.20"
+      ]
+    },
+    "courtesyLamp": {
+      "C": [
+        "6.24"
+      ]
+    },
+    "das": {
+      "A": [
+        "6.1"
+      ],
+      "C": [
+        "5.35"
+      ]
+    },
+    "dippedBeam": {
+      "A": [
+        "5.2"
+      ],
+      "B": [
+        "5.2"
+      ],
+      "C": [
+        "6.2"
+      ]
+    },
+    "directionIndicator": {
+      "A": [
+        "5.6"
+      ],
+      "B": [
+        "5.5"
+      ],
+      "C": [
+        "6.5"
+      ]
+    },
+    "drl": {
+      "A": [
+        "5.19"
+      ],
+      "B": [
+        "5.19"
+      ],
+      "C": [
+        "6.19"
+      ]
+    },
+    "electricBike": {},
+    "emergencyBraking": {
+      "A": [
+        "7.2"
+      ],
+      "B": [
+        "5.23"
+      ],
+      "C": [
+        "6.23"
+      ]
+    },
+    "endOutlineMarker": {
+      "A": [
+        "5.13"
+      ],
+      "B": [
+        "5.13"
+      ],
+      "C": [
+        "6.13"
+      ]
+    },
+    "ess": {
+      "A": [
+        "7.2"
+      ],
+      "B": [
+        "5.23"
+      ],
+      "C": [
+        "6.23"
+      ]
+    },
+    "externalStateIndicator": {},
+    "externalStatusIndicator": {
+      "C": [
+        "5.32"
+      ]
+    },
+    "farBeam": {
+      "A": [
+        "5.1"
+      ],
+      "B": [
+        "5.1"
+      ],
+      "C": [
+        "6.1"
+      ]
+    },
+    "frontFogLamp": {
+      "A": [
+        "5.4"
+      ],
+      "B": [
+        "5.3"
+      ],
+      "C": [
+        "6.3"
+      ]
+    },
+    "frontPositionLamp": {
+      "A": [
+        "5.9"
+      ],
+      "B": [
+        "5.9"
+      ],
+      "C": [
+        "6.9"
+      ]
+    },
+    "frontReflexReflector": {
+      "A": [
+        "5.16"
+      ],
+      "B": [
+        "5.16"
+      ],
+      "C": [
+        "6.16"
+      ]
+    },
+    "graphicInteraction": {
+      "A": [
+        "6.3"
+      ]
+    },
+    "heavyVehicle": {},
+    "highMountedLamp": {
+      "A": [
+        "5.6"
+      ],
+      "B": [
+        "5.5"
+      ],
+      "C": [
+        "6.5"
+      ]
+    },
+    "illuminatedEmblem": {
+      "A": [
+        "6.4"
+      ]
+    },
+    "illuminatingSurface": {},
+    "indicator": {
+      "A": [
+        "5.6"
+      ],
+      "B": [
+        "5.5"
+      ],
+      "C": [
+        "6.5"
+      ]
+    },
+    "innerEdgeGap": {
+      "A": [
+        "5.6"
+      ],
+      "B": [
+        "5.5"
+      ],
+      "C": [
+        "6.5"
+      ]
+    },
+    "lightSignalProjection": {
+      "A": [
+        "6.2"
+      ]
+    },
+    "lowMountedLamp": {
+      "A": [
+        "5.6"
+      ],
+      "B": [
+        "5.5"
+      ],
+      "C": [
+        "6.5"
+      ]
+    },
+    "mainBeam": {
+      "A": [
+        "5.1"
+      ],
+      "B": [
+        "5.1"
+      ],
+      "C": [
+        "6.1"
+      ]
+    },
+    "mountingAxisAngleTolerance": {
+      "C": [
+        "5.3"
+      ]
+    },
+    "movableLamp": {
+      "C": [
+        "5.20"
+      ]
+    },
+    "parkingLamp": {
+      "A": [
+        "5.12"
+      ],
+      "B": [
+        "5.12"
+      ],
+      "C": [
+        "6.12"
+      ]
+    },
+    "positionLamp": {
+      "A": [
+        "5.5"
+      ],
+      "B": [
+        "5.20"
+      ],
+      "C": [
+        "6.20"
+      ]
+    },
+    "rearCollisionWarning": {
+      "A": [
+        "7.3"
+      ],
+      "B": [
+        "5.26"
+      ],
+      "C": [
+        "6.25"
+      ]
+    },
+    "rearFogLamp": {
+      "A": [
+        "5.11"
+      ],
+      "B": [
+        "5.11"
+      ],
+      "C": [
+        "6.11"
+      ]
+    },
+    "rearPositionLamp": {
+      "A": [
+        "5.10"
+      ],
+      "B": [
+        "5.10"
+      ],
+      "C": [
+        "6.10"
+      ]
+    },
+    "rearReflexReflector": {
+      "A": [
+        "5.14"
+      ],
+      "B": [
+        "5.14"
+      ],
+      "C": [
+        "6.14"
+      ]
+    },
+    "rearTriangularReflector": {
+      "A": [
+        "5.15"
+      ],
+      "B": [
+        "5.15"
+      ],
+      "C": [
+        "6.15"
+      ]
+    },
+    "rearWarningSignal": {
+      "A": [
+        "7.3"
+      ],
+      "B": [
+        "5.26"
+      ],
+      "C": [
+        "6.25"
+      ]
+    },
+    "retractableLamp": {},
+    "reversing": {
+      "A": [
+        "5.21"
+      ],
+      "B": [
+        "5.4"
+      ],
+      "C": [
+        "6.4"
+      ]
+    },
+    "reversingLamp": {
+      "A": [
+        "5.21"
+      ],
+      "B": [
+        "5.4"
+      ],
+      "C": [
+        "6.4"
+      ]
+    },
+    "roadIlluminance": {},
+    "roadLuminance": {},
+    "sensorDetection": {
+      "A": [
+        "5.1"
+      ],
+      "B": [
+        "5.1"
+      ],
+      "C": [
+        "6.1"
+      ]
+    },
+    "sideDirectionIndicator": {
+      "A": [
+        "5.6"
+      ],
+      "B": [
+        "5.5"
+      ],
+      "C": [
+        "6.5"
+      ]
+    },
+    "sideMarkerLamp": {
+      "A": [
+        "5.18"
+      ],
+      "B": [
+        "5.18"
+      ],
+      "C": [
+        "6.18"
+      ]
+    },
+    "sideReflexReflector": {
+      "A": [
+        "5.17"
+      ],
+      "B": [
+        "5.17"
+      ],
+      "C": [
+        "6.17"
+      ]
+    },
+    "singleLamp": {
+      "C": [
+        "5.7"
+      ]
+    },
+    "slowMovingLamp": {
+      "A": [
+        "5.22"
+      ],
+      "B": [
+        "5.25"
+      ],
+      "C": [
+        "6.26"
+      ]
+    },
+    "smv": {
+      "A": [
+        "5.21"
+      ],
+      "C": [
+        "6.4"
+      ]
+    },
+    "stopLamp": {
+      "A": [
+        "5.7"
+      ],
+      "B": [
+        "5.7"
+      ],
+      "C": [
+        "6.7"
+      ]
+    },
+    "systemVoltage": {
+      "A": [
+        "4.25"
+      ],
+      "B": [
+        "4.27"
+      ],
+      "C": [
+        "5.27"
+      ]
+    },
+    "trailerMarkerLamp": {
+      "A": [
+        "5.23"
+      ],
+      "B": [
+        "5.24"
+      ]
+    },
+    "vLevelActivation": {},
+    "variableIntensity": {}
+  },
+  "_residue": {
+    "devicesWithoutChapter": [
+      {
+        "device": "adsMarker",
+        "version": "B",
+        "token": "",
+        "key": "标志灯",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「标志灯」同名的章"
+      },
+      {
+        "device": "adsMarker",
+        "version": "C",
+        "token": "",
+        "key": "标志灯",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「标志灯」同名的章"
+      },
+      {
+        "device": "ambientLighting",
+        "version": "A",
+        "token": "外部氛围功能",
+        "key": "功能",
+        "label": "外部氛围功能",
+        "needed": true,
+        "basis": "语料里没扫到与「外部氛围功能」同名的章"
+      },
+      {
+        "device": "ambientLighting",
+        "version": "B",
+        "token": "外部氛围功能",
+        "key": "功能",
+        "label": "外部氛围功能",
+        "needed": true,
+        "basis": "语料里没扫到与「外部氛围功能」同名的章"
+      },
+      {
+        "device": "ambientLighting",
+        "version": "C",
+        "token": "外部氛围功能",
+        "key": "功能",
+        "label": "外部氛围功能",
+        "needed": true,
+        "basis": "语料里没扫到与「外部氛围功能」同名的章"
+      },
+      {
+        "device": "answerBackSignal",
+        "version": "A",
+        "token": "应答信号",
+        "key": "信号",
+        "label": "应答信号",
+        "needed": true,
+        "basis": "语料里没扫到与「应答信号」同名的章"
+      },
+      {
+        "device": "answerBackSignal",
+        "version": "B",
+        "token": "应答信号",
+        "key": "信号",
+        "label": "应答信号",
+        "needed": true,
+        "basis": "语料里没扫到与「应答信号」同名的章"
+      },
+      {
+        "device": "aperture",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "aperture",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "aperture",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "bandStripLamp",
+        "version": "A",
+        "token": "",
+        "key": "带条状",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「带条状」同名的章"
+      },
+      {
+        "device": "bandStripLamp",
+        "version": "B",
+        "token": "",
+        "key": "带条状",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「带条状」同名的章"
+      },
+      {
+        "device": "bandStripLamp",
+        "version": "C",
+        "token": "",
+        "key": "带条状",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「带条状」同名的章"
+      },
+      {
+        "device": "chromaticity",
+        "version": "A",
+        "token": "",
+        "key": "边界",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「边界」同名的章"
+      },
+      {
+        "device": "chromaticity",
+        "version": "B",
+        "token": "",
+        "key": "边界",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「边界」同名的章"
+      },
+      {
+        "device": "chromaticity",
+        "version": "C",
+        "token": "",
+        "key": "边界",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「边界」同名的章"
+      },
+      {
+        "device": "conspicuityMarking",
+        "version": "A",
+        "token": "反光标识",
+        "key": "反光",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「反光标识」同名的章"
+      },
+      {
+        "device": "courtesyLamp",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "courtesyLamp",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "das",
+        "version": "B",
+        "token": "驾驶员辅助投",
+        "key": "驾驶员辅助投射",
+        "label": "驾驶员辅助投射",
+        "needed": true,
+        "basis": "语料里没扫到与「驾驶员辅助投射」同名的章"
+      },
+      {
+        "device": "electricBike",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "electricBike",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "electricBike",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "externalStateIndicator",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "externalStateIndicator",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "externalStateIndicator",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "externalStatusIndicator",
+        "version": "A",
+        "token": "外部状态指示",
+        "key": "外部状",
+        "label": "外部状态指示器",
+        "needed": true,
+        "basis": "语料里没扫到与「外部状态指示器」同名的章"
+      },
+      {
+        "device": "externalStatusIndicator",
+        "version": "B",
+        "token": "外部状态指示",
+        "key": "外部状",
+        "label": "外部状态指示器",
+        "needed": true,
+        "basis": "语料里没扫到与「外部状态指示器」同名的章"
+      },
+      {
+        "device": "graphicInteraction",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "graphicInteraction",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "heavyVehicle",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "heavyVehicle",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "heavyVehicle",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "illuminatedEmblem",
+        "version": "B",
+        "token": "发光徽标",
+        "key": "发光徽标",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「发光徽标」同名的章"
+      },
+      {
+        "device": "illuminatedEmblem",
+        "version": "C",
+        "token": "发光徽标",
+        "key": "发光徽标",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「发光徽标」同名的章"
+      },
+      {
+        "device": "illuminatingSurface",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "illuminatingSurface",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "illuminatingSurface",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "lightSignalProjection",
+        "version": "B",
+        "token": "光信号投射",
+        "key": "投射",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「光信号投射」同名的章"
+      },
+      {
+        "device": "lightSignalProjection",
+        "version": "C",
+        "token": "光信号投射",
+        "key": "投射",
+        "label": "",
+        "needed": true,
+        "basis": "语料里没扫到与「光信号投射」同名的章"
+      },
+      {
+        "device": "mountingAxisAngleTolerance",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "mountingAxisAngleTolerance",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "movableLamp",
+        "version": "A",
+        "token": "移动部件",
+        "key": "移动部",
+        "label": "移动部件",
+        "needed": true,
+        "basis": "语料里没扫到与「移动部件」同名的章"
+      },
+      {
+        "device": "movableLamp",
+        "version": "B",
+        "token": "移动部件",
+        "key": "移动部",
+        "label": "移动部件",
+        "needed": true,
+        "basis": "语料里没扫到与「移动部件」同名的章"
+      },
+      {
+        "device": "retractableLamp",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "retractableLamp",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "retractableLamp",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "roadIlluminance",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "roadIlluminance",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "roadIlluminance",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "roadLuminance",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "roadLuminance",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "roadLuminance",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "singleLamp",
+        "version": "A",
+        "token": "单灯",
+        "key": "单灯",
+        "label": "单灯",
+        "needed": true,
+        "basis": "语料里没扫到与「单灯」同名的章"
+      },
+      {
+        "device": "singleLamp",
+        "version": "B",
+        "token": "单灯",
+        "key": "单灯",
+        "label": "单灯",
+        "needed": true,
+        "basis": "语料里没扫到与「单灯」同名的章"
+      },
+      {
+        "device": "smv",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "basis": "有多个章同样像这个装置，分不出主章：倒车灯（5.4） / 慢行灯（5.25）",
+        "candidates": [
+          {
+            "section": "5.4",
+            "title": "倒车灯"
+          },
+          {
+            "section": "5.25",
+            "title": "慢行灯"
+          }
+        ]
+      },
+      {
+        "device": "trailerMarkerLamp",
+        "version": "C",
+        "token": "牵引杆挂车标",
+        "key": "牵引杆挂车标志灯",
+        "label": "牵引杆挂车标志灯",
+        "needed": true,
+        "basis": "语料里没扫到与「牵引杆挂车标志灯」同名的章"
+      },
+      {
+        "device": "vLevelActivation",
+        "version": "A",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "vLevelActivation",
+        "version": "B",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "vLevelActivation",
+        "version": "C",
+        "token": "",
+        "key": "",
+        "label": "",
+        "needed": true,
+        "basis": "算不出这个装置的关键词（兄弟规格名里过半共有的中文词找不着）—— 认不出它住在哪一章"
+      },
+      {
+        "device": "variableIntensity",
+        "version": "A",
+        "token": "可变光强光信",
+        "key": "光信号装置",
+        "label": "可变光强光信号装置",
+        "needed": true,
+        "basis": "语料里没扫到与「可变光强光信号装置」同名的章"
+      },
+      {
+        "device": "variableIntensity",
+        "version": "B",
+        "token": "可变光强光信",
+        "key": "光信号装置",
+        "label": "可变光强光信号装置",
+        "needed": true,
+        "basis": "语料里没扫到与「可变光强光信号装置」同名的章"
+      },
+      {
+        "device": "variableIntensity",
+        "version": "C",
+        "token": "可变光强光信",
+        "key": "光信号装置",
+        "label": "可变光强光信号装置",
+        "needed": true,
+        "basis": "语料里没扫到与「可变光强光信号装置」同名的章"
+      }
+    ],
+    "machineDisagreements": [
+      {
+        "device": "adaptiveHighBeam",
+        "version": "B",
+        "basis": "手写 spec 反推的章是 5.22，机器认成 5.1（远光灯）—— 机器认错了，换标准时这里会掉"
+      },
+      {
+        "device": "smv",
+        "version": "A",
+        "basis": "手写 spec 反推的章是 5.21，机器认成 5.22（慢行灯）—— 机器认错了，换标准时这里会掉"
+      }
+    ],
+    "probesNotInCorpus": []
+  }
+}

@@ -25,6 +25,7 @@
         "data/bitmap-chapters.json",
         "data/clause-index.json",
         "data/coverage-audit.json",
+        "data/device-chapter-map.json",
         "data/r48-chapters.json",
         "data/table-clauses.json",
         "data/requirement-ledger.json"

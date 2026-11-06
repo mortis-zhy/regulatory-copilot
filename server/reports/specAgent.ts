@@ -36,6 +36,9 @@
  */
 import { numbersOf, nearestClause, paginate } from "./parameterMatrix";
 import { versionLabel, versionDoc, versionRev } from "@shared/versionMeta";
+// 装置↔章映射 —— **从语料扫出来的**表（`scripts/build_device_chapter_map.py` 生成）。
+// 它是换标准时唯一能用的那条路：旧路（从手写 spec 反推）在新标准上是死结。
+import DEVICE_CHAPTER_MAP from "../../data/device-chapter-map.json";
 
 export type Version = string;
 
@@ -142,7 +145,54 @@ export function dominantDeviceToken(names: string[]): string {
   return "";
 }
 
+/**
+ * 「装置住在哪一章」—— **两条路，先旧后新**。
+ *
+ * ## 两条路各是什么
+ *
+ * | 路 | 来源 | 什么时候用 |
+ * |---|---|---|
+ * | 旧路 | 从**现有手写 spec 的条款锚点**反推（投票取多数） | 优先 |
+ * | 新路 | `data/device-chapter-map.json`（**从语料扫出来的**章表） | 旧路给不出章时兜底 |
+ *
+ * ## 为什么旧路优先
+ *
+ * 旧路是**人锚过的** —— 它记着「这个装置的条款到底在哪一章」，
+ * 而且有些地方机器按名字猜是猜不出来的：
+ *
+ * - `adaptiveHighBeam`（自适应远光灯）：GB 的 §5.1 叫「远光灯（**无自适应模式**）」，
+ *   按名字「远光灯」它就命中了那一章 —— 而那一章恰恰是**不含**它的；
+ *   人锚的 §5.3「带有自适应模式的前照灯」才是对的。
+ * - `highMountedLamp`（高位选装灯）：GB 没有「高位灯」这一章，
+ *   它的条款在别的章里；人锚对了，机器按名字找不到。
+ *
+ * ## 为什么新路是**兜底**而不是**替代**
+ *
+ * 旧路有个**死结**：它从手写 spec 反推 —— 换一套标准时没有手写 spec，
+ * 于是推不出章号 → 候选为空 → agent 跑不起来 → 还是得手写 spec。
+ *
+ * 新路（`data/device-chapter-map.json`）由 `scripts/build_device_chapter_map.py`
+ * **从语料扫出来**，不依赖任何手写 spec → 死结解开。
+ *
+ * 所以：**今天用旧路（行为一个字不变），换标准时用新路（那时旧路本来也用不上）。**
+ */
 export function deviceChapterPrefixes(
+  specs: Array<{ id: string; name?: string; patterns?: Record<string, { source?: string }> }>,
+  device: string,
+  version: Version,
+): string[] {
+  const legacy = legacyChapterPrefixes(specs, device, version);
+  if (legacy.length) return legacy;
+  return mappedChapterPrefixes(device, version);
+}
+
+/**
+ * 旧路：从**现有手写 spec 的正则**反推章号。
+ *
+ * 拆成独立函数，是为了让新旧两条路**各自可测** ——
+ * 新路上线后，这里一个字都没动过（闸门会比对）。
+ */
+export function legacyChapterPrefixes(
   specs: Array<{ id: string; name?: string; patterns?: Record<string, { source?: string }> }>,
   device: string,
   version: Version,
@@ -178,6 +228,21 @@ export function deviceChapterPrefixes(
     .filter(([, n]) => n === max)
     .map(([p]) => p)
     .sort();
+}
+
+/**
+ * 新路：`data/device-chapter-map.json` 里声明的装置↔章。
+ *
+ * 那份表由 `scripts/build_device_chapter_map.py` 从**语料**扫出来
+ * （目次 + 正文标题行 + 人工核过的跨标准对照表），
+ * **不依赖任何手写 spec** —— 这是换标准时唯一能用的那条路。
+ *
+ * 表不在（老仓库 / 没重跑脚本）时返回空 → 调用方按「章号未知」处理，
+ * 与从前「推不出章号」的行为一致（**宁可空着，不可错着**）。
+ */
+function mappedChapterPrefixes(device: string, version: Version): string[] {
+  const v = (DEVICE_CHAPTER_MAP as any)?.devices?.[device]?.[version];
+  return Array.isArray(v) ? v.slice().sort() : [];
 }
 
 /** 一句话里带数字吗。 */

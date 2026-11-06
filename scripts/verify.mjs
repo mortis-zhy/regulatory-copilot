@@ -41,6 +41,7 @@ import { versionsOf, versionLabel, versionDoc } from "../dist/parameterMatrix.js
 import { extractRumors } from "../dist/trustChecks.js";
 // 认版本的唯一实现 —— 判据在声明里。闸门要直接驱动它。
 import { cleanDocName, recognizeVersionByFileName } from "../dist/versionFileName.js";
+import { deviceChapterPrefixes, legacyChapterPrefixes } from "../dist/specAgent.js";
 // 上游指纹 —— 让「这份报告是从哪几份上游算出来的」可判定。
 import { computeProvenance, describeProvenanceDiff } from "../dist/provenance.js";
 
@@ -3570,6 +3571,89 @@ check("the renderer recognizes versions by the declaration's own rules", () => {
     );
   }
   return rows.join(" · ");
+});
+
+check("the device→chapter map is fresh and covers what the agent needs", () => {
+  // 「装置住在哪一章」是取值规格提议 agent 的**输入** ——
+  // 候选句是从章里捞的，没有章号就捞不到，捞不到就跑不起来。
+  //
+  // 这份表必须**从语料扫出来**（`scripts/build_device_chapter_map.py`），
+  // 而不是从手写 spec 反推 —— 后者在换标准时是**死结**：
+  // 没有手写 spec → 推不出章号 → 还是得手写 spec。
+  //
+  // ① **新鲜度**：现算一遍与入库那份逐字相同（**检查器不写产物**）。
+  const r = runPy(["scripts/build_device_chapter_map.py", "--check"], "device-chapter-map");
+  assert(
+    r.ok,
+    `装置↔章映射表**过期**了（语料或 spec 变了）：\n        ${(r.out || "").slice(-500)}`,
+  );
+
+  const map = JSON.parse(read("data/device-chapter-map.json"));
+  const versions = Object.keys(map.chapters ?? {});
+  const specs = JSON.parse(read("data/parameter-specs.json")).specs ?? [];
+  const residue = new Set(
+    (map._residue?.devicesWithoutChapter ?? []).map((x) => `${x.device}@${x.version}`),
+  );
+
+  // ② **接得上**：spec 里每个装置，在它有结论的版本里都要拿得到章。
+  //    拿不到的必须在**残余清单**里 —— 残余是产物，不是事故。
+  const missing = [];
+  for (const s of specs) {
+    const dev = String(s.id ?? "").split(".")[0];
+    for (const v of versions) {
+      const has = !!(s.patterns ?? {})[v] || !!(s.absent ?? {})[v];
+      if (!has) continue;
+      if (deviceChapterPrefixes(specs, dev, v).length) continue;
+      if (residue.has(`${dev}@${v}`)) continue;
+      missing.push(`${dev}@${v}`);
+    }
+  }
+  assert(
+    missing.length === 0,
+    `${missing.length} 个装置×版本**既接不上章、也不在残余清单里** —— ` +
+      `那意味着 agent 会**默默地**跳过它（而界面不会说）：\n        ${missing.slice(0, 8).join("\n        ")}`,
+  );
+
+  // ③ **探针真的在语料里** —— 章认错了，探针就不在那一版里。
+  const badProbes = map._residue?.probesNotInCorpus ?? [];
+  assert(
+    badProbes.length === 0,
+    `${badProbes.length} 个章的探针**不在语料里** —— 那张章是认错了的：\n        ` +
+      badProbes.slice(0, 5).map((b) => `${b.version} ${b.section} 「${b.probe}」`).join("\n        "),
+  );
+
+  // ④ **不与「手写 spec 反推的章」打架** —— 两份实现互相验。
+  //
+  // 建表时用的是 python 复刻的旧路，这里用的是 TS 侧的旧路：
+  // 任何一份写错了，另一份会喊。
+  const conflicts = [];
+  for (const s of specs) {
+    const dev = String(s.id ?? "").split(".")[0];
+    for (const v of versions) {
+      const legacy = legacyChapterPrefixes(specs, dev, v);
+      if (!legacy.length) continue;
+      const mapped = (map.devices ?? {})[dev]?.[v] ?? [];
+      if (mapped.length && !mapped.includes(legacy[0])) {
+        conflicts.push(`${dev}@${v}：旧=${legacy.join("/")} 新=${mapped.join("/")}`);
+      }
+    }
+  }
+  assert(
+    conflicts.length === 0,
+    `${conflicts.length} 处新表与手写 spec 反推的章**不一致**：\n        ${conflicts.slice(0, 8).join("\n        ")}`,
+  );
+
+  // 残余每条都要有理由（没有理由的残余 = 没人知道该怎么办）
+  for (const x of map._residue?.devicesWithoutChapter ?? []) {
+    assert(
+      x.basis && String(x.basis).trim(),
+      `残余条目 ${x.device}@${x.version} 没有理由 —— 机器接不上的地方，人也不知道该怎么补`,
+    );
+  }
+
+  const nDev = Object.keys(map.devices ?? {}).length;
+  const nRes = (map._residue?.devicesWithoutChapter ?? []).length;
+  return `${nDev} 个装置 · 残余 ${nRes} 条 · 探针全在语料里`;
 });
 
 check("the claimed-indicator family agrees with the declaration", () => {
