@@ -3433,6 +3433,41 @@ check("the report names no standard the corpus does not contain", () => {
   return `报告里 ${m[1]} 个标准号都能在语料里找到（或已登记为背景引用）`;
 });
 
+check("every hard-coded standard name in the source is on the swap ledger", () => {
+  // 换一套标准时，最贵的不是 spec 包（集中在一个文件里，看得见），
+  // 而是**散落在 51 个源码文件里的字面量** —— 一句错误提示、一个 brief、
+  // 一处文件名模板、一条识别正则。
+  //
+  // 而漏掉一处的症状**不报错**：那句话照出现在新标准的报告里，
+  // 读者会以为那是新标准的规定。**那是「错着」，不是「空着」。**
+  //
+  // 这一关盯的就是那个「不报错」：
+  //   ① 每一片源码都得在 data/hardcode-ledger.json 里**登记一条规则**，
+  //      写清「为什么在这儿」「换标准时怎么改」；
+  //   ② 没登记的硬编码 = 红（清单上没写的地方，人就不会去看）；
+  //   ③ 规则失效（文件里已经没有对应的硬编码了）= 红
+  //      —— 清单里留着一项不存在的活儿，比清单里少一项更骗人。
+  //
+  // 实测：这条闸门抓得住「新增一处未登记的硬编码」、
+  // 「规则指向了不再有硬编码的文件」、「规则没写 why/swap」三种退化。
+  const { ok, out } = runPy(["scripts/hardcode_ledger.py", "--verify"], "hardcode-ledger");
+  const total = /标准特定硬编码：(\d+) 处/.exec(out);
+  const rules = /台账规则 (\d+) 条/.exec(out);
+  assert(
+    total && rules,
+    `hardcode_ledger.py 没给出汇总行:\n        ${out.slice(-600)}`,
+  );
+  assert(
+    ok,
+    `源码里的标准名硬编码没有全部登记，或台账规则失效 —— 换标准时清单会漏项:\n        ` +
+      out
+        .split("\n")
+        .filter((l) => l.includes("✗"))
+        .join("\n        "),
+  );
+  return `${total[1]} 处硬编码已登记（${rules[1]} 条规则）· 换标准清单无漏项`;
+});
+
 check("the report's title layer comes from the declaration, not from literals", () => {
   // 封面标题、章节标题、附录标题里**点了标准的名**（「GB 4785」「UN R48-09 §6」）。
   // 以前它们是 reportV6.ts 里的字面量 —— 换一套标准，机制照样跑，

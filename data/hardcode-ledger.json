@@ -1,0 +1,207 @@
+{
+  "_why": "源码里的「标准特定字面量」台账 —— 换一套标准时**必须改**的那些地方。",
+
+  "_what": "规则按**换标准时的动作**分组，不是按文件分组。同一组里的文件要一起改，动作也一样。\n\n一条规则 = 一片源码 + 一句「为什么在这儿」 + 一句「换标准时怎么改」。\n\n**没有登记的硬编码 = 闸门红。** 因为清单上没写的地方，人就不会去看 ——\n而漏掉一处的症状**不报错**：那句话照出现在新标准的报告里，读者会以为那是新标准的规定。",
+
+  "_how": "改完代码后重跑：\n    python scripts/hardcode_ledger.py            # 报告\n    python scripts/hardcode_ledger.py --verify   # 闸门\n    python scripts/hardcode_ledger.py --checklist --out reports/换标准操作清单.md\n\n规则失效（文件里已经没有对应的硬编码了）也判红 ——\n因为清单里留着一项不存在的活儿，比清单里少一项更骗人。",
+
+  "_classification": "性质分四种，因为**失败方式**不同：\n\n| 类别 | 换标准后不换会怎样 |\n|---|---|\n| 注释 | 没事（只是过时） |\n| 文案 | **静默说错** —— 读者以为那是新标准的规定 |\n| 判据 | **响亮失败** —— 认不出新标准的文件 |\n| 标识符 | 名字，一般无害 |\n\n判据错了会响，文案错了只会骗人 —— 所以重点盯文案。",
+
+  "dataPacks": [
+    {
+      "id": "spec-pack",
+      "title": "参数 spec 包 —— 「这一套标准的每个取值怎么抽」",
+      "files": [
+        "data/parameter-specs.json",
+        "data/parameter-specs-agent.json",
+        "data/parameter-candidates.json",
+        "data/parameter-candidates-c.json"
+      ],
+      "why": "第 12 章矩阵的每个取值都来自 `parameter-specs.json` 的一条 spec。**这是本项目最贵的一块内容**（约 800 条正则，每条带 `why`）。",
+      "swap": "**不要改现有的** —— 另写一套（新标准的 spec 包），否则已交付的 GB 报告再也重跑不出来。人工量由提议层兜着（候选池召回 79.7%），审 593 条候选 + 补那 20%。"
+    },
+    {
+      "id": "derived-data",
+      "title": "派生数据 —— 跑脚本能重出的那些",
+      "files": [
+        "data/annex-ranges.json",
+        "data/appendix-tables.json",
+        "data/bitmap-chapters.json",
+        "data/clause-index.json",
+        "data/coverage-audit.json",
+        "data/r48-chapters.json",
+        "data/table-clauses.json",
+        "data/requirement-ledger.json"
+      ],
+      "why": "这些是从语料与脚本里**推导**出来的（条款索引、附录表范围、覆盖率审计、要求台账）。",
+      "swap": "换标准后**重跑脚本**重出，不要手工改。改了也不会有人发现 —— 闸门会比对。"
+    },
+    {
+      "id": "manual-adjudications",
+      "title": "人工核过的结论 —— 换标准后要**重新核**，不能照搬",
+      "files": [
+        "data/qualitative-ledger.json",
+        "data/qualitative-adjudications.json",
+        "data/qualitative-diff.json",
+        "data/qualitative-obligations.json",
+        "data/manual-findings.json",
+        "data/lamp-color-map.json",
+        "data/r48-chapter-map.json",
+        "data/diff-corrections.json",
+        "data/requirement-scope.json",
+        "data/requirement-gaps.json"
+      ],
+      "why": "这些是**人逐条看过**的结论：定性义务台账与人工裁定、抽取错误的更正、光色映射、章节对应、缺口的处理方式。",
+      "swap": "**必须重新核**。照搬会把上一套标准的结论带进新标准 —— 那不是「空着」，是「错着」。人工裁定与机器判定要分开存放（这一条已经是机制）。"
+    },
+    {
+      "id": "patch-files",
+      "title": "补丁类文件 —— 逐条核对",
+      "files": [
+        "data/clause-bitmap-fixes.json",
+        "data/clause-gap-allowlist.json",
+        "data/clause-label-fixes.json"
+      ],
+      "why": "逐条的例外名单（条款位图修正、缺口白名单、条款标签修正）。每一条都是**针对某个具体条款**的判断。",
+      "swap": "逐条对着新标准核。**最容易被漏** —— 因为它们长得像「通用配置」，其实每一条都指向一个具体条款。"
+    },
+    {
+      "id": "declarations",
+      "title": "声明 —— 改，不重做",
+      "files": ["data/report-meta.json"],
+      "why": "封面/章节/附录标题的标准名与版本清单声明。**换标准时改这一个文件**，不用动代码。",
+      "swap": "改标准族名、末版条款号、版本清单；有标准特有的表号（如「表 11.6」）要一并改掉。"
+    }
+  ],
+
+  "rules": [
+    {
+      "id": "version-meta",
+      "title": "版本显示名表 —— 「这几份文件各叫什么」",
+      "files": ["server/reports/versionMeta.ts"],
+      "why": "这张表是这个项目里唯一一处「关于这个标准，报告需要知道的一切」：各版本的短标签、文档显示名、标准号、状态。封面、章节标题、源文档清单、下载文件名全都从它派生。",
+      "swap": "整表换掉：换成新标准各版本的标签/文档名/标准号/状态。**不用动任何取数逻辑** —— 这是本项目已经声明化的部分。"
+    },
+    {
+      "id": "upload-signature",
+      "title": "上传端的文件名识别签名",
+      "files": ["python_service/main.py"],
+      "why": "sidecar 认「这份 PDF 是 A/B/C 哪一版」的第一判据（文件名 token），以及给用户看的错误提示。这里写死了「GB 4785」「UN R48」「草案」「2019」。",
+      "swap": "改成新标准的文件名 token（`DOC_SIGNATURES`）与提示文案。注意：**内容指纹认版本的那条路已经存在**（`server/reports/versionRecognize.ts`），文件名这条路只做兜底。"
+    },
+    {
+      "id": "spec-agent-prompt",
+      "title": "写 spec 的提示词与矩阵入口",
+      "files": [
+        "server/reports/specAgent.ts",
+        "server/reports/parameterMatrix.ts"
+      ],
+      "why": "「自动提议参数」的提示词里点明了本标准的灯具名与条款结构；矩阵入口里写着「A/B/C」的默认键与缺规格时的提示。",
+      "swap": "提示词里换成新标准的灯具名与章节结构；矩阵入口的默认版本键改成新标准包的键。"
+    },
+    {
+      "id": "report-prose",
+      "title": "报告正文的散文与说明",
+      "files": [
+        "server/reports/reportV6.ts",
+        "server/reports/reportGenerator.ts",
+        "server/reports/htmlRenderV8.ts",
+        "server/reports/htmlRender.ts",
+        "server/reports/changePointChapter.ts",
+        "server/reports/qualitativeObligations.ts",
+        "server/reports/agentPrompt.ts",
+        "server/reports/agentTools.ts",
+        "server/reports/agentLoop.ts",
+        "server/reports/diffEngine.ts",
+        "server/reports/refDiff.ts",
+        "server/reports/changeLedger.ts"
+      ],
+      "why": "报告正文里的说明句、章节引言、附录标题、agent 的系统提示词。**这一组最贵**：它不是「改个名」，是「为新标准重写一遍叙述」，而且改错了不报错 —— 报告照出，只是讲的还是上一个标准的事。",
+      "swap": "逐段重写。**优先把能声明化的挪进 `data/report-meta.json`**（标题层已经声明化，散文还没有）。"
+    },
+    {
+      "id": "gate-assertions",
+      "title": "闸门里的断言与判据",
+      "files": [
+        "scripts/verify.mjs",
+        "scripts/verify_decision_brief.py",
+        "scripts/verify_indicators.py",
+        "scripts/check_clause_citations.py",
+        "server/_core/deliveryGate.ts",
+        "server/_core/agentRoutes.ts",
+        "server/reports/trustChecks.ts",
+        "server/reports/closureLedger.ts"
+      ],
+      "why": "闸门对着**真实 GB 报告**的章节名、表头、文件名断言。换了标准，这些断言会**全红** —— 它们是「响亮失败」，比文案好，但一样要逐条改。",
+      "swap": "逐条改成新标准对应的章节名/表头/文件名。改完跑 `npm run verify` 确认没有漏改（漏一条就是一条红）。"
+    },
+    {
+      "id": "extraction-paths",
+      "title": "抽取侧的源文件路径与版本指纹",
+      "files": [
+        "verify_claims.py",
+        "extract_mineru_v4_sdk.py",
+        "extract_pymupdf.py",
+        "extract_v5.py",
+        "ocr_full.py",
+        "audit_pages.py",
+        "audit2.py",
+        "server/ingestion/structuredExtract.ts"
+      ],
+      "why": "这些脚本直接写死了三份源 PDF 的文件名与页数，用来定位条款、复核取值。",
+      "swap": "换成新标准的三份源文件。**注意**：文件内容变了，`uploaded-docs/` 的内容哈希也变了 —— 版本指纹那套判据要重测（同表示互比的相似度矩阵）。"
+    },
+    {
+      "id": "std-specific-tools",
+      "title": "本标准专属的一次性分析工具",
+      "files": [
+        "scripts/build_lamp_color_map.py",
+        "scripts/build_qualitative_diff.py",
+        "scripts/build_r48_chapters.py",
+        "scripts/oxr_ab_tables.py",
+        "scripts/oxr_ab_chroma.py",
+        "scripts/table_quality.py",
+        "scripts/coverage_audit.py",
+        "scripts/add_specs_20261024.py",
+        "scripts/_probe_recognize.mjs",
+        "scripts/test_label_source.py",
+        "tools/export_manual_findings.py"
+      ],
+      "why": "这些是**为这一套标准写的**分析脚本（光色映射、章节表、表格质量、覆盖率……）。换标准时它们**不会被复用** —— 新标准要另写一套同功能的。",
+      "swap": "归档或删除；按新标准另写。**别直接改** —— 改了之后这些脚本就再也回答不了「上一套标准当时是怎么测的」。"
+    },
+    {
+      "id": "client-copy",
+      "title": "客户端文案与任务简报",
+      "files": [
+        "client/src/pages/Home.tsx",
+        "client/src/components/ReviewWorkbench.tsx",
+        "client/src/lib/templates.ts"
+      ],
+      "why": "界面上的任务简报（`GB4785_BRIEF`）、复核工作台里写死本标准版本标签与表号的文案、模板库里的说明。\n\n`GB4785_BRIEF` 只有在上传的文件**确实是**这一套标准时才会被用上（`isGb4785Set` 判据）—— 但那个判据本身也写死了标准名。",
+      "swap": "简报与文案换成新标准；`isGb4785Set` 改成「是不是当前标准包的那一套」（从声明里读，别写死）。"
+    },
+    {
+      "id": "delivery-renderers",
+      "title": "交付件出稿脚本（讲稿 / 决策正文）",
+      "files": [
+        "scripts/render_briefing.mjs",
+        "scripts/render_decision_brief.mjs"
+      ],
+      "why": "讲稿封面标题、副标题、页脚文件名，以及决策正文的标题与「GB 表 11.6」这类专有表号。",
+      "swap": "封面/标题改成新标准；专有表号（「GB 表 11.6」）要连**内容**一起换 —— 那张表在另一套标准里不存在。"
+    },
+    {
+      "id": "one-off-tests",
+      "title": "一次性排查脚本",
+      "files": [
+        "server/_diffTest.ts",
+        "server/_inspectTest.ts",
+        "server/_tableTest.ts",
+        "unit-test.ts"
+      ],
+      "why": "当初为了定位某个具体问题写的一次性脚本，文件路径与预期文本写死了本标准。",
+      "swap": "**不要为新标准改这些脚本** —— 它们的职责是回答「当时那个问题」。新标准另写新的排查脚本。"
+    }
+  ]
+}
