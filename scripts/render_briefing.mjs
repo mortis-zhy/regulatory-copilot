@@ -101,6 +101,24 @@ const PAGES = (() => {
 })();
 
 /**
+ * 附录 H 的**引文回源命中数** —— 同样从机器产物读。
+ *
+ * 讲稿里说「517/517 回源命中」—— 这个数现在是**对的**，
+ * 但它是**手写的**：语料一变（换标准、条款重排）它就悄悄过期 ——
+ * 而它这句话的作用正是让对方相信「我们验过了」。
+ */
+const QUOTES = (() => {
+  const q = GATES.quotes;
+  if (!q || !Number.isFinite(Number(q.total)) || !Number.isFinite(Number(q.hits))) {
+    throw new Error(
+      "verify-summary.json 里没有引文命中数 —— 讲稿不写死它。" +
+        "先跑一次 `npm run verify`（闸门核附录 H 时会记下），再出讲稿。",
+    );
+  }
+  return { total: String(q.total), hits: String(q.hits) };
+})();
+
+/**
  * 报告里的数 —— **同样从机器产物读**。
  *
  * 闸门数已经机器化了，稿子里的另外几个数却还是手写的：参数行数、取值位数、
@@ -148,6 +166,7 @@ const FACTS = (() => {
     return JSON.parse(fs.readFileSync(q, "utf-8"));
   };
   const cov = readJson("data/coverage-audit.json");
+  const req = readJson("data/requirement-ledger.json");
   const r48 = readJson("data/r48-chapters.json");
   const qd = readJson("data/qualitative-diff.json");
   const qo = readJson("data/qualitative-obligations.json");
@@ -173,9 +192,41 @@ const FACTS = (() => {
     hComparable: qd.summary?.comparable ?? 0,
     hDifferent: qd.summary?.differentText ?? 0,
     hUnpaired: qd.summary?.notComparable ?? 0,
+    hSame: qd.summary?.sameText ?? 0,
     // 定性义务清单
     qoCount: (qo.entries ?? []).length,
+    // **逐版**的定量限值条数（总条数不够 —— 稿子上要写「A … · B … · C …」）
+    limitA: cov.versions?.A?.limits ?? 0,
+    limitB: cov.versions?.B?.limits ?? 0,
+    limitC: cov.versions?.C?.limits ?? 0,
+    // 要求台账的处置分布（462 = 已覆盖 287 + 附录 66 + 已引原文 64 + 不适用 45）
+    reqTotal: req.totals?.requirements ?? 0,
+    reqCovered: req.totals?.covered ?? 0,
+    reqAppendix: req.totals?.appendixListed ?? 0,
+    reqQuoted: req.totals?.quoted ?? 0,
+    reqNotApplicable: req.totals?.notApplicable ?? 0,
+    reqGaps: req.totals?.gaps ?? 0,
   };
+})();
+
+/**
+ * harness 里的 `_test_*.mjs` 有几个 —— **数 `scripts/verify.mjs` 的那张列表**。
+ *
+ * 原来写死「11 个」：加了几道闸门之后稿子还写着 11 ——
+ * 而这句话的作用正是让对方相信「闸门是可执行检查」，
+ * 说的条数与实际不符，这句说服力就自己塌了。
+ *
+ * 数不到就**抛错**（不拿 0 糊过去）。
+ */
+const HARNESS_N = (() => {
+  const q = path.join(ROOT, "scripts", "verify.mjs");
+  if (!fs.existsSync(q)) throw new Error("读不到 scripts/verify.mjs —— 数不了 harness 的条数。");
+  const text = fs.readFileSync(q, "utf-8");
+  const m = text.match(/for \(const t of \[([\s\S]*?)\]\) \{/);
+  if (!m) throw new Error("scripts/verify.mjs 里找不到 harness 列表 —— 数不了条数。");
+  const items = [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+  if (!items.length) throw new Error("harness 列表解析出 0 条 —— 判据失效了。");
+  return String(items.length);
 })();
 const R48_MAPPED = String(FACTS.r48Mapped);
 const CLAUSE_A = String(FACTS.clauseA);
@@ -188,7 +239,17 @@ const OTHER_DEVICE = String(FACTS.otherDevice);
 const H_COMPARABLE = String(FACTS.hComparable);
 const H_DIFFERENT = String(FACTS.hDifferent);
 const H_UNPAIRED = String(FACTS.hUnpaired);
+const H_SAME = String(FACTS.hSame);
 const QO_COUNT = String(FACTS.qoCount);
+const LIMIT_A = String(FACTS.limitA);
+const LIMIT_B = String(FACTS.limitB);
+const LIMIT_C = String(FACTS.limitC);
+const REQ_TOTAL = String(FACTS.reqTotal);
+const REQ_COVERED = String(FACTS.reqCovered);
+const REQ_APPENDIX = String(FACTS.reqAppendix);
+const REQ_QUOTED = String(FACTS.reqQuoted);
+const REQ_NA = String(FACTS.reqNotApplicable);
+const REQ_GAPS = String(FACTS.reqGaps);
 
 const PARAMS = String(REPORT.params);
 const CELLS = String(REPORT.cells);
@@ -242,8 +303,8 @@ const FIG = {
     <div class="lane"><span class="lname">判定层</span>
       <div class="box">差值裁定<br><span class="dim">changeLedger</span></div>
       <div class="box">闭环台账<br><span class="dim">closureLedger · 57 条</span></div>
-      <div class="box">要求台账<br><span class="dim">448 条 · 真缺口 0</span></div>
-      <div class="box">定性并排<br><span class="dim">附录 H · 326 可比</span></div>
+      <div class="box">要求台账<br><span class="dim">${REQ_TOTAL} 条 · 真缺口 ${REQ_GAPS}</span></div>
+      <div class="box">定性并排<br><span class="dim">附录 H · ${H_COMPARABLE} 可比</span></div>
     </div>
     <div class="arrow">↓</div>
     <div class="lane"><span class="lname">呈现层</span>
@@ -296,7 +357,7 @@ const FIG = {
       <tr><th style="width:15%">层</th><th style="width:36%">机制</th><th>挡住过的真错</th></tr>
       <tr><td><b>数据层</b></td><td>每个取值带条款号 + 页码 + <code>why</code>；抽取路径必须落回<b>源 PDF 的那一页</b></td>
         <td>① 「宽度大于2.\\n10m」被当碎片删掉 → <b class="bad">2.10m 变成 10m</b>（差一个数量级）<br>② A 草案 5.20 是无编号小节，条款索引整段吞掉 4 个装置 <b class="bad">71 条</b></td></tr>
-      <tr><td><b>判定层</b></td><td>差值裁定逐条回原文；勘误表；要求台账 448 条六档归类</td>
+      <tr><td><b>判定层</b></td><td>差值裁定逐条回原文；勘误表；要求台账 ${REQ_TOTAL} 条六档归类</td>
         <td>① 「转向信号灯首次熄灭时间」被标成"假差异·勿提变更单"，而它正是第一条真变化 chg01<br>② §11.4 的 9 条<b>已裁定</b>项被算进"待复核"桶 → 首页 10 条 vs §11.0 的 0 条，同一份报告自相矛盾</td></tr>
       <tr><td><b>呈现层</b></td><td>章节与台账同源对账；空表不许印成"未检索到"</td>
         <td>① 第 3 页断言"14 项实质变化" vs 第 20 页的 17 条打架<br>② "测量基准"整段说明印了 33 次<br>③ 第 10 章空表印成"未检索到对应标题"</td></tr>
@@ -315,7 +376,7 @@ const FIG = {
       <div class="g"><span class="n">4b</span><b>rendered report</b><span class="d">渲染出来的那份报告本身自检</span></div>
     </div>
     <div class="gates">
-      <div class="g wide"><span class="n">5</span><b>renderer unit harness</b><span class="d">11 个 _test_*.mjs —— 名字像测试文件，其实是闸门：删掉 verify 当场红</span></div>
+      <div class="g wide"><span class="n">5</span><b>renderer unit harness</b><span class="d">${HARNESS_N} 个 _test_*.mjs —— 名字像测试文件，其实是闸门：删掉 verify 当场红</span></div>
     </div>
     <div class="note">每一道闸门背后都是<b>一次真实翻车</b>。这比"我们保证"有说服力 —— 因为闸门可以当场验。</div>
   </div>`,
@@ -325,11 +386,11 @@ const FIG = {
   <div class="fig">
     <div class="mgrid">
       <div class="m"><span class="v">100<span class="u">%</span></span><span class="l">三版条款覆盖</span><span class="d">A ${CLAUSE_A} 条款 / B ${CLAUSE_B} / C ${CLAUSE_C}<br>missing ${MISSING} · 别装置顶替 ${OTHER_DEVICE}</span></div>
-      <div class="m"><span class="v">0</span><span class="l">真缺口</span><span class="d">448 条要求里<br>285 已覆盖 · 66 附录逐条列出<br>52 已引原文 · 45 非产品要求</span></div>
-      <div class="m"><span class="v">969</span><span class="l">定量限值被覆盖</span><span class="d">A 340 · B 287 · C 342</span></div>
+      <div class="m"><span class="v">${REQ_GAPS}</span><span class="l">真缺口</span><span class="d">${REQ_TOTAL} 条要求里<br>${REQ_COVERED} 已覆盖 · ${REQ_APPENDIX} 附录逐条列出<br>${REQ_QUOTED} 已引原文 · ${REQ_NA} 不适用</span></div>
+      <div class="m"><span class="v">${LIMITS}</span><span class="l">定量限值被覆盖</span><span class="d">A ${LIMIT_A} · B ${LIMIT_B} · C ${LIMIT_C}</span></div>
       <div class="m"><span class="v">${HITS}<span class="u">/${CELLS}</span></span><span class="l">参数取值位有值</span><span class="d">${PARAMS} 参数 × 3 版<br>其余 ${EMPTY} 格是<b>有理由的空</b>（该版确实没规定）</span></div>
-      <div class="m"><span class="v">184</span><span class="l">定性条款逐条并排</span><span class="d">附录 H · 另 142 条同文<br>86 条编号不可对读 → 只登记不并排</span></div>
-      <div class="m"><span class="v">517<span class="u">/517</span></span><span class="l">引文回源命中</span><span class="d">附录 H 每条引文<br>逐条回源 PDF 验过</span></div>
+      <div class="m"><span class="v">${H_DIFFERENT}</span><span class="l">定性条款逐条并排</span><span class="d">附录 H · 另 ${H_SAME} 条同文<br>${H_UNPAIRED} 条编号不可对读 → 只登记不并排</span></div>
+      <div class="m"><span class="v">${QUOTES.hits}<span class="u">/${QUOTES.total}</span></span><span class="l">引文回源命中</span><span class="d">附录 H 每条引文<br>逐条回源 PDF 验过</span></div>
     </div>
   </div>`,
 
@@ -340,7 +401,7 @@ const FIG = {
       <tr><th style="width:27%">客户原话</th><th style="width:38%">现在的答案</th><th>可当场验的判据</th></tr>
       <tr><td class="q">"仍然只有法规中，有具体数值的内容的比较"</td>
         <td>附录 H：<b>定性条款也逐条并排</b>，差异处粗体标出</td>
-        <td>附录 H.2 = 184 条并排；<code>check_qualitative_diff.py</code> 517/517 回源命中</td></tr>
+        <td>附录 H.2 = ${H_DIFFERENT} 条并排；<code>check_qualitative_diff.py</code> ${QUOTES.hits}/${QUOTES.total} 回源命中</td></tr>
       <tr><td class="q">"数值有提取错误或空缺"</td>
         <td>① 修掉完整性保证本身的洞（条款索引吞掉 71 条）<br>② 空缺必须是<b>有理由的空</b>，与"抽取失败"措辞不同</td>
         <td>三版 missing 0 / 别装置顶替 0；<code>clause_value_check</code> · <code>matrix_page_check</code> · <code>diff_value_check</code> 三道回源</td></tr>
@@ -653,7 +714,7 @@ function buildDeck(figData) {
       <div class="card"><div class="v">${PARAMS}</div><div class="l">参数 × 3 版 = ${CELLS} 个取值位</div></div>
       <div class="card"><div class="v">${GATES.total}</div><div class="l">项交付闸门（改坏就红）</div></div>
       <div class="card"><div class="v">0</div><div class="l">真缺口 · 别装置顶替</div></div>
-      <div class="card"><div class="v">517/517</div><div class="l">定性引文回源命中</div></div>
+      <div class="card"><div class="v">${QUOTES.hits}/${QUOTES.total}</div><div class="l">定性引文回源命中</div></div>
     </div>
     <div class="foot">
       2026-10-28　·　汇报人：＿＿＿＿＿<br/>
@@ -668,13 +729,13 @@ function buildDeck(figData) {
     body: `
       <div class="kpi">
         <div class="k"><div class="v">100%</div><div class="l">三版条款覆盖 · missing 0 · 别装置顶替 0</div></div>
-        <div class="k"><div class="v">0</div><div class="l">448 条要求里的真缺口</div></div>
+        <div class="k"><div class="v">0</div><div class="l">${REQ_TOTAL} 条要求里的真缺口</div></div>
         <div class="k"><div class="v">17</div><div class="l">§11.0 真实变化（全报告只报这一个数）</div></div>
       </div>
       <h3 style="margin-top:16px">四条能当场验的能力</h3>
       <ul>
         <li><b>数值对比</b>：${PARAMS} 个参数 × ${N_VERSIONS} 版，每个取值带条款号、页码、原文摘录</li>
-        <li><b>定性并排</b>：附录 H 把 184 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
+        <li><b>定性并排</b>：附录 H 把 ${H_DIFFERENT} 条<b>无数值</b>的条款也逐条并排，差异处粗体标出</li>
         <li><b>欧标第三列</b>：${vDoc("C")} 的条款号 + 页码 + 原文，${R48_MAPPED} 条章节级对应逐条回源验过</li>
         <li><b>可追责</b>：${GATES.total} 项闸门在交付前跑一遍；每条结论都能翻到源 PDF 的某一页</li>
       </ul>`,
@@ -766,7 +827,7 @@ function buildDeck(figData) {
     fig: F("gates"), layout: "fig",
     body: "",
     lead: "六段组成，从构建产物一直查到渲染出来的那份 PDF",
-    note: `这一页是给领导吃定心丸的。<b>闸门不是文档承诺，是可执行检查</b> —— 当场就能跑。念一下最后一段：11 个 _test_*.mjs 名字像测试文件，其实是闸门本体，删一个 verify 就红。这是我们这轮清理文件时差点踩的坑。`,
+    note: `这一页是给领导吃定心丸的。<b>闸门不是文档承诺，是可执行检查</b> —— 当场就能跑。念一下最后一段：${HARNESS_N} 个 _test_*.mjs 名字像测试文件，其实是闸门本体，删一个 verify 就红。这是我们这轮清理文件时差点踩的坑。`,
   }));
 
   // 10 覆盖度
@@ -785,7 +846,7 @@ function buildDeck(figData) {
     fig: F("complaints"), layout: "fig",
     body: "",
     lead: "最后一列是给验收方留的抓手",
-    note: `如果只有时间讲一页，讲这一页。第三列是刻意留的 —— <b>让对方自己验，而不是我们说我们验了</b>。附录 H 那 517/517 和三版 missing 0 都是脚本跑出来的，对方可以要我们现场跑。`,
+    note: `如果只有时间讲一页，讲这一页。第三列是刻意留的 —— <b>让对方自己验，而不是我们说我们验了</b>。附录 H 那 ${QUOTES.hits}/${QUOTES.total} 和三版 missing ${MISSING} 都是脚本跑出来的，对方可以要我们现场跑。`,
   }));
 
   // 12 交付件
@@ -800,7 +861,7 @@ function buildDeck(figData) {
         <li><b>第 12 章 参数矩阵</b>：${PARAMS} 参数 × ${N_VERSIONS} 版，每格带条款号 + 页码 + 原文，是唯一能支撑 C 定量判断的部分</li>
         <li><b>第 14 章 欧标对照</b>：${vDoc("C")} 的条款号 + 页码 + 原文摘录</li>
         <li><b>附录 H 定性条款并排</b>：客户第一句抱怨的直接答复</li>
-        <li><b>附录 E.5 要求台账</b>：448 条要求逐条归类，真缺口 0</li>
+        <li><b>附录 E.5 要求台账</b>：${REQ_TOTAL} 条要求逐条归类，真缺口 ${REQ_GAPS}</li>
       </ul>`,
     note: `不要逐章念。挑客户最关心的两章讲：第 12 章（他要看数）和附录 H（他说没比过定性条款）。右边截图是第 12 章的实际页面 —— <b>指出每行末尾都有页码和条款号</b>，这是"可核验"的直观体现。`,
     shot: S1("p20_matrix.png"),
@@ -812,7 +873,7 @@ function buildDeck(figData) {
     sec: "结果", num: "13", title: "附录 H：定性条款并排（客户第一句抱怨的答复）",
     layout: "shot",
     body: `
-      <p><b>184 条逐条并排，差异处用粗体标出。</b>绝大多数差别只有一两个字（「挂车不应<b>安装</b>」→「挂车不应<b>使用</b>」），不给标记读者得逐字比对几百字中文。</p>
+      <p><b>${H_DIFFERENT} 条逐条并排，差异处用粗体标出。</b>绝大多数差别只有一两个字（「挂车不应<b>安装</b>」→「挂车不应<b>使用</b>」），不给标记读者得逐字比对几百字中文。</p>
       <h3>三条安全边界</h3>
       <ul>
         <li><b>同号 ≠ 同条款</b> —— A 的 5.4 是前雾灯、B 的 5.4 是倒车灯。配对先过装置级重排表（11 条，回原文核验）</li>

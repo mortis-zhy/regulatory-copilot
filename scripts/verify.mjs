@@ -345,6 +345,9 @@ let GATE_PDF = null;
 // 闸门渲染出来的 PDF 的**页数** —— 讲稿那句「交付件 N 页」从这儿走。
 // 手写的页数一定会过期（讲稿里那个「249 页」就过期了，交付件早就是 278 页）。
 let GATE_PAGES = null;
+// 附录 H 的**引文回源命中数**（总条数 / 命中条数）——
+// 讲稿那句「517/517 回源命中」从这儿走（手写的数一定会过期）。
+let GATE_QUOTES = null;
 
 async function prepareGatePdf() {
   if (process.env.VERIFY_PDF) {
@@ -2400,6 +2403,10 @@ check("appendix H — every quoted A/B passage is in the source PDF", () => {
   // 宽度门槛差一个数量级，而它会原样印在客户手里。
   const { ok, out } = runPy(["scripts/check_qualitative_diff.py"], "check_qualitative_diff");
   assert(ok, `附录 H 的引文有对不上的：\n        ${out.slice(-600)}`);
+  // 「附录 H 原文片段：517 条，命中 517 条」—— 把这两个数落进机器产物，
+  // 讲稿从那儿读（手写的数一定会过期）。
+  const qm = out.match(/原文片段：(\d+) 条，命中 (\d+) 条/);
+  if (qm) GATE_QUOTES = { total: Number(qm[1]), hits: Number(qm[2]) };
   return out.match(/命中 \d+ 条/)?.[0] ?? "ok";
 });
 
@@ -5823,6 +5830,8 @@ try {
         // 交付件页数 —— 讲稿那句「交付件 N 页」从这儿读。
         // 手写的页数一定会过期（讲稿里的「249 页」就比交付件少了 29 页）。
         pages: GATE_PAGES,
+        // 附录 H 引文回源命中数 —— 讲稿那句「N/N 回源命中」从这儿读。
+        quotes: GATE_QUOTES,
       },
       null,
       2,
