@@ -43,30 +43,33 @@ app = FastAPI(title="comparison-agent Python sidecar", version="v6.2")
 # Each signature is a set of token regexes that must ALL appear somewhere in the
 # filename, in any order. `exclude` tokens veto a match, so a draft revision does
 # not get mistaken for the 2019 in-force edition.
+#
+# **签名本身是内容，不是机制** —— 它以前写死在这里（换标准要改代码），
+# 现在声明在 `data/standard-pack.json` 里：**换标准只改声明**。
+#
+# 顺带修掉一个真坑：site-packages 里有个叫 `scripts` 的包，
+# 没有 `scripts/__init__.py` 的话 `import scripts.standard_pack`
+# 会被它遮住 —— 在别的机器上好好的，装了它的机器上就找不到自己的模块。
+from scripts.standard_pack import PACK as STANDARD_PACK
+
 DOC_SIGNATURES = {
-    "A": {
-        "tokens": [r"GB[\s_-]*4785", r"草案|draft|修订"],
-        "exclude": [r"2019"],
-    },
-    "B": {
-        "tokens": [r"GB[\s_-]*4785", r"2019"],
-        "exclude": [r"草案|draft|修订"],
-    },
-    "C": {
-        "tokens": [r"UN[\s_-]*R0?48"],
-        "exclude": [],
-    },
+    v["key"]: {
+        "tokens": list(v.get("fileTokens") or []),
+        "exclude": list(v.get("fileExclude") or []),
+    }
+    for v in STANDARD_PACK.get("versions", [])
 }
 ALLOWED_LABELS = set(DOC_SIGNATURES.keys())
 
 _ACCEPT_HELP = (
     "已支持的标准（文件名任意顺序均可）："
-    "A = 含「GB 4785」且含「草案」的修订版；"
-    "B = 含「GB 4785」且含「2019」的现行版；"
-    "C = 含「UN R48」的 UN 法规。"
-    "也可在上传时直接指定版本标签。"
+    + "；".join(
+        f"{v['key']} = {v.get('fileHelp', '')}"
+        for v in STANDARD_PACK.get("versions", [])
+    )
+    + "。"
+    + "也可在上传时直接指定版本标签。"
 )
-
 
 def infer_label(file_name: str, file_path: str = "") -> str | None:
     """Guess A/B/C from a filename, ignoring token order. None if ambiguous."""

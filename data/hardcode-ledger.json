@@ -67,20 +67,11 @@
       "files": [
         "data/standard-pack.json"
       ],
-      "why": "封面/章节/附录标题的标准名、末版条款号，以及**各版本的显示名表**（标签/短标签/文档名/标准号/状态）。\n这一份是**内容里唯一已经声明化**的东西：换标准时改这一个 JSON，代码一行不动。",
-      "swap": "改标准族名、末版条款号、版本清单；有标准特有的表号（如「表 11.6」）要一并改掉。\n**版本显示名表（versions）以前硬编码在 server/reports/versionMeta.ts 里（12 处字面量），现已搬到这里。**"
+      "why": "封面/章节/附录标题的标准名、末版条款号、**各版本的显示名表**（标签/短标签/文档名/标准号/状态/修订号）、**文件名识别签名**（认上传的 PDF 是哪一版）、**客户端的任务简报与界面文案**、**源 PDF 的文件名**。\n\n这一份是**内容里唯一已经声明化**的东西：换标准时改这一个 JSON，代码一行不动。\n\n搬进来的过程（每一处都核过「输出逐字不变」）：\n  · `server/reports/versionMeta.ts` 的 12 处字面量 → versions 数组\n  · `server/reports/reportV6.ts` 的 40 处版本显示名 → versionLabel/versionDoc/… 调用\n  · 六个 Python 脚本的源 PDF 文件名 → scripts/standard_pack.py\n  · `python_service/main.py` 的文件名签名与提示 → fileTokens/fileExclude/fileHelp\n  · `client/src/pages/Home.tsx` 的任务简报与判据 → clientBrief/clientSetProbe",
+      "swap": "改标准族名、末版条款号、版本清单、文件名签名、源文件名、客户端文案；有标准特有的表号（如「表 11.6」）要一并改掉。\n\n**改完跑 `npm run verify`** —— 里面有一关专门验「声明里的标准名语料里真有它」，还有一关验「报告的标题与版本显示名真的来自这份声明」。"
     }
   ],
   "rules": [
-    {
-      "id": "upload-signature",
-      "title": "上传端的文件名识别签名",
-      "files": [
-        "python_service/main.py"
-      ],
-      "why": "sidecar 认「这份 PDF 是 A/B/C 哪一版」的第一判据（文件名 token），以及给用户看的错误提示。这里写死了「GB 4785」「UN R48」「草案」「2019」。\n\n**这一处的判据其实可以声明化** —— `data/standard-pack.json` 里已有各版本的文档名与状态，文件名 token 可以从那里派生，不必再写一遍。",
-      "swap": "改成新标准的文件名 token（`DOC_SIGNATURES`）与提示文案。注意：**内容指纹认版本的那条路已经存在**（`server/reports/versionRecognize.ts`），文件名这条路只做兜底。"
-    },
     {
       "id": "spec-agent-prompt",
       "title": "写 spec 的提示词与矩阵入口",

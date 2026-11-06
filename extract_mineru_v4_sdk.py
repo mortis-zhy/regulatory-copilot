@@ -12,6 +12,7 @@ Output: dist/mineru-v4-data.json
 import ssl, os, json, sys, io, time
 from pathlib import Path
 from collections import Counter
+from scripts.standard_pack import source_pdfs
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -24,11 +25,7 @@ OUT_DIR = ROOT / "dist" / "mineru-v4-data.json"
 
 # 三份源 PDF 在仓库内 delivery/PDF对比/（原先是仓库外那三份按旧文件名命名的副本，
 # 与这几份字节完全相同 —— sha256 一致）。
-PDFS = {
-    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
-    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
-    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
-}
+PDFS = source_pdfs(ROOT)
 
 def sha256_file(path) -> str:
     """源 PDF 的 SHA-256 —— 语料与源文件之间的钥匙。"""

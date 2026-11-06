@@ -11,6 +11,7 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import STANDARD_PACK from "@data/standard-pack.json";
 
 export type TemplateId = "gb" | "eu" | "internal" | "free";
 
@@ -58,7 +59,7 @@ export const TEMPLATES: Template[] = [
     systemPrompt:
       "你正在协助国际法规（UNECE / ISO / IEC / EN）的对比与对应关系分析。请在结论里标注法规编号 + 修订号 + 章节号 + 表号，并指出与国标的对应关系（一对一、多对一或不一致）。所有国际条款请给出原文条款编号；无法核实时使用【待人工确认】前缀。",
     suggestedTasks: [
-      { label: "建立与 UN R48 / ISO 等国标的对应表", icon: Layers },
+      { label: STANDARD_PACK.clientStrings.mappingTask, icon: Layers },
       { label: "抽取适用范围与豁免条款", icon: Sparkles },
       { label: "列出与目标市场的合规差异", icon: GitCompareArrows },
       { label: "联网核验 EC / UNECE 官网的最新状态", icon: Globe2 },

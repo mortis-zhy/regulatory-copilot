@@ -5,6 +5,7 @@ Uses easyocr (Chinese + English) with very loose patterns.
 """
 import easyocr, fitz, json, re, sys, io, os
 from pathlib import Path
+from scripts.standard_pack import source_pdfs
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # 仓库根。COMPARE_AGENT_ROOT 指**仓库本身**；原来这里写死了本机绝对路径。
@@ -12,11 +13,7 @@ ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent
 OUT = ROOT / "dist" / "ocr-full.json"
 IMG_DIR = ROOT / ".ocr-pages"
 
-PDFS = {
-    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
-    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
-    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
-}
+PDFS = source_pdfs(ROOT)
 
 reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, verbose=False)
 

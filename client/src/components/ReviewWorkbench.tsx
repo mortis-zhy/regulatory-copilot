@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import STANDARD_PACK from "@data/standard-pack.json";
 
 type Counts = {
   confirmed: number;
@@ -550,7 +551,7 @@ export default function ReviewWorkbench() {
           <div className="border-b px-5 py-3" style={{ borderColor: LINE }}>
             <h2 className="text-sm font-semibold" style={{ color: INK }}>行业网传指标 · 两版出处核验</h2>
             <p className="mt-1 text-[11px] leading-relaxed" style={{ color: MUTED }}>
-              行业流传的「GB4785 表 11.6 共 9 项指标」，逐条回 A/B 两份原文核验。
+              {STANDARD_PACK.clientStrings.indicatorNote}
               <strong style={{ color: "#c9542a" }}>两版原文均无出处</strong>的条目属此前误传，
               请勿写入测试规范或对外材料。
             </p>

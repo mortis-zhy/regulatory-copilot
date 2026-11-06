@@ -159,6 +159,10 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      // 标准声明（data/standard-pack.json）—— 客户端与服务端读的是**同一份**。
+      // 客户端要它，是因为「这套装是不是本标准」「给模型的任务简报」
+      // 都是**内容**，写死在客户端里换标准就得改代码。
+      "@data": path.resolve(import.meta.dirname, "data"),
     },
   },
   envDir: path.resolve(import.meta.dirname),

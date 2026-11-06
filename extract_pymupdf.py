@@ -11,6 +11,7 @@ Output: dist/pymupdf-data.json with:
 """
 import fitz, json, re, sys, io, os
 from pathlib import Path
+from scripts.standard_pack import source_pdfs
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # 仓库根。COMPARE_AGENT_ROOT 指**仓库本身**。
@@ -19,11 +20,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 ROOT = Path(os.environ.get("COMPARE_AGENT_ROOT", Path(__file__).resolve().parent))
 OUT = ROOT / "dist" / "pymupdf-data.json"
 
-PDFS = {
-    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
-    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
-    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
-}
+PDFS = source_pdfs(ROOT)
 
 def normalize_number_spaces(text: str) -> str:
     """Fix broken number formatting: '4. 0±1. 0' → '4.0±1.0'.

@@ -15,7 +15,16 @@
       "std": "GB 4785—XXXX",
       "status": "草案 V4.3.5（代替 GB 4785-2019）",
       "short": "草案",
-      "rev": "V4.3.5"
+      "rev": "V4.3.5",
+      "sourceFile": "源文件_A_GB4785草案V4.3.5_103页.pdf",
+      "fileTokens": [
+        "GB[\\s_-]*4785",
+        "草案|draft|修订"
+      ],
+      "fileExclude": [
+        "2019"
+      ],
+      "fileHelp": "含「GB 4785」且含「草案」的修订版"
     },
     {
       "key": "B",
@@ -25,7 +34,16 @@
       "std": "GB 4785—2019",
       "status": "现行（代替 GB 4785—2007，2020-07-01 实施）",
       "short": "现行",
-      "rev": "2019"
+      "rev": "2019",
+      "sourceFile": "源文件_B_GB4785-2019_81页.pdf",
+      "fileTokens": [
+        "GB[\\s_-]*4785",
+        "2019"
+      ],
+      "fileExclude": [
+        "草案|draft|修订"
+      ],
+      "fileHelp": "含「GB 4785」且含「2019」的现行版"
     },
     {
       "key": "C",
@@ -35,7 +53,13 @@
       "std": "UN R48-09 + Suppl.1",
       "status": "国际法规（2025-09-26 生效，作参照）",
       "short": "UN",
-      "rev": "09"
+      "rev": "09",
+      "sourceFile": "源文件_C_UN-R48-09_147页.pdf",
+      "fileTokens": [
+        "UN[\\s_-]*R0?48"
+      ],
+      "fileExclude": [],
+      "fileHelp": "含「UN R48」的 UN 法规"
     }
   ],
   "titleTemplate": "{standardFamily} 多版本横向对比研究报告（{versionLabels} {countWord}对照）",
@@ -69,5 +93,15 @@
     "F": "分档限值与公式型限值（{countZhou}原文对照）",
     "G": "{countZhou}一致参数逐条明细（全量供核对）",
     "H": "{pairSlash} 定性条款并排对照（条款级，差异处标出）"
+  },
+  "sourceDir": "delivery/PDF对比",
+  "clientSetProbe": [
+    "GB[\\s_-]*4785",
+    "UN[\\s_-]*R0?48"
+  ],
+  "clientBrief": "【核心要求——客户需求】对三份法规（GB 4785 草案 V4.3.5 vs GB 4785-2019 现行版 vs UN R48 欧洲标准）进行多版本横向对比，必须输出**至少 20 页**的内容充实的 PDF。最终交付物必须包含：\n\n1. **结构对齐**（三份文档章节体系对比，1-2 页表格）\n2. **内容对比**（逐章节列出新增/修改/删除的条款，每条都有原文摘录 + 章节号 + 页码，必须有 12+ 个章节对比表格，至少 30 条 changes）\n3. **专业参数**（远光/近光/转向/制动/位置/倒车/危险警告/牌照等每种灯具的数值参数对比，至少 25 条 parameters）\n4. **联网证据**（至少 5 条 evidence）\n5. **变化点总结**（最关键的 10 条 change，附原文摘录）\n\n**禁止**：写到一半就停止输出、说\"对比完成\"等结束语后停止。每个章节必须输出完整原文摘录和具体数值。",
+  "clientStrings": {
+    "indicatorNote": "行业流传的「GB4785 表 11.6 共 9 项指标」，逐条回 A/B 两份原文核验。",
+    "mappingTask": "建立与 UN R48 / ISO 等国标的对应表"
   }
 }

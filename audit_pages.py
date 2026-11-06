@@ -26,15 +26,16 @@ from pathlib import Path
 
 import fitz
 
+from scripts.standard_pack import source_dir, source_pdfs
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 ROOT = Path(__file__).resolve().parent
 # 源 PDF 在**仓库内** delivery/PDF对比/。原来读的是仓库外那个「工作台」目录下的
 # 三份源 PDF（按外层的文件名匹配）—— 新克隆的同事那儿没有这些文件，
 # 这道闸门会当场红（红得响亮是好事，但闸门不该依赖仓库外的目录）。
 # 这三份与 uploaded-docs/ 下的活语料字节完全相同（sha256 一致）。
-PDF_DIR = ROOT / "delivery" / "PDF对比"
-PDF_A = PDF_DIR / "源文件_A_GB4785草案V4.3.5_103页.pdf"
-PDF_B = PDF_DIR / "源文件_B_GB4785-2019_81页.pdf"
+PDF_DIR = ROOT / source_dir(ROOT)
+PDF_A = source_pdfs(ROOT)["A"]
+PDF_B = source_pdfs(ROOT)["B"]
 
 failures: list[str] = []
 warnings: list[str] = []

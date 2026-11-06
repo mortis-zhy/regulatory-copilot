@@ -17,6 +17,7 @@ Outputs:
 """
 import json, re, glob, os, sys, io, hashlib
 from pathlib import Path
+from scripts.standard_pack import source_pdfs
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # Repo root: derive from __file__ so a checkout can live anywhere.
@@ -961,11 +962,7 @@ def verify_numeric_changes(real_tuples, texts):
 MANUAL_FINDINGS_PATH = ROOT / "data" / "manual-findings.json"
 # 三份源 PDF 在**仓库内** delivery/PDF对比/（原来读的是仓库外那个「工作台」目录下的
 # 同名副本 —— 字节完全相同，sha256 一致）。
-SOURCE_PDFS = {
-    "A": ROOT / "delivery" / "PDF对比" / "源文件_A_GB4785草案V4.3.5_103页.pdf",
-    "B": ROOT / "delivery" / "PDF对比" / "源文件_B_GB4785-2019_81页.pdf",
-    "C": ROOT / "delivery" / "PDF对比" / "源文件_C_UN-R48-09_147页.pdf",
-}
+SOURCE_PDFS = source_pdfs(ROOT)
 
 
 def _sha256_file(p: Path) -> str | None:
