@@ -29,6 +29,13 @@
  * 所以合并表只收「同一主题 + 同一底层条款或同一组数值」的条目。
  */
 
+// 版本身份 —— 从声明取（`data/standard-pack.json`）。
+import { versionLabel, versionKeyAt } from "@shared/versionMeta";
+
+/** 参照版（末版）的标签 —— 「C UN R48-09」。 */
+const KEY_C = versionKeyAt(2);
+const C_LABEL = KEY_C ? versionLabel(KEY_C) : "";
+
 /** 一行变化。 */
 export interface ChangeRow {
   id: string;
@@ -384,7 +391,7 @@ export function buildChangeLedger(verified: Any, matrixRows: Any[] = []): Change
         if (!target.bPage && b.page) target.bPage = b.page;
         if (!target.aPage && a.page) target.aPage = a.page;
         if (c.nums?.length && !target.reason) {
-          target.reason = `C UN R48-09 取值：${(c.nums ?? []).join(" / ")}`;
+          target.reason = `${C_LABEL} 取值：${(c.nums ?? []).join(" / ")}`;
         }
         continue;
       }
@@ -400,7 +407,7 @@ export function buildChangeLedger(verified: Any, matrixRows: Any[] = []): Change
       aPage: a.page || undefined,
       sources: ["第 12 章矩阵"],
       matrixRowId: m.id,
-      reason: c.nums?.length ? `C UN R48-09 取值：${(c.nums ?? []).join(" / ")}` : undefined,
+      reason: c.nums?.length && C_LABEL ? `${C_LABEL} 取值：${(c.nums ?? []).join(" / ")}` : undefined,
     });
   }
 

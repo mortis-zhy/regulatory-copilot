@@ -31,6 +31,10 @@ import fs from "node:fs";
 import path from "node:path";
 // 项目根 —— **唯一实现**（server/_core/projectRoot.ts）。
 import { PROJECT_ROOT } from "../_core/projectRoot";
+// 各版本的文档名 —— 从声明取（`data/standard-pack.json`）。
+// 以前这里是一张手写字典：换标准时改了上传校验那份，忘了这份，
+// agent 报出来的版本名就会**继续讲旧标准** —— 而工具照常返回原文。
+import { versionDoc, versionKeys } from "@shared/versionMeta";
 
 /**
  * 内层仓库根（dist/ 与 data/ 都在那儿）—— **唯一实现**在
@@ -232,12 +236,12 @@ export const AGENT_TOOLS: ToolDef[] = [
     function: {
       name: "lookup_clause",
       description:
-        "按标准代号与条款号查法规原文。A=GB 4785 草案 V4.3.5，B=GB 4785-2019，C=UN R48-09。" +
+        `按标准代号与条款号查法规原文。${versionKeys().map((k) => `${k}=${versionDoc(k)}`).join("，")}。` +
         "返回该条款的原文摘录与源 PDF 页码。查不到就返回未找到 —— 不要猜。",
       parameters: {
         type: "object",
         properties: {
-          version: { type: "string", enum: ["A", "B", "C"], description: "标准代号" },
+          version: { type: "string", enum: versionKeys(), description: "标准代号" },
           clause: { type: "string", description: "条款号，如 5.2.4.2、6.23.7.2、4.25b" },
         },
         required: ["version", "clause"],
@@ -351,11 +355,10 @@ export const AGENT_TOOLS: ToolDef[] = [
 /* 工具执行                                                                 */
 /* ------------------------------------------------------------------------- */
 
-const VER_LABEL: Record<string, string> = {
-  A: "GB 4785 草案 V4.3.5",
-  B: "GB 4785-2019",
-  C: "UN R48-09",
-};
+/** 各版本的文档名 —— 声明里 `doc` 字段那张表。 */
+const VER_LABEL: Record<string, string> = Object.fromEntries(
+  versionKeys().map((k) => [k, versionDoc(k)]),
+);
 
 function norm(s: string): string {
   const P: Record<string, string> = {

@@ -22,6 +22,12 @@
  * can render one row per data point instead of one summary row per topic.
  */
 import type { DocStructure, TopicFact, ExtractedValue } from "../ingestion/structuredExtract";
+// 版本身份 —— 从声明取。写死「B（GB 4785-2019）」的那几处，
+// 换标准后会指着**不存在的那一版**说话，而不会报错。
+import { versionDoc, versionDocNoFamily, versionKeyAt } from "@shared/versionMeta";
+
+const KEY_A = versionKeyAt(0);
+const KEY_B = versionKeyAt(1);
 
 export type EngineChange = {
   title: string;
@@ -218,7 +224,7 @@ export function diffDocuments(a: DocStructure, b: DocStructure, c?: DocStructure
         title: topic,
         type: "added",
         severity: "high",
-        oldExcerpt: "B（GB 4785-2019）无此主题条款",
+        oldExcerpt: `${KEY_B}（${versionDoc(KEY_B)}）无此主题条款`,
         newExcerpt: excerptSnippet(tA!),
         anchor: `A=${tA!.clause || pageLabel(tA!.page)}${cAnchor}`,
       });
@@ -228,7 +234,7 @@ export function diffDocuments(a: DocStructure, b: DocStructure, c?: DocStructure
         type: "removed",
         severity: "high",
         oldExcerpt: excerptSnippet(tB!),
-        newExcerpt: "A（草案 V4.3.5）无此主题条款",
+        newExcerpt: `${KEY_A}（${versionDocNoFamily(KEY_A)}）无此主题条款`,
         anchor: `B=${tB!.clause || pageLabel(tB!.page)}${cAnchor}`,
       });
     } else if (aIn && bIn) {
@@ -266,7 +272,7 @@ export function diffDocuments(a: DocStructure, b: DocStructure, c?: DocStructure
           title: `${topic}·${av.name || "新参数"}`,
           type: "added",
           severity: "medium",
-          oldExcerpt: "B（GB 4785-2019）无此参数",
+          oldExcerpt: `${KEY_B}（${versionDoc(KEY_B)}）无此参数`,
           newExcerpt: `A: ${valStr(av)}【${at.clause || pageLabel(at.page)}】`,
           anchor: `参数级新增${cAnchor}`,
         });
@@ -278,7 +284,7 @@ export function diffDocuments(a: DocStructure, b: DocStructure, c?: DocStructure
           type: "removed",
           severity: "medium",
           oldExcerpt: `B: ${valStr(bv)}【${bt.clause || pageLabel(bt.page)}】`,
-          newExcerpt: "A（草案 V4.3.5）无此参数",
+          newExcerpt: `${KEY_A}（${versionDocNoFamily(KEY_A)}）无此参数`,
           anchor: `参数级删除${cAnchor}`,
         });
       }

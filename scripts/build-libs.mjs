@@ -105,6 +105,10 @@ const ENTRIES = [
   // 单独成模块，是为了让它的校验层能被已知答案用例直接驱动 ——
   // 校验层是这一层唯一有资格说「对」的地方。
   ["server/reports/specAgent.ts", "dist/specAgent.js"],
+  // versionFileName 是「按文件名认版本」的唯一实现 ——
+  // 判据在声明里（fileTokens / fileExclude），上传校验与渲染层共用。
+  // 单独成模块：闸门要**直接驱动**它，验「封面上的版本名认对了」。
+  ["shared/versionFileName.ts", "dist/versionFileName.js"],
   // export.ts 的 renderWordHtml 是 Word 导出的实现。它必须能扛住
   // 「只有 content、没有 changes/parameters/evidence」的负载 ——
   // 以前会崩在 `.map` 上，表现为一个裸的 500 HTML 页。

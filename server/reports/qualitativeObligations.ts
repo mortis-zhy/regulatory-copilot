@@ -23,6 +23,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { resolveInnerRoot } from "./innerRoot";
+// 版本身份 —— 从声明取（`data/standard-pack.json`）。
+import { versionDoc, versionLabel, versionRev, versionKeyAt, versionRefLabel } from "@shared/versionMeta";
+
+const KEY_A = versionKeyAt(0);
+const KEY_B = versionKeyAt(1);
+const KEY_C = versionKeyAt(2);
 
 export interface QOElsewhere {
   /** 这一条登记覆盖的词（`absentTerms` 里的） */
@@ -117,9 +123,9 @@ function sideCell(v: string, side: QOSide | undefined): string {
 function absenceScopeLine(e: QOEntry, corpus: Map<string, string>): string | null {
   const lines: string[] = [];
   for (const [v, side] of [
-    ["A", e.a],
-    ["B", e.b],
-    ["C", e.c],
+    [KEY_A, e.a],
+    [KEY_B, e.b],
+    [KEY_C, e.c],
   ] as [string, QOSide][]) {
     const terms = side?.absentTerms ?? [];
     if (!terms.length) continue;
@@ -252,9 +258,9 @@ export function build11_9(): string {
     parts.push(`**义务面**：${esc(e.aspect)}　|　**变化性质**：${e.nature}`, "");
     parts.push("| 版本 | 条款与原文 |");
     parts.push("|---|---|");
-    parts.push(`| **B 现行版**（GB 4785-2019） | ${sideCell("B", e.b)} |`);
-    parts.push(`| **A 草案**（V4.3.5） | ${sideCell("A", e.a)} |`);
-    parts.push(`| **C 参照**（UN R48-09） | ${sideCell("C", e.c)} |`);
+    parts.push(`| **${versionLabel(KEY_B)}版**（${versionDoc(KEY_B)}） | ${sideCell(KEY_B, e.b)} |`);
+    parts.push(`| **${versionLabel(KEY_A)}**（${versionRev(KEY_A)}） | ${sideCell(KEY_A, e.a)} |`);
+    parts.push(`| **${versionRefLabel(KEY_C)}**（${versionDoc(KEY_C)}） | ${sideCell(KEY_C, e.c)} |`);
     parts.push("");
     parts.push(`- **设计影响**：${e.designImpact}`);
     parts.push(`- **测试影响**：${e.testImpact}`);

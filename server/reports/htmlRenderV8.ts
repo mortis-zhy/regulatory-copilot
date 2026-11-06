@@ -42,7 +42,31 @@ import type { ReportOutline } from "./reportGenerator";
  * 渲染层的版本列识别按它走：换一套标准（X/Y/Z）或加第四版时，
  * 对照表与卡片布局都会跟着变，而不是把新版本悄悄丢掉。
  */
-import { VERSION_META, setActiveVersions, activeVersions } from "@shared/versionMeta";
+import {
+  VERSION_META, setActiveVersions, activeVersions,
+  versionLabel, versionLabelNoRev, versionDoc, versionDocNoRev, fallbackSourceCards,
+} from "@shared/versionMeta";
+// 认版本 —— 判据在声明里（原来这里另写了一份正则，和上传校验那份是两份实现）。
+import { cleanDocName } from "@shared/versionFileName";
+import { composePdfMeta, titleSlots } from "./reportMeta";
+
+/**
+ * PDF 文件属性 —— 声明里的模板 + **语料里实际有几版**的槽位。
+ *
+ * 用 activeVersions() 而不是声明里的全部版本：语料只有两版时，
+ * 文件属性里就不该写着「三版本」。
+ */
+function pdfMeta(): { creator: string; subject: string; keywords: string } {
+  const keys = activeVersions();
+  return composePdfMeta(
+    titleSlots(
+      keys,
+      keys.map((k) => versionLabel(k)),
+      keys.map((k) => versionDoc(k)),
+      keys.map((k) => versionDocNoRev(k)),
+    ),
+  );
+}
 export { setActiveVersions };
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
@@ -879,7 +903,7 @@ function renderMasterParams(rows: MasterParamRow[]): string {
   const keys = [...new Set(rows.flatMap((r) => Object.keys(r.values ?? {})))];
   const heads = keys.map(
     (k, i) => `<th style="--c:${MP_COLORS[i % MP_COLORS.length]}">${esc(
-      k === "A" ? "A 草案" : k === "B" ? "B 现行" : k === "C" ? "C UN R48" : k,
+      versionLabelNoRev(k),
     )}</th>`,
   );
   const body = rows
@@ -2135,19 +2159,6 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
 // 10. Cover / TOC / chapter utilities
 // ---------------------------------------------------------------------------
 
-function cleanDocName(fileName: string): string {
-  let n = (fileName ?? "").replace(/\.(pdf|docx?|DOCX?|PDF)$/i, "");
-  if (/R0?48|R48/i.test(n) && /UN|UNR|ECE/i.test(n)) return "UN R48-09";
-  if (/R0?48|R48/i.test(n)) return "UN R48-09";
-  if (/GB[\s_]*4785/i.test(n) && /草案|征求意见|draft|V4\.3/i.test(n)) {
-    const ver = n.match(/V(\d+\.\d+(\.\d+)?)/);
-    return ver ? `GB 4785 草案 V${ver[1]}` : "GB 4785 草案";
-  }
-  if (/GB[\s_]*4785/i.test(n)) return "GB 4785-2019";
-  n = n.replace(/^\d{4}-\d{2}-\d{2}[_-]?/, "").replace(/_+/g, " ").trim();
-  return n.length > 24 ? n.slice(0, 24) + "…" : n;
-}
-
 function stripDuplicateChapterTitle(md: string, chapterId: number, title: string): string {
   const lines = md.split("\n");
   if (lines.length === 0) return md;
@@ -2761,14 +2772,7 @@ export async function buildHtml(
     }
   }
 
-  const sourceCards = (sourceDocuments.length
-    ? sourceDocuments
-    : [
-        { label: "A", name: "GB 4785 草案", meta: "" },
-        { label: "B", name: "GB 4785-2019", meta: "" },
-        { label: "C", name: "UN R48", meta: "" },
-      ]
-  )
+  const sourceCards = (sourceDocuments.length ? sourceDocuments : fallbackSourceCards())
     .map(
       (d) => `<div class="cover-card" data-doc="${esc(d.label)}">
         <div class="doc-label">${esc(d.label)}</div>
@@ -2975,11 +2979,12 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
         for (const f of fonts ?? []) await f.load().catch(() => {});
       });
       await page.waitForTimeout(800);
+      const PDF_META = pdfMeta();
       const pdf = await page.pdf({
         title: report.outline.title,
-        creator: `GB 4785 多版本对比报告 pipeline v${PIPELINE_VERSION}`,
-        subject: "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照（三版同框 · 4 维影响卡 · 参数总表 · 条款映射）",
-        keywords: "GB 4785, UN R48, AFS, 三版对比, 影响卡, 参数总表, 条款映射, CJK",
+        creator: `${PDF_META.creator} v${PIPELINE_VERSION}`,
+        subject: PDF_META.subject,
+        keywords: PDF_META.keywords,
         format: "A4",
         printBackground: true,
         margin: { top: "18mm", bottom: "18mm", left: "14mm", right: "14mm" },

@@ -22,6 +22,17 @@ import type { DiffResult, EngineChange, EngineParameter, EngineValueDiff } from 
 import type { ChapterChange } from "./chapterDiff";
 import { isNewDevice } from "./chapterDiff";
 import { DEVICE_RENUMBERING } from "./chapterStructural";
+// 版本身份 —— 从声明取。表头里的「A 草案标题」「B 现行版标题」「C 参照」
+// 都是**版本身份**，写死了换标准就会指向别的标准。
+import { versionDoc, versionLabel, versionKeyAt, versionRefLabel } from "@shared/versionMeta";
+
+const KEY_A = versionKeyAt(0);
+const KEY_B = versionKeyAt(1);
+const KEY_C = versionKeyAt(2);
+/** 表头里那一截：「A 草案」「B 现行版」「C 参照」。 */
+const HEAD_A = versionLabel(KEY_A);
+const HEAD_B = `${versionLabel(KEY_B)}版`;
+const HEAD_C = versionRefLabel(KEY_C);
 
 /**
  * The seven sub-sections of the change-points chapter. Each is built from
@@ -180,7 +191,7 @@ function build11_1(changes: EngineChange[], chapterAdded: ChapterChange[]): stri
   const parts: string[] = [
     "### 11.1 新增条款汇总",
     "",
-    "下列条款在 GB 4785-2019（B）中不存在，于 GB 4785 草案 V4.3.5（A）中首次出现。",
+    `下列条款在 ${versionDoc(KEY_B)}（${KEY_B}）中不存在，于 ${versionDoc(KEY_A)}（${KEY_A}）中首次出现。`,
     "",
   ];
 
@@ -191,7 +202,7 @@ function build11_1(changes: EngineChange[], chapterAdded: ChapterChange[]): stri
   if (chapterLevel.length > 0) {
     parts.push("#### 11.1.1 章节级新增（结构性重组 / 独立成章）");
     parts.push("");
-    parts.push("| 序号 | 编号 | A 草案标题 | A 页码 | C 参照 |");
+    parts.push(`| 序号 | 编号 | ${HEAD_A}标题 | ${KEY_A} 页码 | ${HEAD_C} |`);
     parts.push("|---|---|---|---|---|");
     chapterLevel.forEach((c, i) => {
       const cCol = c.cTitle ? `${cell(c.cTitle)}${c.cPage ? `（${c.cPage}）` : ""}` : "—";
@@ -205,7 +216,7 @@ function build11_1(changes: EngineChange[], chapterAdded: ChapterChange[]): stri
   if (sectionLevel.length > 0) {
     parts.push("#### 11.1.2 子条款级新增（新装置类 / 新功能条款）");
     parts.push("");
-    parts.push("| 序号 | 编号 | A 草案标题 | A 页码 | C 参照 |");
+    parts.push(`| 序号 | 编号 | ${HEAD_A}标题 | ${KEY_A} 页码 | ${HEAD_C} |`);
     parts.push("|---|---|---|---|---|");
     sectionLevel.forEach((c, i) => {
       const cCol = c.cTitle ? `${cell(c.cTitle)}${c.cPage ? `（${c.cPage}）` : ""}` : "—";
@@ -219,7 +230,7 @@ function build11_1(changes: EngineChange[], chapterAdded: ChapterChange[]): stri
   if (addedTopics.length > 0) {
     parts.push("#### 11.1.3 主题级新增（A/B 对照检出）");
     parts.push("");
-    parts.push("| 序号 | 条款主题 | 标签 | A 草案原文摘录 | 定位 |");
+    parts.push(`| 序号 | 条款主题 | 标签 | ${HEAD_A}原文摘录 | 定位 |`);
     parts.push("|---|---|---|---|---|");
     addedTopics.forEach((c, i) => {
       parts.push(
@@ -245,14 +256,14 @@ function build11_2(changes: EngineChange[], chapterRemoved: ChapterChange[]): st
   const parts: string[] = [
     "### 11.2 删除条款汇总",
     "",
-    "下列条款存在于 GB 4785-2019（B），在 GB 4785 草案 V4.3.5（A）中已移除。",
+    `下列条款存在于 ${versionDoc(KEY_B)}（${KEY_B}），在 ${versionDoc(KEY_A)}（${KEY_A}）中已移除。`,
     "",
   ];
 
   if (chapterRemoved.length > 0) {
     parts.push("#### 11.2.1 删除章节 / 子章节 / 附录（结构性删除）");
     parts.push("");
-    parts.push("| 序号 | 编号 | 层级 | B 现行版标题 | B 页码 | C 参照 |");
+    parts.push(`| 序号 | 编号 | 层级 | ${HEAD_B}标题 | ${KEY_B} 页码 | ${HEAD_C} |`);
     parts.push("|---|---|---|---|---|---|");
     chapterRemoved.forEach((c, i) => {
       const cCol = c.cTitle ? `${cell(c.cTitle)}${c.cPage ? `（${c.cPage}）` : ""}` : "—";
@@ -266,7 +277,7 @@ function build11_2(changes: EngineChange[], chapterRemoved: ChapterChange[]): st
   if (removedTopics.length > 0) {
     parts.push("#### 11.2.2 主题级删除（A/B 对照检出）");
     parts.push("");
-    parts.push("| 序号 | 条款主题 | 标签 | B 现行版原文摘录 | 定位 |");
+    parts.push(`| 序号 | 条款主题 | 标签 | ${HEAD_B}原文摘录 | 定位 |`);
     parts.push("|---|---|---|---|---|");
     removedTopics.forEach((c, i) => {
       parts.push(
@@ -301,7 +312,7 @@ function build11_3(changes: EngineChange[]): string {
     "",
     "下列条款 A/B 两侧均存在，但原文或关键参数已发生实质变化。下表按严重度从高到低排列。",
     "",
-    "| 序号 | 条款主题 | 标签 | B 现行版原文 | A 草案原文 | 锚点 |",
+    `| 序号 | 条款主题 | 标签 | ${HEAD_B}原文 | ${HEAD_A}原文 | 锚点 |`,
     "|---|---|---|---|---|---|",
     rows,
     "",
@@ -397,12 +408,12 @@ function build11_5(chapterAdded: ChapterChange[], changes: EngineChange[]): stri
   const parts: string[] = [
     "### 11.5 引入的新概念",
     "",
-    "A 草案首次引入的概念性条款（章节 / 子章节 / 附录层级，按关键词识别）。",
+    `${HEAD_A}首次引入的概念性条款（章节 / 子章节 / 附录层级，按关键词识别）。`,
     "",
   ];
 
   if (conceptChapters.length > 0) {
-    parts.push("| 序号 | 新概念 | 所在条款 | 层级 | A 草案页码 |");
+    parts.push(`| 序号 | 新概念 | 所在条款 | 层级 | ${HEAD_A}页码 |`);
     parts.push("|---|---|---|---|---|");
     conceptChapters.forEach((c, i) => {
       parts.push(

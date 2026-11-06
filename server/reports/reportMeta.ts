@@ -53,6 +53,8 @@ export type ReportMetaDecl = {
     rev: string;
   }>;
   titleTemplate: string;
+  /** PDF 文件属性（creator / subject / keywords）—— 模板 + 槽位。 */
+  pdfMeta: { creator: string; subject: string; keywords: string };
   chapterTitles: Record<string, string>;
   chapter11Sections: string[];
   appendixTitles: Record<string, string>;
@@ -68,6 +70,13 @@ export type TitleSlots = {
   labels: string[];
   /** 每个版本的文档名（「UN R48-09」）。 */
   docs: string[];
+  /**
+   * 每个版本的**去掉修订号**的文档名（「UN R48」）。
+   *
+   * 「UN R48-09」指的是第 09 号修订件，「UN R48」指的是那部法规 ——
+   * 两者在法规上不是一回事，所以**不能拿 doc 凑**。
+   */
+  docsNoRev?: string[];
 };
 
 const CN_DIGITS = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九"];
@@ -92,8 +101,13 @@ function fill(template: string, slots: Record<string, string>): string {
 }
 
 /** 由版本清单算出全部槽位。 */
-export function titleSlots(keys: string[], labels: string[], docs: string[]): TitleSlots {
-  return { keys, labels, docs };
+export function titleSlots(
+  keys: string[],
+  labels: string[],
+  docs: string[],
+  docsNoRev?: string[],
+): TitleSlots {
+  return { keys, labels, docs, docsNoRev };
 }
 
 /** 槽位 → 字符串字典（占位符名 → 值）。 */
@@ -113,6 +127,7 @@ export function slotValues(s: TitleSlots): Record<string, string> {
     countZhou: countZhou(n),
     lastKey: s.keys[s.keys.length - 1] ?? "",
     lastDoc: s.docs[s.docs.length - 1] ?? "",
+    lastDocNoRev: s.docsNoRev?.[s.docsNoRev.length - 1] ?? "",
   };
 }
 
@@ -136,6 +151,23 @@ export function composeChapter11Sections(s: TitleSlots): string[] {
 export function composeAppendixTitle(id: string, s: TitleSlots): string {
   const t = REPORT_META.appendixTitles[id];
   return t ? fill(t, slotValues(s)) : "";
+}
+
+/**
+ * PDF 的**文件属性**（creator / subject / keywords）。
+ *
+ * 这三项以前是渲染器里的字面量 —— 换标准后 PDF 的文件属性会**继续讲旧标准**，
+ * 而 PDF 正文是对的：读者在文件属性里看到的标准名与正文对不上，
+ * **没有人会去核对**，所以它比正文里的错更隐蔽。
+ */
+export function composePdfMeta(s: TitleSlots): { creator: string; subject: string; keywords: string } {
+  const t = REPORT_META.pdfMeta;
+  const slots = slotValues(s);
+  return {
+    creator: fill(t.creator, slots),
+    subject: fill(t.subject, slots),
+    keywords: fill(t.keywords, slots),
+  };
 }
 
 /** 全部附录标题（按声明顺序）。 */

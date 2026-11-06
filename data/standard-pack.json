@@ -24,7 +24,9 @@
       "fileExclude": [
         "2019"
       ],
-      "fileHelp": "含「GB 4785」且含「草案」的修订版"
+      "fileHelp": "含「GB 4785」且含「草案」的修订版",
+      "cardMeta": "原文 PDF",
+      "cardName": "GB 4785 草案"
     },
     {
       "key": "B",
@@ -43,7 +45,9 @@
       "fileExclude": [
         "草案|draft|修订"
       ],
-      "fileHelp": "含「GB 4785」且含「2019」的现行版"
+      "fileHelp": "含「GB 4785」且含「2019」的现行版",
+      "cardMeta": "原文 PDF",
+      "cardName": "GB 4785-2019"
     },
     {
       "key": "C",
@@ -59,9 +63,16 @@
         "UN[\\s_-]*R0?48"
       ],
       "fileExclude": [],
-      "fileHelp": "含「UN R48」的 UN 法规"
+      "fileHelp": "含「UN R48」的 UN 法规",
+      "cardMeta": "国际法规原文",
+      "cardName": "UN R48"
     }
   ],
+  "pdfMeta": {
+    "creator": "{standardFamily} 多版本对比报告 pipeline",
+    "subject": "{versionLabels} {countWord}法规横向对照（{countZhou}同框 · 4 维影响卡 · 参数总表 · 条款映射）",
+    "keywords": "{standardFamily}, {lastDocNoRev}, AFS, {countZhou}对比, 影响卡, 参数总表, 条款映射, CJK"
+  },
   "titleTemplate": "{standardFamily} 多版本横向对比研究报告（{versionLabels} {countWord}对照）",
   "chapterTitles": {
     "0": "执行摘要",

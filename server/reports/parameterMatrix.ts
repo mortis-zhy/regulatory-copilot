@@ -50,10 +50,12 @@ export type Version = string;
 import {
   VERSION_META, versionLabel, versionDoc, versionStd, versionStatus,
   versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys,
+  versionKeyAt, versionRefLabel, versionDocNoFamily, versionCardMeta, versionCardName,
 } from "@shared/versionMeta";
 export {
   VERSION_META, versionLabel, versionDoc, versionStd, versionStatus,
   versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys,
+  versionKeyAt, versionRefLabel, versionDocNoFamily, versionCardMeta, versionCardName,
 };
 
 /**

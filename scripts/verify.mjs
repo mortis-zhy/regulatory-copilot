@@ -39,6 +39,8 @@ import { versionsOf, versionLabel, versionDoc } from "../dist/parameterMatrix.js
 // 单独构建一份，是为了让闸门能**在报告上直接跑它**，
 // 断言「投影不许比源少」。
 import { extractRumors } from "../dist/trustChecks.js";
+// 认版本的唯一实现 —— 判据在声明里。闸门要直接驱动它。
+import { cleanDocName, recognizeVersionByFileName } from "../dist/versionFileName.js";
 // 上游指纹 —— 让「这份报告是从哪几份上游算出来的」可判定。
 import { computeProvenance, describeProvenanceDiff } from "../dist/provenance.js";
 
@@ -3523,6 +3525,51 @@ check("every hard-coded standard name in the source is on the swap ledger", () =
         .join("\n        "),
   );
   return `${total[1]} 处硬编码已登记（${rules[1]} 条规则）· 换标准清单无漏项`;
+});
+
+check("the renderer recognizes versions by the declaration's own rules", () => {
+  // 「这份文件是哪一版」原来有**两份实现**：
+  //   ① `python_service/main.py` —— 上传时校验文件名、推断标签；
+  //   ② `htmlRender*.ts` —— 渲染时把文件名显示成封面卡片上的版本名。
+  //
+  // 两份漂移的表现是**封面上的版本名认错了**：
+  // 「A 版是 GB 4785-2019」这种颠倒的东西，报告照出、闸门全绿，
+  // 而读者不会去核对 —— 那是**静默说错**。
+  //
+  // 判据（一）：**源码级** —— 渲染层不许再自己手写标准名正则，
+  // 它必须走 `shared/versionFileName.ts`（判据在声明里）。
+  for (const rel of ["server/reports/htmlRender.ts", "server/reports/htmlRenderV8.ts"]) {
+    const src = read(rel);
+    assert(
+      /from "@shared\/versionFileName"/.test(src),
+      `${rel} 没有走共用的认版本实现 —— 渲染层与上传校验又变成两份实现了`,
+    );
+    assert(
+      !/R0\?48\|R48/i.test(src),
+      `${rel} 里还留着**手写的标准名正则** —— 它和声明里的判据迟早漂移，` +
+        "而漂移的表现是封面上的版本名认错了",
+    );
+  }
+
+  // 判据（二）：**行为级** —— 声明里每一版的源文件名送进 cleanDocName()，
+  // 必须回到这一版的 doc。认错了，封面就讲错标准。
+  const pack = JSON.parse(read("data/standard-pack.json"));
+  const rows = [];
+  for (const v of pack.versions ?? []) {
+    const got = cleanDocName(v.sourceFile);
+    rows.push(`${v.key}: ${got}`);
+    assert(
+      got === v.doc,
+      `封面卡片上的版本名认错了：${v.sourceFile} → 「${got}」，` +
+        `而声明说这一版叫「${v.doc}」`,
+    );
+    assert(
+      recognizeVersionByFileName(v.sourceFile) === v.key,
+      `文件名认版本认错了：${v.sourceFile} → ` +
+        `${recognizeVersionByFileName(v.sourceFile)}（应为 ${v.key}）`,
+    );
+  }
+  return rows.join(" · ");
 });
 
 check("the trust projection does not lose rows", () => {

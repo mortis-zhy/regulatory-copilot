@@ -21,7 +21,7 @@ import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
 // Aliased: reportV6.ts already has a local buildParameterMatrix() that builds
 // the §11.3.3 A-vs-B matrix. Same name, different job — the import below is the
 // three-version matrix and would be shadowed by the local declaration.
-import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel, versionsOf, versionDoc, versionStd, versionStatus, versionLabel, versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys } from "./parameterMatrix";
+import { buildParameterMatrix as buildParamMatrix, renderMatrixTable, renderMatrixSummaryTable, renderMatrixDetails, groupRows, loadSourceCorpus, verdictLabel, versionsOf, versionDoc, versionStd, versionStatus, versionLabel, versionDesc, versionRev, versionLabelNoRev, versionDocNoRev, versionKeys, versionKeyAt, versionRefLabel, versionCardMeta } from "./parameterMatrix";
 // 条款标签修复表（scripts/fix_clause_labels.py 生成）—— 把 MinerU 揉坏的 R48 行标签还原。
 import FIXED_CLAUSES from "../../data/clause-label-fixes.json";
 import COVERAGE_AUDIT from "../../data/coverage-audit.json";
@@ -312,7 +312,7 @@ function qualitativeCRef(e: any): string | null {
   }
   if (!bits.length) return null;
   return (
-    `    - C 参照（§${c.clause}，第 ${c.page} 页）：${bits.join("；")}`
+    `    - ${versionRefLabel("C")}（§${c.clause}，第 ${c.page} 页）：${bits.join("；")}`
   );
 }
 
@@ -516,8 +516,8 @@ function build12_quantitativeTables(data: Record<string, any>): string {
         return `| **${label}** | ${page} | ${summary} | 见下方表格内容 |`;
       };
       out.push("| 来源 | 页码 | 表头摘要 | 完整内容 |", "|---|---|---|---|");
-      out.push(cmp("A 草案", at));
-      out.push(cmp("B 现行", bt));
+      out.push(cmp(versionLabel("A"), at));
+      out.push(cmp(versionLabel("B"), bt));
       out.push(cmp(versionLabel("C"), ct));
       out.push("");
       const emit = (label: string, t: any | undefined) => {
@@ -525,8 +525,8 @@ function build12_quantitativeTables(data: Record<string, any>): string {
         const trimmed = htmlTableToText(String(t.content ?? "")).replace(/<[^>]+>/g, "").slice(0, 1500);
         out.push(`**${label}**：`, "", "```", trimmed, "```", "");
       };
-      emit("A 草案", at);
-      emit("B 现行", bt);
+      emit(versionLabel("A"), at);
+      emit(versionLabel("B"), bt);
       emit(versionLabel("C"), ct);
       out.push("---");
       out.push("");
@@ -542,8 +542,8 @@ function build12_quantitativeTables(data: Record<string, any>): string {
     }
     out.push("");
   };
-  summary("A 草案", aTables.length, aCat);
-  summary("B 现行", bTables.length, bCat);
+  summary(versionLabel("A"), aTables.length, aCat);
+  summary(versionLabel("B"), bTables.length, bCat);
   summary(versionLabel("C"), cTables.length, cCat);
   out.push("**使用提示**：本节按主题逐表展示 A/B/C 三方原始表格内容（截断到 1500 字）。**已知提取缺陷**：B p23 传感器安装高度表在提取时出现列字符交错（源数据如此，非排版问题）——该表请回查 B 原件 p23 为准。");
   return out.join("\n");
@@ -701,7 +701,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   out.push("");
   if (!aOnly.length) out.push("_(无)_");
   else {
-    out.push("| 灯具名称 | A 草案光色 | 说明 |", "|---|---|---|");
+    out.push(`| 灯具名称 | ${versionLabel("A")}光色 | 说明 |`, "|---|---|---|");
     for (const n of aOnly) out.push(`| ${n} | ${aMap.get(normRow(n))?.color ?? "—"} | A 新装置 / A 章节重组后归入此表 |`);
   }
   out.push("");
@@ -710,7 +710,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   out.push("");
   if (!bOnly.length) out.push("_(无)_");
   else {
-    out.push("| 灯具名称 | B 现行光色 | 说明 |", "|---|---|---|");
+    out.push(`| 灯具名称 | ${versionLabel("B")}光色 | 说明 |`, "|---|---|---|");
     for (const n of bOnly) out.push(`| ${n} | ${bMap.get(normRow(n))?.color ?? "—"} | 工程师核验：A 草案是否遗漏此灯具 |`);
   }
   out.push("");
@@ -719,7 +719,7 @@ function build13_lampColorDiff(data: Record<string, any>): string {
   out.push("");
   if (!diff.length) out.push("_(无 — A/B 共有灯具光色一致)_");
   else {
-    out.push("| 灯具名称 | A 草案光色 | B 现行光色 |", "|---|---|---|");
+    out.push(`| 灯具名称 | ${versionLabel("A")}光色 | ${versionLabel("B")}光色 |`, "|---|---|---|");
     for (const d of diff) out.push(`| ${d.name} | ${d.a} | ${d.b} |`);
   }
   out.push("");
@@ -4355,7 +4355,7 @@ export async function buildMinerUReport(
         return [
           "### 11.2 删除条款汇总",
           "",
-          "经核验：A 草案（V4.3.5）相对 B（GB 4785-2019）**未删除任何章节级结构或主题级条款**。",
+          `经核验：${versionLabel("A")}（${versionRev("A")}）相对 ${versionKeys()[1]}（${versionDoc(versionKeys()[1])}）**未删除任何章节级结构或主题级条款**。`,
           "",
           "| 核验维度 | 数量 | 说明 |",
           "|---|---|---|",
@@ -4510,6 +4510,7 @@ export async function buildMinerUReport(
     vKeys,
     vKeys.map((v) => versionLabel(v)),
     vKeys.map((v) => versionDoc(v)),
+    vKeys.map((v) => versionDocNoRev(v)),
   );
   const appTitle = (id: string) => composeAppendixTitle(id, slots);
 
@@ -4573,7 +4574,7 @@ export async function buildMinerUReport(
       return {
         label: v,
         name: n ? `${versionDoc(v)}（${n} 页）` : versionDoc(v),
-        meta: v === "C" ? "国际法规原文" : "原文 PDF",
+        meta: versionCardMeta(v),
       };
     }),
     generatedAt: new Date().toISOString(),

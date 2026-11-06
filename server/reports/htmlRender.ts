@@ -10,6 +10,22 @@
  */
 
 import type { ReportOutline, AppendixSpec } from "./reportGenerator";
+// 认版本、兜底卡片、PDF 文件属性 —— 全部从声明取。
+import { cleanDocName } from "@shared/versionFileName";
+import { fallbackSourceCards, versionKeys, versionLabel, versionDoc, versionDocNoRev } from "@shared/versionMeta";
+import { composePdfMeta, titleSlots } from "./reportMeta";
+export { cleanDocName };
+
+/** PDF 文件属性 —— 声明里的模板 + 版本槽位。 */
+const _vKeys = versionKeys();
+const PDF_META = composePdfMeta(
+  titleSlots(
+    _vKeys,
+    _vKeys.map((k) => versionLabel(k)),
+    _vKeys.map((k) => versionDoc(k)),
+    _vKeys.map((k) => versionDocNoRev(k)),
+  ),
+);
 
 export type ReportChapter = { id: number; title: string; markdown: string; page?: number };
 export type ReportAppendix = { id: string; title: string; markdown?: string; page?: number };
@@ -181,26 +197,6 @@ export function mdToHtml(md: string): string {
 }
 
 /**
- * Turn a raw file name into a clean cover-card label:
- *   "源文件_A_GB4785草案V4.3.5_103页.pdf" → "GB 4785 草案 V4.3.5"
- *   "源文件_B_GB4785-2019_81页.pdf" → "GB 4785-2019"
- *   "源文件_C_UN-R48-09_147页.pdf" → "UN R48-09"
- */
-export function cleanDocName(fileName: string): string {
-  let n = fileName.replace(/\.(pdf|docx?|DOCX?|PDF)$/i, "");
-  if (/R0?48|R48/i.test(n) && /UN|UNR|ECE/i.test(n)) return "UN R48-09";
-  if (/R0?48|R48/i.test(n)) return "UN R48-09";
-  if (/GB[\s_]*4785/i.test(n) && /草案|征求意见|draft|V4\.3/i.test(n)) {
-    const ver = n.match(/V(\d+\.\d+(\.\d+)?)/);
-    return ver ? `GB 4785 草案 V${ver[1]}` : "GB 4785 草案";
-  }
-  if (/GB[\s_]*4785/i.test(n)) return "GB 4785-2019";
-  // generic fallback: strip date prefixes and internal underscores
-  n = n.replace(/^\d{4}-\d{2}-\d{2}[_-]?/, "").replace(/_+/g, " ").trim();
-  return n.length > 24 ? n.slice(0, 24) + "…" : n;
-}
-
-/**
  * Remove the chapter's OWN leading title heading from its markdown — buildHtml
  * already renders `<h2 class="chapter-title">` — but ONLY when the first line
  * really is a duplicate of the chapter title (`# 第 3 章 …` / `第3章 …` /
@@ -237,11 +233,7 @@ export function buildHtml(report: RenderableReport): string {
     .map((a) => `<div class="toc-row"><span class="toc-num">${esc(a.id)}</span><span class="toc-title">${esc(a.title)}</span><span class="toc-dots"></span><span class="toc-page">${a.page ?? ""}</span></div>`)
     .join("");
 
-  const sourceCards = (sourceDocuments.length ? sourceDocuments : [
-    { label: "A", name: "GB 4785 草案", meta: "" },
-    { label: "B", name: "GB 4785-2019", meta: "" },
-    { label: "C", name: "UN R48", meta: "" },
-  ])
+  const sourceCards = (sourceDocuments.length ? sourceDocuments : fallbackSourceCards())
     .map((d) => `<div class="src-card"><div class="src-label">${esc(d.label)}</div><div class="src-name">${esc(cleanDocName(d.name))}</div><div class="src-meta">${esc(d.meta)}</div></div>`)
     .join("");
 
@@ -404,9 +396,9 @@ export async function renderPdfFromReport(report: RenderableReport): Promise<Buf
     await page.waitForTimeout(300);
     const pdf = await page.pdf({
       title: report.outline.title,
-      creator: "GB 4785 多版本对比报告 pipeline v6.2",
-      subject: "A 草案 / B 现行 / C UN R48-09 三版本法规横向对照",
-      keywords: "GB 4785, UN R48, AFS, 颜色, 光强, 倾斜度, 核验, 追溯, 法规对比",
+      creator: `${PDF_META.creator} v6.2`,
+      subject: PDF_META.subject,
+      keywords: PDF_META.keywords,
       format: "A4",
       printBackground: true,
       margin: { top: "22mm", bottom: "20mm", left: "18mm", right: "18mm" },

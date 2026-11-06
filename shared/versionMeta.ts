@@ -69,6 +69,10 @@ export type VersionMeta = {
   status: string;
   /** 修订号：「V4.3.5」「2019」「09」。 */
   rev: string;
+  /** 封面卡片上那一行副标题（「原文 PDF」「国际法规原文」）。 */
+  cardMeta?: string;
+  /** 封面卡片上的文档名 —— 语料没有清单时用的兜底。 */
+  cardName?: string;
 };
 
 export const VERSION_META: ReadonlyArray<VersionMeta> = (
@@ -175,6 +179,60 @@ export function versionKeys(): string[] {
 /** 这一版的**状态**（第 2 章概况表那一列）。 */
 export function versionStatus(v: string): string {
   return VERSION_META.find((m) => m.key === v)?.status ?? "";
+}
+
+/**
+ * 第 i 版（0 起）的键 —— 「A」「B」「C」。
+ *
+ * 写死 "C" 的地方（「C 列」「C 参照」）在换标准后会**指着不存在的那一列**说话，
+ * 而那不会报错：表格少一列，报告照出，读者只会以为那一版没改。
+ * 所以按**位置**取键；取不到就是空串 —— 宁可空着，不可错着。
+ */
+export function versionKeyAt(i: number): string {
+  return VERSION_META[i]?.key ?? "";
+}
+
+/**
+ * 文档名去掉**标准族前缀**：「GB 4785 草案 V4.3.5」→「草案 V4.3.5」。
+ *
+ * 有些句子里的标准名是**省略**的（「A（草案 V4.3.5）」而不是「A（GB 4785 草案 V4.3.5）」）。
+ * 省略的那一截要由声明推出来，不能由代码写死。
+ */
+export function versionDocNoFamily(v: string): string {
+  const fam = (PACK_JSON as unknown as { standardFamily?: string }).standardFamily ?? "";
+  const doc = versionDoc(v);
+  return fam && doc.startsWith(fam) ? doc.slice(fam.length).trim() : doc;
+}
+
+/**
+ * 「参照」角色的列名：「C 参照」。
+ *
+ * 末版只作参照、不参与变化判定 —— 这个说法是**列的性质**，不是标准名，
+ * 所以由键拼出来：换一套标准，「C 参照」会自己变成「X 参照」。
+ */
+export function versionRefLabel(v: string): string {
+  return `${v} 参照`;
+}
+
+/** 封面卡片上的那一行副标题（声明里的 `cardMeta`）。 */
+export function versionCardMeta(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.cardMeta ?? "";
+}
+
+/** 封面卡片上的文档名（声明里的 `cardName`；没声明就用文档名）。 */
+export function versionCardName(v: string): string {
+  return VERSION_META.find((m) => m.key === v)?.cardName ?? versionDoc(v);
+}
+
+/**
+ * 语料**没有**源文档清单时的兜底卡片。
+ *
+ * 以前这里是三行字面量（"A" / "GB 4785 草案" / …）——
+ * 那是**报告里唯一一处不依赖语料的版本清单**，
+ * 换标准后它会变成「三张 GB 4785 的卡片」摆在**别的标准**的报告封面上。
+ */
+export function fallbackSourceCards(): Array<{ label: string; name: string; meta: string }> {
+  return VERSION_META.map((m) => ({ label: m.key, name: m.cardName ?? m.doc, meta: "" }));
 }
 
 /**
