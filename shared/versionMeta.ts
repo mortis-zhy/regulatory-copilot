@@ -146,6 +146,17 @@ export function versionLabelNoRev(v: string): string {
   return stripRev(versionLabel(v), v);
 }
 
+/**
+ * 文档名的**紧凑写法**：「GB 4785-2019」→「GB4785-2019」。
+ *
+ * 两套写法都在用 —— 正式行文用带空格的（「GB 4785-2019」），
+ * 文件名与表头里那一截用紧凑的（「GB4785-2019」）。
+ * 所以两种都得有：不能一处一种、另一处另一种。
+ */
+export function versionDocKey(v: string): string {
+  return versionDoc(v).replace(/\s/g, "");
+}
+
 /** 文档名去掉末尾的修订号：「GB 4785 草案 V4.3.5」→「GB 4785 草案」。 */
 export function versionDocNoRev(v: string): string {
   return stripRev(versionDoc(v), v);

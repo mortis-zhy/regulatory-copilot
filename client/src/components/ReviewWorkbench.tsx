@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import STANDARD_PACK from "@data/standard-pack.json";
-import { versionLabel, versionDoc, versionRev } from "@shared/versionMeta";
+import { versionLabel, versionDocKey, versionRev } from "@shared/versionMeta";
 
 type Counts = {
   confirmed: number;
@@ -564,7 +564,7 @@ export default function ReviewWorkbench() {
               <table className="w-full min-w-[720px] text-xs">
                 <thead>
                   <tr style={{ background: "#fdf3df" }}>
-                    {["指标", `${versionLabel("B")}（${versionDoc("B")}）`, `${versionLabel("A")}（${versionRev("A")}）`, "核验结论", "出处状态"].map((h) => (
+                    {["指标", `${versionLabel("B")}（${versionDocKey("B")}）`, `${versionLabel("A")}（${versionRev("A")}）`, "核验结论", "出处状态"].map((h) => (
                       <th key={h} className="px-4 py-2 text-left font-semibold" style={{ color: "#a17334" }}>{h}</th>
                     ))}
                   </tr>

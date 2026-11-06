@@ -35,6 +35,10 @@ import {
 } from "../dist/reportMeta.js";
 // 版本清单/展示名/文档名 —— 标题槽位全靠这三个推导。
 import { versionsOf, versionLabel, versionDoc } from "../dist/parameterMatrix.js";
+// trustChecks：客户端「审阅工作台」的数据来源（可信度投影）。
+// 单独构建一份，是为了让闸门能**在报告上直接跑它**，
+// 断言「投影不许比源少」。
+import { extractRumors } from "../dist/trustChecks.js";
 // 上游指纹 —— 让「这份报告是从哪几份上游算出来的」可判定。
 import { computeProvenance, describeProvenanceDiff } from "../dist/provenance.js";
 
@@ -3519,6 +3523,45 @@ check("every hard-coded standard name in the source is on the swap ledger", () =
         .join("\n        "),
   );
   return `${total[1]} 处硬编码已登记（${rules[1]} 条规则）· 换标准清单无漏项`;
+});
+
+check("the trust projection does not lose rows", () => {
+  // 客户端「审阅工作台」的每个模块都是**投影** ——
+  // 投影漏掉一行，界面上就少一行，而界面**不会说**「我漏了」。
+  //
+  // 这一关断言：**源表有几行，投影里就有几条**。
+  //
+  // 源侧独立数一遍（不看投影的实现）：找那张「指标 × 两版原文」的表，
+  // 数它后面带序号的行。判据是**列的形状**（6 列 · 第 2 列是指标 ·
+  // 第 3 列是核验状态），不认列的名字 —— 换一套标准也认得出来。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const md = (rep.chapters ?? []).map((c) => c.markdown ?? "").join("\n");
+
+  let srcRows = 0;
+  let inTable = false;
+  for (const line of md.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("|")) {
+      inTable = false;
+      continue;
+    }
+    const cells = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
+    if (!inTable) {
+      if (cells.length === 6 && /指标/.test(cells[1] ?? "") && /核验|状态/.test(cells[2] ?? "")) {
+        inTable = true;
+      }
+      continue;
+    }
+    if (/^\d{1,3}$/.test(cells[0] ?? "")) srcRows++;
+  }
+
+  const projected = extractRumors(md).length;
+  assert(
+    projected === srcRows,
+    `可信度投影比源表少：源表 ${srcRows} 行，投影 ${projected} 条 —— ` +
+      "界面会少显示几行，而界面**不会说**「我漏了」。",
+  );
+  return `投影 ${projected} 条 = 源表 ${srcRows} 行（投影不许比源少）`;
 });
 
 check("the declaration can recognize its own source files", () => {

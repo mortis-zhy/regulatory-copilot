@@ -137,23 +137,50 @@ export type Rumor = {
 
 export function extractRumors(md: string): Rumor[] {
   const out: Rumor[] = [];
+  let inTable = false;
   for (const line of md.split("\n")) {
     const t = line.trim();
-    if (!t.startsWith("|")) continue;
-    if (!/GB4785指标|网传|行业流传/.test(t)) continue;
+    if (!t.startsWith("|")) {
+      inTable = false;
+      continue;
+    }
     const c = t.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
-    if (c.length < 5) continue;
-    const metric = c[2] || c[1] || "";
-    if (!metric || metric === "指标" || /^-{3,}$/.test(metric)) continue;
-    const bRaw = c[3] ?? "";
-    const aRaw = c[4] ?? "";
+    if (!inTable) {
+      // 表头：**按列的形状认**，不按列的名字认。
+      //
+      // 这张表以前在 §11.0，DR-010 之后搬到了 §11.4，列也改了
+      // （现在第 1 列是序号、第 2 列才是指标）。
+      // 原来这里按「行里含 GB4785指标 / 网传 / 行业流传」来找行 ——
+      // 那是**按本标准的表头文字找**，表一换位置就整张找不到，
+      // 于是客户端的「网传指标证伪」模块**一直是空的**，
+      // 而界面显示的是「本报告未包含网传指标核验表」——
+      // **那是「错着说没有」**，不是「空着」。
+      //
+      // 现在只认列的**位置与形状**（6 列 · 第 2 列是指标 · 第 3 列是核验状态），
+      // 不认列的名字 —— 换一套标准、这张表换个位置，都还认得出来。
+      if (c.length === 6 && /指标/.test(c[1] ?? "") && /核验|状态/.test(c[2] ?? "")) {
+        inTable = true;
+      }
+      continue;
+    }
+    if (/^-+$/.test((c[0] ?? "").replace(/[:\s]/g, ""))) continue; // 分隔行
+    if (c.length < 6) {
+      inTable = false;
+      continue;
+    }
+    const metric = c[1] ?? "";
+    if (!metric) continue;
+    // 列序：序号 | 指标 | 核验状态 | 声称值 | B 版原文 | A 版原文
+    const verdict = c[2] ?? "";
+    const bRaw = c[4] ?? "";
+    const aRaw = c[5] ?? "";
     const bFound = bRaw !== "—" && bRaw !== "";
     const aFound = aRaw !== "—" && aRaw !== "";
     out.push({
       metric,
       bValue: bRaw,
       aValue: aRaw,
-      verdict: c[5] ?? "",
+      verdict,
       status: bFound && aFound
         ? "两版均有出处"
         : aFound

@@ -39,6 +39,10 @@ const ENTRIES = [
   ["server/reports/typedTables.ts", "dist/typedTables.js"],
   ["server/reports/reportGenerator.ts", "dist/reportGenerator.js"],
   ["server/reports/closureLedger.ts", "dist/closureLedger.js"],
+  // trustChecks：客户端「审阅工作台」的数据来源（可信度投影）。
+  // 单独构建一份，是为了让闸门能**在报告上直接跑它**，
+  // 断言「投影不许比源少」（§11.4 有 9 条指标 → 投影里也必须有 9 条）。
+  ["server/reports/trustChecks.ts", "dist/trustChecks.js"],
   // reportV6 owns the chapter builders and the executive summary. It is
   // bundled into dist/index.js, but index.js does not re-export it, so the
   // offline rebuild path (rebuild_report.mjs) could not reach buildMinerUReport.
