@@ -74,8 +74,19 @@ const GATES = (() => {
     );
   }
   const s = JSON.parse(fs.readFileSync(p, "utf-8"));
-  if (!s.total || s.failed) {
-    throw new Error(`verify-summary.json 内容异常（total=${s.total} failed=${s.failed}）—— 先把闸门跑绿。`);
+  // 唯一的红是**讲稿自己的关**时，允许出稿 ——
+  //
+  // 不然会死锁：「改了数 → 闸门红 → 讲稿出不来 → 数永远改不掉」。
+  // 别的关红了就**拒绝出稿**（拿一个没过闸门的数去出稿 = 拿没核过的数糊过去）。
+  const own = new Set(
+    (s.failedNames ?? []).filter((n) => n.includes("briefing deck")),
+  );
+  const others = (s.failedNames ?? []).filter((n) => !own.has(n));
+  if (!s.total || (s.failed && others.length)) {
+    throw new Error(
+      `verify-summary.json 内容异常（total=${s.total} failed=${s.failed}：` +
+        `${others.join("、") || "无"}）—— 先把闸门跑绿。`,
+    );
   }
   return s;
 })();

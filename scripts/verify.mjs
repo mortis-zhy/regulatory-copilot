@@ -93,6 +93,18 @@ const sha256 = (rel) => createHash("sha256").update(readFileSync(resolve(ROOT, r
 
 let failures = 0;
 let checks = 0;
+/**
+ * 失败的**名字** —— 讲稿的出稿脚本要看它。
+ *
+ * 为什么：讲稿里那些数来自机器产物（闸门数、页数、引文命中数……），
+ * 而「讲稿里的数对不对」这件事本身要由闸门查 →
+ * 于是有一道「讲稿自己的关」。
+ *
+ * 如果那道关红了就**一律拒绝出稿**，就会死锁：
+ * 「改了数 → 闸门红 → 讲稿出不来 → 数永远改不掉」。
+ * 所以出稿脚本只认**别的**红 —— 讲稿自己的关红了，允许出稿 ✓。
+ */
+const failedNames = [];
 
 function check(name, fn) {
   checks++;
@@ -101,6 +113,7 @@ function check(name, fn) {
     console.log(`  PASS  ${name}${detail ? ` — ${detail}` : ""}`);
   } catch (e) {
     failures++;
+    failedNames.push(name);
     console.log(`  FAIL  ${name}\n        ${e.message.split("\n").join("\n        ")}`);
   }
 }
@@ -5314,6 +5327,98 @@ check("the delivered page count matches the recorded baseline", () => {
   return `${pages} 页（基线 ${base.pages}，漂移 ${(drift * 100).toFixed(1)}%）`;
 });
 
+check("the briefing deck's numbers come from the machine", () => {
+  // 讲稿里那些数必须来自机器 —— 而且**与交付件对得上**。
+  //
+  // 今天这同一类病连犯三次：「249 页」（交付件早就是 278 页）、
+  // 「448 条要求」（现在是 462）、「11 个 _test_*.mjs」（现在是 17）。
+  // 机制已经修好（全部改成机器注入），但**机制要有关守着** ——
+  // 否则下一次有人加个手写数字，还是没人发现。
+  //
+  // 查两处：
+  //   ① 讲稿**正文**的数 → 从讲稿 PDF 里把文本抽出来，对上机器产物；
+  //   ② 讲稿**图**里的数 → 图是由那段 HTML 现渲染的 PNG（文本抽不出来），
+  //      所以查**源码里用的是插值**（`${...}`），不是查图。
+  //
+  // 另外：PDF 文本里出现 `${` 就是**没解析的占位符** ——
+  // 双引号字符串不插值那个坑（讲稿第 9 页印出过 `${GATES.total}`）。
+  const deckDir = resolve(ROOT, "delivery", "宣讲件");
+  const pdfs = existsSync(deckDir)
+    ? readdirSync(deckDir).filter((f) => f.endsWith(".pdf"))
+    : [];
+  assert(pdfs.length > 0, "delivery/宣讲件/ 里没有讲稿 PDF —— 讲稿不在仓库里？");
+
+  const pdfPath = resolve(deckDir, pdfs[0]);
+  const r = spawnSync(
+    "python",
+    [
+      "-c",
+      "import sys;sys.stdout.reconfigure(encoding='utf-8',errors='replace');import base64,fitz;d=fitz.open(base64.b64decode(sys.stdin.read().strip()).decode('utf-8'));print(chr(10).join(p.get_text() for p in d))",
+    ],
+    { cwd: ROOT, encoding: "utf-8", input: Buffer.from(pdfPath, "utf-8").toString("base64") },
+  );
+  assert(r.status === 0, `讲稿 PDF 读不出来：\n        ${(r.stderr || "").slice(-200)}`);
+  const text = r.stdout || "";
+
+  assert(
+    !text.includes("${"),
+    "讲稿里印出了**没解析的占位符**（`${`）—— 双引号字符串不插值，" +
+      "或者模板里少了个反引号。查 render_briefing.mjs。",
+  );
+
+  // ① 正文里的数：页数 / 要求条数 / harness 条数 / 闸门数
+  const req = JSON.parse(read("data/requirement-ledger.json")).totals ?? {};
+  const harnessSrc = read("scripts/verify.mjs");
+  const hm = harnessSrc.match(/for \(const t of \[([\s\S]*?)\]\) \{/);
+  const harnessN = hm ? [...hm[1].matchAll(/"([^"]+)"/g)].length : 0;
+  assert(harnessN > 0, "数不出 harness 里有几个 _test_*.mjs —— 判据失效了");
+
+  const want = [
+    [`交付件 ${GATE_PAGES} 页`, "交付件页数"],
+    [`${req.requirements} 条要求`, "要求台账条数"],
+    [`${harnessN} 个 _test_`, "harness 里 _test_*.mjs 的条数"],
+  ];
+  const missing = want.filter(([s]) => !text.includes(s)).map(([, w]) => w);
+  assert(
+    missing.length === 0,
+    `讲稿正文里的数与机器产物对不上：${missing.join("、")} —— ` +
+      `讲稿是**对外**的东西，它说的数与交付件对不上就是「错着」。` +
+      `重新出稿：node scripts/render_briefing.mjs`,
+  );
+
+  // ② 图里的数：源码里必须是**插值**，不是手写字面量
+  const deckSrc = read("scripts/render_briefing.mjs");
+  const slots = [
+    "${PAGES}",
+    "${GATES.total}",
+    "${QUOTES.hits}",
+    "${QUOTES.total}",
+    "${HARNESS_N}",
+    "${LIMITS}",
+    "${LIMIT_A}",
+    "${LIMIT_B}",
+    "${LIMIT_C}",
+    "${REQ_TOTAL}",
+    "${REQ_COVERED}",
+    "${REQ_APPENDIX}",
+    "${REQ_QUOTED}",
+    "${REQ_NA}",
+    "${REQ_GAPS}",
+    "${H_COMPARABLE}",
+    "${H_DIFFERENT}",
+    "${H_SAME}",
+    "${H_UNPAIRED}",
+  ];
+  const notInjected = slots.filter((x) => !deckSrc.includes(x));
+  assert(
+    notInjected.length === 0,
+    `讲稿里这些数**没有**从机器取（应该是插值）：${notInjected.join("、")} —— ` +
+      `图里的数抽不出文本，只能查源码；手写的数一定会过期。`,
+  );
+
+  return `正文 ${want.length} 个数对得上 · 图里 ${slots.length} 个数是插值 · 0 个占位符`;
+});
+
 check("every requirement clause has a disposition", () => {
   // 「真缺口 0」过去只对**可量化**的那一半成立：445 条要求条款里
   // 290 条**无数值**（「紧急制动信号应自动开启与关闭」「应独立于其他灯具工作」）
@@ -5818,6 +5923,41 @@ console.log(`\n=== ${checks - failures}/${checks} checks passed ===`);
 // **不在稿子里手写数字** —— 手写的数字一定会过期。本项目已经踩过一次：
 // 加了一道新闸门（参数查询对空格不敏感），稿子还写着旧的 97，交付件里
 // 的数字就与当场跑出来的结果对不上。这正是「宁可空着，不可错着」要防的。
+// —— 最后一道：讲稿里的「N 项闸门」必须等于**本次**的总数 ——
+//
+// 放在这里（总数确定之后、机器产物落盘之前）是因为它**依赖总数**：
+// 放在 check() 里的话，跑到这一关时后面还有几关没跑，总数还不确定。
+//
+// 循环（讲稿的数来自机器 → 机器又查讲稿）在这里断开：
+// 讲稿的出稿脚本在「唯一的红是讲稿自己的关」时允许出稿 ✓。
+{
+  const deckDir = resolve(ROOT, "delivery", "宣讲件");
+  const pdfs = existsSync(deckDir)
+    ? readdirSync(deckDir).filter((f) => f.endsWith(".pdf"))
+    : [];
+  if (pdfs.length) {
+    const deckPath = resolve(deckDir, pdfs[0]);
+    const r = spawnSync(
+      "python",
+      [
+        "-c",
+        "import sys;sys.stdout.reconfigure(encoding='utf-8',errors='replace');import base64,fitz;d=fitz.open(base64.b64decode(sys.stdin.read().strip()).decode('utf-8'));print(chr(10).join(p.get_text() for p in d))",
+      ],
+      { cwd: ROOT, encoding: "utf-8", input: Buffer.from(deckPath, "utf-8").toString("base64") },
+    );
+    const text = r.status === 0 ? r.stdout || "" : "";
+    if (!text.includes(`${checks} 项闸门`)) {
+      failures++;
+      failedNames.push("the briefing deck's gate count");
+      console.log(
+        `  FAIL  the briefing deck's gate count — 讲稿里写的不是「${checks} 项闸门」`,
+      );
+    } else {
+      console.log(`  PASS  the briefing deck's gate count — ${checks} 项`);
+    }
+  }
+}
+
 try {
   writeFileSync(
     resolve(ROOT, "dist", "verify-summary.json"),
@@ -5832,6 +5972,9 @@ try {
         pages: GATE_PAGES,
         // 附录 H 引文回源命中数 —— 讲稿那句「N/N 回源命中」从这儿读。
         quotes: GATE_QUOTES,
+        // 失败的**名字** —— 讲稿的出稿脚本看它：
+        // 「唯一的红是讲稿自己的关」时允许出稿（否则死锁）。
+        failedNames,
       },
       null,
       2,
