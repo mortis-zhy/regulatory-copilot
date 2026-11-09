@@ -4234,6 +4234,39 @@ check("the case pack's fingerprints match the corpus", () => {
   return `${declared.size} 版的指纹与语料一致`;
 });
 
+check("the delivery review list is not stale", () => {
+  // 交付件复核清单是**生成的**：它把闸门的结果收成一份人能读的东西 ✓
+  //（客户问「这份报告哪些结论站得住」，答案在这份清单里 ✓）。
+  //
+  // 数据变了而它没重出 → 它会**静静地骗人**（读者照着它理解交付件，
+  // 而那些数已经变了）✓ —— 与「换标准操作清单」同一类问题 ✓。
+  const FILE = "delivery/PDF对比/分析报告/交付件复核清单_2026-11-09.md";
+  const { ok, out } = runPy(
+    [
+      "scripts/build_delivery_review.py",
+      "--out",
+      resolve(ROOT, "tmp", "delivery-review.md"),
+    ],
+    "build-delivery-review",
+  );
+  assert(ok, `交付件复核清单生成失败:\n        ${out.slice(-600)}`);
+  // 生成到 **tmp/**，不碰入库那份 —— 检查器写产物 = 把问题顺手修好
+  // = 永远验不出来（经验 20）✓
+  const fresh = readFileSync(resolve(ROOT, "tmp", "delivery-review.md"), "utf-8");
+  const committed = gitShow(FILE);
+  assert(
+    committed !== null,
+    `找不到入库的复核清单 ${FILE} —— 跑 python scripts/build_delivery_review.py --out "${FILE}"`,
+  );
+  assert(
+    fresh.replace(/\r\n/g, "\n") === String(committed).replace(/\r\n/g, "\n"),
+    `入库的「交付件复核清单」已经**过期**（数据改了，清单没重出）——\n` +
+      `它会静静地骗人：读者照着它理解交付件，而那些数已经变了。\n` +
+      `        重出：python scripts/build_delivery_review.py --out "${FILE}"`,
+  );
+  return `复核清单与当前数据一致（${(fresh.match(/^\| /gm) || []).length} 行表格）`;
+});
+
 check("the swap checklist is not stale", () => {
   // 清单是**生成的**：改了源码就必须重出，否则它会**静静地骗人** ——
   // 读者照着一份旧清单去改代码，改的是已经不存在的行。
