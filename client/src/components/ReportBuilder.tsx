@@ -271,8 +271,26 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       });
       toast.dismiss(miningToast);
       if (!res.ok) {
-        const err = await res.text().catch(() => res.statusText);
-        throw new Error(err.slice(0, 300));
+        // 「这套标准尚未配置」是 **422**（不是服务器故障）。
+        // 服务端给的是 JSON，其中 `error` 是**人话**（哪份文件不像哪一版、像到多少）——
+        // 直接把那一句端出来，别甩一坨 JSON 给用户。
+        const raw = await res.text().catch(() => res.statusText);
+        let msg = raw.slice(0, 300);
+        try {
+          const j = JSON.parse(raw) as { error?: string; code?: string };
+          if (j.code === "case_pack_not_configured") {
+            msg =
+              (j.error ?? raw).slice(0, 600) +
+              "\n\n下一步：给这套标准**加一个案例包**" +
+              "（一份 `data/standard-pack.json` + 一组数据文件），" +
+              "程序不用改 —— 见 `delivery/PDF对比/分析报告/换标准操作清单_2026-11-06.md`。";
+          } else if (j.error) {
+            msg = j.error.slice(0, 300);
+          }
+        } catch {
+          /* 不是 JSON —— 就用原文 */
+        }
+        throw new Error(msg);
       }
       // /generate/mineru returns RenderableReport JSON → build the client-side
       // report shape for the existing flow.

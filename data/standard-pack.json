@@ -32,7 +32,8 @@
       "docInText": "GB 4785 草案",
       "consultOrder": 1,
       "coverRole": "草案版",
-      "coverLine": "A 草案 V4.3.5"
+      "coverLine": "A 草案 V4.3.5",
+      "sourceSha256": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7"
     },
     {
       "key": "B",
@@ -59,7 +60,8 @@
       "docInText": "GB 4785-2019",
       "consultOrder": 0,
       "coverRole": "现行版",
-      "coverLine": "B 现行 GB 4785-2019"
+      "coverLine": "B 现行 GB 4785-2019",
+      "sourceSha256": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085"
     },
     {
       "key": "C",
@@ -83,9 +85,17 @@
       "docInText": "UN R48-09",
       "consultOrder": 2,
       "coverRole": "欧版",
-      "coverLine": "C UN R48-09"
+      "coverLine": "C UN R48-09",
+      "sourceSha256": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
     }
   ],
+  "_casePack": "**案例包** —— 这一套标准的**专用资料**：抽取规则（spec）、装置↔章映射、章节对应表、定性义务台账与人工裁定、声称指标、报告散文。\n\n**通用流程**（上传 → 认版本 → 提取 → 找对应 → 比差异 → 标页码 → 出报告）与它**必须分开**：把 GB 4785 的结论套到别的法规上，报告会**一本正经地讲错标准** —— 而读者分不出来。\n\n所以出稿前有一道判定：**这份输入是不是本案例包管的文件**。不是 → **拒绝出完整对比**，并说清「尚未配置」（宁可空着，不可错着）。\n\n**支持另一套法规 = 再加一个案例包**（一份声明 + 一组数据文件），不必把程序重新改一遍 ✓。",
+  "casePack": {
+    "id": "gb4785-three-versions",
+    "standardFamily": "GB 4785",
+    "appliesTo": "上传的文件按**内容/指纹**认出来是这三版之一时",
+    "notConfiguredMessage": "这套标准**尚未配置**：本项目的抽取规则、章节映射与人工核对结论都是 **GB 4785** 这一套的专用资料，不能套到别的法规上。"
+  },
   "claimedIndicators": {
     "_why": "「声称指标」这一族的**专有名词** —— 表号、章节号、声称方的名字。\n\n§11.4 那张表核的是「某个参考报告里声称的 N 条数据指标，逐条与 A/B 原文对不对得上」。\n表号是**那套标准特有的**（换标准就是另一个表号），\n所以它属于声明，不属于代码。",
     "sectionNo": "11.4",

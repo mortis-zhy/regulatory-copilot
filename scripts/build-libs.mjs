@@ -47,6 +47,10 @@ const ENTRIES = [
   // bundled into dist/index.js, but index.js does not re-export it, so the
   // offline rebuild path (rebuild_report.mjs) could not reach buildMinerUReport.
   ["server/reports/reportV6.ts", "dist/reportV6.js"],
+  // casePack 是**案例包判定** —— 这份输入是不是本案例包管的文件。
+  // 单独列出来：闸门与回归用例要**直接调用**它
+  // （用例得证明「外来的语料会被拒绝」，不能只靠 reportV6 里那道）。
+  ["server/reports/casePack.ts", "dist/casePack.js"],
   ["server/reports/parameterMatrix.ts", "dist/parameterMatrix.js"],
   // qualitativeObligations 是第 11.9 节的实现（定性义务变化清单）。
   // 它被 reportV6 打包进去，但**单独列出来**：构建清单靠源码哈希判断

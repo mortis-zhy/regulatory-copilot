@@ -491,6 +491,41 @@ export function registerAgentRoutes(router: Router) {
         });
       }
 
+      // ---- 案例包判定（**先判再做**）----
+      //
+      // 上传的文件是不是本案例包（GB 4785 那套专用资料）管的文件？
+      //
+      // 不是 → **422 + 人话理由**（不是 500）。
+      // 先判的理由：抽取要 1–3 分钟/份，而核验（sidecarVerify）读的是
+      // **仓库里 GB 的**结论 —— 对着别的法规跑它，出来的就是错的。
+      const { matchCasePack } = await import("../reports/casePack");
+      const { createHash } = await import("node:crypto");
+      const fs2 = await import("node:fs");
+      const caseDocs = docs.map((d) => {
+        let sha: string | undefined;
+        try {
+          sha = createHash("sha256").update(fs2.readFileSync(d.filePath)).digest("hex");
+        } catch {
+          sha = undefined;
+        }
+        return { key: d.label, sha256: sha };
+      });
+      const caseDecision = matchCasePack(caseDocs);
+      if (!caseDecision.applies) {
+        console.warn(
+          `[mineru-report] 案例包不适用（${caseDecision.casePackId}）：\n${caseDecision.reason}`,
+        );
+        return res.status(422).json({
+          error: caseDecision.reason,
+          code: "case_pack_not_configured",
+          casePack: {
+            id: caseDecision.casePackId,
+            family: caseDecision.family,
+            perDoc: caseDecision.perDoc,
+          },
+        });
+      }
+
       console.log(`[mineru-report] extracting ${docs.length} docs via sidecar...`);
       const extracted = await sidecarExtractDocs(docs);
       // 文件名派生的两处实现 —— 与 /report/render 同一处，不各写一份。
@@ -563,6 +598,12 @@ export function registerAgentRoutes(router: Router) {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error("[mineru-report] failed:", error);
+      // 「这套标准尚未配置」**不是服务器故障** —— 是 422（处理不了，但说得清为什么）。
+      // 用户要知道的是「先配置案例包」，不是「服务器出错了」。
+      const code = String((error as any)?.code ?? "");
+      if (code === "case_pack_not_configured") {
+        return res.status(422).json({ error: msg, code });
+      }
       return res.status(500).json({ error: msg });
     }
   });

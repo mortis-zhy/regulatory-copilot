@@ -63,6 +63,7 @@ import {
   CHAPTER_RENUMBERING_PAIRS,
 } from "./chapterStructural";
 import { diffRefs, buildRefSection } from "./refDiff";
+import { assertCasePack } from "./casePack";
 import { resolveInnerRoot } from "./innerRoot";
 
 /**
@@ -4265,6 +4266,27 @@ export async function buildMinerUReport(
   data: Record<string, any>,
   verified: any,
 ): Promise<{ report: RenderableReport; indicatorResults: any[] }> {
+  // ---- 案例包判定 ----
+  //
+  // 这份语料是不是**本案例包**（GB 4785 那套专用资料）管的文件？
+  //
+  // 不是 → **抛错，不出报告**。
+  //
+  // 为什么这么严：报告的**骨架**（标题、章节号、抽取规则、章节映射、
+  // 人工核对过的结论）全都来自案例包 ——
+  // 拿 GB 4785 的骨架讲另一套法规，**连标题都是错的**。
+  // 而读者分不出来（「A 草案对规范性引用文件做了大规模更新」——
+  // 听着像在讲他上传的那部法规）。
+  //
+  // 「宁可空着，不可错着」：这里给的是**明确的「尚未配置」**，
+  // 不是一份编出来的完整对比 ✓。
+  assertCasePack(
+    Object.entries(data ?? {}).map(([k, v]) => ({
+      key: k,
+      sha256: v?.sourceSha256,
+      text: v?.fullText,
+    })),
+  );
   console.log("[v6] building report...");
   console.log(`[v6] docs: ${Object.keys(data).join(", ")}`);
 

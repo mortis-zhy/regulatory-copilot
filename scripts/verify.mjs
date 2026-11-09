@@ -4194,6 +4194,46 @@ check("the claimed-indicator ledger is self-consistent", () => {
   return out.trim().split("\n").slice(-1)[0].slice(0, 90);
 });
 
+check("the case pack's fingerprints match the corpus", () => {
+  // 「案例包」= 这一套标准的**专用资料**（抽取规则、章节映射、人工结论）。
+  // 判定「这份输入是不是本案例包管的文件」靠的是 `versions[].sourceSha256`。
+  //
+  // 指纹要是与语料对不上，判定就会**静默失配**：
+  //   · 声明里的指纹是旧的 → 本案例包的文件被当成「外来的」→ 正常的稿出不来；
+  //   · 语料换了而声明没换 → 外来的文件可能被当成本案例包的 → **讲错标准**。
+  //
+  // 两个方向都是「错着」，所以这道关**两个方向都查** ✓。
+  const pack = JSON.parse(read("data/standard-pack.json"));
+  const corpus = JSON.parse(read("dist/mineru-v4-data.json"));
+  const declared = new Map(
+    (pack.versions ?? []).map((v) => [v.key, String(v.sourceSha256 ?? "")]),
+  );
+  const problems = [];
+  for (const [key, doc] of Object.entries(corpus)) {
+    const want = declared.get(key);
+    if (!want) {
+      problems.push(`语料里有「${key}」版，但**声明里没有**它 → 判定认不出这一份`);
+      continue;
+    }
+    if (want !== String(doc.sourceSha256 ?? "")) {
+      problems.push(
+        `「${key}」版的指纹对不上：声明记 ${want.slice(0, 12)}…，` +
+          `语料是 ${String(doc.sourceSha256 ?? "").slice(0, 12)}…`,
+      );
+    }
+  }
+  for (const key of declared.keys()) {
+    if (!corpus[key]) {
+      problems.push(`声明里有「${key}」版，但语料里**没有**它 → 这一版的资料无处可验`);
+    }
+  }
+  assert(
+    problems.length === 0,
+    `案例包与语料对不上（${problems.length} 处）：\n        ` + problems.join("\n        "),
+  );
+  return `${declared.size} 版的指纹与语料一致`;
+});
+
 check("the swap checklist is not stale", () => {
   // 清单是**生成的**：改了源码就必须重出，否则它会**静静地骗人** ——
   // 读者照着一份旧清单去改代码，改的是已经不存在的行。
@@ -5881,6 +5921,11 @@ for (const t of [
   // 这是 agent-native 的**死结** —— 解开了才算数。
   // **不调模型**、不碰仓库里的数据（临时目录里跑）。
   "_test_swap_standard.mjs",
+  // 「案例包」的**确定性**用例：**不调模型**。
+  // 验的是「通用流程不许自动套用案例资料」——
+  // 外来的语料必须被**拒绝**（同事在 GitHub issue #5 提的那一条）：
+  // 套上 GB 4785 的抽取规则与人工结论，报告会**一本正经地讲错标准**。
+  "_test_case_pack.mjs",
   // 「批量采纳」的**确定性**用例：**不调模型**。
   // 验的是采纳这一步的规矩 —— 不覆盖已有取值 · 不采纳命不中的 ·
   // 采纳必须写 why · 落盘先备份。957 个槽位不可能逐条手点，
