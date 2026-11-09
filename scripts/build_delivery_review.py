@@ -154,11 +154,15 @@ def main() -> int:
     A(f"| 覆盖审计：定量限值 / missing / 别装置顶替 | "
       f"**{cov.get('totals', {}).get('limits')}** / {cov.get('totals', {}).get('missing')} / "
       f"{cov.get('totals', {}).get('otherDevice')} | `data/coverage-audit.json` |")
-    A(f"| 交付闸门 | **{summary.get('total')} 项**（本次 "
-      f"{summary.get('passed')} 过 / {summary.get('failed')} 红） | `dist/verify-summary.json` |")
+    # 只写**稳定的数**（闸门总数）✓ ——
+    # 「本次过/红」会随自检状态变，写进清单就**永远过期**（死锁 ✓）。
+    A(f"| 交付闸门 | **{summary.get('total')} 项** | `dist/verify-summary.json` |")
     A("")
     A("**这些数各自都有闸门守着** —— 数字变了而结论没变，闸门会红；")
     A("反过来，结论变了而数字没变（本项目最怕的「假变化」），也有专门的闸门盯着。")
+    A("")
+    A("> 自检结果看 `npm run verify`（本清单只写**稳定的数** ✓ —— "
+      "把「本次过/红」写进来会让它永远过期 ✗）。")
     A("")
 
     # ---- 2 四个维度 ------------------------------------------------------
