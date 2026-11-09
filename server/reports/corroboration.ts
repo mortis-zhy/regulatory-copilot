@@ -351,10 +351,14 @@ function windowAround(value: string, match: string, width = 12): string {
  *
  * 「终端稳态电压上限（6V 系统）」→「6V」
  * 「制动灯低安装高度门槛（可见度角可减小的条件）」→ 没有字母数字词 → 未核
+ *
+ * **返回 null = 行名里根本没有括号** → **没有条件可核**（「不适用」✓）。
+ * 这两件事以前混在一起，于是 296 个**本来没有条件**的参数
+ * 被写成「条件未核」—— 761 处 ✗。
  */
-function conditionTokens(rowName: string): string[] {
+function conditionTokens(rowName: string): string[] | null {
   const m = /[（(]([^）)]*)[）)]\s*$/.exec(String(rowName ?? ""));
-  if (!m) return [];
+  if (!m) return null;
   return [...new Set(m[1].match(/[A-Za-z]*\d+[A-Za-z]*|\d+[A-Za-z]+/g) ?? [])];
 }
 
@@ -376,9 +380,13 @@ export function computeDimensions(
   else if (numeric) symbol = "未判定";
 
   // ── 单位：值的单位与行声明的单位 ──────────────────────────────────
-  let unit: DimStatus = "未核";
+  //
+  // **没声明单位**的行（如色度边界，unit 是「—」✓）→ **不适用** ✓
+  // （以前一律写「未核」✗ —— 读者会以为「单位没核」✗）。
+  let unit: DimStatus = "不适用";
   const declared = normalizeUnit(cell.unit ?? "");
   if (declared) {
+    unit = "未核";
     // 只看**取值紧邻**的那一小段：整段引文里常有别的数、别的单位。
     const near = `${cell.match ?? ""} ${windowAround(cell.value ?? "", cell.match ?? "")}`;
     const found = unitsIn(near);
@@ -403,11 +411,20 @@ export function computeDimensions(
   }
 
   // ── 条件：行名带条件标记、且取值原文里能看到同一个标记 ────────────
-  let condition: DimStatus = "未核";
+  //
+  // 三档（以前只有两档 ✗）：
+  //   · 行名**没有**括号 → **不适用** ✓（319 个参数里只有 23 个带条件 ✓
+  //     —— 其余 296 个**本来就没有条件可核** ✗，写成「未核」是误导）；
+  //   · 有括号、能自动核、原文里找得到 → 已核 ✓；
+  //   · 有括号但核不了（如「车型结构受限」✓）或找不到 → 未核 ✓（老实说）。
+  let condition: DimStatus = "不适用";
   const toks = conditionTokens(cell.rowName ?? "");
-  if (toks.length) {
-    const hay = `${cell.match ?? ""} ${cell.value ?? ""}`;
-    condition = toks.every((t) => hay.includes(t)) ? "已核" : "未核";
+  if (toks !== null) {
+    condition = "未核";
+    if (toks.length) {
+      const hay = `${cell.match ?? ""} ${cell.value ?? ""}`;
+      condition = toks.every((t) => hay.includes(t)) ? "已核" : "未核";
+    }
   }
 
   return { pairing, condition, symbol, unit };
