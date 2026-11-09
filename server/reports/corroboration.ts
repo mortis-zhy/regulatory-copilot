@@ -43,6 +43,8 @@
  * 所以取值要**同时**用「字面量」和「规范化后的数值」去找。
  */
 
+import { hasComparisonWordNear } from "./comparatorWords";
+
 /** 数字 token：允许千分位逗号与小数点连用（'1,300' / '0.150'）。 */
 const NUMTOK = /\d+(?:[.,]\d+)*/g;
 
@@ -375,9 +377,20 @@ export function computeDimensions(
   else if (evidence === "none") pairing = "未核";
 
   // ── 符号：口径是**从原文紧贴取值的地方**取的 ──────────────────────
+  //
+  // 三档（以前两档 ✗）：
+  //   · 取到口径 → 已核 ✓；
+  //   · 原文所在句**有比较词**却没取到 → **未判定** ✓（真缺口 ✓）；
+  //   · 原文所在句**根本没有比较词** → **不适用** ✓
+  //     （「按 0.1% 的准确度」「单边误差在 50mm 范围内」这类数
+  //     本来就不是限值 ✓ —— 标成「未判定」是把「没有」写成「没做」✗）。
   let symbol: DimStatus = "不适用";
   if (cell.comparator) symbol = "已核";
-  else if (numeric) symbol = "未判定";
+  else if (numeric) {
+    symbol = hasComparisonWordNear(cell.value ?? "", cell.match ?? "")
+      ? "未判定"
+      : "不适用";
+  }
 
   // ── 单位：值的单位与行声明的单位 ──────────────────────────────────
   //

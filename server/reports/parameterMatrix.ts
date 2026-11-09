@@ -587,6 +587,17 @@ const EMPTY_CORPUS = emptyCorpus();
  * 指纹与相似度是其中最该只有一份的部分。
  */
 import { fingerprint, similarity, sampleAcross } from "./textFingerprint";
+import {
+  COMPARATOR_WORDS,
+  ENGLISH_NATURAL,
+  FLIPPED,
+  type Comparator,
+} from "./comparatorWords";
+
+// 比较词表在独立模块里（corroboration 也要用 ✓ —— 否则会成环 ✗）；
+// 这里**继续导出类型**，别处（specAgent 等 ✓）的 import 不受影响 ✓。
+// 词表本身**不外导** —— 只有本文件用 ✓（再导出会让打包器改名，引用就断了 ✗）。
+export type { Comparator };
 
 /** Read the uploaded PDFs and expose their fragment-joined text. */
 export async function loadSourceCorpus(
@@ -843,7 +854,7 @@ function quoteAround(text: string, idx: number, len: number): string {
  * 英文版（R48）也要认：`below` = 小于、`shall not exceed` = 不大于。
  * 没取到就是没取到 —— **留空**，不猜。
  */
-export type Comparator = "<" | "≤" | "≥" | ">" | "=";
+
 
 /**
  * 比较词 → canonical 口径。
@@ -861,33 +872,6 @@ export type Comparator = "<" | "≤" | "≥" | ">" | "=";
  * 而原文的意思是「**不得小于** 600mm」= 下限 600。
  * 这正是「距离不应小于600mm」被读成上限的那种错。
  */
-const COMPARATOR_WORDS: Array<[RegExp, Comparator]> = [
-  // ① 带否定的大于类 → ≤
-  [/(?:不|未)(?:应|得|允许|可|能|准|得|会)?\s*(?:大\s*于|高\s*于|超\s*出|超\s*过)\s*$/, "≤"],
-  // ② 带否定的小于类 → ≥
-  [/(?:不|未)(?:应|得|允许|可|能|准|得|会)?\s*(?:小\s*于|低\s*于|少\s*于)\s*$/, "≥"],
-  // ③ 不带否定的大于类 → >
-  [/(?:大\s*于|高\s*于|多\s*于)\s*$/, ">"],
-  // ④ 不带否定的小于类 → <
-  [/(?:小\s*于|低\s*于|少\s*于)\s*$/, "<"],
-  // ⑤ 至多 / 最多 → ≤；至少 / 最少 → ≥
-  [/(?:至\s*多|最\s*多)\s*$/, "≤"],
-  [/(?:至\s*少|最\s*少)\s*$/, "≥"],
-  // ⑥ 等于 → =
-  [/(?:等\s*于)\s*$/, "="],
-  // ⑦ 英文的**等价式**（先判，它们不是「比较词 + 否定」的形状）——
-//    否则「less than or equal to」会被 `=` 那条吃掉。
-[/(?:less\s+than|equal\s+or\s+less\s+than)\s+or\s+equal\s+to\s*$/, "≤"],
-  [/(?:equal\s+or\s+less\s+than)\s*$/, "≤"],
-  [/at\s+least\s*$/, "≥"],
-  // **「by more than X」是偏差的上限**（deviation … differs by more than 0.15），
-  // 不是下限 —— 它必须**先于**裸的「more than」判掉，
-  // 否则「偏差不得大于 0.15」会被判成「>」（把法规结论说反）。
-  [/\bby\s+(?:more|less)\s+than\s*$/, "≤"],
-  // 「可减至 X」→ X 是**下限**；「可增至 X」→ X 是**上限**。
-  [/(?:may\s+be\s+)?(?:reduced|shortened|lowered)\s+to\s*$/, "≥"],
-  [/(?:may\s+be\s+)?(?:increased|raised|extended)\s+to\s*$/, "≤"],
-];
 
 /**
  * 英文比较词的**自然方向**（不含否定）。
@@ -897,14 +881,6 @@ const COMPARATOR_WORDS: Array<[RegExp, Comparator]> = [
  *   「shall **not** be: **Less than**: 350 mm」→ 同上
  * 逐条写成「not X」的正则会漏掉这两种（它们中间隔着别的词）。
  */
-const ENGLISH_NATURAL: Array<[RegExp, Comparator]> = [
-  [/exceed(?:s|ing)?\s*$/, ">"],
-  [/above\s*$/, ">"],
-  [/(?:greater|larger|higher|further)\s+than\s*$/, ">"],
-  [/more\s+than\s*$/, ">"],
-  [/(?:below|less\s+than|lower\s+than|fewer\s+than)\s*$/, "<"],
-  [/(?:equal\s+to)\s*$/, "="],
-];
 
 /** 否定词。 */
 const NEGATION_RE = /\b(?:not|nor|no|none|neither|never)\b/;
@@ -938,13 +914,6 @@ function negationApplies(scope: string): boolean {
  *
  * 「not equal to X」这五种表示不了 → **留空**（宁可空着，不可错着）。
  */
-const FLIPPED: Record<Comparator, Comparator | null> = {
-  "<": "≥",
-  ">": "≤",
-  "≤": ">",
-  "≥": "<",
-  "=": null,
-};
 
 /**
  * 取值**前面紧邻**的比较词。
