@@ -107,6 +107,40 @@ ok(
 );
 
 // --------------------------------------------------------------------------
+// ②d 噪声副本 —— **客户上传自己那份**的情形
+//
+// 实测：同一份文件加 3% 字符噪声 + 丢 8% 段落，相似度掉到 0.43（< 0.7），
+// 但**声明里的文件名签名**对得上 → 仍应适用 ✓
+// （跨标准的相似度只有 0.14–0.16，这一档安全 ✓）。
+// --------------------------------------------------------------------------
+const noisy = (() => {
+  const t = corpus.A.fullText;
+  const chars = [...t];
+  // 固定种子的伪随机：同样输入 → 同样结果（用例要可复现 ✓）
+  let seed = 12345;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  for (let i = 0; i < chars.length; i += 1) {
+    if (rnd() < 0.03) chars[i] = "〇";
+  }
+  const paras = chars.join("").split("\n");
+  return paras.slice(0, Math.floor(paras.length * 0.92)).join("\n");
+})();
+const noisyByName = matchCasePack([
+  { key: "A", sha256: "2".repeat(64), text: noisy, name: "GB4785草案V4.3.5.pdf" },
+]);
+ok(
+  noisyByName.applies,
+  "噪声副本 + 文件名签名对得上 → 仍适用（客户上传自己那份的情形）",
+);
+const noisyForeignName = matchCasePack([
+  { key: "A", sha256: "3".repeat(64), text: noisy, name: "some-other-regulation.pdf" },
+]);
+ok(
+  !noisyForeignName.applies,
+  "噪声副本 + 文件名对不上 → 拒绝（相似度不够又没有别的证据）",
+);
+
+// --------------------------------------------------------------------------
 // ③ 生成器拿到外来语料 → 当场拒绝（同事那条 issue 的核心症状）
 // --------------------------------------------------------------------------
 let threw = null;

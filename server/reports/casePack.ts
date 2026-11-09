@@ -46,6 +46,51 @@ import { fingerprint, sampleAcross, similarity } from "./textFingerprint";
 /** 比对时取多少字符（与认版本那一套同一口径 ✓）。 */
 const WINDOW = 20000;
 
+/**
+ * 「族内再判一次」的相似度下限。
+ *
+ * 实测（2026-11-09）：
+ * - 同一份文件的另一个副本（3% 字符噪声 + 8% 段落丢失）→ **0.43**
+ * - 同一套标准的**兄弟版本** → 0.52
+ * - **跨标准** → 0.14–0.16
+ *
+ * 所以 0.7 那个阈值只对**干净副本**成立 —— 有 OCR 噪声就塌 ✗。
+ * 0.30 压在**跨标准**（0.14–0.16）之上、噪声副本（0.43）之下 ✓，
+ * 再配上**文件名签名**（族内判别器 ✓）才敢用这一档 ✓。
+ */
+const SIMILARITY_FAMILY = 0.3;
+
+/**
+ * 文件名签名 —— **声明里那一份**（`versions[].fileTokens` / `fileExclude`）✓。
+ *
+ * 与 sidecar 判版本用的是同一份声明 ✓（不另写一套正则 ✓）。
+ * 签名认的是「族内」的身份（草案 vs 现行 ✓）——
+ * 跨标准的文件**匹配不上任何一版**的签名 ✓（除非文件名是伪造的 ✓，
+ * 而伪造的文件名救不了它的正文相似度 ✓）。
+ */
+function signatureMatches(version: any, name: string): boolean {
+  const tokens: string[] = version.fileTokens ?? [];
+  const exclude: string[] = version.fileExclude ?? [];
+  if (!tokens.length) return false;
+  const hay = String(name ?? "");
+  if (!hay) return false;
+  const all = tokens.every((t) => {
+    try {
+      return new RegExp(t, "i").test(hay);
+    } catch {
+      return false;
+    }
+  });
+  if (!all) return false;
+  return !exclude.some((x) => {
+    try {
+      return new RegExp(x, "i").test(hay);
+    } catch {
+      return false;
+    }
+  });
+}
+
 /** 一份待判定的输入。 */
 export type CasePackDoc = {
   /** 版本键（A/B/C…）。 */
@@ -54,6 +99,8 @@ export type CasePackDoc = {
   sha256?: string;
   /** 抽取出来的正文 —— 指纹对不上时用它比内容。 */
   text?: string;
+  /** 文件名 —— 相似度不够时，用**声明里的签名**在族内再判一次 ✓。 */
+  name?: string;
 };
 
 export type CasePackDocMatch = {
@@ -165,6 +212,22 @@ export function matchCasePack(docs: CasePackDoc[]): CasePackMatch {
           by: "content",
           score: best.score,
           note: `内容与 ${best.v.key} 版（${best.v.doc}）相似度 ${best.score.toFixed(2)}`,
+        });
+      } else if (
+        best.score >= SIMILARITY_FAMILY &&
+        signatureMatches(best.v, doc.name ?? "")
+      ) {
+        // 相似度被 OCR 噪声吃掉了，但**文件名签名**对得上 ——
+        // 签名是**族内**的判别器（草案 vs 现行 ✓），
+        // 相似度是**族间**的判别器 ✓（跨标准只有 0.14–0.16 ✓）。
+        perDoc.push({
+          key: doc.key,
+          matchedTo: best.v.key,
+          by: "content",
+          score: best.score,
+          note:
+            `内容与 ${best.v.key} 版（${best.v.doc}）相似度 ${best.score.toFixed(2)}` +
+            `（噪声吃掉了相似度，但**文件名签名**对得上）`,
         });
       } else {
         perDoc.push({

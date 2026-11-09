@@ -508,7 +508,9 @@ export function registerAgentRoutes(router: Router) {
         } catch {
           sha = undefined;
         }
-        return { key: d.label, sha256: sha };
+        // 文件名也带上 —— 相似度被 OCR 噪声吃掉时，
+        // **声明里的签名**能在族内再判一次 ✓（见 casePack.ts）。
+        return { key: d.label, sha256: sha, name: d.fileName };
       });
       const caseDecision = matchCasePack(caseDocs);
       if (!caseDecision.applies) {
