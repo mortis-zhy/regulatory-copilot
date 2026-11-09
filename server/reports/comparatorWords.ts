@@ -38,6 +38,11 @@ export const COMPARATOR_WORDS: Array<[RegExp, Comparator]> = [
   [/(?:至\s*少|最\s*少)\s*$/, "≥"],
   // ⑥ 等于 → =
   [/(?:等\s*于)\s*$/, "="],
+  // ⑥之二 「增至 / 减至」—— **英文那份本来就有** ✓，中文这份漏了 ✗
+  //（「may be increased to X」→ 上限 / 「may be reduced to X」→ 下限 ✓）。
+  // 「增至」= 增**到**那个数 → 那是上限 ✓；「减至」= 减**到**那个数 → 那是下限 ✓。
+  [/(?:可|能|允许|应)?\s*增\s*至\s*$/, "≤"],
+  [/(?:可|能|允许|应)?\s*减\s*至\s*$/, "≥"],
   // ⑦ 英文的**等价式**（先判，它们不是「比较词 + 否定」的形状）——
 //    否则「less than or equal to」会被 `=` 那条吃掉。
 [/(?:less\s+than|equal\s+or\s+less\s+than)\s+or\s+equal\s+to\s*$/, "≤"],
