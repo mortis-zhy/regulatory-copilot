@@ -70,14 +70,44 @@ export async function withKeyRotation<T>(
   attempt: (key: string, index: number) => Promise<
     { ok: true; value: T } | { ok: false; status: number; body: string }
   >,
-  opts?: { label?: string },
+  opts?: { label?: string; retries?: number; backoffMs?: number },
 ): Promise<T> {
   const pool = minimaxKeyPool();
   if (!pool.length) throw new Error("MINIMAX_API_KEY 未配置");
   const label = opts?.label ?? "minimax";
+  const retries = Math.max(0, opts.retries ?? 2);
+  const backoff = opts.backoffMs ?? 1500;
   let lastErr = { status: 0, body: "no key" };
+  let lastTransport = "";
   for (let i = 0; i < pool.length; i++) {
-    const res = await attempt(pool[i], i);
+    // ---- 传输层失败：原地重试（换 key 没用 ✗ —— 那是网络的问题 ✓）--------
+    //
+    // `fetch` 抛异常（网络抖 / 连接重置 / 超时 ✗）**不是 HTTP 状态码** ✗ ——
+    // 原来的轮换判据抓不到它 ✗ → 异常直接穿透 ✗
+    // → **整个样本段废掉** ✗（实测 32/35 个样本 ✗）。
+    let res: { ok: true; value: T } | { ok: false; status: number; body: string } | null = null;
+    for (let attemptNo = 0; attemptNo <= retries; attemptNo++) {
+      try {
+        res = await attempt(pool[i], i);
+        break;
+      } catch (e) {
+        lastTransport = e instanceof Error ? e.message : String(e);
+        if (attemptNo < retries) {
+          await new Promise((r) => setTimeout(r, backoff * (attemptNo + 1)));
+          continue;
+        }
+        res = null;
+      }
+    }
+    if (res === null) {
+      // 这把 key 的传输层彻底不通 ✗ → 换下一把 ✗（也许只是它的连接坏了 ✗）
+      lastErr = { status: 0, body: lastTransport };
+      if (i === pool.length - 1) break;
+      console.warn(
+        `[${label}] 第 ${i + 1} 把 key 传输失败（${String(lastTransport).slice(0, 100)}），换下一把`,
+      );
+      continue;
+    }
     if (res.ok) {
       if (i > 0) console.warn(`[${label}] 用第 ${i + 1} 把 key 成功（前 ${i} 把额度/权限不可用）`);
       return res.value;
@@ -90,5 +120,13 @@ export async function withKeyRotation<T>(
       `[${label}] 第 ${i + 1} 把 key 不可用（HTTP ${res.status}：${String(res.body).slice(0, 120)}），自动切下一把`,
     );
   }
-  throw new Error(`MiniMax ${lastErr.status}: ${String(lastErr.body).slice(0, 200)}`);
+  const err = new Error(`MiniMax ${lastErr.status}: ${String(lastErr.body).slice(0, 200)}`) as Error & {
+    transport?: boolean;
+  };
+  // **传输失败 ≠ 模型答错** ✓ —— 调用方要能分开说 ✓
+  if (lastErr.status === 0 && lastTransport) {
+    err.transport = true;
+    err.message = `传输失败（网络/连接，不是模型的问题）：${String(lastTransport).slice(0, 160)}`;
+  }
+  throw err;
 }

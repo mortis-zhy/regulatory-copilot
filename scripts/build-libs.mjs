@@ -41,6 +41,10 @@ const ENTRIES = [
   // 于是 120 条试点撞上 402 就直接「没跑成」，而兜底 key 明明可用 ✓。
   // 单独构建一份：那两个脚本要 import 它 ✓。
   ["server/_core/minimaxPool.ts", "dist/minimaxPool.js"],
+  // versionAssignment 是**上传件 → 版本标签**的分配 ✓
+  // （按内容认 ✓，与上传顺序无关 ✓ —— 同事 issue #1 ✓）。
+  // 单独构建一份：客户端要用 ✓，回归用例也要 import 它 ✓。
+  ["shared/versionAssignment.ts", "dist/versionAssignment.js"],
   ["server/reports/typedTables.ts", "dist/typedTables.js"],
   ["server/reports/reportGenerator.ts", "dist/reportGenerator.js"],
   ["server/reports/closureLedger.ts", "dist/closureLedger.js"],

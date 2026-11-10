@@ -13,6 +13,7 @@ import { Download, FileText, Loader2, CheckCircle2, CircleDashed, Sparkles } fro
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import { reportFileNameFromResponse } from "../lib/reportFileName";
+import { assignVersionLabels } from "@shared/versionAssignment";
 
 type ChapterSpec = { id: number; title: string; sections: string[] };
 type ReportOutline = {
@@ -67,6 +68,8 @@ type Props = {
     localFilePath?: string;
     /** 上传时按内容认出来的版本。 */
     versionGuess?: { label: string | null; score: number; source: string; reason: string };
+    /** **用户确认过的**版本（界面上人工改判的 ✓）—— 优先于机器识别 ✓。 */
+    confirmedLabel?: string | null;
   }>;
   onClose: () => void;
 };
@@ -107,12 +110,34 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       toast.error("至少需要 2 份已解析的文档");
       return;
     }
+    // **按内容认出来的版本优先**；认不出才退回「按上传顺序」。
+    // 原来只有后者 —— 于是「上传顺序 = 版本」成了默认，
+    // 认版本这件事从头到尾没人真的做过。
+    //
+    // 分配逻辑在**共享模块**里（`@shared/versionAssignment` ✓）——
+    // 这里不再各写一遍 ✓（两处各写一遍 = 迟早改得不一样 ✓），
+    // 而且**可测** ✓（`_test_version_assignment.mjs` ✓）。
+    const assign = assignVersionLabels(
+      ready.map((d) => ({
+        fileName: d.fileName,
+        versionGuess: d.versionGuess,
+        confirmedLabel: d.confirmedLabel,
+      })),
+    );
+    if (assign.conflicts.length) {
+      // **冲突不许静默发出去** ✓ —— 两份都标成同一版时，
+      // 后面矩阵拿到的就是**错位的语料** ✓。
+      toast.error(
+        `版本角色有冲突：${assign.conflicts
+          .map((c) => `${c.label} 版被 ${c.files.join(" 与 ")} 同时占用`)
+          .join("；")} —— 请在上传列表里确认每份文件的版本`,
+      );
+      return;
+    }
     const documents: ReportDoc[] = ready.map((d, i) => ({
-      // **按内容认出来的版本优先**；认不出才退回「按上传顺序」。
-      // 原来只有后者 —— 于是「上传顺序 = 版本」成了默认，
-      // 认版本这件事从头到尾没人真的做过。
-      label: d.versionGuess?.label ?? LABELS[i] ?? `D${i + 1}`,
-      labelSource: d.versionGuess?.label ? "content" : "positional",
+      label: assign.assignments[i]?.label ?? LABELS[i] ?? `D${i + 1}`,
+      labelSource:
+        assign.assignments[i]?.source === "positional" ? "positional" : "content",
       fileName: d.fileName,
       text: d.extractedText!,
       pageCount: d.pageCount,
@@ -245,6 +270,8 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       fileName: string;
       localFilePath: string;
       versionGuess?: { label: string | null; score: number; source: string; reason: string };
+      /** **用户确认过的**版本（界面上人工改判的 ✓）—— 优先于机器识别 ✓。 */
+      confirmedLabel?: string | null;
     }>;
     if (ready.length < 2) {
       toast.error("MinerU 管线需要至少 2 份已上传到服务器的 PDF（不支持客户端本地提取）");
@@ -255,17 +282,33 @@ export default function ReportBuilder({ docs, onClose }: Props) {
     setErrorMsg("");
     setCurrentText("");
     try {
+      // **同一套分配** ✓（与草稿那条路一致 ✓）
+      const assign = assignVersionLabels(
+        ready.map((d) => ({
+          fileName: d.fileName,
+          versionGuess: d.versionGuess,
+          confirmedLabel: d.confirmedLabel,
+        })),
+      );
+      if (assign.conflicts.length) {
+        toast.error(
+          `版本角色有冲突：${assign.conflicts
+            .map((c) => `${c.label} 版被 ${c.files.join(" 与 ")} 同时占用`)
+            .join("；")} —— 请在上传列表里确认每份文件的版本`,
+        );
+        return;
+      }
       const miningToast = toast.loading("MinerU 多模态提取中（约 1-3 分钟/份）…");
       const res = await fetch("/api/agent/report/generate/mineru", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          documents: ready.map((d, i) => ({
-            // 与草稿那条路同一个规矩：**按内容认出来的版本优先**。
-            label: d.versionGuess?.label ?? LABELS[i] ?? `D${i + 1}`,
-            labelSource: d.versionGuess?.label ? "content" : "positional",
-            fileName: d.fileName,
-            filePath: d.localFilePath,
+          // 与草稿那条路**同一套分配** ✓（共享模块 ✓ —— 不各写一遍 ✓）
+          documents: assign.assignments.map((a, i) => ({
+            label: a.label,
+            labelSource: a.source === "positional" ? "positional" : "content",
+            fileName: ready[i].fileName,
+            filePath: ready[i].localFilePath,
           })),
         }),
       });

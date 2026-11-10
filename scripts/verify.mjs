@@ -5706,14 +5706,32 @@ check("上传时按内容认版本，不靠文件名", () => {
   const home = read("client/src/pages/Home.tsx");
   assert(home.includes("versionGuess"), "界面上没有显示认版本的结果");
 
+  // 客户端出报告时的标签分配 —— **问行为，不问某一行字** ✓。
+  //
+  // 原来的判据是源码里的一行字面量（`d.versionGuess?.label ?? LABELS[i]` ✓）——
+  // 那行字被**共享模块**取代后 ✓，判据就失效了 ✗
+  //（报「上传顺序又盖回来了」✗，而实际并没有 ✗）。
+  //
+  // 这种判据的坏处是：**会逼着人把实现改回去** ✗ ——
+  // 下次重构它就红 ✗，而红的原因与真实风险无关 ✗。
   const builder = read("client/src/components/ReportBuilder.tsx");
   assert(
-    builder.includes("d.versionGuess?.label ?? LABELS[i]"),
-    "出报告时没有优先用「按内容认出来的标签」—— 上传顺序又盖回来了",
+    builder.includes("assignVersionLabels"),
+    "出报告时没有用**共享的**标签分配（assignVersionLabels）—— 上传顺序可能又盖回来了",
   );
   assert(
     builder.includes("labelSource"),
     "出报告时没有告诉 sidecar 这个标签的来源 —— sidecar 会退回按文件名认",
+  );
+  // 共享分配本身：**按内容优先 + 冲突报出来** ✓（用例钉住 ✓）
+  const assignSrc = read("shared/versionAssignment.ts");
+  assert(
+    assignSrc.includes("versionGuess") && assignSrc.includes("confirmedLabel"),
+    "共享的标签分配里没有「按内容认」与「用户确认」的依据",
+  );
+  assert(
+    assignSrc.includes("conflicts"),
+    "共享的标签分配没有报**冲突** —— 两份都认成同一版时会被静默取第一个",
   );
 
   const py = read("python_service/main.py");
@@ -5954,6 +5972,11 @@ for (const t of [
   // 这是 agent-native 的**死结** —— 解开了才算数。
   // **不调模型**、不碰仓库里的数据（临时目录里跑）。
   "_test_swap_standard.mjs",
+  // 版本标签分配的**已知答案**用例：**不调模型** ✓。
+  // 钉住同事 issue #1 的两条完成标准 ✓：
+  //   ① 换上传顺序 → 标签不变 ✓；
+  //   ② 两份都认成同一版 → 报冲突，**不静默取第一个** ✓。
+  "_test_version_assignment.mjs",
   // 「案例包」的**确定性**用例：**不调模型**。
   // 验的是「通用流程不许自动套用案例资料」——
   // 外来的语料必须被**拒绝**（同事在 GitHub issue #5 提的那一条）：

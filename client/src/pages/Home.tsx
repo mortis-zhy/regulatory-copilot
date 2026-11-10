@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import STANDARD_PACK from "@data/standard-pack.json";
+import { assignVersionLabels } from "@shared/versionAssignment";
 
 /* ----------------------------------------------------------------------------
  * 类型定义
@@ -70,6 +71,18 @@ type Doc = {
    * 而不是让用户等四分钟后看一份矩阵空掉的报告。
    */
   versionGuess?: { label: string | null; score: number; source: string; reason: string };
+  /**
+   * **用户确认过的**版本 —— 界面上人工改判的 ✓。
+   *
+   * 为什么需要它（同事 issue #1 ✓）：
+   * 「按内容认出来」是**机器的判断** ✓ —— 它可能认错 ✓
+   * （或者用户手里的文件本来就是**另一个版本**✓）。
+   * 而**角色**决定了这个文件在报告里是「新版 / 旧版 / 参照」✓ ——
+   * 认错了，**变化方向就反了** ✓。
+   *
+   * 所以：机器先认 ✓，**人可以改** ✓（改过的优先 ✓）。
+   */
+  confirmedLabel?: string | null;
 };
 
 type ExtractionStage = {
@@ -554,6 +567,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
    */
   const [agentMode, setAgentMode] = useState(true);
   const [docs, setDocs] = useState<Doc[]>([]);
+
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [extracting, setExtracting] = useState<ExtractionStage | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -1041,7 +1055,17 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
           </div>
         ) : (
           <>
-            <DocStrip docs={docs} activeId={activeDocId} onSelect={setActiveDocId} onRemove={removeDoc} onAdd={handleFiles} fileInputRef={homeFileInputRef} />
+            <DocStrip
+              docs={docs}
+              activeId={activeDocId}
+              onSelect={setActiveDocId}
+              onRemove={removeDoc}
+              onAdd={handleFiles}
+              onConfirmLabel={(id, label) =>
+                setDocs((prev) => prev.map((x) => (x.id === id ? { ...x, confirmedLabel: label } : x)))
+              }
+              fileInputRef={homeFileInputRef}
+            />
 
             {/* Full report builder entry */}
             {!showReportBuilder && (
@@ -1194,6 +1218,7 @@ function DocStrip({
   onSelect,
   onRemove,
   onAdd,
+  onConfirmLabel,
   fileInputRef,
 }: {
   docs: Doc[];
@@ -1201,9 +1226,29 @@ function DocStrip({
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onAdd: (files: File[]) => void;
+  /** **确认角色** —— 机器认出来的是机器的判断 ✓，人可以改 ✓（同事 issue #1 ✓）。 */
+  onConfirmLabel?: (id: string, label: string | null) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const localRef = useRef<HTMLInputElement>(null);
+  /**
+   * **版本角色冲突** —— 两份文件被认成同一个版本 ✓。
+   *
+   * 不提示的后果 ✓：出报告时矩阵拿到的就是**错位的语料** ✓
+   * （或者被服务端 400 ✓ —— 那个错虽然响 ✓，
+   * 但用户看到的是「服务器出错」✗，不是「你的两份文件身份重了」✓）。
+   */
+  const roleConflicts = useMemo(
+    () =>
+      assignVersionLabels(
+        docs.map((d) => ({
+          fileName: d.fileName,
+          versionGuess: d.versionGuess,
+          confirmedLabel: d.confirmedLabel,
+        })),
+      ).conflicts,
+    [docs],
+  );
   // Fall back to a local ref so DocStrip still works if used without one.
   const ref = fileInputRef ?? localRef;
   return (
@@ -1215,6 +1260,15 @@ function DocStrip({
         Documents
       </span>
       <span className="text-[10px] text-[#9c8b6c]">· {docs.length} 份已上传</span>
+      {roleConflicts.length > 0 && (
+        <div className="rounded-lg border border-[#a23030] bg-[#f6e3e3] px-3 py-2 text-xs text-[#a23030]">
+          <b>版本角色有冲突</b>：{" "}
+          {roleConflicts
+            .map((c) => `${c.label} 版被「${c.files.join("」「")}」同时占用`)
+            .join("；")}{" "}
+          —— 角色认错，**变化方向就会反**。请在下面用下拉框确认每份文件的身份。
+        </div>
+      )}
       {docs.map((d) => {
         const isActive = d.id === activeId;
         const charCount = d.extractedText?.length ?? 0;
@@ -1238,7 +1292,7 @@ function DocStrip({
               <span
                 title={d.versionGuess.reason}
                 className={`shrink-0 rounded px-1 py-px text-[10px] font-medium ${
-                  d.versionGuess.label
+                  (d.confirmedLabel ?? d.versionGuess.label)
                     ? isActive
                       ? "bg-[#a17334] text-[#faf6ec]"
                       : "bg-[#e8f0e6] text-[#3f6b46]"
@@ -1247,9 +1301,36 @@ function DocStrip({
                       : "bg-[#f6e3e3] text-[#a23030]"
                 }`}
               >
-                {d.versionGuess.label ? `${d.versionGuess.label} 版` : "未识别"}
+                {(d.confirmedLabel ?? d.versionGuess.label)
+                  ? `${d.confirmedLabel ?? d.versionGuess.label} 版`
+                  : "未识别"}
               </span>
             )}
+            {/* **确认角色** —— 机器认出来的是**机器的判断** ✓，人可以改 ✓。
+                角色认错 = **变化方向反了** ✓（同事 issue #1 ✓）。
+                改动会立刻反映到下一次出报告 ✓。 */}
+            <select
+              value={d.confirmedLabel ?? d.versionGuess?.label ?? ""}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                const v = e.target.value;
+                const guess = d.versionGuess?.label ?? "";
+                onConfirmLabel?.(d.id, v === guess ? null : v || null);
+              }}
+              className={`shrink-0 rounded border px-1 py-px text-[10px] ${
+                isActive
+                  ? "border-[#6b6255] bg-transparent text-[#d8cfb8]"
+                  : "border-[#d8cfb8] bg-white text-[#5e5140]"
+              }`}
+              title="确认这份文件在本次对比里的身份（默认按内容自动识别，可手工改判）"
+            >
+              <option value="">（未识别）</option>
+              {["A", "B", "C", "D", "E", "F"].map((k) => (
+                <option key={k} value={k}>
+                  {k} 版
+                </option>
+              ))}
+            </select>
             <span className={`text-[10px] ${isActive ? "text-[#d8cfb8]" : "text-[#9c8b6c]"}`}>{formatBytes(d.size)}</span>
             {d.status === "ready" ? (
               <CheckCircle2 className="h-3.5 w-3.5 text-[#5e8b66]" />

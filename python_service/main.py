@@ -378,6 +378,8 @@ def report_data_endpoint(payload: dict) -> dict:
     if len(docs) < 1:
         raise HTTPException(400, "documents[] required")
     out = {"extracted": {}, "verified": None, "errors": []}
+    # 标签 → 用掉它的那一份文件（**用来查重复** ✓）
+    used_by: dict[str, dict] = {}
     for d in docs:
         try:
             r = extract_endpoint(d)
@@ -386,7 +388,37 @@ def report_data_endpoint(payload: dict) -> dict:
             # 原来存的是 `d.get("label")` —— 而抽取时标签可能已经被文件名推断覆盖了。
             # 于是「A 版的抽取结果」会存进 B 版的键里 ——
             # 后面矩阵拿到的就是**错位的语料**，而且**不报错**。
+            #
+            # **重复标签不许静默覆盖**（同事 issue #1 的完成标准 2 ✓）：
+            # 两份文件都认成 A 时，后一份会把前一份顶掉 ✗ ——
+            # 报告里少一整版语料 ✓ 而没人知道 ✓。
+            # 而两份都叫 A 时，**没有依据说哪一份才是 A** ✓ ——
+            # 宁可让上传者说清楚 ✓（「宁可空着，不可错着」✓）。
+            prev = used_by.get(r.label)
+            if prev is not None:
+                raise HTTPException(
+                    400,
+                    "版本标签重复：%s 版被两份文件同时占用 —— %r（请求标签 %r，文件名推断 %r）"
+                    " 与 %r（请求标签 %r，文件名推断 %r）。"
+                    "请确认每份文件的版本身份（改文件名或在上传界面指定）后重试。"
+                    % (
+                        r.label,
+                        prev.get("fileName"),
+                        prev.get("requestedLabel"),
+                        prev.get("labelInferred"),
+                        d.get("fileName"),
+                        d.get("label"),
+                        getattr(r, "label_inferred", None),
+                    ),
+                )
+            used_by[r.label] = {
+                "fileName": d.get("fileName"),
+                "requestedLabel": d.get("label"),
+                "labelInferred": getattr(r, "label_inferred", None),
+            }
             out["extracted"][r.label] = r.data
+        except HTTPException:
+            raise
         except Exception as e:
             out["errors"].append({"label": d.get("label"), "error": str(e)})
     return out
