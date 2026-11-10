@@ -21,7 +21,7 @@
  *   node scripts/run_spec_agent_regression.mjs --ids a,b,c
  */
 import fs from "node:fs";
-import { minimaxKeyPool, isKeyRotationError } from "../dist/minimaxPool.js";
+import { withKeyRotation } from "../dist/minimaxPool.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
@@ -101,13 +101,6 @@ console.log(
 /* --- 真模型调用 ---------------------------------------------------------- */
 async function callModel(messages, tools) {
   const base = (process.env.MINIMAX_BASE_URL ?? "https://api.minimax.cn").replace(/\/$/, "");
-  // **key 池**（主 key + 兜底 key ✓）—— 与服务端同一份实现 ✓。
-  //
-  // 原来这里只读 `MINIMAX_API_KEY` ✗：撞上 402 就直接「没跑成」✗，
-  // 而 `.env` 里的兜底 key **明明可用** ✓（实测 ✓）——
-  // 于是「额度不够」被误当成「没有别的办法」✗。
-  const keys = minimaxKeyPool();
-  if (!keys.length) throw new Error("MINIMAX_API_KEY 未配置（.env）");
   const body = JSON.stringify({
     model: process.env.MINIMAX_MODEL ?? "MiniMax-M3",
     messages,
@@ -116,29 +109,37 @@ async function callModel(messages, tools) {
     temperature: 0.1,
     stream: false,
   });
-  let lastErr = null;
-  for (const key of keys) {
-    const r = await fetch(`${base}/v1/chat/completions`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body,
-    });
-    const text = await r.text();
-    if (!r.ok) {
-      lastErr = new Error(`HTTP ${r.status}: ${text.slice(0, 200)}`);
-      // 配额 / 权限类失败才换下一把 ✓（400 不换 ✓ —— 请求写错了，换 key 也是错 ✓）
-      if (!isKeyRotationError(r.status, text)) throw lastErr;
-      continue;
-    }
-    const j = JSON.parse(text);
-    const msg = j?.choices?.[0]?.message ?? {};
-    return {
-      content: String(msg.content ?? ""),
-      finishReason: j?.choices?.[0]?.finish_reason ?? "",
-      toolCalls: Array.isArray(msg.tool_calls) ? msg.tool_calls : [],
-    };
+  // **key 池 + 传输层重试** ✓ —— 与服务端**同一份实现** ✓
+  // （`server/_core/minimaxPool.ts` 的 `withKeyRotation` ✓）。
+  //
+  // 原来这里只读 `MINIMAX_API_KEY` ✗：撞上 402 就直接「没跑成」✗，
+  // 而 `.env` 里的兜底 key **明明可用** ✓（实测 ✓）——
+  // 于是「额度不够」被误当成「没有别的办法」✗。
+  const r = await withKeyRotation(
+    async (key) => {
+      const resp = await fetch(`${base}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+        body,
+      });
+      const text = await resp.text();
+      if (resp.status >= 200 && resp.status < 300) {
+        return { ok: true, value: { status: resp.status, text } };
+      }
+      return { ok: false, status: resp.status, body: text };
+    },
+    { label: "spec-agent-regression" },
+  );
+  if (r.status < 200 || r.status >= 300) {
+    throw new Error(`HTTP ${r.status}: ${r.text.slice(0, 200)}`);
   }
-  throw lastErr ?? new Error("所有 key 都失败了");
+  const j = JSON.parse(r.text);
+  const msg = j?.choices?.[0]?.message ?? {};
+  return {
+    content: String(msg.content ?? ""),
+    finishReason: j?.choices?.[0]?.finish_reason ?? "",
+    toolCalls: Array.isArray(msg.tool_calls) ? msg.tool_calls : [],
+  };
 }
 
 /* --- 逐个跑 -------------------------------------------------------------- */
