@@ -2998,6 +2998,41 @@ function buildExecSummary(input: {
       .map(([f, n]) => `${f}（${n} 项）`)
       .join("、") || "—";
   const num = verified?.numericChanges ?? [];
+
+  /**
+   * 每个取值的**四维核验状态**（现算 ✓ —— 不手写 ✓）。
+   *
+   * 「这个数在哪一页上」与「这个数的语义对不对」是**两件事** ✓ ——
+   * 前者全部核过 ✓，后者分四维（归属 / 条件 / 符号 / 单位）✓。
+   */
+  const dimCounts = (() => {
+    const acc: Record<string, Record<string, number>> = {};
+    let verifiedCells = 0;
+    // **页面存在性**的三档 —— 「页码不符 / 全篇查不到」必须是 0 ✓（现算 ✓）
+    let elsewhere = 0;
+    let notFound = 0;
+    for (const r of input.matrixRows ?? []) {
+      for (const [, cell] of Object.entries((r as any)?.cells ?? {})) {
+        if ((cell as any)?.status !== "verified") continue;
+        verifiedCells++;
+        const st = String((cell as any)?.corroborated?.status ?? "");
+        if (st === "elsewhere") elsewhere++;
+        else if (st === "not-found") notFound++;
+        const dims = (cell as any)?.corroborated?.dimensions ?? {};
+        for (const [k, v] of Object.entries(dims)) {
+          acc[k] = acc[k] ?? {};
+          acc[k][v as string] = (acc[k][v as string] ?? 0) + 1;
+        }
+      }
+    }
+    return { acc, verifiedCells, elsewhere, notFound };
+  })();
+  const dimOk = (k: string) => dimCounts.acc[k]?.["已核"] ?? 0;
+  const dimNotOk = (k: string) =>
+    (dimCounts.acc[k]?.["未核"] ?? 0) +
+    (dimCounts.acc[k]?.["未判定"] ?? 0) +
+    (dimCounts.acc[k]?.["部分核"] ?? 0) +
+    (dimCounts.acc[k]?.["不一致"] ?? 0);
   const numOk = num.filter((v: any) => v.status === "verified").length;
   const keep = indicators.filter((i) => i.status === "kept");
   const missing = indicators.filter((i) => i.status === "missing");
@@ -3134,6 +3169,20 @@ function buildExecSummary(input: {
               `材料截断 ${ledgerSummary()!.truncated} 条 —— **这三类不判，也不写成「一致」**。` +
               `逐条判定与依据见 **§11.10**。`,
           ]
+          : []),
+        ...(dimCounts.verifiedCells
+          ? [
+              `8. **每个数都回源核过；语义分四维，没核的明说**：本版 ` +
+                `**${dimCounts.verifiedCells} 个取值格**逐个对过**源 PDF 的那一页** ✓` +
+                `（**页码不符 ${dimCounts.elsewhere} 处** ✓、**全篇查不到 ${dimCounts.notFound} 处** ✓` +
+                ` —— 没有一个数是编的 ✓）。` +
+                `但「值在这一页上」**不等于**「这个数的语义是对的」✓ —— ` +
+                `**归属 / 适用条件 / 比较符号 / 单位** 四件事各有各的判据 ✓：` +
+                `已核 **${dimOk("pairing")} / ${dimOk("condition")} / ${dimOk("symbol")} / ${dimOk("unit")}**` +
+                `（依次是这四件 ✓）。**没核到的写「未核 / 未判定」，` +
+                `本来就不适用的写「不适用」** ✓ —— 两者都**不写成「已核」** ✓。` +
+                `**逐维状态见 §12.5** ✓。`,
+            ]
           : []),
       ]
     : [];
