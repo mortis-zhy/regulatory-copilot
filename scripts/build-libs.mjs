@@ -36,6 +36,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ENTRIES = [
   ["server/_core/index.ts", "dist/index.js"],
   ["server/reports/htmlRenderV8.ts", "dist/htmlRenderV8.js"],
+  // minimaxPool 是 **key 池**（主 key + 兜底 key + 轮换判据）✓
+  // 服务端一直在用 ✓，但两个 agent 脚本绕过了它 ✗ ——
+  // 于是 120 条试点撞上 402 就直接「没跑成」，而兜底 key 明明可用 ✓。
+  // 单独构建一份：那两个脚本要 import 它 ✓。
+  ["server/_core/minimaxPool.ts", "dist/minimaxPool.js"],
   ["server/reports/typedTables.ts", "dist/typedTables.js"],
   ["server/reports/reportGenerator.ts", "dist/reportGenerator.js"],
   ["server/reports/closureLedger.ts", "dist/closureLedger.js"],
