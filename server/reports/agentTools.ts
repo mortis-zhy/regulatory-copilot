@@ -436,7 +436,70 @@ function keywordsOf(quote: string): string[] {
 
 export type ToolResult = { ok: boolean; data: Json; note?: string };
 
-export async function runAgentTool(name: string, args: Json): Promise<ToolResult> {
+/**
+ * **这次问答的上下文**（同事 issue #2 完成标准 1）。
+ *
+ * 取证工具读的是**案例包**的索引与台账 —— 那是**某一套标准**的资料。
+ * 所以每次回答都得先说清楚：
+ *   · 这次问的是**哪个任务**；
+ *   · 证据来自**哪一套案例资料**；
+ *   · 那些资料的**源文件**叫什么（证据要能回到**哪一个文件**）。
+ *
+ * 案例包**不适用**时（上传的是别的法规）→ **不回答** ✗ ——
+ * 拿别的标准的数据糊弄过去，比「查不到」坏一个数量级。
+ */
+export type ToolContext = {
+  /** 这次问答属于哪个任务。 */
+  taskId?: string;
+  /** 本次输入是不是案例包管的那一套。null = 没判（老用法）。 */
+  casePack?: {
+    applies: boolean;
+    casePackId: string;
+    family: string;
+    reason: string;
+    /** 案例包管的源文件名 —— 证据要能回到**哪一个文件**。 */
+    sourceFiles: string[];
+  } | null;
+};
+
+/** 工具结果里附带的「证据来自哪里」。 */
+export function evidenceScopeOf(ctx?: ToolContext): Json {
+  const cp = ctx?.casePack;
+  return {
+    taskId: ctx?.taskId ?? "default",
+    scope: !cp ? "case-pack" : cp.applies ? "case-pack" : "not-configured",
+    casePackId: cp?.casePackId ?? "（未声明）",
+    standardFamily: cp?.family ?? "（未声明）",
+    sourceFiles: cp?.sourceFiles ?? [],
+  };
+}
+
+export async function runAgentTool(
+  name: string,
+  args: Json,
+  ctx?: ToolContext,
+): Promise<ToolResult> {
+  // **案例包不适用 → 不回答**（而不是拿别的标准的数据糊弄）。
+  if (ctx?.casePack && !ctx.casePack.applies) {
+    return {
+      ok: false,
+      data: {
+        error: ctx.casePack.reason,
+        code: "case_pack_not_configured",
+        evidenceScope: evidenceScopeOf(ctx),
+      },
+    };
+  }
+  const res = await runAgentToolInner(name, args);
+  // 每条**成功的**结果都带上证据范围 —— 完成标准 1：
+  // 「每条回答证据能回到当前任务的文件、条款和页码」。
+  if (res && res.ok && res.data && typeof res.data === "object") {
+    res.data.evidenceScope = evidenceScopeOf(ctx);
+  }
+  return res;
+}
+
+async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> {
   switch (name) {
     /* ---------------------------------------------------------------- */
     case "lookup_clause": {

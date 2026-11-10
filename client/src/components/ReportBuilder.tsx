@@ -14,6 +14,7 @@ import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import { reportFileNameFromResponse } from "../lib/reportFileName";
 import { assignVersionLabels } from "@shared/versionAssignment";
+import { taskHeaders } from "@/lib/taskId";
 
 type ChapterSpec = { id: number; title: string; sections: string[] };
 type ReportOutline = {
@@ -70,13 +71,17 @@ type Props = {
     versionGuess?: { label: string | null; score: number; source: string; reason: string };
     /** **用户确认过的**版本（界面上人工改判的 ✓）—— 优先于机器识别 ✓。 */
     confirmedLabel?: string | null;
+    /** **文件指纹**（sha256）—— 服务器判案例包适用性要用 ✓。 */
+    sha256?: string;
   }>;
+  /** **这次对比的任务 id**（同事 issue #2）—— 每个请求都带上它 ✓。 */
+  taskId?: string;
   onClose: () => void;
 };
 
 const LABELS = ["A", "B", "C", "D", "E", "F"];
 
-export default function ReportBuilder({ docs, onClose }: Props) {
+export default function ReportBuilder({ docs, taskId, onClose }: Props) {
   const [phase, setPhase] = useState<"idle" | "generating" | "done" | "error">("idle");
   const [outline, setOutline] = useState<ReportOutline | null>(null);
   const [chapterStates, setChapterStates] = useState<Record<number, ChapterState>>({});
@@ -159,7 +164,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
     try {
       const res = await fetch("/api/agent/report/generate", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: taskHeaders(taskId ?? "", { "content-type": "application/json" }),
         body: JSON.stringify({ documents }),
         signal: controller.signal,
       });
@@ -237,7 +242,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
     try {
       const res = await fetch("/api/agent/report/render", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: taskHeaders(taskId ?? "", { "content-type": "application/json" }),
         body: JSON.stringify(report),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -272,6 +277,8 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       versionGuess?: { label: string | null; score: number; source: string; reason: string };
       /** **用户确认过的**版本（界面上人工改判的 ✓）—— 优先于机器识别 ✓。 */
       confirmedLabel?: string | null;
+      /** **文件指纹**（sha256）—— 服务器判案例包适用性要用 ✓。 */
+      sha256?: string;
     }>;
     if (ready.length < 2) {
       toast.error("MinerU 管线需要至少 2 份已上传到服务器的 PDF（不支持客户端本地提取）");
@@ -301,7 +308,7 @@ export default function ReportBuilder({ docs, onClose }: Props) {
       const miningToast = toast.loading("MinerU 多模态提取中（约 1-3 分钟/份）…");
       const res = await fetch("/api/agent/report/generate/mineru", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: taskHeaders(taskId ?? "", { "content-type": "application/json" }),
         body: JSON.stringify({
           // 与草稿那条路**同一套分配** ✓（共享模块 ✓ —— 不各写一遍 ✓）
           documents: assign.assignments.map((a, i) => ({
@@ -309,6 +316,8 @@ export default function ReportBuilder({ docs, onClose }: Props) {
             labelSource: a.source === "positional" ? "positional" : "content",
             fileName: ready[i].fileName,
             filePath: ready[i].localFilePath,
+            // **文件指纹** —— 服务器判案例包适用性时用的就是它 ✓
+            sha256: ready[i].sha256,
           })),
         }),
       });

@@ -248,10 +248,17 @@ export interface Dimensions {
 
 /** 单位别名 → 规范形态。 */
 const UNIT_ALIASES: Array<[string[], string]> = [
+  // **写法差异要认全** —— 别名表少一个写法，判据就报一次**假的欠账** ✗：
+  //   · `㎜`（U+339C）GB 正文写「400 ㎜」；
+  //   · `㎝`（U+339D）GB 正文写「12.5 ㎝」；
+  //   · `㎡`（U+33A1）；
+  //   · `º`（U+00BA，男士序数号）—— A 草案写「30º至60º」，
+  //     而 B/C 写「30°至60°」：**同一件事，两种写法** ✗；
+  //   · `per cent` —— R48 写「0.1 per cent」而不是「0.1%」。
   [["㎜", "mm", "毫米"], "mm"],
   [["cm²", "cm2", "平方厘米"], "cm²"],
-  [["cm", "厘米"], "cm"],
-  [["m²", "m2", "平方米"], "m²"],
+  [["㎝", "cm", "厘米"], "cm"],
+  [["m²", "m2", "㎡", "平方米"], "m²"],
   [["m", "米"], "m"],
   [["cd/m²", "cd/m2"], "cd/m²"],
   [["cd", "坎德拉"], "cd"],
@@ -259,13 +266,30 @@ const UNIT_ALIASES: Array<[string[], string]> = [
   [["lm", "流明"], "lm"],
   [["km/h", "kmh", "公里每小时", "千米每小时"], "km/h"],
   [["m/s"], "m/s"],
-  [["%", "％"], "%"],
+  [["%", "％", "per cent", "percent", "pct"], "%"],
   [["ms", "毫秒"], "ms"],
+  // **Hz 原来不在表里** ✗ —— 于是「以（4.0±1.0）Hz 频率同相闪烁」这类
+  // 原文**明明写着单位**的行，一律判「未核」✗。
+  [["Hz", "赫兹"], "Hz"],
+  // 分钟：GB 写「2 分钟」，R48 写「two minutes」——
+  // **别名表里两个都没有** ✗。
+  [["min", "分钟", "minutes"], "min"],
   [["s", "秒"], "s"],
   [["v", "伏"], "V"],
-  [["°", "度", "degree", "degrees"], "°"],
+  // 角度：LaTeX 的 `\circ` 也要认 —— A 草案写 `$2 0 ^ { \circ }$`，
+  // B/C 写「30°」—— **同一件事的两种写法** ✗。
+  [["°", "º", "\\circ", "度", "degree", "degrees"], "°"],
   [["n", "牛"], "N"],
 ];
+
+/**
+ * 「没有单位」的写法 —— 占位符。
+ *
+ * 色度边界那几行声明的单位是 `—` —— 意思是**这一行没有单位** ✓。
+ * 原来 `normalizeUnit("—")` 返回 `"—"`（非空 ✓）→ 判「未核」✗ ——
+ * 读者会以为「色度边界的单位没核」✗，而它**本来就没有单位** ✓。
+ */
+const NO_UNIT = new Set(["—", "-", "–", "—", "无", "不适用", "n/a", "na", "none", "/"]);
 
 /**
  * 单位**种类** —— 判断「不一致」时用它。
@@ -305,6 +329,8 @@ function flattenSup(text: string): string {
 export function normalizeUnit(u: string): string {
   const s = String(u ?? "").trim();
   if (!s) return "";
+  // 「—」这类**占位符** = 没有单位 ✓ → 落回空 → 这一维度判「不适用」✓
+  if (NO_UNIT.has(s) || NO_UNIT.has(s.toLowerCase())) return "";
   for (const [aliases, norm] of UNIT_ALIASES) {
     if (aliases.some((a) => a.toLowerCase() === s.toLowerCase())) return norm;
   }
@@ -329,6 +355,45 @@ function unitsIn(text: string): string[] {
     if (hit && !out.includes(norm)) out.push(norm);
   }
   return out;
+}
+
+/**
+ * 比较用的**归一化**：去掉**写法差异**，留下**内容**。
+ *
+ * 去的东西：空白 · `<sub>`/`<sup>` 标签 · `㎜`→`mm` · `㎝`→`cm` ·
+ * `㎡`→`m2` · `º`→`°` · 全角→半角 · 大小写。
+ *
+ * **不去**的东西：数字 · 汉字 · 标点 ——
+ * 归一化不是「放宽匹配」，只是让**同一件事的两种写法**能对上 ✓。
+ */
+export function normForCompare(s: string): string {
+  return flattenSup(String(s ?? ""))
+    .replace(/[\s\u3000]+/g, "")
+    .replace(/㎜/g, "mm")
+    .replace(/㎝/g, "cm")
+    .replace(/㎡/g, "m2")
+    .replace(/[º]/g, "°")
+    .replace(/[％]/g, "%")
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
+      String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+    )
+    .toLowerCase();
+}
+
+/**
+ * 把 **LaTeX 片段**展平成能认单位的写法。
+ *
+ * `4 0 0 \mathrm { c m } ^ { 2 }` → `400cm2` ✓
+ * `2 0 ^ { \circ }` → `20°` ✓
+ *
+ * 只做**形式**上的展平（去命令名、去花括号、去空格）——
+ * 数字与字母的**顺序**一个字都不改 ✓。
+ */
+export function flattenLatexUnits(t: string): string {
+  return String(t ?? "")
+    .replace(/\\(?:mathrm|mathbf|mathit|text|dfrac|frac|mathrm|left|right|quad|qquad|cdot|times|ge|le|circ)\b/g, "")
+    .replace(/[{}\\$^_]/g, "")
+    .replace(/\s+/g, "");
 }
 
 /**
@@ -402,8 +467,26 @@ export function computeDimensions(
     unit = "未核";
     // 只看**取值紧邻**的那一小段：整段引文里常有别的数、别的单位。
     const near = `${cell.match ?? ""} ${windowAround(cell.value ?? "", cell.match ?? "")}`;
-    const found = unitsIn(near);
-    if (found.includes(declared)) {
+    let found = unitsIn(near);
+    // **LaTeX 兜底** —— 只在「声明的单位没找到」时才用 ✓。
+    //
+    // 原文写 `$4 0 0 \mathrm { c m } ^ { 2 }$`（面积）时，
+    // 「cm²」这个别名**认不出来** ✗（LaTeX 把它拆成了 `c m` 和 `2`）。
+    // 展平后再找一次 ✓。
+    //
+    // 为什么**只在这一步**用：展平可能**多认出**一个同量纲的单位 ——
+    // 那会把「未核」变成「不一致」✗（**假警报** ✗）。
+    // 展平只用来**确认「声明的单位在不在」** ✓，绝不参与「不一致」的判定 ✓。
+    if (!found.includes(declared)) {
+      const flat = unitsIn(flattenLatexUnits(near));
+      if (flat.includes(declared)) {
+        unit = "已核";
+        found = [];
+      }
+    }
+    if (unit === "已核") {
+      // 已经在上面判完了 ✓
+    } else if (found.includes(declared)) {
       unit = "已核";
     } else if (found.length) {
       // 只有**同量纲**的单位不同才是硬错（声明 mm、原文 cm）。
@@ -435,8 +518,14 @@ export function computeDimensions(
   if (toks !== null) {
     condition = "未核";
     if (toks.length) {
-      const hay = `${cell.match ?? ""} ${cell.value ?? ""}`;
-      condition = toks.every((t) => hay.includes(t)) ? "已核" : "未核";
+      // **两边都归一化再比** ✓ ——
+      // 条件标记写「车宽<1300mm」，原文写「车宽小于 1300 ㎜」：
+      // 中间的空格与 `㎜`/`mm` 的写法差异，让**同一件事**对不上 ✗。
+      //
+      // 归一化只去**写法差异**（空白 · 单位写法 · `<sub>` 标签 · 大小写），
+      // **不放宽匹配** —— 「1300mm」仍然必须在引文里出现 ✓。
+      const hay = normForCompare(`${cell.match ?? ""} ${cell.value ?? ""}`);
+      condition = toks.every((t) => hay.includes(normForCompare(t))) ? "已核" : "未核";
     }
   }
 

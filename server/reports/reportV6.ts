@@ -1953,7 +1953,7 @@ function buildParameterMatrix(
       "映射强度按 [完全对应 / 部分重叠 / 无对应 / 文本值·未判等价] 标注——**部分重叠不得按等价使用**。",
     "",
     "> **「变化判定」这一列是核验过的**，不是把两个取值当字符串一比。" +
-      "取值来自 18 主题 diff 管线的 LLM 抽取，其中抄错单位、重复单位、错配行的情况都真实发生过" +
+      "取值来自 18 主题 diff 管线的自动抽取，其中抄错单位、重复单位、错配行的情况都真实发生过" +
       "（例如近光灯弯道照明曲率半径的 A 值曾被抄成「500mm」，原文是「500m」）。" +
       "本表已逐条回原文核验并更正，判定依据见 `data/diff-corrections.json`。",
     "",
@@ -2417,8 +2417,8 @@ function buildChapter12Matrix(
     "",
     "**每一个空格子都有明确归类：要么有值（带条款与页码），要么标「无此规定（已核）」并附逐条依据。**",
     "**没有「不知道」的格子** —— 不做推测填充；定位不到与定位到错误的区别是：前者读者知道要自己去翻，后者读者会当真。",
-    `**取值来源**：MinerU 抽取 ${stats.cells - stats.fromSourcePdf} 处；` +
-      `${stats.fromSourcePdf} 处 MinerU 未能读出，改由上传的源 PDF 直读补齐` +
+    `**取值来源**：自动抽取 ${stats.cells - stats.fromSourcePdf} 处；` +
+      `${stats.fromSourcePdf} 处自动抽取未能读出，改由上传的源 PDF 直读补齐` +
       prose("reportV6.2397") +
       "（WWWW34564561黄紫紫蓝色红色色边…），" +
       "直读源 PDF 并把碎片拼接后可完整还原。",
@@ -4221,10 +4221,10 @@ function buildAppendixD(data: Record<string, any>, matrixRows: any[], slots: Tit
     "> 清单是**每次出报告时从语料现算**的，与第 12 章同步 —— 参数加了，清单不会忘记更新。",
     ">",
     "> **「已入矩阵」的判定口径**：同一 R48 章（§6.x，一章一盏灯）+ 同一数值 + 同一单位。",
-    "> 不用条款号逐字比对 —— MinerU 里 `6.3.4.2.` 这个编号排在它所属的句子**之后**，",
+    "> 不用条款号逐字比对 —— 抽取文本里 `6.3.4.2.` 这个编号排在它所属的句子**之后**，",
     "> 所以「行首条款号」与「最近前置条款号」会指向同一段却写成两个号。",
     "",
-    "> **条款号说明**：MinerU 把 R48 §6 条款表的**下一行标签并进了上一行**",
+    "> **条款号说明**：抽取文本把 R48 §6 条款表的**下一行标签并进了上一行**",
     "> （`6.14.4.6.14.4.1.` / `6.27.9.6.27.9.1.` 这样的粘连标签），",
     "> 这样的条款号在 R48 原文里**根本不存在**，客户翻不到。",
     "> 本表的**条款列已按源 PDF 的文本层还原**（逐条查证，见 `scripts/fix_clause_labels.py`）；",
@@ -4702,7 +4702,11 @@ async function main() {
  * write OUT_PDF → audit+render gates → PDF metadata → bookmark outline →
  * final buffer (the customer download is this exact buffer).
  */
-export async function finalizePdf(report: RenderableReport, pass1: Buffer): Promise<Buffer> {
+export async function finalizePdf(
+  report: RenderableReport,
+  pass1: Buffer,
+  opts: { writeToDisk?: boolean } = {},
+): Promise<Buffer> {
   let pdf = pass1;
   // Two-pass render: pass 1 locates each chapter's start page, then pass 2
   // re-renders with the page map so the TOC shows real page numbers
@@ -4721,13 +4725,23 @@ export async function finalizePdf(report: RenderableReport, pass1: Buffer): Prom
   } catch (e) {
     console.warn("[v6] finalize step skipped, keeping incoming PDF:", String(e).slice(0, 300));
   }
-  fs.writeFileSync(OUT_PDF, pdf);
-  console.log(`[v6] wrote ${OUT_PDF} (${(pdf.length / 1024).toFixed(1)} KB)`);
+  // **写不写仓库里的固定路径** —— API 路径不写：
+  // 固定路径 = 两个任务互相覆盖（同事 issue #2）。
+  const writeToDisk = opts.writeToDisk !== false;
+  if (writeToDisk) {
+    fs.writeFileSync(OUT_PDF, pdf);
+    console.log(`[v6] wrote ${OUT_PDF} (${(pdf.length / 1024).toFixed(1)} KB)`);
+  }
 
-  // Post-render gates (audit_pages + render_gate): log failures but DO NOT
-  // block delivery yet — gates inform CI/customer-support, future iteration
-  // can refuse to download when they hard-fail.
-  for (const [script, label] of [["audit_pages.py", "audit"], ["render_gate.py", "render"]]) {
+  // Post-render gate (audit_pages): **只记日志** ——
+  // 它审的是**页码引用**，需要仓库里的三份源 PDF，部署环境里没有。
+  //
+  // **PDF 泄漏自检（render_gate.py）已经不在这里了** ——
+  // 它搬进了 `renderPdfFromReportV8()`：那边**不过就抛**，
+  // 而这里原来只是 `console.warn` —— 检查失败了 PDF 还是照发
+  // （交付件第 234 页上印着 `<table><tr><td>` 就是这么来的）。
+  // 留在这儿等于**跑两遍**（每次开一个 278 页 PDF 要十几秒）。
+  for (const [script, label] of writeToDisk ? [["audit_pages.py", "audit"]] : []) {
     try {
       const { execFileSync } = await import("node:child_process");
       const stdout = execFileSync("python", [script, OUT_PDF], {
@@ -4752,71 +4766,24 @@ ${msg}`);
 
   // Patch PDF metadata (author/subject/keywords/pipeline-version).
   // Chromium's page.pdf() only honours `title`; set the rest via PyMuPDF.
+  // 元数据 —— 走**临时文件**（`stampPdfMeta`），不碰仓库里的固定路径。
+  // 渲染路径（renderPdfFromReportV8）也会打一遍 —— 幂等，
+  // 这里是给**旧渲染器**的 CLI 路径补上的。
   try {
-    const { execFileSync } = await import("node:child_process");
-    const ver = "v6.2-" + new Date().toISOString().slice(0, 10);
-    execFileSync("python", [
-      script("set_pdf_meta.py"), OUT_PDF,
-      "--title", report.outline.title,
-      "--author", `${REPORT_META.standardFamily} 多版本对比报告 pipeline`,
-      "--subject", `${versionLabel("A")} / ${versionLabel("B")} / ${versionLabel("C")} 三版本法规横向对照`,
-      "--keywords", `${REPORT_META.standardFamily}, ${versionDocNoRev("C")}, 法规对比, 核验追溯`,
-      "--pipeline-version", ver,
-    ], { encoding: "utf8", windowsHide: true, cwd: scriptDir, stdio: ["ignore", "pipe", "pipe"] });
-    console.log(`[v6] pdf-meta patched (${ver})`);
+    const { stampPdfMeta } = await import("./htmlRenderV8");
+    pdf = await stampPdfMeta(pdf, report);
   } catch (e) {
     console.warn("[v6] pdf-meta patch skipped:", String(e).slice(0, 300));
   }
 
-  // Bookmark outline — must run LAST because it rewrites the file; then re-read
-  // so the returned buffer includes bookmarks.
+  // **书签不在这里打** ——
   //
-  // This used to shell out to add_pdf_outline.py, which hardcodes its own PDF
-  // path and exits silently when that file is absent. Every API-rendered report
-  // therefore shipped with zero bookmarks and only a console warning to say so.
-  // Do it here instead: we know exactly which file we wrote and where each
-  // chapter starts, so the outline is derived from the same two-pass TOC data
-  // rather than re-parsed out of a fixed filename.
-  try {
-    const entries: Array<[string, number]> = [
-      ...report.chapters.map((c: any) => [c.title, c.page] as [string, number]),
-      ...(report.appendices ?? []).map((a: any) => [a.title, a.page] as [string, number]),
-    ].filter(([, p]) => typeof p === "number" && p > 0) as Array<[string, number]>;
-    if (entries.length) {
-      const { execFileSync } = await import("node:child_process");
-      const payload = JSON.stringify(entries.map(([t, p]) => [t, p]));
-      const py =
-        "import json,sys,fitz,shutil\n" +
-        "toc=json.loads(sys.stdin.read())\n" +
-        "d=fitz.open(sys.argv[1])\n" +
-        "d.set_toc([[1,t,int(p)-1] for t,p in toc if 0 < int(p)-1 < d.page_count])\n" +
-        "d.save(sys.argv[1]+'.toc.tmp',garbage=3,deflate=True)\n" +
-        "d.close()\n" +
-        "shutil.move(sys.argv[1]+'.toc.tmp',sys.argv[1])\n";
-      execFileSync("python", ["-c", py, OUT_PDF], {
-        input: payload,
-        encoding: "utf8",
-        windowsHide: true,
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-      pdf = fs.readFileSync(OUT_PDF);
-      console.log(`[v6] bookmarks: injected ${entries.length} entries`);
-    } else {
-      console.warn("[v6] no chapter page numbers resolved — PDF will ship without bookmarks");
-    }
-  } catch (e: any) {
-    // **把 stderr 打出来** —— `execFileSync` 的 String(e) 是
-    // 「Command failed: <整条命令> + <stderr>」，而命令本身就有 300 多字符，
-    // slice(0,300) 恰好把真正有用的 stderr 切掉了 ——
-    // 现场只看到「Command failed」，看不到原因。
-    const stderr = (e?.stderr ?? e?.stdout ?? "").toString().slice(0, 400);
-    const firstLine = String(e?.message ?? e).split(/\r?\n/)[0];
-    console.warn(
-      "[v6] bookmark step skipped:",
-      firstLine,
-      stderr ? ` | stderr: ${stderr}` : "",
-    );
-  }
+  // 渲染器（`renderPdfFromReportV8()` → `addPdfBookmarks()` → `stamp_bookmarks.py`）
+  // 已经打好了，页码是 **1-based**（PyMuPDF 的 `set_toc` 就收 1-based）。
+  //
+  // 原来这里**又打了一遍**，用的是 `int(p)-1` —— **正好差一页**：
+  // 于是 API 出的 PDF 书签指向的页比别的入口**早一页**。
+  // 同一份文档、一个任务、两个结果（完成标准 2）。
   return pdf;
 }
 

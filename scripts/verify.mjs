@@ -355,6 +355,11 @@ check("仓库自足：代码不指向仓库外，源 PDF 只有一个名字", ()
  * would leave the assertions unreached all over again.
  */
 let GATE_PDF = null;
+// 闸门**自己**渲染失败时的原因 —— null = 没失败（或根本没渲染）。
+// 「渲染失败」必须让闸门**红**，不能变成一串 skipped。
+let GATE_RENDER_ERROR = null;
+// 版面探测器的合成 HTML 结果（要开浏览器，只能在顶层 await 里跑）。
+let LAYOUT_PROBE = null;
 // 闸门渲染出来的 PDF 的**页数** —— 讲稿那句「交付件 N 页」从这儿走。
 // 手写的页数一定会过期（讲稿里那个「249 页」就过期了，交付件早就是 278 页）。
 let GATE_PAGES = null;
@@ -376,12 +381,51 @@ async function prepareGatePdf() {
     GATE_PDF = resolve(ROOT, "reports/.verify-render.pdf");
     writeFileSync(GATE_PDF, buf);
   } catch (e) {
+    // **渲染失败要记下来** —— 原来这里只是把 GATE_PDF 置空，
+    // 于是后面十几道 PDF 检查**全部返回 "skipped"**：
+    // 闸门是绿的，但它**什么都没查**。
+    // 「静默交付」不只发生在 PDF 上，也发生在**闸门上**。
     console.log("        (闸门渲染 PDF 失败：" + String((e && e.message) || e).slice(0, 140) + ")");
+    GATE_RENDER_ERROR = String((e && e.message) || e);
     GATE_PDF = null;
   }
   return GATE_PDF;
 }
 await prepareGatePdf();
+
+/**
+ * **版面探测器的合成 HTML 自测** —— 跑在顶层 await 里
+ * （`check()` 是同步的，开浏览器的活儿只能在这儿干）。
+ *
+ * 为什么要有这道：一个**永远返回 0** 的探测器比没有探测器更危险 ——
+ * 它让人以为「查过了」。所以要用一份**人造的高行**证明它会响。
+ */
+async function prepareLayoutProbe() {
+  const { auditHtmlLayout } = await import("../dist/htmlRenderV8.js");
+  const tall = `<!doctype html><html><head><meta charset="utf-8"><style>
+@page { size: A4; margin: 18mm 14mm 18mm 14mm; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: sans-serif; }
+table { width:100%; border-collapse: collapse; font-size: 8.6pt; page-break-inside: auto; }
+tr { page-break-inside: avoid; }
+th, td { border: 0.5pt solid #ccc; padding: 1.8mm 2.2mm; vertical-align: top; }
+</style></head><body><table><tr><td>${"撑破一页的单元内容 ".repeat(600)}</td></tr></table></body></html>`;
+  const okHtml = `<!doctype html><html><head><meta charset="utf-8"><style>
+@page { size: A4; margin: 18mm 14mm 18mm 14mm; }
+body { margin:0; font-family: sans-serif; }
+table { width:100%; border-collapse: collapse; font-size: 8.6pt; }
+tr { page-break-inside: avoid; }
+th, td { border: 0.5pt solid #ccc; padding: 1.8mm 2.2mm; }
+</style></head><body><table><tr><td>正常的一行</td></tr></table></body></html>`;
+  try {
+    const over = await auditHtmlLayout(tall);
+    const normal = await auditHtmlLayout(okHtml);
+    LAYOUT_PROBE = { over, normal };
+  } catch (e) {
+    LAYOUT_PROBE = { error: String((e && e.message) || e).slice(0, 300) };
+  }
+}
+await prepareLayoutProbe();
 
 console.log("\n=== 3b. agent 取证循环的不变量 ===");
 
@@ -2931,6 +2975,10 @@ check("the web UI does not claim a report size it cannot know", () => {
 const { reportFileName, contentDisposition, isUnverifiedDraft, DRAFT_MARKER, DRAFT_MARKER_ASCII } =
   await import("../dist/reportFileName.js");
 const { extractMasterParams } = await import("../dist/htmlRenderV8.js");
+// check() 是同步的（它不 await）—— pdfGates 的 import 必须在模块顶层做。
+const { runRenderGate: _runRenderGate } = await import("../dist/pdfGates.js");
+const { sanitizeTaskId, taskReportFile, resolveReportFile, DEFAULT_TASK_ID } =
+  await import("../dist/taskContext.js");
 
 // check() 是同步的（它不 await），所以 import 必须在模块顶层做。
 const { REPORT_FILE, UPLOADED_DOCS_DIR, PROJECT_ROOT: SERVER_ROOT } = await import(
@@ -2998,15 +3046,30 @@ check("the PDF export refuses to serve an unverified draft", () => {
     gen: m[1],
     at: m.index,
   }));
-  const writes = [...src.matchAll(/path\.join\(dir,\s*"(last-report[^"]*)"\)/g)];
+  // **两种写盘写法都算** ✓ ——
+  //   ① 老写法：`path.join(dir, "last-report.json")`（共享的那一份）；
+  //   ② 新写法：`taskReportFile(...)` / `taskDraftFile(...)`
+  //      （**按任务分目录** —— 同事 issue #2 ✓）。
+  // 判据的**意图**没变 ✓：两条管线必须写**不同的文件** ——
+  // 草稿不许覆盖已核验的那一份 ✗。
+  const writes = [
+    ...[...src.matchAll(/path\.join\(dir,\s*"(last-report[^"]*)"\)/g)].map((m) => ({
+      name: m[1],
+      at: m.index,
+    })),
+    ...[...src.matchAll(/task(Report|Draft)File\([^)]*\)/g)].map((m) => ({
+      name: m[1] === "Report" ? "last-report.json" : "last-report.llm-sse.json",
+      at: m.index,
+    })),
+  ];
   const pairs = writes.map((m) => {
     let best = null;
     for (const t of genTags) {
-      const d = Math.abs(t.at - m.index);
+      const d = Math.abs(t.at - m.at);
       if (d > 1500) continue;
       if (!best || d < best.d) best = { gen: t.gen, d };
     }
-    return [m[1], best?.gen ?? ""];
+    return [m.name, best?.gen ?? ""];
   });
   assert(pairs.length >= 2, `只找到 ${pairs.length} 处报告写入 —— 应该有两条管线各一处`);
   for (const [file, gen] of pairs) {
@@ -5072,6 +5135,253 @@ check("交付件里没有近空白页（客户 DR-015）", () => {
   return `${res.pages} 页里没有近空白页（正文 ≤ 2 行的页：0）`;
 });
 
+check("闸门渲染 PDF 必须成功 —— 渲染失败不许降级成 skipped", () => {
+  // 完成标准 1：「必要检查失败时，明确报错或标记未通过，不能静默交付」。
+  //
+  // 这条闸门守的是**闸门自己**：渲染失败时，原来那十几道 PDF 检查
+  // 全部返回 "skipped" —— 闸门是绿的，但它**什么都没查**。
+  assert(
+    !GATE_RENDER_ERROR,
+    `闸门渲染 PDF 失败：${String(GATE_RENDER_ERROR).slice(0, 300)}\n` +
+      "        → 后面所有 PDF 检查都会变成 skipped（闸门绿着，却什么都没查）",
+  );
+  if (!GATE_PDF) return "skipped — 没有可渲染的报告";
+  return `渲染成功（${GATE_PDF}）`;
+});
+
+check("渲染后的 PDF 自检必须干净（render_gate.py）", () => {
+  // 完成标准 1 + 3：HTML 标记漏出、半截公式、工具黑话。
+  //
+  // 这个检查**一直都在**（render_gate.py），但它原来跑在 finalizePdf() 里，
+  // 而那里的写法是 `console.warn` —— **检查失败了 PDF 还是照发**。
+  // 交付件第 234 页上印着 `<table><tr><td> vr </td>` 就是这么来的。
+  //
+  // 现在它跑在**渲染路径**上（renderPdfFromReportV8 → assertPdfGates），
+  // 不过就抛 → 三个下载入口都发不出去。
+  // 这一关是**第二道**：证明渲染路径那道确实在拦。
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF";
+  const { runRenderGate } = { runRenderGate: _runRenderGate };
+  const buf = readFileSync(pdfPath);
+  const res = runRenderGate(buf);
+  if (res.status === "skipped") return `skipped — ${res.output}`;
+  assert(
+    res.status === "ok",
+    `渲染后的 PDF 自检未通过：\n        ${res.output.split("\n").slice(0, 8).join("\n        ")}`,
+  );
+  return res.output;
+});
+
+check("版面探测器能抓到会被切掉的表格行（不是摆设）", () => {
+  // 完成标准 3 的「表格截断」——
+  // 判据是**物理事实**：有一行的排版高度**比一页还高**，
+  // 而 CSS 写着 `tr { page-break-inside: avoid }`：
+  // 浏览器既挪不动也切不开 → **溢出被切掉**，读者拿到半行，而且没有提示。
+  //
+  // 这道闸门用**合成 HTML**证明探测器会响 ——
+  // 一个永远返回 0 的探测器比没有探测器更危险（它让人以为查过了）。
+  assert(LAYOUT_PROBE, "版面探测没跑起来");
+  assert(
+    !LAYOUT_PROBE.error,
+    `版面探测跑不起来：${LAYOUT_PROBE.error} —— 探测器坏了，等于没查`,
+  );
+  const over = LAYOUT_PROBE.over ?? [];
+  const normal = LAYOUT_PROBE.normal ?? [];
+  assert(
+    over.length > 0 && over.some((o) => o.kind === "row"),
+    `探测器没抓到「比一页还高的表格行」（返回 ${JSON.stringify(over).slice(0, 200)}）—— ` +
+      "探测器坏了，等于没查",
+  );
+  assert(
+    normal.length === 0,
+    `正常表格被误报了：${JSON.stringify(normal).slice(0, 200)} —— ` +
+      "只会误报的检查比没有检查更糟（读者会学会忽略整块自查面板）",
+  );
+  return `合成 HTML：高的行被抓到 ${over.length} 处、正常的行 0 处误报`;
+});
+
+check("PDF 有文字层，而且搜得到东西（可搜索性）", () => {
+  // 完成标准 3 的「文字可搜索性」。
+  //
+  // 为什么单列一道：上面那些 PDF 检查**全都靠 `get_text()`** ——
+  // 文字层要是没了，它们会**全部返回空**，于是
+  // 「没有近空白页」会误判成通过（每页 0 行 → 0 ≤ 2 → 不算空白页）。
+  // 一份**扫描件**能骗过所有别的检查。
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF";
+  const py =
+    "import sys,io,json,base64,re,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path)\n" +
+    "pages=[p.get_text() for p in d]\n" +
+    "empty=[i+1 for i,t in enumerate(pages) if len(t.strip())<30]\n" +
+    "total=sum(len(t) for t in pages)\n" +
+    "print(json.dumps({'pages':d.page_count,'empty':empty[:12],'total':total,'text':'\\n'.join(pages)},ensure_ascii=False))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 90)}`;
+  const res = JSON.parse(r.stdout.trim().split("\n").pop());
+  assert(
+    res.total > 100000,
+    `PDF 的文字层几乎没有内容（共 ${res.total} 字）—— 这是一份**图片版** PDF，` +
+      "客户搜不到、复制不了、也过不了上面的引文检查",
+  );
+  assert(
+    res.empty.length === 0,
+    `PDF 有 ${res.empty.length} 页几乎没有文字（第 ${res.empty.join("、")} 页）—— ` +
+      "要么是空白页，要么是图片页（文字层缺失）",
+  );
+  // 真的**搜一下**：报告标题必须能在提取文本里找到。
+  const rep = JSON.parse(read("reports/last-report.json"));
+  const title = String(rep?.outline?.title ?? "").trim();
+  const norm = (s) => s.replace(/\s+/g, "");
+  const hay = norm(res.text);
+  assert(
+    title && norm(title).length > 4 && hay.includes(norm(title)),
+    `在 PDF 的文字层里搜不到报告标题「${title}」—— 文字层不是可搜索的`,
+  );
+  return `${res.pages} 页 · 文字层 ${res.total} 字 · 标题搜得到 · 没有无字页`;
+});
+
+check("PDF 里没有乱码", () => {
+  // 完成标准 3 的「乱码」。
+  //
+  // 乱码的三种形态都要抓：
+  //   ① U+FFFD（替换字符）—— 编码断了；
+  //   ② 「锟斤拷」—— UTF-8 被当 GBK 解；
+  //   ③ 常见的中文乱码片段（「Ã」「â€」「æ」这类 latin-1 化的 UTF-8）。
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF";
+  const py =
+    "import sys,io,json,base64,re,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path); t='\\n'.join(p.get_text() for p in d)\n" +
+    "pats={'replacement':'\\ufffd','kunjin':'锟斤拷','latin1':'Ã','latin2':'â\\u20ac','latin3':'æ\\u0088'}\n" +
+    "print(json.dumps({k:{'n':len(re.findall(re.escape(v),t))} for k,v in pats.items()},ensure_ascii=False))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 90)}`;
+  const res = JSON.parse(r.stdout.trim().split("\n").pop());
+  const bad = Object.entries(res).filter(([, v]) => v.n > 0);
+  assert(
+    bad.length === 0,
+    `PDF 里有乱码：${bad.map(([k, v]) => `${k} × ${v.n}`).join("、")} —— ` +
+      "客户看到的是乱码，不是内容",
+  );
+  return "没有乱码（替换字符 / 锟斤拷 / latin-1 化的中文都是 0）";
+});
+
+check("客户端每个请求都带任务 id（同事 issue #2）", () => {
+  // 完成标准 2：「两个不同任务并行生成和提问时，结果互不串用或覆盖」。
+  //
+  // 判据是**请求里有没有那个头** —— 不是「代码里有没有 taskId 这个词」✗。
+  // 一个只判字面量的闸门会**逼着人把实现改回去** ✗：
+  // 比如有人把 `taskHeaders(taskId, …)` 换成手写的头，闸门就红了，
+  // 而行为其实没变 ✗。
+  const files = ["client/src/pages/Home.tsx", "client/src/components/ReportBuilder.tsx"];
+  const missing = [];
+  let total = 0;
+  for (const f of files) {
+    const src = read(f);
+    // 每个 `fetch("/api/agent/…"` 调用，看它后面的 400 字里有没有 taskHeaders
+    const re = /fetch\(\s*[`"']\/api\/agent\//g;
+    let m;
+    while ((m = re.exec(src))) {
+      total++;
+      const window = src.slice(m.index, m.index + 400);
+      if (!window.includes("taskHeaders")) {
+        missing.push(`${f}:${src.slice(0, m.index).split("\n").length}`);
+      }
+    }
+  }
+  assert(total > 0, "没找到任何 /api/agent 请求 —— 判据失效了");
+  assert(
+    missing.length === 0,
+    `有 ${missing.length} 个请求没带任务 id（${missing.join("、")}）—— ` +
+      "两个任务会写**同一个**报告文件，后一个把前一个的顶掉",
+  );
+  // 任务 id 的**形状**必须能进文件路径 —— 一个带 `../` 的 id 就是任意写文件
+  assert(typeof sanitizeTaskId === "function", "taskContext 没导出 sanitizeTaskId");
+  assert(
+    sanitizeTaskId("../../etc/passwd") === "default" &&
+      sanitizeTaskId("a/b") === "default" &&
+      sanitizeTaskId("ok-1_2") === "ok-1_2",
+    "任务 id 的清洗不对 —— 它要被拼进文件路径",
+  );
+  return `${total} 个请求都带任务 id ✓ · id 形状受控 ✓`;
+});
+
+check("报告按任务存/取，不共用一个文件（同事 issue #2）", () => {
+  // 判据问**行为** ✓：两个任务 id 必须落到**不同的文件** ✓ ——
+  // 写 A 不能影响 B ✓。
+  assert(typeof taskReportFile === "function", "taskContext 没导出 taskReportFile");
+  const a = taskReportFile("_gate_A");
+  const b = taskReportFile("_gate_B");
+  assert(a !== b, "两个任务的报告落到了同一个文件 —— 并行时会互相顶掉");
+  assert(
+    resolveReportFile("_gate_A") !== resolveReportFile("_gate_B"),
+    "读的时候没有按任务分开 —— 会读到别人的报告",
+  );
+  assert(
+    resolveReportFile(DEFAULT_TASK_ID).includes("last-report.json"),
+    "没有任务 id 时没落回共享路径 —— 老用法（CLI / 脚本）会坏",
+  );
+  // 服务端**真的**用了它 —— 光有模块不算数
+  const src = read("server/_core/agentRoutes.ts");
+  assert(
+    src.includes("resolveReportFile") && src.includes("taskReportFile"),
+    "服务端没按任务存/取报告 —— 客户端带了任务 id，服务端却不用",
+  );
+  return "两个任务 → 两个文件 · 写入互不影响 · 老用法落回共享路径 ✓";
+});
+
+check("三个 PDF 下载入口走同一个渲染器（不许各自渲染）", () => {
+  // 完成标准 2：「各 PDF 下载入口针对同一任务输出的章节、关键表格和页数一致」。
+  //
+  // 历史上真的出过这个错：`finalizePdf()` 里**又渲染了一遍**，
+  // 用的是**另一个渲染器** —— 于是 API 出的 PDF 目录页码全是 11，
+  // 而本地出的 PDF 是对的。**两份文档，一个任务，两个结果。**
+  //
+  // 所以这里判的是**结构**：三个入口都必须调 `renderPdfFromReportV8()`，
+  // 而且**谁都不许自己再渲染一遍**。
+  const src = read("server/_core/agentRoutes.ts");
+  const routes = [
+    ['router.post("/api/agent/report/pdf"', "PDF 导出（存着的那份）"],
+    ['router.post("/api/agent/report/generate/mineru"', "MinerU 生成（returnPdf）"],
+    ['router.post("/api/agent/report/render"', "现场渲染（客户端传上来的）"],
+  ];
+  const seen = [];
+  for (const [needle, label] of routes) {
+    const at = src.indexOf(needle);
+    assert(at > 0, `找不到路由 ${needle}（${label}）`);
+    // 路由体到下一个 router. 注册为止
+    const next = src.indexOf("router.", at + needle.length);
+    const body = src.slice(at, next > 0 ? next : src.length);
+    assert(
+      body.includes("renderPdfFromReportV8"),
+      `${label} 没有走 renderPdfFromReportV8() —— 三个入口必须用**同一个**渲染器`,
+    );
+    assert(
+      !/renderPdfFromReport\(|page\.pdf\(|buildHtml\(/.test(body),
+      `${label} 自己又渲染了一遍 —— 同一份文档出两个结果（历史上目录页码就是这么对不上的）`,
+    );
+    seen.push(label);
+  }
+  return `${seen.join(" / ")} —— 都走 renderPdfFromReportV8()，没有各自渲染`;
+});
+
 check("delivered PDF has no placeholder cells claiming missing data", () => {
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF（设 VERIFY_PDF=<path> 可指定已渲染的 PDF）";
@@ -5982,6 +6292,12 @@ for (const t of [
   // 外来的语料必须被**拒绝**（同事在 GitHub issue #5 提的那一条）：
   // 套上 GB 4785 的抽取规则与人工结论，报告会**一本正经地讲错标准**。
   "_test_case_pack.mjs",
+  // 「任务隔离」的**确定性**用例：**不调模型**。
+  // 钉住同事 issue #2 的两条完成标准 ✓：
+  //   ① 两个任务的报告**互不覆盖**（按任务分目录）✓；
+  //   ② 取证结果带**证据范围**（任务 id + 案例包 + 源文件）✓，
+  //      案例包不适用时**不回答**（不拿别的标准的数据糊弄）✓。
+  "_test_task_isolation.mjs",
   // 「批量采纳」的**确定性**用例：**不调模型**。
   // 验的是采纳这一步的规矩 —— 不覆盖已有取值 · 不采纳命不中的 ·
   // 采纳必须写 why · 落盘先备份。957 个槽位不可能逐条手点，

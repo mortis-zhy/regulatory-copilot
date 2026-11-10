@@ -27,7 +27,7 @@
  */
 import { type ChatMessage } from "../integrations/minimax";
 import { withKeyRotation } from "../_core/minimaxPool";
-import { runAgentTool, toolSchemas } from "./agentTools";
+import { runAgentTool, toolSchemas, type ToolContext } from "./agentTools";
 // 版本清单 —— 声明里。收口指令要一份一份列全：
 // 少列一份，模型就会以为「那一版里没有」—— 而那是**错着说没有**。
 import { versionKeys, versionDocInText } from "@shared/versionMeta";
@@ -230,6 +230,8 @@ export async function* runAgentLoop(opts: {
   model?: string;
   temperature?: number;
   maxRounds?: number;
+  /** **这次问答的上下文** —— 任务 id 与案例包适用性（同事 issue #2 ✓）。 */
+  toolContext?: ToolContext;
 }): AsyncGenerator<AgentEvent> {
   const maxRounds = Math.max(1, Math.min(12, opts.maxRounds ?? 6));
   const tools = toolSchemas();
@@ -302,7 +304,7 @@ export async function* runAgentLoop(opts: {
       yield { type: "tool_call", name: tc.name, args: tc.args };
       let out: { ok: boolean; data: any };
       try {
-        out = await runAgentTool(tc.name, tc.args);
+        out = await runAgentTool(tc.name, tc.args, opts.toolContext);
       } catch (e) {
         out = { ok: false, data: { error: e instanceof Error ? e.message : String(e) } };
       }

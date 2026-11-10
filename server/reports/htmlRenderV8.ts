@@ -30,7 +30,10 @@ import {
 } from "./trustChecks";
 import { buildLedger, ledgerToCounts, extractAuthoritativeChanges, type AuthoritativeChanges } from "./closureLedger";
 import { orderVersions } from "./parameterMatrix";
+import { versionLabel, versionDocNoRev } from "./parameterMatrix";
+import { REPORT_META } from "./reportMeta";
 import { checkConsistency } from "./consistency";
+import { assertPdfGates } from "./pdfGates";
 import type { ReportOutline } from "./reportGenerator";
 
 /**
@@ -116,7 +119,7 @@ interface FontAsset {
   dataUri: string;
 }
 
-async function loadFonts(): Promise<FontAsset[]> {
+export async function loadFonts(): Promise<FontAsset[]> {
   const found = new Map<string, FontAsset>();
   for (const cand of FONT_CANDIDATES) {
     try {
@@ -245,6 +248,8 @@ function reduceLatex(tex: string): string {
   t = t.replace(/\\quad\s*/g, "  ");
   t = t.replace(/\\cdot/g, "·");
   t = t.replace(/\\times/g, "×");
+  // 角度：\circ → °（不在表里就会印出英文单词「circ」—— 交付件里 43 处）
+  t = t.replace(/\\circ\b/g, "°");
   t = t.replace(/\\le\b/g, "≤");
   t = t.replace(/\\ge\b/g, "≥");
   t = t.replace(/\\ne\b/g, "≠");
@@ -271,6 +276,10 @@ function reduceLatex(tex: string): string {
   t = t.replace(/(^|[^a-zA-Z])mathrm\s*\{([^{}]*)\}/g, (_m, a: string, b: string) => a + b.trim());
   t = t.replace(/(^|[^a-zA-Z])mathrm\b/g, "$1");
   t = t.replace(/[{}]/g, "");
+  // MinerU 的 LaTeX **每个字符之间都带空格**：`{ 1 5 } ^ { \circ }`
+  // → 数字被拆成「1 5」，读起来像两个数。
+  // 只在**数字与数字之间**合并 —— 「30 km/h」里的空格不动（那不是数字）。
+  t = t.replace(/(\d)\s+(\d)/g, "$1$2");
   t = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   t = t.replace(/&lt;(\/?)(sub|sup|i|b)&gt;/g, "<$1$2>");
   return t;
@@ -2927,6 +2936,160 @@ async function findAnchorPages(pdf: Buffer, anchors: string[]): Promise<Map<stri
   return found;
 }
 
+// ---------------------------------------------------------------------------
+// 13.5 印刷版面自检 —— 表格截断不许静默（同事 issue #4 完成标准 1 / 3）
+// ---------------------------------------------------------------------------
+
+/**
+ * A4 去掉 `@page` 上下边距后的**可印高度**（px）。
+ *
+ * CSS 里写着 `@page { size: A4; margin: 18mm 14mm 18mm 14px }`，
+ * 所以正文页能放的内容 = 297 − 18 − 18 = **261mm**。
+ * CSS px：96px/inch，1in = 25.4mm → 1mm = 96/25.4 px。
+ *
+ * **封面页例外**：`@page :first { margin: 0 }` —— 封面是整页。
+ * 封面上没有表格（它是标题页），所以按 261mm 判是安全的 ——
+ * 宁可多报一次让人看一眼，也不要为了封面开一个例外口子。
+ */
+const PRINT_CONTENT_HEIGHT_PX = (297 - 18 - 18) * (96 / 25.4);
+
+/**
+ * A4 版心宽度（px）—— `@page` 左右边距各 14mm。
+ *
+ * **为什么渲染时要设成这个宽度**：`page.pdf()` 用的是 **A4 版面宽度**排版，
+ * 而 `setContent` 之后 DOM 排的是**屏幕视口宽度**（默认 1280px）。
+ * 两者差 1.86 倍 —— 行高完全不同。
+ *
+ * 不设的话，版面自检量的是**屏幕排版**，而纸上印的是**打印排版**：
+ * 量出来「最长的表格行 231px」，纸上其实是 596px（实测）。
+ *
+ * 设了之后 **PDF 字节不变**（实测两次渲染 PDF 同为 4755 KB）——
+ * 因为打印版面由纸张决定，与视口无关。视口只影响**我们能测到什么**。
+ */
+const PRINT_CONTENT_WIDTH_PX = (210 - 14 - 14) * (96 / 25.4);
+
+export type LayoutOverflow = {
+  /** row = 表格行高于一页；cell-x = 单元横向溢出；clip-y = 盒子纵向被切 */
+  kind: "row" | "cell-x" | "clip-y";
+  /** 第几张表（-1 = 不是表格里的） */
+  table: number;
+  /** 第几行（-1 = 不适用） */
+  row: number;
+  /** 出问题那块的文本前 80 字 —— 用来定位 */
+  preview: string;
+  /** 实测值与上限（px） */
+  measured: number;
+  limit: number;
+  /** 为什么这算缺陷 —— 报错时直接给人看 */
+  why: string;
+};
+
+/**
+ * **渲染失败要说得清** —— 不是「少了几段」。
+ *
+ * 这个错误会被三处消费：网页的 PDF 下载入口（要变成 422 而不是 500）、
+ * 闸门（不许把渲染失败降级成「skipped」）、
+ * 批处理脚本（不许产出一份半截的 PDF）。
+ */
+export class RenderLayoutError extends Error {
+  readonly code = "render_layout_overflow";
+  constructor(readonly overflows: LayoutOverflow[]) {
+    super(
+      `印刷版面自检未通过：${overflows.length} 处表格会被切掉` +
+        overflows
+          .slice(0, 3)
+          .map((o) => `（${o.why}；「${o.preview.slice(0, 40)}」…）`)
+          .join(""),
+    );
+    this.name = "RenderLayoutError";
+  }
+}
+
+/**
+ * 在**已经排好版**的页面上量版面。
+ *
+ * 必须先 `emulateMedia({ media: "print" })` —— 屏幕媒体下的高度
+ * 与打印出来的不一样（分栏、@page 边距都只在 print 下生效）。
+ */
+async function measureLayout(page: any, limitPx: number): Promise<LayoutOverflow[]> {
+  return await page.evaluate((limit: number) => {
+    const out: any[] = [];
+    const clean = (s: string) => (s || "").replace(/\s+/g, " ").trim();
+    const tables = Array.from(document.querySelectorAll("table"));
+    tables.forEach((t, ti) => {
+      const rows = Array.from(t.querySelectorAll("tr"));
+      rows.forEach((r, ri) => {
+        const h = r.getBoundingClientRect().height;
+        if (h > limit) {
+          out.push({
+            kind: "row",
+            table: ti,
+            row: ri,
+            preview: clean(r.textContent).slice(0, 80),
+            measured: Math.round(h),
+            limit: Math.round(limit),
+            why: "这一行比一页还高，浏览器会把它切掉 —— 读者看不到后半截",
+          });
+        }
+        Array.from(r.children as any).forEach((c: any) => {
+          if (c.scrollWidth > c.clientWidth + 2) {
+            out.push({
+              kind: "cell-x",
+              table: ti,
+              row: ri,
+              preview: clean(c.textContent).slice(0, 80),
+              measured: c.scrollWidth,
+              limit: c.clientWidth,
+              why: "单元里装不下 —— 文字横向溢出，会压到旁边的列上",
+            });
+          }
+        });
+      });
+    });
+    // `overflow:hidden` 的盒子：内容比它高 → 多出来的部分被切掉了。
+    // 先用 scrollHeight 粗筛，再算样式 —— 全量 getComputedStyle 太慢。
+    Array.from(document.querySelectorAll("*")).forEach((el: any) => {
+      if (!(el.scrollHeight > el.clientHeight + 2) || el.clientHeight <= 0) return;
+      const cs = getComputedStyle(el);
+      if (cs.overflow !== "hidden" && cs.overflowY !== "hidden") return;
+      out.push({
+        kind: "clip-y",
+        table: -1,
+        row: -1,
+        preview: clean(el.textContent).slice(0, 80),
+        measured: el.scrollHeight,
+        limit: el.clientHeight,
+        why: "这个盒子 overflow:hidden 但内容比它高 —— 多出来的部分被切掉了",
+      });
+    });
+    return out;
+  }, limitPx);
+}
+
+/**
+ * **单独**审一份 HTML 的版面（不产 PDF）——
+ * 给闸门与回归用例用：可以拿合成 HTML 证明探测器真的会响。
+ */
+export async function auditHtmlLayout(html: string): Promise<LayoutOverflow[]> {
+  const { chromium } = await import("playwright-core");
+  const browser = await chromium.launch({ channel: "chrome" });
+  try {
+    const page = await browser.newPage({
+      viewport: { width: Math.round(PRINT_CONTENT_WIDTH_PX), height: Math.round(PRINT_CONTENT_HEIGHT_PX) },
+    });
+    await page.emulateMedia({ media: "print" });
+    await page.setContent(html, { waitUntil: "load", timeout: 600_000 });
+    await page.evaluate(async () => {
+      const fonts = (document as any).fonts;
+      if (fonts?.ready) await fonts.ready;
+      for (const f of fonts ?? []) await f.load().catch(() => {});
+    });
+    return await measureLayout(page, PRINT_CONTENT_HEIGHT_PX);
+  } finally {
+    await browser.close();
+  }
+}
+
 export async function renderPdfFromReportV8(report: RenderableReport): Promise<Buffer> {
   // 版本清单从报告本身推导（语料里有几版就出几版）
   setActiveVersions(
@@ -2938,7 +3101,11 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
   const { chromium } = await import("playwright-core");
   const browser = await chromium.launch({ channel: "chrome" });
   try {
-    const page = await browser.newPage();
+    // 视口 = A4 版心 —— 见 PRINT_CONTENT_WIDTH_PX 的注释。
+    // **PDF 字节不变**（打印版面由纸张决定），但版面自检量得到的是真版面。
+    const page = await browser.newPage({
+      viewport: { width: Math.round(PRINT_CONTENT_WIDTH_PX), height: Math.round(PRINT_CONTENT_HEIGHT_PX) },
+    });
     const render = async (html: string): Promise<Buffer> => {
       // Switch to print media BEFORE setContent. Chromium only embeds
       // @font-face fonts into the emitted PDF when print media is active at
@@ -2979,6 +3146,22 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
         for (const f of fonts ?? []) await f.load().catch(() => {});
       });
       await page.waitForTimeout(800);
+      // **印刷版面自检** —— 表格会被切掉时**当场报错**，不产出半截 PDF。
+      //
+      // 为什么在这儿（而不是出 PDF 之后）：版面是**浏览器排版**决定的，
+      // 出 PDF 之后就看不见了 —— 那时能查到的只有「缺了内容」这个现象，
+      // 查不到「为什么缺」。在 DOM 里量，缺的是哪一行、哪一格，一清二楚。
+      const overflows = await measureLayout(page, PRINT_CONTENT_HEIGHT_PX);
+      if (overflows.length) {
+        console.error(
+          `[v8] 印刷版面自检未通过（${overflows.length} 处）：\n` +
+            overflows
+              .slice(0, 10)
+              .map((o) => `  · [${o.kind}] 第 ${o.table} 表第 ${o.row} 行 ${o.measured}px > ${o.limit}px —— ${o.preview.slice(0, 60)}`)
+              .join("\n"),
+        );
+        throw new RenderLayoutError(overflows);
+      }
       const PDF_META = pdfMeta();
       const pdf = await page.pdf({
         title: report.outline.title,
@@ -3026,9 +3209,76 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
     // (TOC rows are fixed-height, so pagination does not shift between passes.)
     console.log(`[htmlRenderV8] pass-2 render without anchors (${pages.size}/${anchors.length} anchors found)`);
     const finalPdf = await render(await buildHtml(report, fonts, { withAnchors: false }));
-    return await addPdfBookmarks(finalPdf, report);
+    const stamped = await addPdfBookmarks(finalPdf, report);
+    // **元数据**（作者 / 管线版本）—— 放在渲染路径上，
+    // 三个下载入口拿到的 PDF 才是**同一份**（完成标准 2）。
+    const withMeta = await stampPdfMeta(stamped, report);
+    // **渲染后的 PDF 自检**（同事 issue #4 完成标准 1）——
+    // 自检不过就**不产出这份 PDF**，而不是记一条日志接着发。
+    //
+    // 放在这里而不是 `finalizePdf()` 里，是因为**三个下载入口**
+    // （/report/pdf、/mineru-report?returnPdf、/report/render）都走这里 ——
+    // 放在渲染路径上，每个入口自动被管住；放在别处就得记着补三遍。
+    assertPdfGates(withMeta);
+    return withMeta;
   } finally {
     await browser.close();
+  }
+}
+
+/**
+ * 给渲染好的 PDF 补上 **author / 管线版本** —— Chromium 的 `page.pdf()` 只认 `title`。
+ *
+ * ## 为什么挪进渲染路径
+ *
+ * 原来这一步在 `finalizePdf()` 里，而**只有 API 那条入口**调它 ——
+ * 于是三个下载入口拿到的 PDF **元数据不一样**（完成标准 2）。
+ * 放在渲染路径上，三个入口自动一致。
+ *
+ * ## 为什么走临时文件
+ *
+ * 原来它写的是仓库里的**固定路径**（`reports/GB4785_….pdf`）——
+ * 两个任务同时跑，后一个把前一个的产物顶掉（同事 issue #2）。
+ * 临时文件用完即删，谁也不碰谁。
+ */
+export async function stampPdfMeta(pdf: Buffer, report: RenderableReport): Promise<Buffer> {
+  const script = path.resolve(process.cwd(), "set_pdf_meta.py");
+  if (!existsSync(script)) {
+    console.warn("[htmlRenderV8] 找不到 set_pdf_meta.py —— PDF 元数据没补（作者 / 管线版本）");
+    return pdf;
+  }
+  let dir = "";
+  try {
+    dir = await fs.mkdtemp(path.join((await import("node:os")).tmpdir(), "pdfmeta-"));
+    const file = path.join(dir, "in.pdf");
+    await fs.writeFile(file, pdf);
+    const { execFileSync } = await import("node:child_process");
+    const ver = "v6.2-" + new Date().toISOString().slice(0, 10);
+    execFileSync(
+      "python",
+      [
+        script, file,
+        "--title", report.outline?.title ?? "",
+        "--author", `${REPORT_META.standardFamily} 多版本对比报告 pipeline`,
+        "--subject", `${versionLabel("A")} / ${versionLabel("B")} / ${versionLabel("C")} 三版本法规横向对照`,
+        "--keywords", `${REPORT_META.standardFamily}, ${versionDocNoRev("C")}, 法规对比, 核验追溯`,
+        "--pipeline-version", ver,
+      ],
+      { encoding: "utf8", windowsHide: true, cwd: path.dirname(script), stdio: ["ignore", "pipe", "pipe"] },
+    );
+    console.log(`[htmlRenderV8] pdf-meta patched (${ver})`);
+    return await fs.readFile(file);
+  } catch (e) {
+    console.warn("[htmlRenderV8] pdf-meta patch skipped:", String(e).slice(0, 200));
+    return pdf;
+  } finally {
+    if (dir) {
+      try {
+        await fs.rm(dir, { recursive: true, force: true });
+      } catch {
+        /* 临时目录清不掉不该让渲染失败 */
+      }
+    }
   }
 }
 

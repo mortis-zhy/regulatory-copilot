@@ -1,8 +1,8 @@
 {
  "_comment": "取值规格提议 agent 的**泛化率实测**（真模型，藏起已知答案重找）。这是记账，不是闸门 —— 它调模型、会花钱、会有抖动。",
  "sampleSize": 50,
- "passed": 15,
- "rate": 0.3,
+ "passed": 41,
+ "rate": 0.82,
  "rows": [
   {
    "id": "adaptiveHighBeam.envLightOff",
@@ -25,7 +25,7 @@
     ]
    },
    "source": "5\\.3\\.9\\.2\\.4[\\s\\S]{0,900}?当环境照明大于\\s*(7000)\\s*lx",
-   "why": "参数为自适应远光灯自动关闭的环境照明阈值（单位 lx）。候选中唯一带 lx 且语义匹配的条款为 5.3.9.2.4 c)「当环境照明大于7000lx 时，远光灯应关闭」，即远光自适应功能传感器在环境照明大于 7000 lx 时应关闭远光灯。该条位于第34页，值与条款锚点同页。以条款号 5.3.9.2.4 开头锚定，窗口宽松连接，捕获组只框住数值 7000（单位 lx 在组外），已通过 test_regex 验证：取到值 7000，条款 5.3.9.2.4，页 34。",
+   "why": "条款5.3.9.2.4（远光自适应功能传感器要求）c)项规定「当环境照明大于7000lx 时，远光灯应关闭」，正是自适应远光灯自动关闭的环境照明阈值，值与条款同在第34页。捕获组仅框住7000，单位lx紧随其后且在组外，符合单位与条款锚定要求。已用test_regex验证：命中页34、条款5.3.9.2.4、抽取值7000。",
    "validation": null,
    "error": null,
    "pass": true
@@ -49,8 +49,8 @@
     "page": null,
     "nums": []
    },
-   "source": "5\\.24\\.5\\.2[\\s\\S]{0,900}?AV3a[\\s\\S]{0,200}?向外[\\s\\S]{0,30}?(5\\s*°\\s*至\\s*60\\s*°)",
-   "why": "以5.24.5.2条款号锚定，并用AV3a限定侧ADS标志灯；捕获组完整框取水平方向角区间“5°至60°”。",
+   "source": "5\\.24\\.5\\.2[\\s\\S]{0,900}?向外\\s*(5\\s*°\\s*至\\s*60\\s*°)",
+   "why": "以条款号5.24.5.2锚定水平方向角规定，并在同页窗口内定位“向外5°至60°”；捕获组仅包含AV3a类侧ADS标志灯的完整水平方向角区间。",
    "validation": "在语料里一条页都没命中 —— 条款锚点多半写错了",
    "error": null,
    "pass": false
@@ -76,7 +76,7 @@
     ]
    },
    "source": "5\\.3\\.4\\.1[\\s\\S]{0,900}?相邻发光单元最大水平距离应不大于\\s*(140)\\s*mm",
-   "why": "条款 5.3.4.1 b) 明确规定「各自适应模式的同侧发光单元，相邻发光单元最大水平距离应不大于140mm（见图2 中的E）」，即 AFS 同侧相邻发光单元水平距离上限为 140 mm。正则以条款号 5.3.4.1 锚定并允许窗口跨越中间文字，捕获组只框住 140；同条款中的 200mm（两对对称安装时放宽值）、400mm（垂直距离）、600/1200/250mm（安装高度与横向距离）均非本参数，已通过字面量「相邻发光单元最大水平距离应不大于」区分。test_regex 验证：命中第30页，条款 5.3.4.1，取值 140。",
+   "why": "条款5.3.4.1 b) 明确规定「各自适应模式的同侧发光单元，相邻发光单元最大水平距离应不大于140mm」，正是本参数（AFS同侧相邻发光单元水平距离上限）。用条款号锚定并以窗口连接允许中间出现其他文字，捕获组只框住140；已用test_regex验证：命中第30页、条款5.3.4.1、取值140。注意同条款中的200mm是「两对均对称安装时」的放宽值（见图2中C），400mm为垂直距离(D)，均非本参数，故正则只取首次出现的140mm。",
    "validation": null,
    "error": null,
    "pass": true
@@ -101,8 +101,8 @@
      "2"
     ]
    },
-   "source": "6\\.27\\.7\\.2\\.[\\s\\S]{0,300}?the frequency shall not exceed\\s*(2\\.0)\\s*Hz",
-   "why": "以条款号6.27.7.2锚定，并用同页文本窗口连接至应答信号闪烁频率上限；捕获组仅框住完整数值2.0及原文单位Hz。",
+   "source": "6\\.27\\.7\\.2[\\s\\S]{0,900}?frequency shall not exceed\\s*(2\\.0)\\s*Hz",
+   "why": "条款6.27.7.2明确规定应答信号闪烁时频率不得超过2.0 Hz；捕获组仅框住数值2.0，并已通过test_regex验证命中第96页。",
    "validation": null,
    "error": null,
    "pass": true
@@ -127,8 +127,8 @@
      "2100"
     ]
    },
-   "source": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,900}?车型结构不能保证在1500㎜内[\\s\\S]{0,200}?可增至\\s*(2100)\\s*㎜",
-   "why": "参数为「制动灯高度上限（车型结构受限）」，即一般上限1500㎜在车型结构不能保证时可放宽到的上限。GB 4785 草案 5.7.4.2.1（S1或S2类制动灯）原文：「离地高度应不小于350㎜，不大于1500㎜。若未安装选装灯具，且车型结构不能保证在1500㎜内,则可增至2100㎜。」因此取值为2100mm。以条款号5.7.4.2.1锚定，用窗口连接到「车型结构不能保证在1500㎜内…可增至2100㎜」，捕获组只框住2100，车型/灯具类别编号(S1/S2)与1500、350等其他限值均在捕获组外；单位与原文一致使用㎜。test_regex 验证通过：条款5.7.4.2.1、第42页、取值2100。",
+   "source": "5\\.7\\.4\\.2\\.1[\\s\\S]{0,600}?车型结构不能保证在1500㎜内[\\s\\S]{0,200}?可增至\\s*(2100)\\s*㎜",
+   "why": "条款5.7.4.2.1规定S1/S2类制动灯离地高度应不小于350㎜、不大于1500㎜；只有在未安装选装灯具且车型结构不能保证在1500㎜内时，才“可增至2100㎜”。本题参数“制动灯高度上限（车型结构受限）”即指这一结构受限情形下的上限值2100mm，故锚定5.7.4.2.1并用窗口跨过中间文字，捕获组只框住2100（含原文字符㎜）。同一页第41页5.7.1与5.7.5.1中虽也出现2100，但被条款锚点与“车型结构不能保证…可增至”限定，不会误取。test_regex验证：条款号5.7.4.2.1、第42页、取值2100。",
    "validation": null,
    "error": null,
    "pass": true
@@ -147,17 +147,15 @@
     ]
    },
    "got": {
-    "clause": "6.21.7.1",
-    "page": 81,
-    "nums": [
-     "1000"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "6\\.21\\.7\\.1\\.[\\s\\S]{0,1500}?However,[\\s\\S]{0,900}?not exceed\\s*(1,000)\\s*mm",
-   "why": "以条款6.21.7.1为锚点，并在同页窗口内匹配例外情形的原文“However...not exceed 1,000 mm”；捕获组仅框住带千分位的数值1,000，mm保留在捕获组外。",
-   "validation": null,
-   "error": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "error": "模型调用失败：MiniMax 429: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"已达到 Token Plan 速率限制：请升级 Token Plan 套餐或切换为按量付费 API 使用。 (2062)\",\"http_code\":\"429\"},\"request_id\":\"0741cf97e21e34e91421262473f2c5c9\"}\n",
+   "pass": false
   },
   {
    "id": "corneringLamp.horizontalAngle",
@@ -174,18 +172,15 @@
     ]
    },
    "got": {
-    "clause": "5.5.5",
-    "page": 37,
-    "nums": [
-     "30",
-     "60"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "5\\.5\\.5[\\s\\S]{0,900}?水平方向角[\\s\\S]{0,20}?向外\\s*(30\\s*º\\s*至\\s*60\\s*º)",
-   "why": "以条款号5.5.5锚定，并限定捕获“水平方向角…向外”的完整区间“30º至60º”；已通过test_regex验证，命中第37页且条款号为5.5.5。",
-   "validation": null,
-   "error": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "error": "模型调用失败：MiniMax 429: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"已达到 Token Plan 速率限制：请升级 Token Plan 套餐或切换为按量付费 API 使用。 (2062)\",\"http_code\":\"429\"},\"request_id\":\"0741cf97f6326b2febda7b7e5ccd3b07\"}\n",
+   "pass": false
   },
   {
    "id": "courtesyLamp.maxIntensity",
@@ -201,17 +196,15 @@
     ]
    },
    "got": {
-    "clause": "6.24.9.4",
-    "page": 92,
-    "nums": [
-     "0.5"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "6\\.24\\.9\\.4[\\s\\S]{0,900}?not more less than\\s*(0\\.5)\\s*cd",
-   "why": "UN R48-09 §6.24.9.4 规定：经申请人与技术服务机构同意，可用图纸/仿真验证，或在申请人证明迎宾灯在 Annex 14 观察试验中直接发出的光强不大于（原文作 'not more less than'）每灯 0.5 cd 时视为满意 —— 正是本参数「替代验证的单灯光强上限」。正则以条款号 6.24.9.4 锚定（同一页 92），窗口用 [\\s\\S]{0,900}? 连接锚点与值，捕获组只框住数值 0.5，单位 cd 留在组外；已用 test_regex 验证通过，取值 0.5、条款 6.24.9.4、页码 92。",
-   "validation": null,
-   "error": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "error": "模型调用失败：MiniMax 429: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"已达到 Token Plan 速率限制：请升级 Token Plan 套餐或切换为按量付费 API 使用。 (2062)\",\"http_code\":\"429\"},\"request_id\":\"0741cf98d6a1a9f64ef1ce80ab2beb74\"}\n",
+   "pass": false
   },
   {
    "id": "das.keepOnSpeedMin",
@@ -227,17 +220,15 @@
     ]
    },
    "got": {
-    "clause": "6.1.8",
-    "page": 64,
-    "nums": [
-     "40"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "6\\.1\\.8[\\s\\S]{0,900}?车速在\\s*(40)\\s*km/h",
-   "why": "条款 6.1.8 规定：驾驶员辅助投射已开启时，车速在 40km/h 以上允许保持开启状态，即「保持开启车速下限」为 40 km/h。以 6.1.8 为条款锚点，窗口跨句连接「车速在…km/h」的表述，捕获组只框住数值 40（65km/h 属于「不应开启」的车速上限，不在捕获组内）。已用 test_regex 验证：命中第64页，条款 6.1.8，抽取值为 40。",
-   "validation": null,
-   "error": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "error": "模型调用失败：MiniMax 429: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"已达到 Token Plan 速率限制：请升级 Token Plan 套餐或切换为按量付费 API 使用。 (2062)\",\"http_code\":\"429\"},\"request_id\":\"0741cf98ad46ff17375cd59c959319f3\"}\n",
+   "pass": false
   },
   {
    "id": "dippedBeam.aimDownLabelAccuracy",
@@ -257,10 +248,10 @@
     "page": null,
     "nums": []
    },
-   "source": "5\\.2\\.6\\.1\\.1[\\s\\S]{0,300}?按(0\\.1%)的准确度",
-   "why": "条款5.2.6.1.1规定制造商应以0.1%的准确度确定近光明暗截止线的初始下倾度值，并在车辆或制造商铭牌处标明该值；捕获组仅提取标注准确度0.1%。",
-   "validation": "在语料里一条页都没命中 —— 条款锚点多半写错了",
-   "error": null,
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "error": "模型调用失败：MiniMax 429: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"已达到 Token Plan 速率限制：请升级 Token Plan 套餐或切换为按量付费 API 使用。 (2062)\",\"http_code\":\"429\"},\"request_id\":\"0741cf996baa2e93073e3d37bb89993f\"}\n",
    "pass": false
   },
   {
@@ -277,17 +268,15 @@
     ]
    },
    "got": {
-    "clause": "5.6.3.1",
-    "page": 39,
-    "nums": [
-     "20"
-    ]
+    "clause": null,
+    "page": null,
+    "nums": []
    },
-   "source": "5\\.6\\.3\\.1[\\s\\S]{0,900}?1b[\\s\\S]{0,200}?若上述间距不大于\\s*(20)\\s*(?:㎜|mm)",
-   "why": "以条款号5.6.3.1锚定，并在同一条款内定位“1b类”及“若上述间距不大于20 mm”，捕获组仅提取上限值20；已用A版真实语料验证，命中第39页、条款5.6.3.1。",
-   "validation": null,
-   "error": null,
-   "pass": true
+   "source": null,
+   "why": "",
+   "validation": "没有产出正则",
+   "error": "模型调用失败：MiniMax 429: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"已达到 Token Plan 速率限制：请升级 Token Plan 套餐或切换为按量付费 API 使用。 (2062)\",\"http_code\":\"429\"},\"request_id\":\"0741cf997c01a43093e6a880b513b48e\"}\n",
+   "pass": false
   },
   {
    "id": "drl.autoOffSpeed",
@@ -310,7 +299,7 @@
     ]
    },
    "source": "5\\.19\\.7\\.2[\\s\\S]{0,900}?车速不大于\\s*(15)\\s*km/h",
-   "why": "条款5.19.7.2规定昼间行驶灯可不点亮或手动熄灭的条件，其中最后一项为「车速不大于15km/h」，即昼间行驶灯手动关闭的车速阈值；捕获组只框住数值15，条款锚点与值在同一页（第57页），抽取验证通过。",
+   "why": "条款 5.19.7.2 规定昼间行驶灯可不点亮或手动熄灭并保持熄灭的条件之一为「车速不大于15km/h」，即昼间行驶灯手动关闭的车速阈值；捕获组仅框住数值15，条款锚点 5.19.7.2 与值同在第57页。",
    "validation": null,
    "error": null,
    "pass": true
@@ -335,8 +324,8 @@
      "50"
     ]
    },
-   "source": "7\\.2\\.7\\.3[\\s\\S]{0,900}?紧急制动信号应仅在车速高于\\s*(50)\\s*km/h",
-   "why": "A 版（GB 4785 草案 V4.3.5）第 7.2.7.3 条 a) 规定「紧急制动信号应仅在车速高于 50km/h 并且制动系统发出 GB 12676 或 GB 21670 规定的紧急制动逻辑信号时启动」，该 50km/h 即紧急制动信号启动的车速阈值，值与单位同页（第 70 页）。正则以条款号 7.2.7.3 锚定，用窗口跨越条文引导句「紧急制动信号应自动启动和解除，且满足以下要求：」及子项「a) 」，捕获组仅框住数值 50，单位 km/h 留在组外以便核对。已用 test_regex 验证：ok=true，取值 50，条款 7.2.7.3，第 70 页。",
+   "source": "7\\.2\\.7\\.3[\\s\\S]{0,900}?车速高于\\s*(50)\\s*km/h",
+   "why": "条款 7.2.7.3 a) 规定「紧急制动信号应仅在车速高于50km/h 并且制动系统发出 GB 12676 或 GB 21670 规定的紧急制动逻辑信号时启动」，50 km/h 即紧急制动信号启动的车速阈值（高于该值才启动）。以 7.2.7.3 条款号锚定，捕获组只框住 50，单位 km/h 与参数单位一致，其余内容均在捕获组外。",
    "validation": null,
    "error": null,
    "pass": true
@@ -361,8 +350,8 @@
      "80"
     ]
    },
-   "source": "5\\.13\\.5[\\s\\S]{0,300}?水平方向角β[\\s\\S]{0,120}?向外\\s*(80)\\s*°",
-   "why": "参数「示廓灯水平方向角」对应 5.13.5 几何可见度中的「水平方向角β：向外80°」。用条款号 5.13.5 作锚点，窗口跨过同段文字后匹配「水平方向角β … 向外 (80)°」，捕获组只框住数值 80，单位为 °；垂直方向角α（5°/20°）因不匹配「水平方向角β…向外」而被排除。已用 test_regex 验证：命中第51页、条款 5.13.5、取值 80。",
+   "source": "5\\.13\\.5[\\s\\S]{0,900}?水平方向角[\\s\\S]{0,40}?(\\d+)\\s*°",
+   "why": "条款锚点 5.13.5（几何可见度，第51页）后用窗口连接，定位到「水平方向角」标签，随后第一个出现的度数即 80°（向外）。捕获组只框住数值 80；同条款下「垂直方向角α：水平向上5°，向下20°」不在捕获路径上（水平方向角标签只出现一次），不会被误取。test_regex 验证：ok=true，clause=5.13.5，page=51，nums=[80]。",
    "validation": null,
    "error": null,
    "pass": true
@@ -389,8 +378,8 @@
      "1"
     ]
    },
-   "source": "7\\.2\\.7\\.1[\\s\\S]{0,400}?以（(4\\.0\\s*±\\s*1\\.0)）\\s*Hz",
-   "why": "锚定条款 7.2.7.1「发出紧急制动信号的所有灯具，闪烁频率要求如下」，用窗口跨过标题与句首文字，捕获组只框住 a) 项的频率值（4.0±1.0），单位 Hz 保留在组外；已用 test_regex 验证：条款 7.2.7.1、页 70、抽取到 4.0 与 1.0（即 4.0±1.0 Hz）。同条 b) 项仅为灯丝灯泡情形的补充范围，未采用。",
+   "source": "7\\.2\\.7\\.1[\\s\\S]{0,900}?以（(4\\.0±1\\.0)）Hz",
+   "why": "条款 7.2.7.1（第70页）规定发出紧急制动信号的所有灯具应以（4.0±1.0）Hz 频率同相闪烁，正则以条款号 7.2.7.1 起始锚定，跨行窗口连接原文「以（4.0±1.0）Hz」，捕获组仅框住数值 4.0±1.0，捕获组外保留全角括号与 Hz，单位与参数族（闪烁频率/时间参数，单位 Hz）一致；同条款 b) 项中灯丝灯泡的 4.0~-1.0 Hz 是同一参数的适用条件说明，不单独取值。",
    "validation": null,
    "error": null,
    "pass": true
@@ -415,8 +404,8 @@
      "20"
     ]
    },
-   "source": "5\\.32[\\s\\S]{0,900}?not larger than\\s*(20)\\s*cm",
-   "why": "以条款号 5.32 锚定，通过同页窗口连接至外部状态指示器视表面面积的“不大于”表述；第一捕获组仅框住上限值 20，避免误取光强 0.5 cd。",
+   "source": "5\\.32[\\s\\S]{0,900}?area of the apparent surface[\\s\\S]{0,120}?not larger than\\s*(20)\\s*cm",
+   "why": "以条款号5.32锚定，并在同页定位外部状态指示器视表面面积“not larger than 20 cm”的表述；首个且唯一的捕获组仅框住上限值20。",
    "validation": null,
    "error": null,
    "pass": true
@@ -441,8 +430,8 @@
      "100"
     ]
    },
-   "source": "6\\.1\\.9\\.1\\.[\\s\\S]{0,300}?reference value corresponding to an aggregate maximum intensity[\\s\\S]{0,300}?shall not exceed\\s+(100)\\b",
-   "why": "参数口径即 C 版 UN R48 §6.1.9.1 的『以参考标记为基准的远光灯可同时点亮时合计最大光强对应的参考值』（reference value ... aggregate maximum intensity of the main-beam headlamps ... shall not exceed 100）。正则以条款号 6.1.9.1 锚定，跨行窗口连接原文措辞，仅捕获最终限值 100（无量纲，参考标记），不把条款号或其他数字（车型/角度等）纳入捕获组。test_regex 验证通过：值 100、条款 6.1.9.1、页 38。",
+   "source": "6\\.1\\.9\\.1[\\s\\S]{0,400}?shall\\s*not\\s*exceed\\s*(100)\\s*\\.",
+   "why": "C 版 UN R48-09 §6.1.9.1 为远光灯同时点亮时总光强的参考值条款，原文「The reference value corresponding to an aggregate maximum intensity of the main-beam headlamps which can be switched ON simultaneously shall not exceed 100.」；以条款号 6.1.9.1 锚定，窗口连接至数值并仅捕获 100（参考标记，无量纲），已通过 test_regex 验证：条款 6.1.9.1、第38页、取值 100。",
    "validation": null,
    "error": null,
    "pass": true
@@ -461,15 +450,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.4.6.1.2",
+    "page": 36,
+    "nums": [
+     "0.1"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.4\\.6\\.1\\.2[\\s\\S]{0,900}?以不大于\\s*(0\\.1)\\s*%",
+   "why": "条款5.4.6.1.2 b)规定：车辆空载且驾驶座有一个乘员情况下的初始明暗截止线垂直倾斜度，由制造商以不大于0.1%的精度进行规定并加以标注。该句正是前雾灯初始下倾度的标注准确度要求（其余带%数值的句子为倾斜度限值/初始照准范围，非标注准确度）。正则以条款号5.4.6.1.2锚定，窗口足够覆盖同页后续文字，捕获组仅框住数值0.1并紧跟%号，已用test_regex验证通过（取值0.1，条款5.4.6.1.2，第36页）。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "frontPositionLamp.a2ActivationSpeedMax",
@@ -485,15 +476,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.9.7.2.1",
+    "page": 45,
+    "nums": [
+     "15"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.9\\.7\\.2\\.1[\\s\\S]{0,900}?车速不大于\\s*(15)\\s*km/h",
+   "why": "5.9.7.2.1规定A2类位置灯应自动激活并点亮，并列出车速不大于15km/h等可不点亮或保持稳定光强等级的条件；捕获组仅提取该车速上限15。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "frontReflexReflector.horizontalAngle",
@@ -509,15 +502,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.16.5",
+    "page": 53,
+    "nums": [
+     "30"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.16\\.5[\\s\\S]{0,900}?水平方向角β[\\s\\S]{0,60}?各为\\s*(30)\\s*°",
+   "why": "条款 5.16.5「几何可见度」第53页原文为「水平方向角β：向内、向外各为30°」，以 5.16.5 为条款锚点，用非贪婪窗口连接「水平方向角β」与数值，捕获组仅框住 30，值与条款同页。避免用「水平方向角β：向内、向外各为」这类含全角冒号/顿号的整串（该形状实测匹配失败），改用 β 后 60 字以内窗口再接「各为30°」即可稳定命中。垂直方向角 α 为 10°、挂车内向可减至 10°，均不在捕获范围内，故取到的是前回复反射器水平方向角 30°。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "graphicInteraction.elementDistanceMax",
@@ -533,15 +528,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "6.3.1.2",
+    "page": 67,
+    "nums": [
+     "200"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "6\\.3\\.1\\.2[\\s\\S]{0,900}?不应大于\\s*(200)\\s*mm",
+   "why": "条款 6.3.1.2 规定图文交互功能显示元素的发光面与主功能发光面在基准轴线方向上的距离不应大于200mm，即本参数上限值；锚定条款号后用窗口跨过中间文字，捕获组仅框住数值200并保留单位mm。已用 test_regex 验证：命中第67页，条款号 6.3.1.2，抽取值 200。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "highMountedLamp.exemptHeightThreshold",
@@ -557,15 +554,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.6.5.1",
+    "page": 40,
+    "nums": [
+     "2100"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.6\\.5\\.1[\\s\\S]{0,900}?选装灯的离地高度不小于\\s*(2100)\\s*㎜",
+   "why": "参数『高位选装灯可见度豁免门槛』对应 A 版 5.6.5.1 b) 的规定：『若选装灯的离地高度不小于2100 ㎜（测量方法参照4.8 b)），则水平面以上的垂直方向角可由15°减至5°』。该 2100 ㎜ 是选装灯（高位安装）几何可见度可放宽的离地高度门槛，单位为 mm，与参数一致（对照 C 版 UN R48 6.5.5.1(b)『Where an optional rear lamp is mounted above 2,100 mm … the upward angle of 15° may be reduced to 5°』）。正则以条款号 5.6.5.1 锚定，窗口 900 字符足够跨行连接，捕获组只框住 2100，单位 ㎜ 逐字照抄原文（第40页）；已用 test_regex 验证：值 2100、条款 5.6.5.1、页码 40，均正确。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "illuminatedEmblem.apertureMaxArea",
@@ -581,15 +580,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "6.4.2.4",
+    "page": 68,
+    "nums": [
+     "400"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "6\\.4\\.2\\.4[\\s\\S]{0,120}?(4\\s*0\\s*0)",
+   "why": "以条款号6.4.2.4锚定，并捕获该条款中透光面视表面外轮廓外接最小凸多边形面积“不应大于”的上限400；已验证命中第68页，条款号正确，捕获组仅包含数值。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "indicator.firstOff",
@@ -605,15 +606,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.6.9",
+    "page": 41,
+    "nums": [
+     "1.5"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.6\\.9[\\s\\S]{0,900}?在\\s*(1\\.5)\\s*s\\s*时间内首次熄灭",
+   "why": "条款5.6.9（其他要求，第41页）原文：\"转向灯开关开启后，应在不大于1s时间内发光；在1.5s时间内首次熄灭，且应经历一次完整的点亮周期。\"。参数\"转向信号灯首次熄灭时间\"对应的是\"首次熄灭\"这一时刻，故取值1.5 s；用窗口连接条款锚点与该句，避免误取前一句\"发光时间1s\"（该项不是本参数）。捕获组仅框住数值1.5，单位s留在组外。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "innerEdgeGap.narrowWidthThreshold",
@@ -629,15 +632,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.6.4.1",
+    "page": 39,
+    "nums": [
+     "1300"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.6\\.4\\.1[\\s\\S]{0,900}?若车辆\\s*宽度小于\\s*(1300)\\s*(?:㎜|mm)",
+   "why": "参数是「内缘间距可减小的车宽门槛」，即 5.6.4.1 中成对转向信号灯相邻视表面内边缘间距不小于600mm、可减至400mm 的前提条件——车辆宽度小于 1300mm。原文逐字为「若车辆宽度小于1300㎜，上述间距可减至400㎜。」，故捕获组只框 1300，单位同时兼容 ㎜ 与 mm 两种写法；条款锚点 5.6.4.1 与值同在第39页，test_regex 验证 ok=true，clause=5.6.4.1，page=39，nums=[1300]。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "lightSignalProjection.blockingRangeLateral",
@@ -653,15 +658,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "6.2.2.4",
+    "page": 66,
+    "nums": [
+     "3000"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "6\\.2\\.2\\.4[\\s\\S]{0,900}?左右侧\\s*(3000)\\s*mm",
+   "why": "参数「光信号投射遮挡防护范围（左右）」对应 A 版 6.2.2.4 中「防止在前后 5000mm，左右侧 3000mm 范围内（见图 9）……出现的其他道路使用者遮挡该投射符号」一句；其中左右侧（横向）遮挡防护范围为 3000 mm。以条款号 6.2.2.4 锚定，窗口允许跨过同页中间的「前后 5000mm，」，捕获组只框住 3000，页面与条款经 test_regex 验证落在第66页 6.2.2.4。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "lowMountedLamp.downwardAngleMax",
@@ -677,14 +684,16 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.6.5.1",
+    "page": 40,
+    "nums": [
+     "5"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
+   "source": "5\\.6\\.5\\.1[\\s\\S]{0,900}?减至\\s*(5)\\s*°",
+   "why": "锚定5.6.5.1；该条款规定离地高度小于750 mm的灯具，水平面以下的垂直方向角可由15°减至5°，因此低安装高度灯具向下几何可见度角上限为5°。捕获组仅框取最终角度值5。",
+   "validation": null,
+   "error": null,
    "pass": false
   },
   {
@@ -701,15 +710,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.1.9.2.4",
+    "page": 25,
+    "nums": [
+     "7000"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.1\\.9\\.2\\.4\\s+自动控制的远光灯自动熄灭的要求[\\s\\S]{0,300}?当环境照度超过\\s*(7000)\\s*lx",
+   "why": "以条款号 5.1.9.2.4 开头锚定，随后用其标题句“自动控制的远光灯自动熄灭的要求”确保匹配到本页该条款（避免与页面上更早出现的 5.1.9.2.3 混淆），再用 300 字符窗口跨过中间两段文字连接到“当环境照度超过7000lx时，远光灯应自动熄灭。”，捕获组仅框住数值 7000，单位 lx 置于捕获组外。test_regex 验证：clause=5.1.9.2.4，page=25，nums=[7000]，通过。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "mountingAxisAngleTolerance",
@@ -725,15 +736,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.3",
+    "page": 24,
+    "nums": [
+     "3"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.3\\.[\\s\\S]{0,900}?In each direction a tolerance of\\s*(±\\s*3\\s*°)\\s*shall be\\s+allowed",
+   "why": "条款锚定 5.3（UN R48-09 第24页，灯具基准轴线相对车辆基准平面/中纵向面的安装要求），窗口跨行连接以容纳原文换行，捕获组只框住值「± 3°」，含「per direction」语义由原文 'In each direction' 限定；已用 test_regex 验证：命中页24、条款 5.3、抽取值 3（含 ± 3° 单位 °）。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "movableLamp.angularDeviationMax",
@@ -749,15 +762,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.20",
+    "page": 32,
+    "nums": [
+     "0.15"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.20\\.[\\s\\S]{0,900}?differs by more than\\s*(0\\.15)\\s*per cent",
+   "why": "条款 5.20 规定：安装在移动部件上的灯具在移动部件回到正常使用位置后，近光/前雾灯的倾角相对其支承件每次操作后测量值，与10次测量平均值之偏差不得超过 0.15 per cent。正则以条款号 5.20. 开头锚定，窗口内跨句连接，捕获组只框住数值 0.15，单位 per cent 即 %，句中的 '10 times'、'10 measured values' 等非本参数数字均在捕获组外。已用 test_regex 验证：命中条款 5.20、第32页，取值 0.15。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "parkingLamp.horizontalAngle",
@@ -773,15 +788,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.12.5",
+    "page": 50,
+    "nums": [
+     "45"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.12\\.5[\\s\\S]{0,900}?水平方向角β[\\s\\S]{0,200}?均为\\s*(45)\\s*°",
+   "why": "条款 5.12.5「几何可见度」中「水平方向角β：向外、向外均为45°。或，向前和向后均为45°」即为驻车灯水平方向角的要求值；用条款号锚定，捕获组只框住第一个水平方向角数值 45°（向前/向后同为 45°，值一致）。垂直方向角 15°/5° 与离地高度 350~2100mm 均为不同参数，未纳入。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "positionLamp.longitudinalMax",
@@ -797,15 +814,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.5.4.2",
+    "page": 37,
+    "nums": [
+     "1000"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.5\\.4\\.2[\\s\\S]{0,300}?离车辆前部不超过\\s*(\\d{3,4})\\s*mm",
+   "why": "条款 5.5.4.2（第37页）规定「纵向：离车辆前部不超过1000mm」，即角灯纵向位置距车辆前部的上限。锚定条款号后用窗口连接原文关键字「离车辆前部不超过」，捕获组仅框住数值 1000，单位 mm 保留在组外；已用 test_regex 在版本 A 上验证：命中第37页，条款号 5.5.4.2，取值为 1000。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "rearCollisionWarning.flashFrequency",
@@ -822,15 +841,18 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "7.3.7.1",
+    "page": 71,
+    "nums": [
+     "4",
+     "1"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "7\\.3\\.7\\.1[\\s\\S]{0,300}?按（(4\\.0\\s*±\\s*1\\.0)）\\s*Hz",
+   "why": "A 版（GB 4785 草案）§7.3.7.1 原文：『所有追尾警告信号应按（4.0±1.0）Hz 的频率同相闪烁。』这正是追尾警告信号的闪烁频率要求，单位 Hz，故以条款号 7.3.7.1 作锚点，捕获组只框住容差值『4.0±1.0』（含单位 Hz 在组外）。已用 test_regex 在 rearCollisionWarning/A/Hz 下验证：命中条款 7.3.7.1、第 71 页，捕获组取到 4.0±1.0。后半句『若使用灯丝灯泡光源的灯具，则闪烁频率应为 4.0-1.0 Hz』是同一频率的另一种写法，不是另一组限值；§7.3.7.2~7.3.7.6 为操作独立性、开关条件、作用时间，§7.3.7.5 表 8 中的 Vr/TTC 与频率无关，故不采用。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "rearFogLamp.groupedMaxHeight",
@@ -846,15 +868,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.11.4.2",
+    "page": 48,
+    "nums": [
+     "1200"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.11\\.4\\.2[\\s\\S]{0,900}?后雾灯与任何车尾灯具组合[\\s\\S]{0,300}?最大离地高\\s*度可增至\\s*(1200)\\s*mm",
+   "why": "条款5.11.4.2原文为「离地高度不小于250mm，不大于1000mm。若后雾灯与任何车尾灯具组合，最大离地高度可增至1200mm」，故后雾灯与车尾灯具组合时的最大离地高度为1200mm。以条款号5.11.4.2锚定，用宽松窗口跨越「若后雾灯与任何车尾灯具组合，」到「可增至1200mm」，捕获组仅框住数值1200（不含mm后缀的车型编号等无关数字）。越野车辆(N2G/N3G/M2G/M3G)的1400mm属于另一条件，未采用。test_regex验证通过：值1200，条款5.11.4.2，第48页。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "rearPositionLamp.horizontalAngle",
@@ -871,15 +895,18 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.10.5.1",
+    "page": 47,
+    "nums": [
+     "45",
+     "80"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.10\\.5\\.1[\\s\\S]{0,300}?向内\\s*(45\\s*°\\s*，向外\\s*80\\s*°)",
+   "why": "以条款号5.10.5.1锚定，并将向内45°与向外80°置于同一捕获组，确保同时抽取内、外水平方向角且不误取后续减至角度。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "rearReflexReflector.groupedMaxHeight",
@@ -895,15 +922,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.14.4.2",
+    "page": 52,
+    "nums": [
+     "1200"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.14\\.4\\.2[\\s\\S]{0,400}?若与车尾灯具组合，可增至\\s*(1200)\\s*mm",
+   "why": "A 版 5.14.4.2（第52页）规定回复反射器离地高度不小于250mm、不大于900mm；若与车尾灯具组合，可增至1200mm；结构不能保证时才可增至1500mm。本参数问的是「与车尾灯具组合时」的最大离地高度，对应 1200mm，故以条款号 5.14.4.2 锚定，并用窗口连接到「若与车尾灯具组合，可增至」后只捕获 (1200) mm；捕获组外的 1500mm 属于「结构不能保证在900mm 或1200mm 内」的另一条件，不作为本参数取值。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "rearTriangularReflector.groupedMaxHeight",
@@ -919,15 +948,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.15.4.2",
+    "page": 52,
+    "nums": [
+     "1200"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.15\\.4\\.2[\\s\\S]{0,900}?若回复反射器与车尾灯具组合[，,]?\\s*可增至\\s*(1200)\\s*mm",
+   "why": "条款5.15.4.2规定回复反射器离地高度一般不小于250mm、不大于900mm；与车尾灯具组合时可增至1200mm（若车型结构不能满足900mm或1200mm还可增至1500mm）。本参数问的是『与车尾灯具组合时』的最大离地高度，故取1200mm。用条款号5.15.4.2做锚定，窗口跨过同条款前一句『不大于900mm』，并要求出现『若回复反射器与车尾灯具组合』字样，确保不会误取普通离地高度上限900mm或250mm；捕获组只框住1200这一数值，单位mm在组外。test_regex验证通过：取值1200，条款5.15.4.2，第52页。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "rearWarningSignal.durationMax",
@@ -943,15 +974,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "7.3.7.6",
+    "page": 71,
+    "nums": [
+     "3"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "7\\.3\\.7\\.6[\\s\\S]{0,300}?作用时间不得超过\\s*(3)\\s*s",
+   "why": "条款 7.3.7.6 明确给出「追尾警告信号作用时间不得超过3s」，正是本参数（作用时间上限，单位 s）。用条款号做锚定，窗口连接允许中间有字，捕获组只框住数值 3。注意 7.3.7.5 表8 中的 TTC ≤ 1.4s 是开启条件（碰撞时间），不是作用时间上限，故不采用。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "reversing.maxHeight",
@@ -969,15 +1002,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.21.4.2",
+    "page": 58,
+    "nums": [
+     "1200"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.21\\.4\\.2[\\s\\S]{0,300}?离地高度不小于\\s*250\\s*mm[，,]\\s*不大于\\s*(1200)\\s*mm",
+   "why": "倒车灯安装高度见 §5.21.4.2（第58页）：「离地高度不小于250mm，不大于1200mm」，即最大离地高度上限为1200mm。以条款号5.21.4.2锚定，窗口用惰性匹配确保先命中同页的1200mm而非其后针对N2G/N3G/M2G/M3G（越野）车辆放宽的1400mm；捕获组只框住上限值1200。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "reversingLamp.horizontalAngle",
@@ -994,15 +1029,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.21.5.1",
+    "page": 58,
+    "nums": [
+     "45"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.21\\.5\\.1[\\s\\S]{0,300}?水平方向角[\\s\\S]{0,120}?均为\\s*(45)\\s*°",
+   "why": "以5.21.5.1和“水平方向角”锚定，取“向左、向右均为45°”中的45°作为单只倒车灯安装时的水平可见角；避免误取成对安装时的向外45°、向内30°或垂直角10°。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "sensorDetection.bicycleDistance",
@@ -1018,15 +1055,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.1.9.2.1",
+    "page": 25,
+    "nums": [
+     "75"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.1\\.9\\.2\\.1\\.2[\\s\\S]{0,900}?至少\\s*(75)\\s*m\\s*距离范围内的迎面而来的电动自行车",
+   "why": "条款 5.1.9.2.1.2 明确给出传感器在水平直道上应能探测到的三类目标距离，其中「至少75 m 距离范围内的迎面而来的电动自行车」正是本参数（迎面电动自行车探测距离）的值，捕获组只框住 75，单位 m 保留在组外；窗口给足以跨过同条款中的 400m/100m 两行。已用 test_regex 验证：抽取到值 75，命中页 25。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "sideDirectionIndicator.frontDistanceMax",
@@ -1042,15 +1081,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.6.4.3",
+    "page": 40,
+    "nums": [
+     "1800"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.6\\.4\\.3[\\s\\S]{0,900}?侧转向灯（5类和6类）透光面到标志车辆全长前边界的横向平面的距离应不大于\\s*(1800)\\s*㎜",
+   "why": "条款5.6.4.3「纵向」正是侧转向灯相对车头（车辆全长前边界）位置的安装要求：5类/6类侧转向灯透光面到标志车辆全长前边界横向平面的距离应不大于1800㎜（M1/N1及其他类车辆若不能保证最小几何可见度角可放宽至不大于2500㎜）。正则以条款号5.6.4.3开头锚定，随后用窗口连接原文逐字文字，捕获组只框住1800 这一上限值；已在A版第40页验证，抽取到值1800、条款5.6.4.3、页码40。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "sideMarkerLamp.adjacentGapMax",
@@ -1066,15 +1107,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.18.4.3",
+    "page": 55,
+    "nums": [
+     "3"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.18\\.4\\.3[\\s\\S]{0,900}?两相邻侧标志灯的间距应不大于\\s*(3)\\s*m",
+   "why": "条款5.18.4.3（纵向安装）第55页原文：'两相邻侧标志灯的间距应不大于3m，若车型结构、设计或车辆操作使其不能保证在3m内，则可增至4m'。用条款号5.18.4.3作锚点，再以字面量'两相邻侧标志灯的间距应不大于'定位到相邻两只侧标志灯间距这一项（区别于同条款中'最前面的侧标志灯离车辆前端不大于3m'和'最后面的侧标志灯离车辆后端应不大于1m'），捕获组仅框住数值3，末尾的'm'留在组外以便校验单位。3m为常规上限，4m仅为结构受限时的例外增额。已用 test_regex 验证：ok=true，条款号5.18.4.3，页码55，取值为3。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "sideReflexReflector.adjacentGapMax",
@@ -1090,15 +1133,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.17.4.3",
+    "page": 54,
+    "nums": [
+     "3"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.17\\.4\\.3[\\s\\S]{0,600}?同侧相邻回复反射器间的距离应不大于\\s*(3)\\s*m",
+   "why": "条款5.17.4.3（纵向布置）明确「除M1和N1类车辆外，其余车辆同侧相邻回复反射器间的距离应不大于3m」，即相邻两只侧回复反射器之间间距的上限为3m，与参数名（侧回复反射器·相邻两只之间的间距上限，单位m）一致；同条款另有「最前面离车辆前端不大于3m」「增至4m」「离尾部不大于1m」等不同含义的数字，用「同侧相邻回复反射器间的距离应不大于」作为字面锚点可避免误抓。捕获组只框住3，紧随单位m，车型/车辆类别说明文字留在组外。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "singleLamp.adjacentPartGapMax",
@@ -1114,15 +1159,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.7.2.2",
+    "page": 26,
+    "nums": [
+     "75"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.7\\.2\\.2[\\s\\S]{0,2000}?does not exceed\\s*(75)\\s*mm",
+   "why": "UN R48-09 中「单灯相邻/相切可区分部分的最小间距上限」为 75 mm：§5.7.2.1(b) 原文为「The minimum distance between the facing edges of two adjacent/tangential distinct parts … shall not exceed 75 mm」，但该句在 PDF 文本流中落在下一文本块（条款号所在块与值所在块不同页），以条款号开头的前向窗口无法同页命中（实测 900/2000 字符窗口均未命中）。同一 75 mm 限值在 §5.7.2.2「the minimum distance between the facing edges … does not exceed 75 mm」中给出，且条款号与值同处第 26 页，实测正则命中并抽取到 75 mm（clause=5.7.2.2, page=26, nums=[75]）。捕获组仅框住 75，单位 mm 保留在组外，装置前缀 singleLamp 生效。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "slowMovingLamp.autoOnSpeedMax",
@@ -1138,15 +1185,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.22.7.1",
+    "page": 59,
+    "nums": [
+     "15"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.22\\.7\\.1[\\s\\S]{0,900}?自动点亮直至车速达到\\s*(15)\\s*km/h",
+   "why": "GB 4785 草案 5.22.7.1（汽车）规定慢行灯在车辆慢速行驶时自动点亮直至车速达到15km/h，随后 5.22.7.2 对挂车给出同样的 15km/h（按拖车速度）。以条款号 5.22.7.1 锚定，窗口跨行连接，捕获组只框住数值 15，单位 km/h 与参数单位一致；5.22.2/5.22.4.2 等为灯具数量与离地高度，非本参数。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "smv.speedThreshold",
@@ -1162,15 +1211,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.21.7.2",
+    "page": 58,
+    "nums": [
+     "15"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.21\\.7\\.2[\\s\\S]{0,900}?在车辆前行速度小于\\s*(15)\\s*km/h\\s*时可作为慢行灯",
+   "why": "A 版（GB 4785—XXXX 草案）5.21.7.2（第58页）规定：安装在车辆侧面的倒车灯在车辆前行速度小于15km/h时可作为慢行灯。条款锚定5.21.7.2，用宽松窗口连接到『在车辆前行速度小于』，捕获组只框住数值15，单位km/h随后紧跟。后文『当车辆前行速度大于15km/h时，灯具应自动熄灭』为同一阈值（15km/h）的另一表述，数值一致。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "stopLamp.horizontalAngle",
@@ -1186,15 +1237,17 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.7.5.2",
+    "page": 42,
+    "nums": [
+     "45"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.7\\.5\\.2[\\s\\S]{0,900}?向左、向右各\\s*(45)\\s*°",
+   "why": "以S1/S2制动灯水平方向角条款5.7.5.2锚定，并捕获该条款中向左、向右各45°的数值45。",
+   "validation": null,
+   "error": null,
+   "pass": true
   },
   {
    "id": "systemVoltage.maxSteady.12v",
@@ -1235,30 +1288,33 @@
     ]
    },
    "got": {
-    "clause": null,
-    "page": null,
-    "nums": []
+    "clause": "5.23.4.2",
+    "page": 60,
+    "nums": [
+     "300",
+     "400"
+    ]
    },
-   "source": null,
-   "why": "",
-   "validation": "没有产出正则",
-   "error": "模型调用失败：fetch failed",
-   "pass": false
+   "source": "5\\.23\\.4\\.2[\\s\\S]{0,900}?高出\\s*(300\\s*mm\\s*[～~]\\s*400\\s*mm)",
+   "why": "条款5.23.4.2为牵引杆挂车标志灯的安装高度规定，原文「高度：比牵引杆挂车的前挡板高出300mm～400mm」，正是本参数（高出前挡板高度区间）。以条款号锚定，窗口连接锚点与值，捕获组框住完整区间300mm～400mm（含单位与波浪号），单位为mm；5.23.4.1的150mm为横向位置要求，未被误取。test_regex通过：clause=5.23.4.2，page=60，nums=[300,400]",
+   "validation": null,
+   "error": null,
+   "pass": true
   }
  ],
  "absentCheck": {
   "sampleSize": 40,
-  "saidAbsent": 1,
-  "fabricated": 0,
+  "saidAbsent": 36,
+  "fabricated": 4,
   "rows": [
    {
     "id": "conspicuityMarking.adjacentGapMax",
     "name": "反光标识相邻单元间距上限（例外值）",
     "version": "B",
     "reason": "同 §5.21 醒目标志：转引 GB 23254 / GB 25990，本标准不含数值。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1270,9 +1326,9 @@
     "name": "反光标识替代模式距车头距离上限",
     "version": "B",
     "reason": "GB 4785-2019 §5.21 醒目标志：「汽车及挂车车身反光标识的安装按 **GB 23254** 相关要求；车辆尾部标志板的安装按 **GB 25990** 相关要求」—— 同样转引他标，本标准不含数值。（「替代模式距车头不超过 2400mm」 是 R48 的规定）",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1284,9 +1340,9 @@
     "name": "反光标识轮廓标记上缘距车顶距离上限",
     "version": "B",
     "reason": "GB 4785-2019 §5.21 醒目标志：「汽车及挂车车身反光标识的安装按 **GB 23254** 相关要求；车辆尾部标志板的安装按 **GB 25990** 相关要求」—— 同样转引他标，本标准不含数值。（「轮廓标记上缘距车顶不超过 400mm」 是 R48 的规定）",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1298,9 +1354,9 @@
     "name": "反光标识距车端距离上限",
     "version": "B",
     "reason": "同 §5.21 醒目标志：转引 GB 23254 / GB 25990，本标准不含数值。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1312,9 +1368,9 @@
     "name": "反光标识强制配备的车辆长度门槛",
     "version": "B",
     "reason": "GB 4785-2019 §5.21 醒目标志：「汽车及挂车车身反光标识的安装按 **GB 23254** 相关要求；车辆尾部标志板的安装按 **GB 25990** 相关要求」—— 同样转引他标，本标准不含数值。（「车辆长度超过 6000mm 即须强制配备反光标识」 是 R48 的规定）",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1326,9 +1382,9 @@
     "name": "反光标识下缘最大离地高度",
     "version": "B",
     "reason": "同 §5.21 醒目标志：转引 GB 23254 / GB 25990，本标准不含数值。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1340,9 +1396,9 @@
     "name": "反光标识下缘最小离地高度",
     "version": "B",
     "reason": "GB 4785-2019 §5.21 醒目标志：「汽车及挂车车身反光标识的安装按 **GB 23254** 相关要求；车辆尾部标志板的安装按 **GB 25990** 相关要求」—— 同样转引他标，本标准不含数值。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1354,9 +1410,9 @@
     "name": "反光标识替代模式的反光单元最小尺寸",
     "version": "B",
     "reason": "GB 4785-2019 §5.21 醒目标志：「汽车及挂车车身反光标识的安装按 **GB 23254** 相关要求；车辆尾部标志板的安装按 **GB 25990** 相关要求」—— 同样转引他标，本标准不含数值。（「替代模式的反光单元最小尺寸 25cm」 是 R48 的规定）",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1368,9 +1424,9 @@
     "name": "反光标识强制配备的车辆宽度门槛",
     "version": "B",
     "reason": "GB 4785-2019 §5.21 醒目标志：「汽车及挂车车身反光标识的安装按 **GB 23254** 相关要求；车辆尾部标志板的安装按 **GB 25990** 相关要求」—— 同样转引他标，本标准不含数值。（「车辆宽度超过 2100mm 即须强制配备反光标识」 是 R48 的规定）",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1382,9 +1438,9 @@
     "name": "近光灯手动关闭二次操作确认的车速上限",
     "version": "B",
     "reason": "GB 4785-2019 §5.2.7 电路连接（p26）逐条读过：5.2.7.1~5.2.7.6 只有「切换近光应同时关闭远光」「气体放电光源保持打开」「弯道照明」「开关可自动但应能随时手动操作」「昼间行驶灯联动」，**没有**「车速低于某值时手动关闭需两次明确操作」这一条 —— 该要求是**草案 §5.2.7.5.1 e) 新增**的。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1396,9 +1452,9 @@
     "name": "昼间行驶灯减光后最大光强",
     "version": "B",
     "reason": "GB 4785-2019 无「昼间行驶灯减光后最大光强 140cd」这一要求 ——该要求是**草案 §5.19.7.6 / 5.19.7.7 新增**的（与前转向灯间距 ≤40mm 时降低发光强度）。R48 §6.19.9 有对应要求。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1410,9 +1466,9 @@
     "name": "同时点亮远光灯最大发光强度之和",
     "version": "C",
     "reason": "**R48 有对应条款，但量值不可比**：§6.1.9.1（p38）「The reference value corresponding to an aggregate maximum intensity of the main-beam headlamps which can be switched ON simultaneously shall not exceed 100.」—— 它规定的是**参考值（reference value）**，而 GB 4785 规定的是「同时点亮远光灯**最大发光强度之和**不超过 430 000 cd」，两者不是同一量值，不能直接对比。R48 的光度限值本身在 UN R112 / R149 型式试验法规里。本行不填推测值。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1425,12 +1481,14 @@
     "version": "C",
     "reason": "**C 不是没有这条要求 —— 口径不同。** R48 §6.3.6.1.2.2（p46）要求制造商以「**一位小数**」的准确度规定并标明初始下倾度（shall be specified within an accuracy of one decimal place），并以清晰、不易抹去的方式标在前雾灯旁或制造商铭牌上 —— **要求对象是同一件事**。但 GB 的写法是「以**不大于 0.1% 的精度**规定」，两个口径不是同一个量，所以本行（0.1% 这个数）在 C 无取值。逐条对照见 §11.9 定性义务清单。",
     "saidAbsent": false,
-    "fabricated": false,
-    "kind": "no-conclusion",
-    "source": null,
+    "fabricated": true,
+    "kind": "wrong-quantity",
+    "source": "6\\.3\\.6\\.1\\.2\\.2[\\s\\S]{0,600}?within an accuracy of\\s*(one decimal place)",
     "got": {
-     "clause": null,
-     "nums": []
+     "clause": "6.3.6.1.2",
+     "nums": [
+      "1"
+     ]
     }
    },
    {
@@ -1438,9 +1496,9 @@
     "name": "位置灯分区光强上限",
     "version": "B",
     "reason": "GB 4785-2019 全文检索 `0.25` 只命中色度表，**无**「每只灯具发出的红光或白光的光强不大于 0.25 cd」这一条 —— 该条是**草案 §4.10（a)(b) 前视红光/后视白光不可见度判定）新增**的。R48 §5.12.1.3 有对应要求（not more than 0.25 cd per lamp）。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1467,12 +1525,14 @@
     "version": "C",
     "reason": "R48 §6.22（AFS）**没有**对应的最大光强总和条款：R48 对远光总光强用的是 §6.1.9.1 的「以参考标记为单位的 aggregate maximum intensity 不得超过 100」口径，与 A/B 的 430000 cd 绝对值口径不同，不可直接比较。属版本差异，不是抽取失败。",
     "saidAbsent": false,
-    "fabricated": false,
-    "kind": "no-conclusion",
-    "source": null,
+    "fabricated": true,
+    "kind": "wrong-quantity",
+    "source": "6\\.22\\.9\\.5[\\s\\S]{0,900}?The reference value corresponding to an aggregate maximum intensity of the[\\s\\S]{0,500}?lighting units that can be energized simultaneously to provide the main-beam[\\s\\S]{0,300}?lighting or its modes, if any, shall not exceed\\s*(100)",
     "got": {
-     "clause": null,
-     "nums": []
+     "clause": "6.22.9.5",
+     "nums": [
+      "100"
+     ]
     }
    },
    {
@@ -1480,9 +1540,9 @@
     "name": "昼间行驶灯相对前转向灯光强的豁免门槛",
     "version": "B",
     "reason": "B §5.19.7.5（p48）只给了「间距不大于40mm」与「关闭 / 降低发光强度」二选一，**没有**这个 50% 的豁免门槛。属版本差异，不是抽取失败。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1494,9 +1554,9 @@
     "name": "AFS 故障指示器开启条件·发光强度下限占比",
     "version": "B",
     "reason": "B §5.22.8.2（p53）只规定「强制安装AFS失效指示器…当探测到AFS控制信号故障或接收到不符合AFS规定的信号时,应开启失效指示器」，**没有**任何量化的开启判据。属版本差异，不是抽取失败。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1508,9 +1568,9 @@
     "name": "AFS 故障指示器开启条件·发光强度下限占比",
     "version": "C",
     "reason": "R48 §6.22.8.2（p88）同样只规定失效指示器的触发信号，无量化判据。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1522,9 +1582,9 @@
     "name": "AFS 故障指示器开启条件·总光通量偏差",
     "version": "B",
     "reason": "B §5.22.8.2 无量化判据（见上一行）。属版本差异，不是抽取失败。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1536,9 +1596,9 @@
     "name": "AFS 故障指示器开启条件·总光通量偏差",
     "version": "C",
     "reason": "R48 §6.22.8.2 无量化判据。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1550,9 +1610,9 @@
     "name": "前位灯顺序点亮点亮完成的车速上限",
     "version": "B",
     "reason": "B §5.9.9「其他要求」只有 5.9.9.1、5.9.9.2 两条，**没有**顺序点亮条款。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1564,9 +1624,9 @@
     "name": "前位灯顺序点亮点亮完成的车速上限",
     "version": "C",
     "reason": "R48 §6.9.9「Other requirements」只有 6.9.9.1、6.9.9.2 两条，**没有**顺序点亮条款。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1578,9 +1638,9 @@
     "name": "醒目标志可见度观察平面向外张开角",
     "version": "B",
     "reason": "B §5.21（p49）同样只转引 GB 23254 / GB 25990，无角度要求。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1592,9 +1652,9 @@
     "name": "部分轮廓型醒目标志转角两直线的夹角",
     "version": "B",
     "reason": "B §5.21 醒目标志章只有转引 GB 23254 / GB 25990，无此要求。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1606,9 +1666,9 @@
     "name": "远光灯总光强限值（以参考标记为基准的口径 · 仅 C 采用）",
     "version": "A",
     "reason": "**口径不同，不是「A 没有远光总强要求」**：A §5.1.9.1（p24）给的是绝对值口径「所有可同时点亮的远光灯，其最大发光强度之和应不超过430 000 cd」—— 已在「同时点亮远光灯最大发光强度之和」那一行记。本行记的是 R48 §6.1.9.1 的**参考标记口径**（以 reference mark 为单位），两版的数不能直接比。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1620,9 +1680,9 @@
     "name": "远光灯总光强限值（以参考标记为基准的口径 · 仅 C 采用）",
     "version": "B",
     "reason": "**口径不同，不是「B 没有远光总强要求」**：B §5.1.9.1（p23）同样是绝对值口径「所有可同时开启的远光灯,其最大发光强度之和应不超过430000cd」—— 见「同时点亮远光灯最大发光强度之和」那一行。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1634,9 +1694,9 @@
     "name": "AFS V 级近光模式·建成区/有照明道路的车速上限",
     "version": "A",
     "reason": "GB 4785 草案全文无「V 级」近光模式的分档与车速门槛。**要求没有取消，是转引。** A §5.3.7.4.2（p33）：「车辆近光各自适应模式应满足**GB4599** 中自适应模式型式试验的要求，**开启的条件应至少满足对应的速度要求**。制造商应提供各自适应模式开启的附加条件…」—— 草案把**模式清单和各自的车速门槛整体转给了 GB 4599**，GB 4785 草案自身不再列这些模式与数字（整册检索「E 信号」「数据集 E1」「V 级」均 0 次）。**要查这个车速门槛，去 GB 4599，不是说 2026 草案取消了这几档。**",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1648,9 +1708,9 @@
     "name": "AFS V 级近光模式·一般道路的车速上限",
     "version": "A",
     "reason": "GB 4785 草案全文无「V 级」近光模式的分档与车速门槛。**要求没有取消，是转引。** A §5.3.7.4.2（p33）：「车辆近光各自适应模式应满足**GB4599** 中自适应模式型式试验的要求，**开启的条件应至少满足对应的速度要求**。制造商应提供各自适应模式开启的附加条件…」—— 草案把**模式清单和各自的车速门槛整体转给了 GB 4599**，GB 4785 草案自身不再列这些模式与数字（整册检索「E 信号」「数据集 E1」「V 级」均 0 次）。**要查这个车速门槛，去 GB 4599，不是说 2026 草案取消了这几档。**",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1662,9 +1722,9 @@
     "name": "远光自动控制传感器·迎面电动自行车探测距离",
     "version": "B",
     "reason": "B §5.1.9.3.1.2（p23）**只有两条**：「至少400m 的迎面而来的机动车」与「至少100m 的前方行驶的机动车或带挂车的车辆」，**没有**电动自行车 75 m 这一条。属版本差异，不是抽取失败。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1676,9 +1736,9 @@
     "name": "电动自行车替代表征灯·发光强度",
     "version": "B",
     "reason": "B §5.1.9.3.1.2 没有电动自行车替代表征灯的规定。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1690,9 +1750,9 @@
     "name": "电动自行车替代表征灯·发光面面积",
     "version": "B",
     "reason": "B §5.1.9.3.1.2 没有电动自行车替代表征灯的规定。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1705,12 +1765,14 @@
     "version": "B",
     "reason": "GB 4785-2019 的示廓灯横向条款没有这条「为满足高度要求可放宽至 500mm」的规定。属版本差异。",
     "saidAbsent": false,
-    "fabricated": false,
-    "kind": "no-conclusion",
-    "source": null,
+    "fabricated": true,
+    "kind": "wrong-quantity",
+    "source": "5\\.13\\.4\\.1[\\s\\S]{0,900}?点到车辆外缘端面间的距离不大于\\s*(400)\\s*mm",
     "got": {
-     "clause": null,
-     "nums": []
+     "clause": "5.13.4.1",
+     "nums": [
+      "400"
+     ]
     }
    },
    {
@@ -1719,12 +1781,14 @@
     "version": "C",
     "reason": "R48 §6.13（示廓灯）没有对应的横向放宽条款。属版本差异。",
     "saidAbsent": false,
-    "fabricated": false,
-    "kind": "no-conclusion",
-    "source": null,
+    "fabricated": true,
+    "kind": "wrong-quantity",
+    "source": "6\\.13\\.4\\.1[\\s\\S]{0,900}?median longitudinal plane is not more than\\s*(400)\\s*mm from the extreme outer",
     "got": {
-     "clause": null,
-     "nums": []
+     "clause": "6.13.4.1",
+     "nums": [
+      "400"
+     ]
     }
    },
    {
@@ -1732,9 +1796,9 @@
     "name": "昼间行驶灯点亮时后位灯允许熄灭的环境照度阈值",
     "version": "B",
     "reason": "GB 4785-2019 **全篇没有**这个阈值 —— 不是抽取失败，是该版确实没这条。B §5.2.7.6b)（p26）写的是「昼间行驶灯与4.11 规定的灯具共同操作，作为最低要求，**至少后位灯应开启**」：2019 版**要求**后位灯点亮，根本不存在「允许熄灭」这一说。「环境光 > 7000lx 时后位灯允许熄灭」是 **2026 草案新增的宽松条款**（A §4.11e 与 A §5.19.7.5）。**这一格是三版对比里很值得给客户看的一处：B 比 A 严。**",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1746,9 +1810,9 @@
     "name": "A2 类前位灯自动激活的车速条件上限",
     "version": "B",
     "reason": "B §5.9.9「其他要求」只有 5.9.9.1、5.9.9.2 两条，没有 A2 类位置灯的自动激活条件。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1760,9 +1824,9 @@
     "name": "A2 类前位灯自动激活的车速条件上限",
     "version": "C",
     "reason": "R48 §6.9.9「Other requirements」只有 6.9.9.1、6.9.9.2 两条。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1774,9 +1838,9 @@
     "name": "AFS W 级近光模式·雨刮连续开启的判定时长",
     "version": "A",
     "reason": "GB 4785 草案全文无「W 级」近光模式及其雨刮联动时长门槛。**要求没有取消，是转引。** A §5.3.7.4.2（p33）：「车辆近光各自适应模式应满足**GB4599** 中自适应模式型式试验的要求，**开启的条件应至少满足对应的速度要求**。制造商应提供各自适应模式开启的附加条件…」—— 草案把**模式清单和各自的车速门槛整体转给了 GB 4599**，GB 4785 草案自身不再列这些模式与数字（整册检索「E 信号」「数据集 E1」「V 级」均 0 次）。**要查这个车速门槛，去 GB 4599，不是说 2026 草案取消了这几档。**",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1788,9 +1852,9 @@
     "name": "后位灯顺序点亮点亮完成的车速上限",
     "version": "B",
     "reason": "GB 4785-2019 的后位灯章（§5.10）没有顺序点亮条款。属版本差异，不是抽取失败。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,
@@ -1802,9 +1866,9 @@
     "name": "后位灯顺序点亮点亮完成的车速上限",
     "version": "C",
     "reason": "R48 §6.10（后位灯）没有顺序点亮条款。属版本差异。",
-    "saidAbsent": false,
+    "saidAbsent": true,
     "fabricated": false,
-    "kind": "no-conclusion",
+    "kind": "said-absent",
     "source": null,
     "got": {
      "clause": null,

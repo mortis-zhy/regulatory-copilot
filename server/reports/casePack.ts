@@ -171,6 +171,17 @@ function referenceText(key: string): string | null {
  *    拿**同一种表示**互比（两边都是抽取后的正文）——
  *    跨表示互比会被排版差异压到 0.2 上下，判据会失去区分力。
  */
+/**
+ * 案例包管的**源文件名**（按版本键）。
+ *
+ * 完成标准 1：「每条回答证据能回到**当前任务的文件**、条款和页码」——
+ * 光给版本代号（A/B/C）不够：读者要能知道**翻哪个文件**。
+ */
+export function casePackSourceFiles(): { key: string; fileName: string }[] {
+  const versions = (PACK_JSON as any)?.versions ?? [];
+  return versions.map((v: any) => ({ key: String(v.key ?? ""), fileName: String(v.sourceFile ?? "") }));
+}
+
 export function matchCasePack(docs: CasePackDoc[]): CasePackMatch {
   const pack = PACK_JSON as any;
   const cp = pack.casePack ?? {};

@@ -13,6 +13,7 @@ import { runDeliveryGate } from "./deliveryGate";
 // 原来写在系统提示词里，换标准时那句提示会**继续说旧标准**。
 import { REPORT_META } from "../reports/reportMeta";
 import { PROJECT_ROOT, REPORT_FILE, UPLOADED_DOCS_DIR } from "./projectRoot";
+import { taskIdOf, resolveReportFile, taskReportFile, taskDraftFile, taskDir, readTaskUploads, appendTaskUpload } from "./taskContext";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -143,6 +144,78 @@ ${VERSION_ROLE_LINE}
 
 
 
+/**
+ * **这次问答的任务上下文** —— 取证工具靠它判断
+ * 「当前任务上传的文件，是不是案例包管的那一套」。
+ *
+ * ## 为什么要判
+ *
+ * 取证工具读的是**案例包**的索引与台账 —— 那是**某一套标准**的资料。
+ * 上传的是别的法规时，那些资料是**另一套标准**的 ✗ ——
+ * 拿它们回答 = 「查到旧资料」（同事 issue #2 的原话）✓。
+ *
+ * 判据与出报告那条路**同一处实现**（`matchCasePack`）✓ ——
+ * 两处各判一次，迟早会判得不一样 ✗。
+ */
+async function taskToolContext(
+  taskId: string,
+  claimed?: Array<{ fileName?: string; sha256?: string }>,
+) {
+  // **优先用客户端报上来的「当前这批文件」** ✓ ——
+  // 客户端最清楚用户**现在**要问的是哪几个文件 ✓
+  // （用户删掉一份再问，服务器记的清单里那份还在 ✗）。
+  //
+  // 客户端报来的指纹要**验**：文件必须真的在 `uploaded-docs/` 里 ✓ ——
+  // 否则客户端可以随口报一个指纹，让判定结果失去意义 ✗。
+  let docs: { key: string; sha256: string; name: string }[] = [];
+  try {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const seen = new Set<string>();
+    for (const c of claimed ?? []) {
+      const sha = String(c?.sha256 ?? "").toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(sha)) continue;
+      if (seen.has(sha)) continue;
+      // **验真**：这份文件必须真的上传过 ✓
+      const onDisk = path.join(UPLOADED_DOCS_DIR, `${sha.slice(0, 16)}.pdf`);
+      if (!fs.existsSync(onDisk)) continue;
+      seen.add(sha);
+      docs.push({ key: String.fromCharCode(65 + docs.length), sha256: sha, name: String(c?.fileName ?? "") });
+    }
+  } catch {
+    /* 验不了就当没有 ✓ */
+  }
+  // 客户端没报（老用法 / CLI）→ 用服务器记的清单 ✓
+  if (!docs.length) {
+    docs = readTaskUploads(taskId).map((u, i) => ({
+      key: String.fromCharCode(65 + i),
+      sha256: u.sha256,
+      name: u.fileName,
+    }));
+  }
+  if (!docs.length) {
+    // 这个任务**还没上传过文件** → 判不了 → 不拦（老用法照旧 ✓）。
+    return { taskId, casePack: null };
+  }
+  try {
+    const { matchCasePack, casePackSourceFiles } = await import("../reports/casePack");
+    const m = matchCasePack(docs);
+    return {
+      taskId,
+      casePack: {
+        applies: m.applies,
+        casePackId: m.casePackId,
+        family: m.family,
+        reason: m.reason,
+        sourceFiles: casePackSourceFiles().map((x) => x.fileName).filter(Boolean),
+      },
+    };
+  } catch (e) {
+    console.warn("[agent] 案例包判定失败（不拦）:", String((e as Error)?.message ?? e).slice(0, 160));
+    return { taskId, casePack: null };
+  }
+}
+
 export function registerAgentRoutes(router: Router) {
   // Accept multipart/form-data so large PDFs bypass JSON body-size limits
   router.post("/api/agent/documents", upload.single("file"), async (req, res) => {
@@ -197,6 +270,16 @@ export function registerAgentRoutes(router: Router) {
         if (!fs.existsSync(localFilePath)) {
           fs.writeFileSync(localFilePath, bytes);
         }
+        // **记进这个任务的清单** —— 取证时要靠它判「这份输入是不是案例包管的」。
+        //
+        // 上传的文件本身早就按**内容哈希**存了 ✓（不同文件不会互相顶掉）；
+        // 缺的是「**哪些文件属于这次任务**」这一条 ✗ ——
+        // 没有它，服务器就分不清「这次问的是哪一套文件」。
+        appendTaskUpload(taskIdOf(req), {
+          sha256: crypto.createHash("sha256").update(bytes).digest("hex"),
+          fileName,
+          at: new Date().toISOString(),
+        });
       } catch (e) {
         console.warn("[documents] local disk persist failed (MinerU path unavailable):", e);
       }
@@ -205,6 +288,15 @@ export function registerAgentRoutes(router: Router) {
         fileName,
         mimeType,
         size: bytes.length,
+        // **文件指纹** —— 客户端要拿它告诉服务器「这次任务用的是哪些文件」✓
+        // （同事 issue #2：证据要能回到**当前任务的文件** ✓）
+        sha256: (() => {
+          try {
+            return require("node:crypto").createHash("sha256").update(bytes).digest("hex");
+          } catch {
+            return undefined;
+          }
+        })(),
         storage: stored,
         parsed,
         parserStatus: parsed ? "complete" : (serverText ? "local_complete" : "needs_configuration"),
@@ -317,6 +409,13 @@ export function registerAgentRoutes(router: Router) {
         model,
         temperature: temperature ?? 0.2,
         maxRounds: Number.isFinite(maxRounds) ? maxRounds : 6,
+        // **这次问答的上下文**（同事 issue #2 完成标准 1）——
+        // 工具据此判断「这份输入是不是案例包管的」，
+        // 并在每条结果里带上**证据来自哪个文件** ✓。
+        toolContext: await taskToolContext(
+          taskIdOf(req),
+          Array.isArray(req.body?.documents) ? req.body.documents : undefined,
+        ),
       })) {
         if (finished || res.writableEnded) break;
         res.write(`data: ${JSON.stringify(ev)}\n\n`);
@@ -375,7 +474,9 @@ export function registerAgentRoutes(router: Router) {
       if (body?.useV8) {
         const fs = await import("node:fs");
         const path = await import("node:path");
-        const file = REPORT_FILE;
+        // **读这个任务的那一份**（不带任务 id 的老用法 = 共享路径 ✓）。
+        // 绝不落回共享的那份 —— 那就是「拿别的任务的报告当自己的」✗。
+        const file = resolveReportFile(taskIdOf(req));
         if (!fs.existsSync(file)) {
           return res.status(409).json({
             error: "尚未生成对比报告。请先在「法规对比任务」页生成完整报告，再导出 PDF。",
@@ -555,9 +656,20 @@ export function registerAgentRoutes(router: Router) {
       try {
         const fs = await import("node:fs");
         const path = await import("node:path");
-        const dir = path.dirname(REPORT_FILE);
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, "last-report.json"), JSON.stringify(report), "utf-8");
+        // **按任务分目录**（同事 issue #2）——
+        // 原来所有任务写**同一个** `reports/last-report.json`：
+        // 两个任务并行时，后一个把前一个的顶掉 ✗。
+        const own = taskReportFile(taskIdOf(req));
+        fs.mkdirSync(path.dirname(own), { recursive: true });
+        fs.writeFileSync(own, JSON.stringify(report), "utf-8");
+        // 共享的那一份也更新一份 —— 它是「**最近一次**」的便条，
+        // 给没带任务 id 的老用法看 ✓（读取时**带 id 的只看自己那一份** ✗）。
+        const shared = path.join(path.dirname(REPORT_FILE), "last-report.json");
+        try {
+          fs.writeFileSync(shared, JSON.stringify(report), "utf-8");
+        } catch {
+          /* 共享便条写不进去不影响这个任务自己的产物 ✓ */
+        }
       } catch (e) {
         console.error("[mineru-report] persist failed:", e);
       }
@@ -571,7 +683,9 @@ export function registerAgentRoutes(router: Router) {
         // Shared finalization with the CLI: pass-2 TOC page numbers, audit +
         // render gates, PDF metadata, bookmark outline — the customer gets
         // exactly the same artifact quality as the locally-generated report.
-        const pdf = await finalizePdf(report, rawPdf);
+        // `writeToDisk: false` —— **不写仓库里的固定路径**：
+        // 那是**共享位置**（同事 issue #2：两个任务互相覆盖）。
+        const pdf = await finalizePdf(report, rawPdf, { writeToDisk: false });
 
         // Delivery gate. Without this the endpoint hands over whatever it just
         // built: a report missing its whole parameter matrix, or with the
@@ -743,7 +857,8 @@ export function registerAgentRoutes(router: Router) {
             // 分开写之后：已核验的那份**永远在**，草稿在隔壁，
             // 要哪份取哪份（`/report/last?prefer=…`）。
             fs.writeFileSync(
-              path.join(dir, "last-report.llm-sse.json"),
+              // **按任务分目录** —— 草稿也不许覆盖别的任务的产物 ✗
+              taskDraftFile(taskIdOf(req)),
               // Tag the origin so /report/last?prefer=mineru can refuse to serve
               // an unverified LLM draft as if it had been machine-verified.
               JSON.stringify({ ...report, generator: "llm-sse" }),
@@ -789,10 +904,8 @@ export function registerAgentRoutes(router: Router) {
       // 原来两者写同一个文件，草稿会把交付件**覆盖掉** ——
       // 护栏能挡住「读」，挡不住「覆盖」。
       const prefer = typeof req.query?.prefer === "string" ? req.query.prefer : "mineru";
-      const file =
-        prefer === "llm-sse"
-          ? path.join(path.dirname(REPORT_FILE), "last-report.llm-sse.json")
-          : REPORT_FILE;
+      // **按任务读** —— 同上：带 id 的只看自己那一份 ✓
+      const file = resolveReportFile(taskIdOf(req), prefer === "llm-sse" ? "draft" : "report");
       if (!fs.existsSync(file)) {
         return res.status(404).json({
           error:

@@ -3,6 +3,7 @@ import { DEFAULT_TEMPLATE_ID, TEMPLATE_BY_ID, TEMPLATES, type TemplateId } from 
 import { APP_CONFIG } from "@/lib/config";
 import { extractPdfText, normalizeExtractedText } from "@/lib/pdfExtract";
 import ReportBuilder from "@/components/ReportBuilder";
+import { currentTaskId, resetTaskId, taskHeaders } from "@/lib/taskId";
 import ReviewWorkbench from "@/components/ReviewWorkbench";
 import {
   CHANGE_TYPE_LABEL,
@@ -65,6 +66,8 @@ type Doc = {
   parsedAt?: number;
   errorMessage?: string;
   localFilePath?: string; // server-side persisted path for the MinerU pipeline
+  /** **文件指纹**（sha256）—— 服务器判案例包适用性、问答回证据都要用 ✓。 */
+  sha256?: string;
   /**
    * 上传时**按内容**认出来的版本（不是按文件名）。
    * 认不出就是 label=null —— 那时要在界面上说清楚，
@@ -229,12 +232,22 @@ export type ToolTrace = {
  * 上传 + 解析（带阶段动画的本地解析）
  * --------------------------------------------------------------------------*/
 
-async function uploadDocument(file: File): Promise<{
+/**
+ * 上传一份文件并解析。
+ *
+ * `taskId` **必须传进来** ✓ —— 这个函数在**模块层**，
+ * 拿不到组件里的 state ✗。
+ */
+async function uploadDocument(
+  file: File,
+  taskId: string,
+): Promise<{
   blobUrl: string;
   pageCount?: number;
   extractedText?: string;
   parseError?: string;
   localFilePath?: string;
+  sha256?: string;
   versionGuess?: { label: string | null; score: number; source: string; reason: string };
 }> {
   const blobUrl = URL.createObjectURL(file);
@@ -247,13 +260,20 @@ async function uploadDocument(file: File): Promise<{
   try {
     const form = new FormData();
     form.append("file", file, file.name);
-    const res = await fetch("/api/agent/documents", { method: "POST", body: form });
+    const res = await fetch("/api/agent/documents", {
+      method: "POST",
+      // **带上任务 id** —— 服务器据此记「这份文件属于这次任务」✓
+      headers: taskHeaders(taskId),
+      body: form,
+    });
     if (res.ok) {
       const data = (await res.json()) as {
         serverExtractedText?: string;
         serverPageCount?: number;
         parseError?: string;
         localFilePath?: string;
+        /** **文件指纹**（sha256）—— 服务器判案例包适用性要用 ✓。 */
+        sha256?: string;
         versionGuess?: { label: string | null; score: number; source: string; reason: string };
       };
       if (data.serverExtractedText && data.serverExtractedText.length > 0) {
@@ -262,6 +282,7 @@ async function uploadDocument(file: File): Promise<{
           pageCount: data.serverPageCount,
           extractedText: data.serverExtractedText,
           localFilePath: data.localFilePath,
+          sha256: data.sha256,
           versionGuess: data.versionGuess,
         };
       }
@@ -350,6 +371,8 @@ async function streamChat(
   docs: Doc[],
   templateId: TemplateId,
   llm: { model: string; temperature: number },
+  /** **这次问答的任务 id**（同事 issue #2）—— 客户端最清楚当前是哪一批文件 ✓。 */
+  taskId: string,
   callbacks: {
     onReasoning: (delta: string) => void;
     onContent: (delta: string) => void;
@@ -411,11 +434,23 @@ async function streamChat(
   try {
     const response = await fetch("/api/agent/chat/stream", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      // **带上任务 id 与当前这批文件** ——
+      // 服务器据此判「这次问的是不是案例包管的那一套」，
+      // 并在每条工具结果里说清**证据来自哪个文件** ✓（同事 issue #2 ✓）。
+      headers: taskHeaders(taskId, { "content-type": "application/json" }),
       // model/temperature were previously hardcoded server-side while the
       // Settings panel exposed both controls — they had no effect. The backend
       // already accepted both; this just forwards the user's choice.
-      body: JSON.stringify({ messages, model: llm.model, temperature: llm.temperature }),
+      body: JSON.stringify({
+        messages,
+        model: llm.model,
+        temperature: llm.temperature,
+        // **当前这批文件**（文件名 + 指纹）——
+        // 「这次问的是哪一套文件」这件事，**客户端最清楚** ✓
+        documents: docs
+          .filter((d) => d.sha256)
+          .map((d) => ({ fileName: d.fileName, sha256: d.sha256 })),
+      }),
     });
     if (!response.ok || !response.body) throw new Error(await response.text());
     const reader = response.body.getReader();
@@ -474,6 +509,8 @@ async function streamAgentChat(
   text: string,
   history: ChatMessage[],
   llm: { model: string; temperature: number },
+  /** **这次问答的任务 id**（同事 issue #2）✓ */
+  taskId: string,
   callbacks: {
     onReasoning: (delta: string) => void;
     onContent: (delta: string) => void;
@@ -490,7 +527,7 @@ async function streamAgentChat(
   try {
     const response = await fetch("/api/agent/chat/agent", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: taskHeaders(taskId, { "content-type": "application/json" }),
       body: JSON.stringify({
         messages,
         model: llm.model,
@@ -567,6 +604,14 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
    */
   const [agentMode, setAgentMode] = useState(true);
   const [docs, setDocs] = useState<Doc[]>([]);
+  /**
+   * **这次对比的任务 id**（同事 issue #2）——
+   * 上传、问答、出报告、下载报告，**每个请求都带上它** ✓。
+   *
+   * 没有它：两个任务写**同一个**报告文件 ✗，
+   * 后一个把前一个的顶掉，用户下载到的是**别人的报告** ✗。
+   */
+  const [taskId, setTaskId] = useState<string>(() => currentTaskId());
 
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [extracting, setExtracting] = useState<ExtractionStage | null>(null);
@@ -659,8 +704,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       };
       setDocs((prev) => [...prev, doc]);
 
-      const { blobUrl, pageCount, extractedText, parseError, localFilePath, versionGuess } =
-        await uploadDocument(file);
+      const { blobUrl, pageCount, extractedText, parseError, localFilePath, sha256, versionGuess } =
+        await uploadDocument(file, taskId);
       setDocs((prev) => prev.map((d) => (d.id === id ? { ...d, blobUrl, status: "parsing" } : d)));
 
       await animateExtraction(file.name, setExtracting, () => {
@@ -675,6 +720,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
                   parseError,
                   parsedAt: Date.now(),
                   localFilePath,
+                  sha256,
                   versionGuess,
                 }
               : d,
@@ -792,7 +838,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
 
       if (agentMode) {
         // **取证模式** —— 模型自己调只读工具回源核实，回答带页码。
-        await streamAgentChat(text, history, { model: settings.model, temperature: settings.temperature }, {
+        await streamAgentChat(text, history, { model: settings.model, temperature: settings.temperature }, taskId, {
           onReasoning,
           onContent,
           onTool: (trace) =>
@@ -816,7 +862,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       } else {
         // **草稿模式** —— 一问一答，模型看不到项目数据。
         // 回答头部会标「未经核验」，免得它被当成有出处的结论。
-        await streamChat(text, history, docs, templateId, { model: settings.model, temperature: settings.temperature }, {
+        await streamChat(text, history, docs, templateId, { model: settings.model, temperature: settings.temperature }, taskId, {
           onReasoning,
           onContent,
           onDone,
@@ -882,7 +928,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
       try {
         const response = await fetch(`/api/agent/report/${format}`, {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          // **带上任务 id** —— 导出的要是**这个任务**的那一份 ✓
+          headers: taskHeaders(taskId, { "content-type": "application/json" }),
           body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error(await response.text());
@@ -898,7 +945,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
         toast.error(error instanceof Error ? error.message : "报告生成失败");
       }
     },
-    [],
+    // **taskId 要在依赖里** ✓ —— 否则闭包拿的是**第一次渲染时**的那个 id ✗
+    [taskId],
   );
 
   // Latest full text per assistant message id — written by onDone, read by the
@@ -922,7 +970,8 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
         try {
           const response = await fetch("/api/agent/report/pdf", {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            // **带上任务 id** —— 下载的是**这个任务**的报告 ✗ 不是别人的
+            headers: taskHeaders(taskId, { "content-type": "application/json" }),
             body: JSON.stringify({ useV8: true }),
           });
           if (response.status === 409) {
@@ -1090,7 +1139,7 @@ export default function Home({ defaultView }: { defaultView?: ViewId }) {
             )}
 
             {showReportBuilder ? (
-              <ReportBuilder docs={docs} onClose={() => setShowReportBuilder(false)} />
+              <ReportBuilder docs={docs} taskId={taskId} onClose={() => setShowReportBuilder(false)} />
             ) : (
               <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] xl:[&>*:nth-child(2)]:border-l xl:[&>*:nth-child(2)]:border-[#d8cfb8] xl:[&>*:nth-child(2)]:pl-6">
                 <PDFViewer doc={activeDoc} extracting={extracting} onDropFiles={handleFiles} dragActive={dragActive} />

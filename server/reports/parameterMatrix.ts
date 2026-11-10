@@ -425,6 +425,7 @@ export function numbersOf(s: string, unit?: string): string[] {
  * `.claude/skills/parameter-spec/SKILL.md`; data — which parameters exist —
  * stays here, editable without touching code.
  */
+import { flattenHtmlMarkup, alignMathWindow } from "@shared/htmlMarkup";
 import SPECS_JSON from "../../data/parameter-specs.json";
 import {
   buildSourceIndex,
@@ -805,7 +806,7 @@ function quoteAround(text: string, idx: number, len: number): string {
   // window then dragged in W34/W45/W56's boundaries into the row labelled
   // 白色色度边界.
   const pad = Math.min(70, Math.max(12, Math.round(len * 0.5)));
-  const end = Math.min(text.length, idx + len + pad);
+  let end = Math.min(text.length, idx + len + pad);
   let start: number;
   // Source-PDF pages arrive with newlines stripped — that is exactly what makes
   // the fragmented decimals join back into "0.150+0.640x" — so there are no line
@@ -827,6 +828,10 @@ function quoteAround(text: string, idx: number, len: number): string {
   // The whitespace collapse changes the string's length, so the value's
   // position has to be tracked through it — normalise head, value and tail
   // separately and keep the value's own span.
+  // **切口不许切进 `$...$`** —— 半截公式会以字面量印在纸上
+  // （交付件里出现过「对于 ${ N _ {」，车型类别被切碎）。
+  // 对齐后的窗口再切，公式要么完整、要么整段不出现。
+  [start, end] = alignMathWindow(text, start, end);
   const head = text.slice(start, idx).replace(/\s+/g, " ");
   const body = text.slice(idx, idx + len).replace(/\s+/g, " ");
   const tail = text.slice(idx + len, end).replace(/\s+/g, " ");
@@ -923,6 +928,48 @@ function negationApplies(scope: string): boolean {
  * @param text 该页的原文
  * @param focusStart 取值在原文里的起点
  */
+/**
+ * 取值**后面紧邻**的比较词 —— 「40km/h **以上**」「100mm **以下**」。
+ *
+ * ## 为什么单列一条
+ *
+ * 口径的取法是「取值**前面**紧邻的比较词」✓ ——
+ * 那是绝大多数写法（「不大于 500mm」「not more than 1,500 mm」）。
+ * 但有一类写法把比较词放在**后面** ✗：
+ *
+ * - 「车速在 40km/h **以上**时，允许保持开启」 —— 这是**下限** ✓
+ * - 「视表面应不小于 12.5 cm²，**以上**除外」 —— 同上 ✓
+ *
+ * 这些格子原来判「未判定」✗ —— 明明写着方向，却说「没判出来」✗。
+ *
+ * ## 方向
+ *
+ * - 「以上」「及以上」「or more」→ **≥**（这个数是**下限**）✓
+ * - 「以下」「及以下」「or less」→ **≤**（这个数是**上限**）✓
+ *
+ * ## 认不出来就是认不出来
+ *
+ * 只认**贴着取值**的写法 ✓（到第一个句读为止 ✓），
+ * 否定（「不超过 100mm 以上」这种自相矛盾的）**不认** ✓ ——
+ * 宁可空着，不可错着 ✓。
+ */
+export function comparatorAfter(text: string, focusEnd: number): Comparator | null {
+  const after = text.slice(focusEnd, focusEnd + 60).replace(/\s+/g, " ");
+  if (!after) return null;
+  // 到最近的句读为止 —— 比较词必须属于**这一句** ✓
+  const head = after.split(/[，,。;；:：]/)[0] ?? "";
+  const t = head.trim();
+  if (!t) return null;
+  // **贴着取值**才算 ✓ —— 中间隔了别的东西就不认 ✗
+  const near = t.slice(0, 12);
+  if (/^(?:以\s*上|及\s*以\s*上|或\s*以\s*上)/.test(near)) return "≥";
+  if (/^(?:以\s*下|及\s*以\s*下|或\s*以\s*下|以\s*内)/.test(near)) return "≤";
+  if (/^or\s+more/i.test(near)) return "≥";
+  if (/^or\s+less/i.test(near)) return "≤";
+  if (/^and\s+up/i.test(near)) return "≥";
+  return null;
+}
+
 export function comparatorBefore(text: string, focusStart: number): Comparator | null {
   // 只看取值前面的一小段 —— 远了就可能抓到别的句子里的比较词。
   // **64 而不是 24**：R48 里有
@@ -1027,10 +1074,18 @@ function locate(
     // 口径取「取值前面紧邻的比较词」；比较词与取值之间只允许隔空白、单位与
     // 少量中文（8 个字符预算不变 ✓）。
     // 取不到就是取不到 —— 留空，不猜（客户 DR-002 丢的就是这个维度）。
-    const comparator = comparatorBefore(text, focusStart);
+    // 口径：先看**前面**紧邻的比较词 ✓（绝大多数写法 ✓）；
+    // 前面没有 → 看**后面**（「40km/h 以上」这一类 ✓）。
+    const comparator =
+      comparatorBefore(text, focusStart) ??
+      comparatorAfter(text, focusStart + String(focus ?? "").length);
+    // **展示用的文本压掉 HTML 标记**（MinerU 的表格是 HTML）。
+    // 数值与口径都取**原始**文本 —— 净化只动**给人看的**那一份，
+    // 动取值就等于动判定了。
+    const rawValue = quoteAround(text, m.index, m[0].length);
     return {
-      value: quoteAround(text, m.index, m[0].length),
-      match: focus,
+      value: flattenHtmlMarkup(rawValue),
+      match: flattenHtmlMarkup(focus),
       nums: numbersOf(focus, unit),
       clause: clause || nearestClause(text, m.index),
       page: `第${page}页`,

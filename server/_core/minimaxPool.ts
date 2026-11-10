@@ -75,8 +75,8 @@ export async function withKeyRotation<T>(
   const pool = minimaxKeyPool();
   if (!pool.length) throw new Error("MINIMAX_API_KEY 未配置");
   const label = opts?.label ?? "minimax";
-  const retries = Math.max(0, opts.retries ?? 2);
-  const backoff = opts.backoffMs ?? 1500;
+  const retries = Math.max(0, opts?.retries ?? 2);
+  const backoff = opts?.backoffMs ?? 1500;
   let lastErr = { status: 0, body: "no key" };
   let lastTransport = "";
   for (let i = 0; i < pool.length; i++) {

@@ -45,6 +45,7 @@ const ENTRIES = [
   // （按内容认 ✓，与上传顺序无关 ✓ —— 同事 issue #1 ✓）。
   // 单独构建一份：客户端要用 ✓，回归用例也要 import 它 ✓。
   ["shared/versionAssignment.ts", "dist/versionAssignment.js"],
+  ["shared/htmlMarkup.ts", "dist/htmlMarkup.js"],
   ["server/reports/typedTables.ts", "dist/typedTables.js"],
   ["server/reports/reportGenerator.ts", "dist/reportGenerator.js"],
   ["server/reports/closureLedger.ts", "dist/closureLedger.js"],
@@ -92,6 +93,7 @@ const ENTRIES = [
   // projectRoot 是服务端**唯一**的项目根解析器。
   // 单独列出来：闸门要直接 import 它，验「服务端解析到的路径 == 仓库根的路径」。
   ["server/_core/projectRoot.ts", "dist/projectRoot.js"],
+  ["server/_core/taskContext.ts", "dist/taskContext.js"],
   // instanceProbe 探测「这个端口上是不是本项目的另一个实例」。
   // 单独列出来：闸门要用**已知答案**驱动它 —— 起一个带标记的假服务器，
   // 断言探针认得出；再起一个不带的，断言它认不出。
@@ -102,6 +104,7 @@ const ENTRIES = [
   // own fault) could only be caught that way, not by looking at the real
   // report and squinting.
   ["server/reports/consistency.ts", "dist/consistency.js"],
+  ["server/reports/pdfGates.ts", "dist/pdfGates.js"],
   ["server/_core/deliveryGate.ts", "dist/deliveryGate.js"],
   // agentTools is the **evidence source** for the tool-calling agent: every
   // fact the agent states comes back through one of these tools, resolved
