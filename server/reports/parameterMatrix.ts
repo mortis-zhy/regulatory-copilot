@@ -850,7 +850,9 @@ function quoteAround(text: string, idx: number, len: number): string {
  *
  * ## 口径从**原文**里取，不是人写的
  *
- * 取「紧贴取值前面」的比较词，并与取值之间只允许隔空白与单位。
+ * 取「紧贴取值前面」的比较词，并与取值之间只允许隔空白、单位与**少量中文**
+ * （8 个字符预算不变 ✓）—— 「应不小于一个 80mm」这种形状很常见 ✓，
+ * 一个中文都不许有会判不出来 ✓。**句读切分照旧** ✓（不跨句串 ✓）。
  * 英文版（R48）也要认：`below` = 小于、`shall not exceed` = 不大于。
  * 没取到就是没取到 —— **留空**，不猜。
  */
@@ -946,28 +948,45 @@ export function comparatorBefore(text: string, focusStart: number): Comparator |
   }
   const trimmed = tail.trimEnd().toLowerCase();
   if (!trimmed) return null;
-  for (const [re, cmp] of COMPARATOR_WORDS) {
-    const m = re.exec(trimmed);
-    if (!m) continue;
-    // 比较词与取值之间只允许隔空白与单位 —— 否则抓到的不是这个数的口径。
-    const between = trimmed.slice(m.index + m[0].length);
-    if (!/^[\sA-Za-z%°㎜㎜]{0,8}$/.test(between)) continue;
-    return cmp;
-  }
+  // ---- 就近匹配：比较词可以落在取值前几个字符之内 --------------------------
+  //
+  // 「…其透光面面积应不小于一个 80mm 直径圆的面积」——
+  // 比较词**就在眼前** ✓，只是中间隔了「一个 」（3 个字 ✓）。
+  //
+  // 做法：**逐个缩短尾部去试** ✓ —— gap=0（贴着取值 ✓）→ 1 → … → 8 ✓，
+  // **先匹配上的（最近的 ✓）赢** ✓。
+  //
+  // 为什么不直接把词表正则的 `$` 锚点去掉 ✗ ——
+  // 锚点保证「取的是最近的那个比较词」✓；
+  // 去掉它就会抓到**更早**的那个 ✗✗：
+  // 「shall not be more than 3 m **and** the gap shall be more than 250 mm」
+  // → 抓到前一个「more than」→ 判成 ≤（把下限说成上限 ✗✗）。
+  //
+  // gap 那段必须像「空白 / 单位 / 少量中文」✓（判据 ✓）——
+  // 否则抓到的是不搭界的比较词 ✓。
+  for (let gap = 0; gap <= 8; gap++) {
+    const cand = trimmed.slice(0, trimmed.length - gap);
+    if (!cand) break;
+    const between = trimmed.slice(cand.length);
+    if (!/^[\sA-Za-z%°㎜㎜\u4e00-\u9fff]{0,8}$/.test(between)) continue;
+    for (const [re, cmp] of COMPARATOR_WORDS) {
+      const m = re.exec(cand);
+      if (!m) continue;
+      return cmp;
+    }
   // 英文：比较词的**自然方向** + **否定翻向**
   //
   // 否定与比较词可以隔着词（「shall not be positioned lower than 250」），
   // 所以不能把否定写进每一条正则 —— 那样会漏掉这两种形状，
   // 把「不得低于 250」判成「低于 250」（把下限说成上限）。
-  for (const [re, natural] of ENGLISH_NATURAL) {
-    const m = re.exec(trimmed);
-    if (!m) continue;
-    const between = trimmed.slice(m.index + m[0].length);
-    if (!/^[\sA-Za-z%°㎜㎜]{0,8}$/.test(between)) continue;
-    const negated = negationApplies(trimmed.slice(0, m.index)) ||
-      negationApplies(prevPiece);
-    const flipped = negated ? FLIPPED[natural] : natural;
-    return flipped;
+    for (const [re, natural] of ENGLISH_NATURAL) {
+      const m = re.exec(cand);
+      if (!m) continue;
+      const negated = negationApplies(cand.slice(0, m.index)) ||
+        negationApplies(prevPiece);
+      const flipped = negated ? FLIPPED[natural] : natural;
+      return flipped;
+    }
   }
   return null;
 }
@@ -1005,7 +1024,8 @@ function locate(
     const focus = m.length > 1 && m[1] != null ? m[1] : m[0];
     const groupSpan = m.indices?.[1];
     const focusStart = groupSpan ? groupSpan[0] : m.index;
-    // 口径取「取值前面紧邻的比较词」；比较词与取值之间只允许隔空白与单位。
+    // 口径取「取值前面紧邻的比较词」；比较词与取值之间只允许隔空白、单位与
+    // 少量中文（8 个字符预算不变 ✓）。
     // 取不到就是取不到 —— 留空，不猜（客户 DR-002 丢的就是这个维度）。
     const comparator = comparatorBefore(text, focusStart);
     return {
