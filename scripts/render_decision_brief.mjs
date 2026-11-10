@@ -49,6 +49,39 @@ const N_ZHOU = `${N_VERSIONS <= CN_DIGITS.length ? CN_DIGITS[N_VERSIONS] : N_VER
 const OUTDIR = path.join(ROOT, "delivery", "PDF对比");
 
 const main = JSON.parse(fs.readFileSync(path.join(ROOT, "reports", "last-report.json"), "utf8"));
+
+/**
+ * 附件 §12.5 的四维核验状态 —— **现算** ✓（不手写 ✓）。
+ *
+ * 两件不同的事 ✓：
+ *   ① 每个取值**在不在它所报的那一页上** ✓（全部核过 ✓）；
+ *   ② 这个数的**语义**对不对 ✓（归属 / 条件 / 符号 / 单位 **四件事** ✓）。
+ *
+ * 正文只说结论 ✓，但**必须说清是哪一件** ✓ ——
+ * 把①说成②，就是**把没核的说成核过了** ✗✗。
+ */
+const DIM = (() => {
+  const acc = {};
+  let cells = 0;
+  let elsewhere = 0;
+  let notFound = 0;
+  for (const row of main.parameterMatrix ?? []) {
+    for (const [, cell] of Object.entries(row.cells ?? {})) {
+      if (cell?.status !== "verified") continue;
+      cells++;
+      const st = String(cell?.corroborated?.status ?? "");
+      if (st === "elsewhere") elsewhere++;
+      else if (st === "not-found") notFound++;
+      const dims = cell?.corroborated?.dimensions ?? {};
+      for (const [k, v] of Object.entries(dims)) {
+        acc[k] = acc[k] ?? {};
+        acc[k][String(v)] = (acc[k][String(v)] ?? 0) + 1;
+      }
+    }
+  }
+  const ok = (k) => acc[k]?.["已核"] ?? 0;
+  return { cells, elsewhere, notFound, ok };
+})();
 const ledger = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "qualitative-ledger.json"), "utf8"));
 
 const chById = Object.fromEntries((main.chapters || []).map((c) => [c.id, c]));
@@ -205,6 +238,12 @@ const ch1 = [
   `- **不说「C 没有这一条」而不写查过哪里** —— 「某版没有」是**核过的**，附检索依据与条款号；`,
   `- **不把「判不出来」写成「一致」** —— 台账里 **${N_PENDING} 条**标「需人工判读」，按相似度排序（见第 3 章）；`,
   `- **不替法规专家下结论** —— 涉及术语定义是否等义的，一律排进「待确认项」。`,
+  `- **不把「核过页面存在」说成「核过语义」** —— 每个取值都回源核过它**在不在所报的那一页上**`
+    + `（**${DIM.cells} 个取值格，页码不符 ${DIM.elsewhere} 处、全篇查不到 ${DIM.notFound} 处** ✓），`
+    + `但**归属 / 适用条件 / 比较符号 / 单位**是**四件事** ✓，`
+    + `已核 **${DIM.ok("pairing")} / ${DIM.ok("condition")} / ${DIM.ok("symbol")} / ${DIM.ok("unit")}** ✓；`
+    + `**没核的写「未核 / 未判定」，本来就不适用的写「不适用」，都不写成「已核」** ✓`
+    + `（逐维状态见附件 **§12.5** ✓）。`,
   "",
   "## 1.3 这份正文里的每个数从哪来",
   "",
