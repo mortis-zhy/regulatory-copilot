@@ -119,5 +119,68 @@ ok(
   "用户确认的版本优先于内容识别",
 );
 
+// --------------------------------------------------------------------------
+// ⑤ **结果按输入顺序**（同事 2026-11-10 复核发现 ✗）
+//
+// 「第一份文件未识别、第二份识别为 B 时，分配还是函数返回 [B, A]，
+//   页面按上传顺序套用，标签会贴错文件。」
+//
+// A 是新版、B 是现行版 —— **贴错就是方向反了** ✗。
+// --------------------------------------------------------------------------
+const mixed2 = assignVersionLabels([
+  plain("未识别的1.pdf", { label: null, score: 0, source: "none", reason: "认不出" }),
+  plain("GB4785-2019.pdf", guess("B")),
+]);
+ok(
+  mixed2.assignments.length === 2,
+  "分配结果的长度与输入一致",
+);
+ok(
+  mixed2.assignments[0]?.fileName === "未识别的1.pdf" &&
+    mixed2.assignments[0]?.source === "positional",
+  "**下标 0 是第一份文件**（认不出的那份）—— 不能被后面的顶到后面去",
+);
+ok(
+  mixed2.assignments[1]?.fileName === "GB4785-2019.pdf" &&
+    mixed2.assignments[1]?.label === "B",
+  "**下标 1 是第二份文件**，标签还是 B",
+);
+ok(
+  mixed2.assignments.every((a, i) => a.fileName === mixed2.assignments[i].fileName),
+  "每条分配都带着自己的文件名 ✓",
+);
+
+// 混合三种来源时顺序也不能乱
+const mixed3 = assignVersionLabels([
+  { fileName: "人工确认.pdf", versionGuess: guess("A"), confirmedLabel: "A" },
+  plain("未识别的2.pdf", { label: null, score: 0, source: "none", reason: "认不出" }),
+  plain("GB4785-2019.pdf", guess("B")),
+]);
+ok(
+  mixed3.assignments[0]?.fileName === "人工确认.pdf" &&
+    mixed3.assignments[1]?.fileName === "未识别的2.pdf" &&
+    mixed3.assignments[2]?.fileName === "GB4785-2019.pdf",
+  "人工确认 + 未识别 + 内容识别混在一起时，**顺序仍然是输入顺序**",
+);
+
+// --------------------------------------------------------------------------
+// ⑥ **两份都被人确认成 A → 也要报冲突**（同事 2026-11-10 复核发现 ✗）
+//
+// 原来只查「按内容认出来」的重复 —— 人工确认的重复**不报** ✗：
+// 界面上不提示，服务端也不会 400 → **两份文件共用一个角色** ✗。
+// --------------------------------------------------------------------------
+const confirmedDup = assignVersionLabels([
+  { fileName: "文件1.pdf", versionGuess: guess("A"), confirmedLabel: "A" },
+  { fileName: "文件2.pdf", versionGuess: guess("B"), confirmedLabel: "A" },
+]);
+ok(confirmedDup.conflicts.length === 1, "两份都被确认成 A → 报 1 处冲突");
+ok(
+  confirmedDup.conflicts[0]?.label === "A" &&
+    confirmedDup.conflicts[0]?.files.length === 2 &&
+    confirmedDup.conflicts[0]?.files.includes("文件1.pdf") &&
+    confirmedDup.conflicts[0]?.files.includes("文件2.pdf"),
+  "冲突说清是哪个标签、哪两份文件（人工确认的也算）",
+);
+
 console.log(failures ? `\n✗ ${failures} 项没过` : "\n✓ 版本标签分配用例全过");
 process.exit(failures ? 1 : 0);

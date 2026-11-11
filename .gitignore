@@ -178,6 +178,7 @@ __pycache__/
 reports/.verify-render.pdf
 reports/final.pdf
 reports/last-report.BAK.json
+reports/uploads.json
 # 网页端管线生成的报告 PDF（原来落在仓库外的工作台目录；现在在仓库内 reports/）
 reports/GB4785_多版本横向对比研究报告.pdf
 

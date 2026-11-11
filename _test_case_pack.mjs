@@ -58,7 +58,7 @@ const own = Object.entries(corpus).map(([key, doc]) => ({
   sha256: doc.sourceSha256,
   text: doc.fullText,
 }));
-const ownDecision = matchCasePack(own);
+const ownDecision = await matchCasePack(own);
 ok(ownDecision.applies, "本案例包自己的语料 → 适用");
 ok(
   ownDecision.perDoc.every((d) => d.by === "sha256"),
@@ -77,7 +77,7 @@ const foreignText =
   "本文件是另一部法规的正文，与本案例包的任何一版都没有共同内容。" +
   "它讲的是完全不同的装置、不同的章节号与不同的限值。" +
   "用来验证：外来的输入不会被套上 GB 4785 的案例资料。";
-const foreign = matchCasePack([
+const foreign = await matchCasePack([
   { key: "X", sha256: "0".repeat(64), text: foreignText },
 ]);
 ok(!foreign.applies, "外来的文件 → **不适用**（不会套用案例资料）");
@@ -91,13 +91,13 @@ ok(
 );
 
 // ②b 指纹对得上 → 适用（即使正文被截断/换行）
-const byShaOnly = matchCasePack([
+const byShaOnly = await matchCasePack([
   { key: "A", sha256: corpus.A.sourceSha256, text: "" },
 ]);
 ok(byShaOnly.applies, "只有指纹对得上（正文缺失）→ 仍适用");
 
 // ②c 内容对得上（同一份标准的另一个副本）→ 适用
-const byContent = matchCasePack([
+const byContent = await matchCasePack([
   { key: "A", sha256: "1".repeat(64), text: corpus.A.fullText },
 ]);
 ok(byContent.applies, "内容与 A 版一致（另一个副本）→ 适用");
@@ -125,14 +125,14 @@ const noisy = (() => {
   const paras = chars.join("").split("\n");
   return paras.slice(0, Math.floor(paras.length * 0.92)).join("\n");
 })();
-const noisyByName = matchCasePack([
+const noisyByName = await matchCasePack([
   { key: "A", sha256: "2".repeat(64), text: noisy, name: "GB4785草案V4.3.5.pdf" },
 ]);
 ok(
   noisyByName.applies,
   "噪声副本 + 文件名签名对得上 → 仍适用（客户上传自己那份的情形）",
 );
-const noisyForeignName = matchCasePack([
+const noisyForeignName = await matchCasePack([
   { key: "A", sha256: "3".repeat(64), text: noisy, name: "some-other-regulation.pdf" },
 ]);
 ok(
@@ -141,13 +141,111 @@ ok(
 );
 
 // --------------------------------------------------------------------------
+// ②d之二 **改了一个限值**的副本 → **拒绝**（同事 2026-11-10 复核 ✗）
+//
+// 「我在内存中的 A 版正文样例里，把一处 75 mm 改成 999999 mm，
+//   匹配函数仍返回适用，返回相似度为 1。」
+//
+// 相似度是**字符二元组**的比 ✓ —— 改一个数几乎不动它 ✓（1.00 ✓）。
+// 而**人工核过的结论是按具体数值核的** ✓ —— 数值变了就不能直接用 ✓。
+//
+// 判据是**对不上的比例** ✓：少量对不上 = 这一份被改过 ✗ → 拒绝 ✓；
+// 大量对不上 = OCR 噪声 ✓ → 接受 ✓（上面那条用例 ✓）。
+// --------------------------------------------------------------------------
+// **正文要用同一种表示** ✓ —— 上传件走的是服务端 MuPDF 抽取 ✓，
+// 参照件也是同一份实现 ✓（`loadReferenceTexts` ✓）。
+// 拿语料的 MinerU 文本去比 MuPDF 参照件，那是**两种表示** ✗，
+// 限值当然对不上 —— 那不是「这份被改了」✗。
+const { loadReferenceTexts } = await import("./dist/versionRecognize.js");
+const refA = (await loadReferenceTexts()).find((r) => r.label === "A");
+ok(!!refA?.text, "拿得到 A 版的 MuPDF 参照正文（与上传件同一种表示）");
+const changedLimit = (() => {
+  const t = refA?.text ?? "";
+  // 把第一处「数 + mm」里的数换成 999999 ✓（用例要可复现 ✓）
+  const m = /(\d+(?:\.\d+)?)\s*(?:mm|㎜)/.exec(t);
+  if (!m) return t;
+  return t.slice(0, m.index) + "999999" + t.slice(m.index + m[1].length);
+})();
+ok(changedLimit !== (refA?.text ?? ""), "构造出「改了一个限值」的样例");
+const changedDecision = await matchCasePack([
+  { key: "A", sha256: "5".repeat(64), text: changedLimit, name: "GB4785草案V4.3.5.pdf" },
+]);
+ok(
+  !changedDecision.applies,
+  "改了一个限值的副本 → **拒绝**（相似度再高也不行 —— 结论是按数值核的）",
+);
+ok(
+  /限值/.test(changedDecision.perDoc[0]?.note ?? ""),
+  "拒绝的理由里点名「限值对不上」—— 让人知道是哪一类问题",
+);
+
+// --------------------------------------------------------------------------
+// ②d之三 **真实文件**的副本（同事 2026-11-10 复核的第 ② 条 ✓）
+//
+// 「我用同一份 PDF 制作了不同哈希的副本，确认两份都是 103 页且各页提取文字相同。
+//   提交报告生成接口后返回 422。」
+//
+// **必须用真文件** ✓ —— 「副本」的定义就是**同一份内容、不同哈希** ✓，
+// 那得**真改一个字节** ✓；内存里的字符串样例证明不了这件事 ✗。
+//
+// 走的是**出报告那条路的同一个判据** ✓（`matchCasePack` ✓）。
+// --------------------------------------------------------------------------
+const crypto = await import("node:crypto");
+const { extractPdfTextServer } = await import("./dist/pdfExtract.js");
+const corpusA = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "dist", "mineru-v4-data.json"), "utf8"),
+);
+const realName = `${String(corpusA?.A?.sourceSha256 ?? "").slice(0, 16)}.pdf`;
+const realPath = path.join(ROOT, "uploaded-docs", realName);
+ok(fs.existsSync(realPath), `仓库里有真的源 PDF（${realName}）`);
+if (fs.existsSync(realPath)) {
+  const realBytes = fs.readFileSync(realPath);
+  const shaOf = (b) => crypto.createHash("sha256").update(b).digest("hex");
+  const realText = (await extractPdfTextServer(realBytes))?.fullText ?? "";
+  ok(realText.length > 1000, `真 PDF 的正文抽出来了（${realText.length} 字）`);
+
+  // ① 副本：**改一个字节** → 哈希不同 ✓、正文完全相同 ✓ → 应当**放行** ✓
+  const copyBytes = Buffer.from(realBytes);
+  copyBytes[copyBytes.length - 64] = copyBytes[copyBytes.length - 64] ^ 0x01;
+  const copyText = (await extractPdfTextServer(copyBytes))?.fullText ?? "";
+  ok(shaOf(copyBytes) !== shaOf(realBytes), "副本的哈希确实不同了");
+  const copyDecision = await matchCasePack([
+    { key: "A", sha256: shaOf(copyBytes), text: copyText, name: "GB4785草案V4.3.5.pdf" },
+  ]);
+  ok(
+    copyDecision.applies,
+    "**真文件**的副本（哈希不同、正文相同）→ **放行**（同事 2026-11-10 复核指出的 ✗）",
+  );
+
+  // ② 同一份 PDF，但**正文里一处限值被改掉**，且**哈希也不同**（副本 + 改动）
+  //    → 走内容那条路 ✓ → **限值核对**要抓得住 ✓ → **拒绝** ✓
+  const mLim = /(\d+(?:\.\d+)?)\s*(?:mm|㎜)/.exec(realText);
+  const editedText = mLim
+    ? realText.slice(0, mLim.index) + "999999" + realText.slice(mLim.index + mLim[1].length)
+    : realText;
+  const editedDecision = await matchCasePack([
+    { key: "A", sha256: shaOf(copyBytes), text: editedText, name: "GB4785草案V4.3.5.pdf" },
+  ]);
+  ok(
+    !editedDecision.applies,
+    "副本 + 改了一处限值 → **拒绝**（结论是按具体数值核的，数值变了就不能直接用）",
+  );
+
+  // ③ 指纹对得上时**不需要**核限值 ✓ —— 文件逐字节相同 ✓ → 内容必然相同 ✓
+  const sameDecision = await matchCasePack([
+    { key: "A", sha256: shaOf(realBytes), text: realText, name: "GB4785草案V4.3.5.pdf" },
+  ]);
+  ok(sameDecision.applies, "指纹完全一致 → 适用（零歧义，不用核限值）");
+}
+
+// --------------------------------------------------------------------------
 // ②e **伪造文件名**的另一套法规 → 仍然拒绝
 //
 // 这一条是 issue #1（角色错位）的残留洞：把 GB 4758 改名成「GB4785-2019.pdf」，
 // sidecar 的**文件名**校验会放行 ✗（它认的是文件名）——
 // 文件名签名**救不了它**：跨标准的正文相似度只有 0.14–0.16 ✓。
 // --------------------------------------------------------------------------
-const spoofed = matchCasePack([
+const spoofed = await matchCasePack([
   {
     key: "B",
     sha256: "4".repeat(64),
@@ -202,7 +300,7 @@ ok(
 // --------------------------------------------------------------------------
 let ok2 = false;
 try {
-  assertCasePack(own);
+  await assertCasePack(own);
   ok2 = true;
 } catch {
   ok2 = false;

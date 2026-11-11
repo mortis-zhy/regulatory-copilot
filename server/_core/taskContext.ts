@@ -131,3 +131,29 @@ export function appendTaskUpload(taskId: string, up: TaskUpload): void {
     /* 清单写不进去不该让上传失败 —— 上传本身已经成功了 ✓ */
   }
 }
+
+/**
+ * **用客户端报的那份清单替换**服务器记的清单 ✓。
+ *
+ * 为什么是「替换」而不是「追加」✓（同事 2026-11-10 复核发现 ✗）：
+ * 追加的话，用户在页面上**删掉**的文件**永远留在记录里** ✗ ——
+ * 于是「这次任务用过哪些文件」与「用户现在选着哪些文件」**不是一回事** ✗，
+ * 取证就会拿用户已经删掉的资料当依据 ✗。
+ *
+ * 客户端报的清单就是**当前**清单 ✓ —— 删掉的文件**立刻消失** ✓。
+ */
+export function replaceTaskUploads(taskId: string, uploads: TaskUpload[]): void {
+  try {
+    const p = taskUploadsFile(taskId);
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    const seen = new Set<string>();
+    const clean = uploads.filter((u) => {
+      if (!u?.sha256 || seen.has(u.sha256)) return false;
+      seen.add(u.sha256);
+      return true;
+    });
+    fs.writeFileSync(p, JSON.stringify(clean, null, 2) + "\n", "utf8");
+  } catch {
+    /* 清单写不进去不该让请求失败 ✓ */
+  }
+}

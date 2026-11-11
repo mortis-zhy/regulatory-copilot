@@ -2985,6 +2985,20 @@ export type LayoutOverflow = {
 };
 
 /**
+ * **渲染失败** —— 页面加载超时之类 ✓。
+ *
+ * 单独一个错误类型，是为了让下载端点能回 **422**（人话 + 怎么修 ✓），
+ * 而不是 500（一句「服务端出错」✗ —— 用户不知道怎么处置 ✗）。
+ */
+export class RenderFailedError extends Error {
+  readonly code = "render_failed";
+  constructor(message: string) {
+    super(message);
+    this.name = "RenderFailedError";
+  }
+}
+
+/**
  * **渲染失败要说得清** —— 不是「少了几段」。
  *
  * 这个错误会被三处消费：网页的 PDF 下载入口（要变成 422 而不是 500）、
@@ -3082,7 +3096,17 @@ export async function auditHtmlLayout(html: string): Promise<LayoutOverflow[]> {
     await page.evaluate(async () => {
       const fonts = (document as any).fonts;
       if (fonts?.ready) await fonts.ready;
-      for (const f of fonts ?? []) await f.load().catch(() => {});
+      // **字体加载失败要报错** ✓ —— 与渲染路径同一口径 ✓
+      //（版面探测出来的行高，在缺字体的页面上是**假的** ✓）。
+      const failed: string[] = [];
+      for (const f of fonts ?? []) {
+        try {
+          await f.load();
+        } catch {
+          failed.push(String(f.family ?? "?"));
+        }
+      }
+      if (failed.length) throw new Error(`字体加载失败：${failed.join("、")}`);
     });
     return await measureLayout(page, PRINT_CONTENT_HEIGHT_PX);
   } finally {
@@ -3122,19 +3146,33 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
         // costing more than looking.
         (await import("node:fs")).writeFileSync(process.env.DUMP_HTML, html, "utf-8");
       }
-      const loadTimeout = Math.max(120_000, Math.min(600_000, Math.ceil(html.length / 900) * 1000));
+      // **测试钩子** ✓ —— 把超时压到 1ms，用来证明「超时会抛」✓。
+      // 没有它，这条失败路径**测不到** ✓（同事 2026-11-10 指出的正是这个盲区 ✓）。
+      const forcedTimeout = Number(process.env.V8_RENDER_TIMEOUT_MS);
+      const loadTimeout =
+        forcedTimeout > 0
+          ? forcedTimeout
+          : Math.max(120_000, Math.min(600_000, Math.ceil(html.length / 900) * 1000));
       const t0 = Date.now();
       try {
         await page.setContent(html, { waitUntil: "load", timeout: loadTimeout });
       } catch (e) {
-        // "load" fires only after the whole document lays out. If it times out
-        // the DOM is nonetheless populated, and everything below (fonts.ready,
-        // page.pdf) works off the DOM rather than the load event — so log the
-        // budget that was hit and carry on rather than losing the whole render.
-        console.warn(
-          `[v8] setContent "load" timed out after ${Math.round((Date.now() - t0) / 1000)}s ` +
-            `(budget ${Math.round(loadTimeout / 1000)}s, ${(html.length / 1024).toFixed(0)} KB) — ` +
-            "continuing with the DOM as laid out so far",
+        // **超时 = 停** ✓（同事 2026-11-10 复核发现 ✗）。
+        //
+        // 原来这里 `console.warn` 之后**接着出 PDF** ✗ ——
+        // 但「load」是**整个文档排完**才触发的 ✗：
+        // 超时意味着版面**可能只排了一半** ✗ → 出的是**半份**文档 ✗，
+        // 而外面什么异常都没有 ✗ —— 用户拿到一份缺内容的 PDF 还以为是对的 ✗。
+        //
+        // 「宁可空着，不可错着」：**排不完就不给** ✓。
+        const secs = Math.round((Date.now() - t0) / 1000);
+        console.error(
+          `[v8] setContent "load" 超时 ${secs}s（预算 ${Math.round(loadTimeout / 1000)}s，` +
+            `${(html.length / 1024).toFixed(0)} KB）—— 不产出 PDF`,
+        );
+        throw new RenderFailedError(
+          `页面加载超时（${secs}s，预算 ${Math.round(loadTimeout / 1000)}s，` +
+            `文档 ${(html.length / 1024).toFixed(0)} KB）—— 版面可能只排了一半，不产出 PDF`,
         );
       }
       console.log(`[v8] setContent ${Math.round((Date.now() - t0) / 1000)}s for ${(html.length / 1024).toFixed(0)} KB`);
@@ -3143,7 +3181,22 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
         if (fonts?.ready) await fonts.ready;
         // document.fonts.ready resolves for faces already used, but the inline
         // base64 faces are large and decode lazily — force each one.
-        for (const f of fonts ?? []) await f.load().catch(() => {});
+        //
+        // **加载失败要报错** ✓（同事 2026-11-10 复核发现 ✗）：
+        // 原来 `.catch(() => {})` 把失败**吞掉** ✗ ——
+        // 字体没加载出来，纸面上就是**豆腐块**（□）✗，
+        // 而外面什么异常都没有 ✗。现在把失败的字体**点名抛出来** ✓。
+        const failed: string[] = [];
+        for (const f of fonts ?? []) {
+          try {
+            await f.load();
+          } catch (e) {
+            failed.push(`${f.family ?? "?"} (${f.status ?? "?"})`);
+          }
+        }
+        if (failed.length) {
+          throw new Error(`字体加载失败：${failed.join("、")}`);
+        }
       });
       await page.waitForTimeout(800);
       // **印刷版面自检** —— 表格会被切掉时**当场报错**，不产出半截 PDF。

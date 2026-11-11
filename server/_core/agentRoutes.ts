@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createHash } from "node:crypto";
 import { storagePut } from "../storage";
 import { streamMiniMaxChat, type ChatMessage } from "../integrations/minimax";
 import { runAgentLoop } from "../reports/agentLoop";
@@ -13,7 +14,7 @@ import { runDeliveryGate } from "./deliveryGate";
 // 原来写在系统提示词里，换标准时那句提示会**继续说旧标准**。
 import { REPORT_META } from "../reports/reportMeta";
 import { PROJECT_ROOT, REPORT_FILE, UPLOADED_DOCS_DIR } from "./projectRoot";
-import { taskIdOf, resolveReportFile, taskReportFile, taskDraftFile, taskDir, readTaskUploads, appendTaskUpload } from "./taskContext";
+import { taskIdOf, resolveReportFile, taskReportFile, taskDraftFile, taskDir, readTaskUploads, appendTaskUpload, replaceTaskUploads } from "./taskContext";
 import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -46,48 +47,12 @@ async function loadCorpus(): Promise<Record<string, any> | null> {
   return CORPUS_CACHE.data;
 }
 
-/**
- * 参考件的正文（**懒加载 + 缓存**）—— 用来认「同一份标准的另一个副本」。
- *
- * 参考件是**语料里各版的源 PDF**（`uploaded-docs/<sha 前 16 位>.pdf`），
- * 文本用 **MuPDF** 取 —— 与上传文件的文本**同一种表示**。
- *
- * 为什么强调「同一种表示」：拿 MinerU 的语料文本去比 MuPDF 的上传文本，
- * 实测相似度只有 0.21~0.24（那是两种排版版本在比）；
- * 同表示互比（跨页采样）实测：同一份 **1.00** · 同标准的兄弟版 **0.52** · 跨标准 **0.14~0.16**。
- */
-let REF_TEXTS_CACHE: { refs: Array<{ label: string; text: string }> | null } | null = null;
-
-async function loadReferenceTexts(): Promise<Array<{ label: string; text: string }>> {
-  if (REF_TEXTS_CACHE) return REF_TEXTS_CACHE.refs ?? [];
-  REF_TEXTS_CACHE = { refs: null };
-  const refs: Array<{ label: string; text: string }> = [];
-  try {
-    const fs = await import("node:fs");
-    const path = await import("node:path");
-    const { extractPdfTextServer } = await import("../ingestion/pdfExtract");
-    const corpus = await loadCorpus();
-    for (const [ver, doc] of Object.entries(corpus ?? {})) {
-      const sha = String(doc?.sourceSha256 ?? "").slice(0, 16);
-      if (!sha) continue;
-      const p = path.join(PROJECT_ROOT, "uploaded-docs", `${sha}.pdf`);
-      if (!fs.existsSync(p)) continue;
-      const r = await extractPdfTextServer(fs.readFileSync(p));
-      if (r?.fullText) refs.push({ label: ver, text: r.fullText });
-    }
-  } catch {
-    /* 参考件取不到 → 只剩 sha256 那条判据 */
-  }
-  REF_TEXTS_CACHE.refs = refs;
-  return refs;
-}
-
 /** 上传的文件是哪一版？—— **按内容认**（先 sha256，再相似度）。 */
 async function recognizeUploadVersion(
   bytes: Buffer,
   text: string,
 ): Promise<{ label: string | null; score: number; source: string; reason: string }> {
-  const { recognizeBySha256, recognizeByReferences } = await import("../reports/versionRecognize");
+  const { loadReferenceTexts, recognizeBySha256, recognizeByReferences } = await import("../reports/versionRecognize");
   const crypto = await import("node:crypto");
   const corpus = await loadCorpus();
   const sha = crypto.createHash("sha256").update(bytes).digest("hex");
@@ -185,21 +150,47 @@ async function taskToolContext(
   } catch {
     /* 验不了就当没有 ✓ */
   }
-  // 客户端没报（老用法 / CLI）→ 用服务器记的清单 ✓
-  if (!docs.length) {
+  // 客户端**报了**清单 → **以它为准** ✓（哪怕是空的 ✓）——
+  //
+  // 同事 2026-11-10 复核发现 ✗：原来这里在「客户端没报」时会**退回**服务器
+  // 自己记的那份，而那份是**累加**的 —— 用户在页面上**删掉**的文件
+  // **永远留在记录里** ✗，于是取证拿用户已经不用的资料当依据 ✗。
+  //
+  // 现在：客户端报了 → 服务器那份清单**被替换**成它 ✓（删掉的文件消失 ✓）。
+  if (claimed !== undefined) {
+    replaceTaskUploads(
+      taskId,
+      docs.map((d) => ({ sha256: d.sha256, fileName: d.name, at: new Date().toISOString() })),
+    );
+    if (!docs.length) {
+      // 当前**一份文件都没有**（用户全删了）→ **无从判断**这份输入是不是
+      // 案例包管的 ✓ → 取证**不回答** ✓（而不是拿一份用户已经不用的资料糊弄）✓
+      return {
+        taskId,
+        casePack: {
+          applies: false,
+          casePackId: "",
+          family: "",
+          reason: "当前任务**没有选中任何文件** —— 无从判断这份输入是不是案例包管的资料。",
+          sourceFiles: [],
+        },
+      };
+    }
+  } else {
+    // 客户端**没报**（老用法 / CLI）→ 才用服务器记的那份 ✓
     docs = readTaskUploads(taskId).map((u, i) => ({
       key: String.fromCharCode(65 + i),
       sha256: u.sha256,
       name: u.fileName,
     }));
-  }
-  if (!docs.length) {
-    // 这个任务**还没上传过文件** → 判不了 → 不拦（老用法照旧 ✓）。
-    return { taskId, casePack: null };
+    if (!docs.length) {
+      // 这个任务**还没上传过文件** → 判不了 → 不拦（老用法照旧 ✓）。
+      return { taskId, casePack: null };
+    }
   }
   try {
     const { matchCasePack, casePackSourceFiles } = await import("../reports/casePack");
-    const m = matchCasePack(docs);
+    const m = await matchCasePack(docs);
     return {
       taskId,
       casePack: {
@@ -214,6 +205,39 @@ async function taskToolContext(
     console.warn("[agent] 案例包判定失败（不拦）:", String((e as Error)?.message ?? e).slice(0, 160));
     return { taskId, casePack: null };
   }
+}
+
+/**
+ * **渲染失败 → 422**（而不是 500）✓。
+ *
+ * 同事 issue #4 完成标准 1：「必要检查失败时，**明确报错**或标记未通过」✓。
+ * 这三类错误（页面加载超时 / PDF 自检没过 / 版面会被切掉）
+ * 都是「**这份 PDF 做不出来**」✓ —— 不是「服务器坏了」✓。
+ *
+ * 500 只给「真的坏了」✓ —— 用户看到 500 时不知道该怎么办 ✗，
+ * 看到 422 + 一句人话就知道**重试还是改** ✓。
+ */
+function renderFailure(res: any, error: unknown, where: string): boolean {
+  const code = (error as any)?.code;
+  if (
+    code !== "render_failed" &&
+    code !== "pdf_gate_failed" &&
+    code !== "render_layout_overflow"
+  ) {
+    return false;
+  }
+  console.error(`[${where}] render failed:`, error);
+  res.status(422).json({
+    error: error instanceof Error ? error.message : "PDF 渲染未通过",
+    code,
+    hint:
+      code === "render_failed"
+        ? "渲染没跑完（版面可能只排了一半）—— 没有产出 PDF。请稍后重试。"
+        : code === "pdf_gate_failed"
+          ? "渲染后的 PDF 自检没过（或**没跑成**）—— 没有产出 PDF。详见 error 里的原因。"
+          : "版面自检没过（表格会被切掉）—— 没有产出 PDF。",
+  });
+  return true;
 }
 
 export function registerAgentRoutes(router: Router) {
@@ -290,13 +314,14 @@ export function registerAgentRoutes(router: Router) {
         size: bytes.length,
         // **文件指纹** —— 客户端要拿它告诉服务器「这次任务用的是哪些文件」✓
         // （同事 issue #2：证据要能回到**当前任务的文件** ✓）
-        sha256: (() => {
-          try {
-            return require("node:crypto").createHash("sha256").update(bytes).digest("hex");
-          } catch {
-            return undefined;
-          }
-        })(),
+        // **静态 import 的 crypto** ✓ —— 这里原来写的是 `require("node:crypto")` ✗，
+        // 而 ESM 里**没有 require** ✗ → 抛错 → 被 catch 吞掉 ✓
+        // → 客户端拿到的 sha256 是 **undefined** ✗
+        // → 「当前这批文件」的指纹验不过 ✓ → 那段清单被丢掉 ✗
+        // → 取证退回读**旧记录** ✗（同事 issue #2 指的那条 ✗）。
+        //
+        // 症状是**静默**的 ✗ —— 不报错 ✓，只是少了一个字段 ✓。
+        sha256: createHash("sha256").update(bytes).digest("hex"),
         storage: stored,
         parsed,
         parserStatus: parsed ? "complete" : (serverText ? "local_complete" : "needs_configuration"),
@@ -519,7 +544,13 @@ export function registerAgentRoutes(router: Router) {
             hint: "确认可以导出请加 ?force=1；或重新生成报告。",
           });
         }
-        const rawPdf = await renderPdfFromReportV8(report);
+        let rawPdf: Buffer;
+        try {
+          rawPdf = await renderPdfFromReportV8(report);
+        } catch (error) {
+          if (renderFailure(res, error, "report/pdf")) return;
+          throw error;
+        }
         // 文件名**从报告的源文档清单派生** —— 换一套新标准时自动跟着变。
         // 原来这里写死 "GB4785-multiversion-comparison-report.pdf"，
         // 于是换标准后下载下来的文件名字里还写着 GB 4785。
@@ -602,18 +633,38 @@ export function registerAgentRoutes(router: Router) {
       const { matchCasePack } = await import("../reports/casePack");
       const { createHash } = await import("node:crypto");
       const fs2 = await import("node:fs");
-      const caseDocs = docs.map((d) => {
-        let sha: string | undefined;
-        try {
-          sha = createHash("sha256").update(fs2.readFileSync(d.filePath)).digest("hex");
-        } catch {
-          sha = undefined;
-        }
-        // 文件名也带上 —— 相似度被 OCR 噪声吃掉时，
-        // **声明里的签名**能在族内再判一次 ✓（见 casePack.ts）。
-        return { key: d.label, sha256: sha, name: d.fileName };
-      });
-      const caseDecision = matchCasePack(caseDocs);
+      const caseDocs = await Promise.all(
+        docs.map(async (d) => {
+          let sha: string | undefined;
+          let bytes: Buffer | undefined;
+          try {
+            bytes = fs2.readFileSync(d.filePath);
+            sha = createHash("sha256").update(bytes).digest("hex");
+          } catch {
+            sha = undefined;
+          }
+          // **正文也要带上** ✓（同事 2026-11-10 复核发现 ✗）——
+          // 原来只传「哈希 + 文件名」✗，
+          // 于是**内容相似度那条路根本没走到** ✓：
+          // 同一份标准的**另一个副本**（哈希不同 ✓）被当成「不是这一套」✗。
+          //
+          // 正文用**服务端自己抽的 MuPDF 文本** ✓ —— 与参照件**同一种表示** ✓
+          // （跨表示互比只有 0.2 上下 ✗，同表示 1.00 ✓）。
+          let text: string | undefined;
+          try {
+            if (bytes) {
+              const { extractPdfTextServer } = await import("../ingestion/pdfExtract");
+              text = (await extractPdfTextServer(bytes))?.fullText;
+            }
+          } catch {
+            text = undefined;
+          }
+          // 文件名也带上 —— 相似度被 OCR 噪声吃掉时，
+          // **声明里的签名**能在族内再判一次 ✓（见 casePack.ts）。
+          return { key: d.label, sha256: sha, name: d.fileName, text };
+        }),
+      );
+      const caseDecision = await matchCasePack(caseDocs);
       if (!caseDecision.applies) {
         console.warn(
           `[mineru-report] 案例包不适用（${caseDecision.casePackId}）：\n${caseDecision.reason}`,
@@ -679,7 +730,13 @@ export function registerAgentRoutes(router: Router) {
         // finalizePdf was referenced here without ever being imported — the
         // `returnPdf: true` branch would have thrown ReferenceError at runtime.
         const { finalizePdf } = await import("../reports/reportV6");
-        const rawPdf = await renderPdfFromReportV8(report);
+        let rawPdf: Buffer;
+        try {
+          rawPdf = await renderPdfFromReportV8(report);
+        } catch (error) {
+          if (renderFailure(res, error, "mineru-report")) return;
+          throw error;
+        }
         // Shared finalization with the CLI: pass-2 TOC page numbers, audit +
         // render gates, PDF metadata, bookmark outline — the customer gets
         // exactly the same artifact quality as the locally-generated report.
@@ -1168,7 +1225,7 @@ export function registerAgentRoutes(router: Router) {
         })
         .send(rawPdf);
     } catch (error) {
-      console.error("[report/render]", error);
+      if (renderFailure(res, error, "report/render")) return;
       res.status(500).json({ error: error instanceof Error ? error.message : "PDF render failed" });
     }
   });

@@ -4341,7 +4341,7 @@ export async function buildMinerUReport(
   //
   // 「宁可空着，不可错着」：这里给的是**明确的「尚未配置」**，
   // 不是一份编出来的完整对比 ✓。
-  assertCasePack(
+  await assertCasePack(
     Object.entries(data ?? {}).map(([k, v]) => ({
       key: k,
       sha256: v?.sourceSha256,

@@ -2977,6 +2977,7 @@ const { reportFileName, contentDisposition, isUnverifiedDraft, DRAFT_MARKER, DRA
 const { extractMasterParams } = await import("../dist/htmlRenderV8.js");
 // check() 是同步的（它不 await）—— pdfGates 的 import 必须在模块顶层做。
 const { runRenderGate: _runRenderGate } = await import("../dist/pdfGates.js");
+const { assertPdfGates: _assertPdfGates } = await import("../dist/pdfGates.js");
 const { sanitizeTaskId, taskReportFile, resolveReportFile, DEFAULT_TASK_ID } =
   await import("../dist/taskContext.js");
 
@@ -5347,6 +5348,65 @@ check("报告按任务存/取，不共用一个文件（同事 issue #2）", () 
   return "两个任务 → 两个文件 · 写入互不影响 · 老用法落回共享路径 ✓";
 });
 
+check("渲染失败不许静默继续（同事 2026-11-10 复核的盲区）", () => {
+  // 同事 2026-11-10：「代码仍会在页面加载超时后继续渲染，并忽略字体加载异常」。
+  //
+  // 原来的闸门只测**正常路径** ✓ —— 这三条**一个都没测** ✗，
+  // 于是闸门绿着，而失败处理是坏的 ✗。
+  //
+  // 判的是**三个具体的吞异常写法还在不在** ✓ ——
+  // 它们就是当初出事的写法 ✓（判「有没有把失败吞掉」✓，
+  // 不是判某一行字面量 ✓ —— 后者会逼着人把实现改回去 ✗）。
+  const src = read("server/reports/htmlRenderV8.ts");
+  assert(
+    !src.includes("continuing with the DOM as laid out so far"),
+    "页面加载超时之后**继续渲染**了 —— 版面可能只排了一半，出的是半份文档，" +
+      "而外面什么异常都没有（同事 2026-11-10 复核发现的 ✗）。超时必须抛。",
+  );
+  assert(
+    /throw new RenderFailedError\(/.test(src),
+    "渲染失败没有专门的错误类型 —— 下载端点分不出「这份做不出来」与「服务器坏了」✗",
+  );
+  assert(
+    !/await f\.load\(\)\.catch\(\(\) => \{\}\)/.test(src),
+    "字体加载失败被 `.catch(() => {})` **吞掉**了 —— 纸面上会是豆腐块（□）✗，" +
+      "而外面什么异常都没有（同事 2026-11-10 复核发现的 ✗）。",
+  );
+  // PDF 自检「没跑成」也要拦
+  const gates = read("server/reports/pdfGates.ts");
+  assert(
+    /status !== "ok"/.test(gates),
+    "PDF 自检「没跑成」时没有拦住 —— 同事 2026-11-10 复核发现的 ✗：" +
+      "模拟 Python 不可用 → 检查返回 skipped → 闸门是绿的 ✗，而它**什么都没查** ✗",
+  );
+  return "超时会抛 · 字体失败会抛 · 自检没跑成也抛 ✓";
+});
+
+check("PDF 自检「没跑成」时必须拦住（不是「通过」）", () => {
+  // 行为性的 ✓ —— 制造一次「没跑成」✓：
+  // 把脚本路径指向一个**不存在的文件** ✓ → `runRenderGate` 返回 skipped ✓
+  // → `assertPdfGates` 必须**抛** ✓。
+  //
+  // 为什么单列一道 ✓：上面那道查的是**源码里有没有吞异常**✓，
+  // 这一道查的是**真的抛不抛**✓ —— 两道问的不是一回事 ✓。
+  let threw = null;
+  try {
+    _assertPdfGates(Buffer.from("%PDF-1.4 fake"), { scriptPath: "no-such-script.py" });
+  } catch (e) {
+    threw = e;
+  }
+  assert(threw, "PDF 自检「没跑成」时**没有拦住** —— 「没跑成」被当成了「通过」✗");
+  assert(
+    threw.code === "pdf_gate_failed",
+    `拦下来的错误类型不对（${threw.code}）—— 下载端点要靠它回 422 而不是 500 ✗`,
+  );
+  assert(
+    /没跑成/.test(String(threw.message ?? "")),
+    "错误信息里没说清「没跑成」—— 运维看到「自检未通过」会以为是 PDF 有问题 ✗",
+  );
+  return "「没跑成」被拦住了 ✓（错误类型 pdf_gate_failed ✓）";
+});
+
 check("三个 PDF 下载入口走同一个渲染器（不许各自渲染）", () => {
   // 完成标准 2：「各 PDF 下载入口针对同一任务输出的章节、关键表格和页数一致」。
   //
@@ -6298,6 +6358,10 @@ for (const t of [
   //   ② 取证结果带**证据范围**（任务 id + 案例包 + 源文件）✓，
   //      案例包不适用时**不回答**（不拿别的标准的数据糊弄）✓。
   "_test_task_isolation.mjs",
+  // **渲染失败路径**的用例（同事 issue #4 的三条 ✓）：
+  // 超时 / 字体挂了 / 自检没跑成 —— 各自**真的会失败** ✓。
+  // 原来的闸门只测正常路径 ✓ —— 这三条一条都没测 ✗（同事 2026-11-10 的盲区 ✓）。
+  "_test_render_failure_paths.mjs",
   // 「批量采纳」的**确定性**用例：**不调模型**。
   // 验的是采纳这一步的规矩 —— 不覆盖已有取值 · 不采纳命不中的 ·
   // 采纳必须写 why · 落盘先备份。957 个槽位不可能逐条手点，

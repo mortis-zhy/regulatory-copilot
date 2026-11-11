@@ -115,6 +115,59 @@ export function recognizeBySha256(
  * @param text 上传文件的正文（MuPDF 文本层）
  * @param refs 参考件：`[{ label, text }]`，text 必须也是**同一种表示**的文本
  */
+/**
+ * **参照件正文** —— 语料里各版的**源 PDF** 的 MuPDF 文本 ✓。
+ *
+ * 为什么是 MuPDF 而不是语料里的 MinerU 文本 ✓：
+ * 上传件的服务端抽取（`extractPdfTextServer` ✓）就是 MuPDF ✓，
+ * **同一种表示互比**才有区分力 ✓ ——
+ * 跨表示互比实测只有 0.21~0.24 ✗（那是两种排版在比 ✗）；
+ * 同表示互比：同一份 **1.00** · 同标准的兄弟版 **0.52** · 跨标准 **0.14~0.16** ✓。
+ *
+ * 原来这段在 `agentRoutes.ts` 里 ✓ —— 认版本用一份 ✓、
+ * 案例包判定又自己写了一份 ✗（两处迟早判得不一样 ✗）。
+ * 现在**一处实现** ✓。
+ */
+let _refTexts: Array<{ label: string; text: string }> | null = null;
+
+export async function loadReferenceTexts(): Promise<Array<{ label: string; text: string }>> {
+  if (_refTexts) return _refTexts;
+  _refTexts = [];
+  try {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const { extractPdfTextServer } = await import("../ingestion/pdfExtract");
+    const { PROJECT_ROOT } = await import("../_core/projectRoot");
+    const corpusPath = path.join(PROJECT_ROOT, "dist", "mineru-v4-data.json");
+    if (!fs.existsSync(corpusPath)) return _refTexts;
+    const corpus = JSON.parse(fs.readFileSync(corpusPath, "utf-8"));
+    for (const [ver, doc] of Object.entries(corpus ?? {})) {
+      const sha = String((doc as any)?.sourceSha256 ?? "").slice(0, 16);
+      if (!sha) continue;
+      const p = path.join(PROJECT_ROOT, "uploaded-docs", `${sha}.pdf`);
+      if (!fs.existsSync(p)) continue;
+      const r = await extractPdfTextServer(fs.readFileSync(p));
+      if (r?.fullText) _refTexts.push({ label: String(ver), text: r.fullText });
+    }
+  } catch {
+    /* 参照件取不到 → 只剩 sha256 那条判据 ✓ */
+  }
+  return _refTexts;
+}
+
+/**
+ * **参照件正文** —— 语料里各版的**源 PDF** 的 MuPDF 文本 ✓。
+ *
+ * 为什么是 MuPDF 而不是语料里的 MinerU 文本 ✓：
+ * 上传件的服务端抽取（`extractPdfTextServer` ✓）就是 MuPDF ✓，
+ * **同一种表示互比**才有区分力 ✓ ——
+ * 跨表示互比实测只有 0.21~0.24 ✗（那是两种排版在比 ✗）；
+ * 同表示互比：同一份 **1.00** · 同标准的兄弟版 **0.52** · 跨标准 **0.14~0.16** ✓。
+ *
+ * 原来这段在 `agentRoutes.ts` 里 ✓ —— 认版本用一份 ✓、
+ * 案例包判定又自己写了一份 ✗（两处迟早判得不一样 ✗）。
+ * 现在**一处实现** ✓。
+ */
 export function recognizeByReferences(
   text: string,
   refs: Array<{ label: string; text: string }>,

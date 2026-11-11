@@ -21,9 +21,13 @@
  *
  * ## 环境缺 Python / PyMuPDF 怎么办
  *
- * **不拦** —— 那是**环境**缺工具，不是这份 PDF 有问题。
- * 但要在日志里说清楚（否则「没跑」和「跑过且干净」长得一样）。
- * 仓库里的 `npm run verify` 仍然会跑同一个检查（那里一定有 Python）。
+ * **拦** ✓ —— 「没跑成」**不等于**「通过」✓。
+ * 同事 2026-11-10 复核发现 ✗：原来这里不拦，于是 Python 不可用时
+ * 检查返回 `skipped`，闸门上是**绿的** ✗ —— 而它**什么都没查** ✗。
+ *
+ * 「安静的绿色」比「响亮的红色」更危险 ✓：
+ * 它让人以为「有闸门就说明没问题」✗。
+ * 报错里会说清**缺什么** ✓（运维照着就能修 ✓）。
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -44,15 +48,38 @@ export type PdfGateOutcome = {
  *
  * 名字与 `RenderLayoutError` 分开：版面自检是**排版**问题，
  * 这个是**内容泄漏**问题；报错时要说清是哪一类。
+ *
+ * ## ⚠ 「**没跑成**」也算失败（同事 2026-11-10 复核发现 ✗）
+ *
+ * 原来只有「查出违规」才抛 ✗ —— 于是 Python 不可用时，
+ * 检查返回 `skipped`，闸门上是**绿的** ✗。
+ *
+ * **没跑成 ≠ 通过** ✓ —— 一个没跑过的检查**什么都没查** ✗，
+ * 而「安静的绿色」比「响亮的红色」更危险 ✓：
+ * 它让人以为「有闸门就说明没问题」✗。
+ *
+ * （这跟上一轮修的「渲染失败不许降级成 skipped」是**同一个毛病** ✗ ——
+ * 我自己在另一个地方又犯了一次 ✗。）
  */
 export class PdfGateError extends Error {
   readonly code = "pdf_gate_failed";
   constructor(readonly outcomes: PdfGateOutcome[]) {
     const bad = outcomes.filter((o) => o.status === "violations");
-    super(
-      `渲染后的 PDF 自检未通过（${bad.length} 项）：` +
-        bad.map((o) => `${o.script} —— ${o.output.split("\n").slice(0, 4).join(" ")}`).join("；"),
-    );
+    const skipped = outcomes.filter((o) => o.status === "skipped");
+    const parts: string[] = [];
+    if (bad.length) {
+      parts.push(
+        `查出 ${bad.length} 项违规：` +
+          bad.map((o) => `${o.script} —— ${o.output.split("\n").slice(0, 4).join(" ")}`).join("；"),
+      );
+    }
+    if (skipped.length) {
+      parts.push(
+        `${skipped.length} 项**没跑成**（不是「通过」）：` +
+          skipped.map((o) => `${o.script} —— ${o.output}`).join("；"),
+      );
+    }
+    super("渲染后的 PDF 自检未通过 —— " + parts.join(" ｜ "));
     this.name = "PdfGateError";
   }
 }
@@ -70,10 +97,17 @@ function findScript(name: string): string | null {
 /**
  * 跑 `render_gate.py`（PDF 泄漏 / 工具黑话检查）。
  *
- * 返回 `skipped` 时**不算失败** —— 那是环境缺 Python。
+ * 返回 `skipped` = **没跑成** ✓（脚本不在 / Python 不可用 ✓）——
+ * 调用方（`assertPdfGates`）会**因此拦住交付** ✓。
  */
-export function runRenderGate(pdf: Buffer): PdfGateOutcome {
-  const script = findScript("render_gate.py");
+export function runRenderGate(
+  pdf: Buffer,
+  opts: { scriptPath?: string } = {},
+): PdfGateOutcome {
+  // **脚本路径可覆盖** ✓ —— 让「没跑成」这条路径**可测** ✓
+  // （否则闸门只能测「跑成了」✓，而同事 2026-11-10 指出的正是
+  //   「模拟 Python 不可用 → skipped 后未抛错」✗）。
+  const script = opts.scriptPath ?? findScript("render_gate.py");
   if (!script) {
     return {
       script: "render_gate.py",
@@ -115,13 +149,16 @@ export function runRenderGate(pdf: Buffer): PdfGateOutcome {
 }
 
 /**
- * 跑完所有 PDF 自检 —— **有违规就抛**。
+ * 跑完所有 PDF 自检 —— **有任何一项不是「通过」就抛** ✓。
  *
- * 「没跑成」不抛（环境缺工具），但会打日志 ——
- * 否则「没跑」和「跑过且干净」在日志里长得一样。
+ * 「查出违规」抛 ✓；「**没跑成**」也抛 ✓（同事 2026-11-10 复核发现 ✗）——
+ * 没跑过的检查**什么都没查** ✓，不能报成「通过」✗。
  */
-export function assertPdfGates(pdf: Buffer): PdfGateOutcome[] {
-  const outcomes = [runRenderGate(pdf)];
+export function assertPdfGates(
+  pdf: Buffer,
+  opts: { scriptPath?: string } = {},
+): PdfGateOutcome[] {
+  const outcomes = [runRenderGate(pdf, opts)];
   for (const o of outcomes) {
     if (o.status === "skipped") {
       console.warn(`[pdf-gate] ${o.script} 没跑成：${o.output}`);
@@ -129,7 +166,9 @@ export function assertPdfGates(pdf: Buffer): PdfGateOutcome[] {
       console.log(`[pdf-gate] ${o.script} 通过：${o.output}`);
     }
   }
-  if (outcomes.some((o) => o.status === "violations")) {
+  // **「没跑成」也要抛** ✓（同事 2026-11-10 复核发现 ✗）——
+  // 没跑过的检查**什么都没查** ✓，不能报成「通过」✗。
+  if (outcomes.some((o) => o.status !== "ok")) {
     throw new PdfGateError(outcomes);
   }
   return outcomes;
