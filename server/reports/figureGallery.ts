@@ -77,7 +77,7 @@ export function findSourcePdfBySha(sha: string): string | null {
   ];
   for (const p of direct) if (fs.existsSync(p)) return p;
 
-  // delivery/PDF对比/ 里的源文件按**文件名**存（源文件_A_….pdf），
+  // delivery/PDF对比/ 里的源文件按**文件名**存（`源文件_<版号>_<版名>`，带 .pdf 后缀），
   // 但报告里的版本是靠 sha 认的 —— 所以这里按内容扫一遍。
   const dirs = [
     path.join(root, "uploaded-docs"),
