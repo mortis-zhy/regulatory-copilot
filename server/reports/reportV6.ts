@@ -2218,6 +2218,33 @@ function build11_3numeric(vchanges: any[], renumbered?: any[], manualFindings?: 
   return parts.join("\n");
 }
 
+/**
+ * 从**页文本**里认图题。
+ *
+ * ## 为什么不能直接正则捞「图N + 中文」
+ *
+ * 原来那条正则 `/图\s*\d+\s*[一-鿿][^\n。；]{2,28}/` 捞出来的是
+ * 「图 2 中的 E），对于两对均为对称安装的发光单元，同侧相邻发光单」——
+ * **那是正文里的一句引用**，不是题注 ✗（图版里顶着这么个标题 ✗）。
+ *
+ * 题注的形状是「**独占一行**（或后面只剩很少的东西）」✓ ——
+ * 「见图 2 中的 E）…」这种引用后面还跟着半句话 ✗ ⇒ 不认 ✓。
+ *
+ * 认不出来就**留空**（「（无题注）」）—— 宁可空着，不可错着 ✓。
+ */
+function figureCaptionIn(pageText: string): string {
+  for (const raw of String(pageText ?? "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/图\s*\d+\s*([一-鿿]{2,20})/);
+    if (!m) continue;
+    const rest = line.slice(m.index! + m[0].length).trim();
+    if (rest.length > 8) continue; // 后面还跟着半句话 ⇒ 这是正文引用，不是题注
+    return m[0].trim();
+  }
+  return "";
+}
+
 function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
   const parts: string[] = [
     `# 附录 B ${composeAppendixTitle("B", slots)}`,
@@ -2234,22 +2261,85 @@ function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
   }
   parts.push("## B.2 图片清单", "");
   parts.push("| 文档 | 页 | 标题 |", "|---|---|---|");
+  const galleries: Array<{ label: string; g: any }> = [];
   for (const label of ["A", "B", "C"]) {
     const figs = data[label]?.figures ?? [];
     // Recover figure captions: MinerU left caption empty for many figures
     // but the ORIGINAL page text carries them ("图1 明暗截止线下倾度范围").
     const pmap = pageTextOf(data[label]?.fullText ?? "");
+    galleries.push({ label, g: data[label]?.figureGallery ?? null });
     for (const f of figs) {
       let cap = f.caption || "";
-      if (!cap) {
-        const pt = pmap.get(Number(f.page)) ?? "";
-        const m = pt.match(/图\s*\d+\s*[一-鿿][^\n。；]{2,28}/);
-        if (m) cap = m[0].trim();
-      }
+      if (!cap) cap = figureCaptionIn(pmap.get(Number(f.page)) ?? "");
       parts.push(`| ${label} | p${f.page} | ${esc(cap || "（无题注）")} |`);
     }
   }
   parts.push("");
+  // ---- B.2.1 图版（源 PDF 原图）----
+  //
+  // 实测（2026-11-12）：交付件 279 页里**图对象 0 个** —— 一张图都没有。
+  // 而源 PDF 里的图**带着限值本身**（B 版 p30 就是「1/1a/1b 类 80°/45°
+  // 可见角布局图」）—— 图里的角度就是法规要求，纸面上一个字都没有。
+  //
+  // 图版**直接从源 PDF 抽位图**（scripts/extract_figures.py）——
+  // 不靠 MinerU 的 base64：那个按文档顺序、没有页锚点，
+  // 而 `figures[]` 只记了页码 ⇒ 按顺序硬配就是**给错页** ⇒ 宁可空着，不可错着。
+  //
+  // 矢量图（曲线/示意图）抽不出位图 ⇒ 那几页**明写「没有抽成位图」**，不假装有图。
+  parts.push("### B.2.1 图版（源 PDF 原图）", "");
+  let galleryTotal = 0;
+  const galleryPages: string[] = [];
+  const noBitmapPages: string[] = [];
+  for (const { label, g } of galleries) {
+    if (!g) continue;
+    const pmap = pageTextOf(data[label]?.fullText ?? "");
+    const rawPages = (data[label]?.figures ?? []).map((f: any) => Number(f.page)).sort((a, b) => a - b);
+    // **去重** ✓ —— 同一页可能有多个插图对象（`figures[]` 里就有重复页）✗，
+    // 不去重的话「矢量图页」清单里会连着写两遍同一个页 ✗。
+    const figPageList = rawPages.filter((p, i) => i === 0 || rawPages[i - 1] !== p);
+    const figPages = new Set<number>(figPageList);
+    const srcPages = Object.keys(g.pages ?? {}).map(Number).sort((a, b) => a - b);
+    const shown = srcPages.filter((p) => figPages.has(p));
+    // MinerU 认出来了、但源 PDF 该页没有位图 ⇒ 矢量图 ⇒ 明写
+    for (const p of figPageList) {
+      if (!srcPages.includes(p)) noBitmapPages.push(`${label} p${p}`);
+    }
+    if (!shown.length) continue;
+    const nImgs = shown.reduce((n, p) => n + ((g.pages[String(p)] ?? []).length), 0);
+    galleryTotal += nImgs;
+    galleryPages.push(`${label} ${shown.length} 页 / ${nImgs} 张`);
+    parts.push(`**${label}**（${shown.length} 页 · ${nImgs} 张）：`, "");
+    for (const p of shown) {
+      const cap = figureCaptionIn(pmap.get(p) ?? "");
+      // **页码与图题写进第一张图的 alt** ✓ ——
+      // 不另起一行标题：标题行与图会被分页拆开 ✗（实测图版里有 42 页
+      // 「标题在前、图在后」✗ —— 读者看到的是一页没有图的光标题 ✓）。
+      // 渲染层把**连续几张图合成一个 figure** ✓ —— 图题跟图一起走 ✓。
+      const label = `p${p}${cap ? " · " + cap : " · （无题注）"}`;
+      const files = g.pages[String(p)] ?? [];
+      files.forEach((f: any, i: number) => {
+        parts.push(`![${i === 0 ? esc(label) : ""}](${g.dir}/${f.file})`, "");
+      });
+    }
+  }
+  if (galleryTotal) {
+    parts.push(
+      `**图版合计 ${galleryTotal} 张**（${galleryPages.join("；")}）。` +
+        "图片直接取自源 PDF 的位图对象，**未经再压缩以外的任何改动**；" +
+        "尺寸与源文件一致，可与原文逐页对照。",
+      "",
+    );
+  } else {
+    parts.push("**本份报告没有可收录的位图**（源 PDF 里没有抽得出位图的插图）。", "");
+  }
+  if (noBitmapPages.length) {
+    parts.push(
+      "下列页的插图为**矢量图**（曲线/示意图），无法抽成位图，**图版里没有它们**：",
+      "",
+      noBitmapPages.join("、"),
+      "",
+    );
+  }
   parts.push("## B.3 标题层级索引（原文标题）", "");
   parts.push("按文档分列 L1/L2/L3 标题，便于工程师做文档结构对比与跳转。", "");
   for (const label of ["A", "B", "C"]) {

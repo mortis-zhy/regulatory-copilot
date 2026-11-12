@@ -12,6 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { buildMinerUReport } from "./dist/reportV6.js";
+import { attachFigureGallery } from "./dist/figureGallery.js";
 
 const ROOT = process.cwd();
 const DATA = path.join(ROOT, "dist", "mineru-v4-data.json");
@@ -28,6 +29,17 @@ console.log(`[rebuild] facts    = ${path.basename(factsFile)}`);
 
 const data = JSON.parse(fs.readFileSync(DATA, "utf8"));
 const verified = JSON.parse(fs.readFileSync(factsFile, "utf8"));
+
+// 图版 —— 从**源 PDF** 抽位图（附录 B.2）。
+// 交付件此前**一张图都没有**（实测 279 页 · 图对象 0 个），
+// 而源 PDF 里的图带着限值本身（B 版 p30 的 80°/45° 可见角布局图）。
+// 抽图按内容认版本（sha256）⇒ 换一套标准时同一段代码照样能用 ✓。
+const galleries = attachFigureGallery(data);
+console.log(
+  `[rebuild] 图版：${Object.entries(galleries)
+    .map(([k, g]) => `${k} ${g.total} 张`)
+    .join(" · ")}`,
+);
 
 const { report } = await buildMinerUReport(data, verified);
 report.generator = "mineru";

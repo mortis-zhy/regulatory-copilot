@@ -366,6 +366,8 @@ let GATE_PAGES = null;
 // 附录 H 的**引文回源命中数**（总条数 / 命中条数）——
 // 讲稿那句「517/517 回源命中」从这儿走（手写的数一定会过期）。
 let GATE_QUOTES = null;
+// 交付件里的**图数**（图版收录的源 PDF 原图）—— 讲稿那句「N 张原图」从这儿走。
+let GATE_FIGURES = null;
 
 async function prepareGatePdf() {
   if (process.env.VERIFY_PDF) {
@@ -375,6 +377,25 @@ async function prepareGatePdf() {
   const report = resolve(ROOT, "reports/last-report.json");
   const lib = resolve(ROOT, "dist/htmlRenderV8.js");
   if (!existsSync(report) || !existsSync(lib)) return null;
+  // **图版要先落地** ✓ ——
+  // 交付件里的图是从**源 PDF** 抽出来的（落在 gitignore 的 `dist/figures/` ✓），
+  // 而报告 JSON 是**入库的**（它写着 `![](dist/figures/…)` ✓）。
+  // 新克隆的同事没有这些图 ⇒ 渲染会印出「［图缺失］」✗ ⇒ 闸门红 ✗。
+  // 源 PDF 是**入库的**（uploaded-docs/）⇒ 这里**重抽一遍**就行 ✓。
+  try {
+    const { attachFigureGallery } = await import("../dist/figureGallery.js");
+    const corpus = JSON.parse(readFileSync(resolve(ROOT, "dist/mineru-v4-data.json"), "utf-8"));
+    const g = attachFigureGallery(corpus);
+    console.log(
+      "        (图版已就位：" +
+        Object.entries(g)
+          .map(([k, v]) => `${k} ${v.total} 张`)
+          .join(" · ") +
+        ")",
+    );
+  } catch (e) {
+    console.log("        (抽图失败：" + String((e && e.message) || e).slice(0, 120) + ")");
+  }
   try {
     const mod = await import("../dist/htmlRenderV8.js");
     const buf = await mod.renderPdfFromReportV8(JSON.parse(readFileSync(report, "utf-8")));
@@ -3569,6 +3590,113 @@ check("the delivered PDF is the one the report renders to", () => {
   return `交付件与报告逐页一致（${res.pagesA} 页）`;
 });
 
+check("the delivered PDF actually carries the figures (not just the index)", () => {
+  // 交付件此前**一张图都没有**（实测 2026-11-12：279 页 · 图对象 0 个）——
+  // 而源 PDF 里的图**带着限值本身**（B 版 p30 就是「1/1a/1b 类 80°/45° 可见角布局图」）。
+  //
+  // 附录 B.2 的「图片清单」一直都在（136 行），但那只是**索引**：
+  // 图本体被 MinerU 的抽取流程丢掉了（`figures[]` 只记了 `{page, caption}`）。
+  // 纸面上有索引、没图 ⇒ 读者以为原文也没有图 ✗。
+  //
+  // 这一关盯的是**图本体真的进了 PDF**：
+  //   报告里的图引用数 == PDF 里的图对象数；
+  //   且 PDF 里没有「［图缺失：…］」这种占位（渲染层找不到图时会写它 ✓）。
+  if (!GATE_PDF) return "skipped — 闸门没能渲染出 PDF";
+  const reportPath = resolve(ROOT, "reports/last-report.json");
+  assert(existsSync(reportPath), "reports/last-report.json 不存在");
+  const rep = JSON.parse(readFileSync(reportPath, "utf-8"));
+  let refs = 0;
+  const seen = new Set();
+  const collect = (md) => {
+    for (const m of String(md ?? "").matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+      refs++;
+      seen.add(m[1]);
+    }
+  };
+  for (const c of rep.chapters ?? []) collect(c.markdown);
+  for (const a of rep.appendices ?? []) collect(a.markdown);
+  assert(refs > 0, "报告里**一张图都没有**（附录 B.2 的图版是空的）—— 源 PDF 里有图，抽图那步没跑");
+  // 引用到的文件必须都在磁盘上（否则渲染层会写「［图缺失］」）
+  for (const rel of seen) {
+    assert(
+      existsSync(resolve(ROOT, rel)),
+      `报告引用的图不存在：${rel} —— 跑 node rebuild_report.mjs（会重抽图）`,
+    );
+  }
+  const py =
+    "import sys,io,json,base64,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path)\n" +
+    "n=sum(len(p.get_images(full=True)) for p in d)\n" +
+    "txt=''.join(p.get_text() for p in d)\n" +
+    "print(json.dumps({'n':n,'missing':txt.count('图缺失'),'pages':d.page_count},ensure_ascii=False))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+    input: Buffer.from(GATE_PDF, "utf-8").toString("base64"),
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 90)}`;
+  const res = JSON.parse(r.stdout.trim().split("\n").pop());
+  assert(
+    res.missing === 0,
+    `PDF 里有 ${res.missing} 处「［图缺失］」占位 —— 图文件没找到，纸面上是个空框`,
+  );
+  assert(
+    res.n === refs,
+    `PDF 里的图对象 ${res.n} 个，报告里引用了 ${refs} 张 —— 对不上：` +
+      "要么渲染时丢了图，要么多渲了图（图版是报告里唯一放图的地方）",
+  );
+  GATE_FIGURES = res.n;
+  return `图进了交付件（${res.n} 张 · ${seen.size} 个文件 · ${res.pages} 页）`;
+});
+
+check("the font payload stays far below Chromium's size cliff", () => {
+  // 实测（2026-11-12）：Chromium 的 `page.setContent()` 在 **100 MB** 左右
+  // 会**把页面打崩**（「Target page, context or browser has been closed」）✗。
+  //
+  // 而整份中文字体 base64 进去就是 **98 MB**（msyh.ttc 19 + msyhbd.ttc 16 +
+  // simsun.ttc 17 + simsunb.ttf 21 MB ⇒ base64 ×1.33）⇒
+  // **交付件离崩溃只差 1 MB** ✗ —— 报告再长一点点，PDF 就出不来 ✗
+  // （实测加进 109 张图后 HTML 到 110 MB ⇒ 渲染直接失败 ✗）。
+  //
+  // 修法：**裁字**（`scripts/subset_fonts.py`）—— 只留这份报告真用到的字形，
+  // 98 MB → 约 12 MB ✓。
+  //
+  // 这一关盯的是**别再把整份字库塞回去** ✓ —— 那样交付件又回到崩溃线上 ✗。
+  const statsPath = resolve(ROOT, "reports/.render-stats.json");
+  assert(existsSync(statsPath), "reports/.render-stats.json 不存在 —— 渲染路径没写统计");
+  const stats = JSON.parse(readFileSync(statsPath, "utf-8"));
+  const LIMIT = 80 * 1024 * 1024; // 实测 80 MB ok / 100 MB 崩 ⇒ 80 MB 留一半余量
+  assert(
+    stats.htmlBytes < LIMIT,
+    `渲染用的 HTML 有 ${(stats.htmlBytes / 1024 / 1024).toFixed(1)} MB，` +
+      `已经逼近 Chromium 的崩溃线（实测 100 MB 即崩）—— ` +
+      `字体占 ${(stats.fontBytes / 1024 / 1024).toFixed(1)} MB。` +
+      "别把整份中文字体 base64 进去（用 scripts/subset_fonts.py 裁字）",
+  );
+  return `HTML ${(stats.htmlBytes / 1024 / 1024).toFixed(1)} MB（字体 ${(stats.fontBytes / 1024 / 1024).toFixed(1)} MB）· 离崩溃线还有余量`;
+});
+
+check("font subsetting dropped no glyph that the full font had", () => {
+  // 裁字是**有风险**的：少一个字 = 纸面上一个豆腐块 ✗。
+  // 所以要**点名**：裁完的字体里少了哪些「原来有的」字。
+  //
+  // （`missing` 里的 emoji 是**原来就没有**的 ⚠ —— 裁字前也一样没有 ✓，
+  //   浏览器回退到系统字体 ✓ —— 那种不算回归 ✗。）
+  const p = resolve(ROOT, "reports/.font-subset.json");
+  assert(existsSync(p), "reports/.font-subset.json 不存在 —— 渲染路径没写裁字统计");
+  const res = JSON.parse(readFileSync(p, "utf-8"));
+  assert(
+    !res.dropped || res.dropped.length === 0,
+    `裁字丢了 ${res.dropped.length} 个**原来就有**的字：${(res.dropped || []).slice(0, 30).join("")} —— ` +
+      "纸面上会是豆腐块。字符集要覆盖报告全文 + GB2312 一级字",
+  );
+  return `裁字没丢字（字符集 ${res.charset} 字符 · 缺 ${(res.missing || []).length} 个是字体本来就没有的）`;
+});
+
 check("the report names no standard the corpus does not contain", () => {
   // 换一套标准时，报告里的**散文**是手写的，不跟着语料走 ——
   // 于是新标准的报告里会**继续讲 GB 4785 的事**，
@@ -5106,6 +5234,10 @@ check("交付件里没有近空白页（客户 DR-015）", () => {
   // 判据：去掉页眉页脚后，**正文行数 ≤ 2** 的页 = 近空白页。
   // （阈值不是按字数定的 —— 一页封面只有一百来个字，但它不是空白页；
   //   真正的空白页是「只有一两行」。）
+  //
+  // **图版那几页要看图不看字** ✓ —— 附录 B.2.1 的图版页本来就只有
+  // 「一行图题 + 几张图」✓，它是**有内容的** ✗（实测 42 页被误判 ✗）。
+  // 判据：页面上有**足够大的图**（覆盖 ≥ 5% 版面）⇒ 不算近空白页 ✓。
   const pdfPath = GATE_PDF;
   if (!pdfPath) return "skipped — 闸门没能渲染出 PDF";
   const py =
@@ -5118,7 +5250,13 @@ check("交付件里没有近空白页（客户 DR-015）", () => {
     "for i,p in enumerate(d):\n" +
     "    lines=[l.strip() for l in p.get_text().split('\\n') if l.strip()]\n" +
     `    body=[l for l in lines if not l.startswith('${FAM} 多版本') and not l.startswith('汽车外部照明') and not re.fullmatch(r'\\d+ / \\d+',l)]\n` +
-    "    if len(body)<=2:\n" +
+    "    area=p.rect.get_area() if p.rect.get_area() else 1\n" +
+    "    img_area=0.0\n" +
+    "    for b in p.get_text('dict').get('blocks',[]):\n" +
+    "        if b.get('type')==1:\n" +
+    "            bb=b.get('bbox') or (0,0,0,0)\n" +
+    "            img_area+=(bb[2]-bb[0])*(bb[3]-bb[1])\n" +
+    "    if len(body)<=2 and img_area/area < 0.05:\n" +
     "        thin.append((i+1,len(body),' '.join(body)[:60]))\n" +
     "print(json.dumps({'pages':d.page_count,'thin':thin[:6]},ensure_ascii=False))\n";
   const out = spawnSync("python", ["-c", py], {
@@ -5382,6 +5520,46 @@ check("渲染失败不许静默继续（同事 2026-11-10 复核的盲区）", (
   return "超时会抛 · 字体失败会抛 · 自检没跑成也抛 ✓";
 });
 
+check("交付件里没有未转换的 markdown 表格（浏览器实测发现的）", () => {
+  // 用浏览器跑了一遍网站才看到 ✗：第 234 页上印着
+  //   `7.3.7.5 追尾警告信号只有在符合表 8 的情况下才能开启 | Vr | 激活条件 | | --- | | Vr ＞ 30km/h | TTC ≤ 1.4s`
+  //
+  // `render_gate.py` 查的是 **HTML 标签** ✓（已清零 ✓），
+  // **没查 markdown 的管道符** ✗ —— 所以这一类**漏网** ✗。
+  // 实测 278 页里 10 处、6 页（154 / 186 / 206 / 207 / 213 / 234）✗。
+  //
+  // 修在**渲染层** ✓ —— 数据保持忠实 ✓（引文还要能在源 PDF 上被找到 ✓）。
+  const pdfPath = GATE_PDF;
+  if (!pdfPath) return "skipped — 闸门没能渲染出 PDF";
+  const py =
+    "import sys,io,json,base64,re,fitz\n" +
+    "sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf-8')\n" +
+    "path=base64.b64decode(sys.stdin.read().strip()).decode('utf-8')\n" +
+    "d=fitz.open(path)\n" +
+    "hits=[]\n" +
+    "for i,p in enumerate(d):\n" +
+    "    t=p.get_text()\n" +
+    "    for m in re.finditer(r'\\|\\s*-{3,}\\s*\\|', t):\n" +
+    "        hits.append((i+1, m.group(0)))\n" +
+    "print(json.dumps({'n':len(hits),'pages':sorted({h[0] for h in hits})[:12]},ensure_ascii=False))\n";
+  const r = spawnSync("python", ["-c", py], {
+    cwd: ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+    input: Buffer.from(pdfPath, "utf-8").toString("base64"),
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (r.status !== 0) return `skipped — ${(r.stderr || "").trim().split("\n").pop().slice(0, 90)}`;
+  const res = JSON.parse(r.stdout.trim().split("\n").pop());
+  assert(
+    res.n === 0,
+    `交付件里有 ${res.n} 处**未转换的 markdown 表格**（第 ${res.pages.join("、")} 页）—— ` +
+      "语料里的表格是 markdown ✓，原样搬进单元后纸面上印着 `| --- |` ✗。" +
+      "修在渲染层（数据要保持忠实 ✓ —— 引文还要能在源 PDF 上被找到 ✓）",
+  );
+  return "没有未转换的 markdown 表格 ✓";
+});
+
 check("PDF 自检「没跑成」时必须拦住（不是「通过」）", () => {
   // 行为性的 ✓ —— 制造一次「没跑成」✓：
   // 把脚本路径指向一个**不存在的文件** ✓ → `runRenderGate` 返回 skipped ✓
@@ -5405,6 +5583,57 @@ check("PDF 自检「没跑成」时必须拦住（不是「通过」）", () => 
     "错误信息里没说清「没跑成」—— 运维看到「自检未通过」会以为是 PDF 有问题 ✗",
   );
   return "「没跑成」被拦住了 ✓（错误类型 pdf_gate_failed ✓）";
+});
+
+check("page.evaluate 的回调里不许有具名函数（dev 与 prod 编译不同）", () => {
+  // 同事 2026-11-10 复核时我们在**开发模式**下点「下载 PDF」→ 500 ✗：
+  //   `page.evaluate: ReferenceError: __name is not defined`
+  //
+  // 根因：`page.evaluate` 把回调**字符串化**送进浏览器 ✓，
+  // 而 `tsx`（开发模式 ✓）带 esbuild 的 `keepNames` ✓，
+  // 会把回调里的 `const clean = (s) => …` 编译成
+  // `const clean = __name((s) => …, "clean")` ✓ → 浏览器里没有 `__name` ✓。
+  //
+  // **打包版（esbuild bundle ✓）不带 keepNames ✓ → 没事 ✓** ——
+  // 于是 `npm run verify` 全绿 ✓，而**开发服务器**坏着 ✗。
+  // **闸门跑 bundle、开发模式跑 tsx** ✗ —— 这个差异闸门本来看不见 ✗。
+  //
+  // 所以这里**静态查**：任何 `page.evaluate(` 的回调里，
+  // 都不许出现 `const xxx = (…) =>` / `function xxx(` 这种**具名函数** ✓。
+  const files = ["server/reports/htmlRenderV8.ts"];
+  const bad = [];
+  for (const f of files) {
+    const src = read(f);
+    // 每个 `page.evaluate(` 之后的回调体（到配平的括号结束 ✓）
+    let idx = 0;
+    while ((idx = src.indexOf("page.evaluate(", idx)) >= 0) {
+      const start = src.indexOf("(", idx + "page.evaluate".length);
+      let depth = 0;
+      let end = start;
+      for (let i = start; i < src.length; i++) {
+        if (src[i] === "(") depth++;
+        else if (src[i] === ")") {
+          depth--;
+          if (depth === 0) { end = i; break; }
+        }
+      }
+      const body = src.slice(start, end + 1);
+      const named = body.match(/const\s+[A-Za-z_$][\w$]*\s*=\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/g);
+      if (named) {
+        const line = src.slice(0, idx).split("\n").length;
+        bad.push(`${f}:${line} → ${named.join("、")}`);
+      }
+      idx = end;
+    }
+  }
+  assert(
+    bad.length === 0,
+    `page.evaluate 的回调里有具名函数（${bad.join("；")}）—— ` +
+      "开发模式（tsx ✓ 带 keepNames ✓）会把它们编译成 `__name(...)` ✓，" +
+      "而回调是被**字符串化**送进浏览器的 ✗ → 浏览器里没有 `__name` ✗ → " +
+      "**开发模式下整个功能坏掉**（打包版却没事 ✓ —— 闸门跑 bundle ✓，看不见这个差异 ✗）",
+  );
+  return "回调里没有具名函数 ✓（dev 与 prod 行为一致 ✓）";
 });
 
 check("三个 PDF 下载入口走同一个渲染器（不许各自渲染）", () => {
@@ -6451,6 +6680,8 @@ try {
         // 交付件页数 —— 讲稿那句「交付件 N 页」从这儿读。
         // 手写的页数一定会过期（讲稿里的「249 页」就比交付件少了 29 页）。
         pages: GATE_PAGES,
+        // 交付件里的**图**（图版收录的源 PDF 原图）—— 讲稿那句「N 张原图」从这儿读。
+        figures: GATE_FIGURES,
         // 附录 H 引文回源命中数 —— 讲稿那句「N/N 回源命中」从这儿读。
         quotes: GATE_QUOTES,
         // 失败的**名字** —— 讲稿的出稿脚本看它：

@@ -112,6 +112,18 @@ const PAGES = (() => {
 })();
 
 /**
+ * 交付件里的**图数**（图版收录的源 PDF 原图）—— 同样从机器产物读。
+ *
+ * 讲稿里如果说「图版收了 N 张原图」，这个数**必须**是机器数出来的 ——
+ * 手写的数会过期，而它恰恰是用来证明「图真的进交付件了」的那句话。
+ */
+const FIGURES = (() => {
+  const n = Number(GATES.figures);
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  return String(n);
+})();
+
+/**
  * 附录 H 的**引文回源命中数** —— 同样从机器产物读。
  *
  * 讲稿里说「517/517 回源命中」—— 这个数现在是**对的**，
@@ -720,7 +732,7 @@ function buildDeck(figData) {
     <div class="eyebrow">REGULATORY COMPARISON · 立项汇报</div>
     <h1>${FAM} ${N_ZHOU}法规横向对比<br/>从「罗列」到「可核验的决策依据」</h1>
     <div class="sub">${COVER_LINE}<br/>
-      交付件 ${PAGES} 页 · 14 章 + 8 附录 · 每一条结论带条款号与页码</div>
+      交付件 ${PAGES} 页 · 14 章 + 8 附录 · 图版 ${FIGURES} 张源 PDF 原图 · 每一条结论带条款号与页码</div>
     <div class="cards">
       <div class="card"><div class="v">${PARAMS}</div><div class="l">参数 × 3 版 = ${CELLS} 个取值位</div></div>
       <div class="card"><div class="v">${GATES.total}</div><div class="l">项交付闸门（改坏就红）</div></div>
@@ -872,6 +884,7 @@ function buildDeck(figData) {
         <li><b>第 12 章 参数矩阵</b>：${PARAMS} 参数 × ${N_VERSIONS} 版，每格带条款号 + 页码 + 原文，是唯一能支撑 C 定量判断的部分</li>
         <li><b>第 14 章 欧标对照</b>：${vDoc("C")} 的条款号 + 页码 + 原文摘录</li>
         <li><b>附录 H 定性条款并排</b>：客户第一句抱怨的直接答复</li>
+        <li><b>附录 B.2.1 图版</b>：${FIGURES} 张<b>源 PDF 原图</b> —— 图里的角度就是限值本身（此前纸面上<b>一张图都没有</b>）</li>
         <li><b>附录 E.5 要求台账</b>：${REQ_TOTAL} 条要求逐条归类，真缺口 ${REQ_GAPS}</li>
       </ul>`,
     note: `不要逐章念。挑客户最关心的两章讲：第 12 章（他要看数）和附录 H（他说没比过定性条款）。右边截图是第 12 章的实际页面 —— <b>指出每行末尾都有页码和条款号</b>，这是"可核验"的直观体现。`,

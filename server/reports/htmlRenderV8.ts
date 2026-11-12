@@ -20,7 +20,7 @@
  */
 
 import fs from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { extractTypedTables, type TypedTableEntry as ExtractedTypedTable } from "./typedTables";
 import { prose } from "./reportProse";
@@ -34,6 +34,7 @@ import { versionLabel, versionDocNoRev } from "./parameterMatrix";
 import { REPORT_META } from "./reportMeta";
 import { checkConsistency } from "./consistency";
 import { assertPdfGates } from "./pdfGates";
+import { resolveInnerRoot } from "./innerRoot";
 import type { ReportOutline } from "./reportGenerator";
 
 /**
@@ -119,7 +120,21 @@ interface FontAsset {
   dataUri: string;
 }
 
-export async function loadFonts(): Promise<FontAsset[]> {
+export async function loadFonts(opts: { charset?: string } = {}): Promise<FontAsset[]> {
+  // **裁字**优先 ✓ —— 整份中文字体 base64 进去是 **98 MB**，
+  // 而 Chromium 的 `setContent()` 在 **100 MB** 左右就会把页面**打崩**
+  // （实测：80 MB ok / 100 MB 「Target closed」✗）。
+  // 交付件离崩溃只差 1 MB —— 报告再长一点点，PDF 就出不来 ✗。
+  if (opts.charset) {
+    const sub = await subsetFonts(opts.charset);
+    if (sub.length) return sub;
+    // 裁字失败 → 回退整份字体，但要**响亮** ✓
+    // （静默回退 = 又回到「离崩溃 1 MB」的状态 ✗）
+    console.error(
+      "[htmlRenderV8] 裁字失败，回退整份字体 —— HTML 会到 100 MB 上下，" +
+        "Chromium 可能直接崩（实测 100 MB 即崩）",
+    );
+  }
   const found = new Map<string, FontAsset>();
   for (const cand of FONT_CANDIDATES) {
     try {
@@ -142,6 +157,122 @@ export async function loadFonts(): Promise<FontAsset[]> {
   }
   if (found.size === 0) console.warn("[htmlRenderV8] no CJK font found — Chinese will fall back to Type3");
   return Array.from(found.values());
+}
+
+/**
+ * 裁字 —— 只保留**这份报告真用到的字形**。
+ *
+ * 字符集 = 报告全文 ∪ 打包产物里出现的汉字（渲染器的固定文案）∪
+ * GB2312 一级常用字（脚本里补）∪ ASCII/标点。
+ *
+ * 缺字**点名**（`missing`）—— 闸门据此判红 ✓。
+ */
+async function subsetFonts(charset: string): Promise<FontAsset[]> {
+  const root = resolveInnerRoot();
+  // 与整份字体那条路**同一份候选清单** ✓（不另写一份 —— 两份会漂移）
+  const picks: Array<{ path: string; family: string; weight: number; name: string }> = [];
+  const seen = new Set<string>();
+  for (const cand of FONT_CANDIDATES) {
+    const key = `${cand.family}-${cand.weight}`;
+    if (seen.has(key)) continue;
+    if (!existsSync(cand.path)) continue;
+    seen.add(key);
+    picks.push({ ...cand, name: `${cand.family}-${cand.weight}` });
+  }
+  if (!picks.length) return [];
+
+  const outDir = path.join(root, "dist", "fonts");
+  const jobPath = path.join(root, "dist", ".font-subset-job.json");
+  await fs.mkdir(outDir, { recursive: true });
+  await fs.writeFile(
+    jobPath,
+    JSON.stringify({ outDir, charset, includeGb2312: true, fonts: picks }),
+    "utf-8",
+  );
+  const { spawnSync } = await import("node:child_process");
+  const r = spawnSync("python", [path.join(root, "scripts", "subset_fonts.py"), "--job", jobPath], {
+    encoding: "utf-8",
+    maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+  });
+  if (r.status !== 0) {
+    console.error("[htmlRenderV8] 裁字脚本失败：", (r.stderr || "").trim().split("\n").pop());
+    return [];
+  }
+  let res: any;
+  try {
+    res = JSON.parse(r.stdout.trim().split("\n").pop()!);
+  } catch {
+    return [];
+  }
+  const out: FontAsset[] = [];
+  for (const f of res.fonts ?? []) {
+    try {
+      const bytes = await fs.readFile(f.path);
+      out.push({
+        family: f.family,
+        weight: f.weight,
+        format: f.format,
+        dataUri: `data:font/ttf;base64,${bytes.toString("base64")}`,
+      });
+      console.log(
+        `[htmlRenderV8] 裁字后字体：${path.basename(f.path)} ${(f.bytes / 1024).toFixed(0)} KB（原 ${(fs.statSync(f.path).size / 1024).toFixed(0)} KB 见 manifest）`,
+      );
+    } catch {
+      /* 读不到就跳过这个字体 */
+    }
+  }
+  const missing: string[] = res.missing ?? [];
+  const dropped: string[] = res.dropped ?? [];
+  if (dropped.length) {
+    // **裁字把原来有的字裁掉了** —— 这才是豆腐块的真来源 ✓
+    console.error(
+      `[htmlRenderV8] 裁字丢了 ${dropped.length} 个字：${dropped.slice(0, 40).join("")} —— 纸面上是豆腐块`,
+    );
+  }
+  if (missing.length) {
+    // **点名**缺字 ✓ —— 这些字**裁字前也没有**（emoji 之类），
+    // 浏览器会回退到系统字体 ✓ —— 但要**记下来**，不能装作没有 ✗。
+    console.warn(
+      `[htmlRenderV8] ${missing.length} 个字所有字体都没有（裁字前也没有，靠系统回退）：` +
+        missing.slice(0, 20).join(""),
+    );
+  }
+  await fs.writeFile(
+    path.join(root, "reports", ".font-subset.json"),
+    JSON.stringify({ missing, dropped, charset: res.charset ?? 0 }, null, 2),
+    "utf-8",
+  );
+  return out;
+}
+
+/** 报告 + 打包产物里的**全部字符** —— 裁字用的字符集 */
+export function charsetOf(report: any): string {
+  const chars = new Set<string>();
+  const add = (s: string) => {
+    for (const ch of String(s ?? "")) chars.add(ch);
+  };
+  try {
+    add(JSON.stringify(report ?? {}));
+  } catch {
+    /* 循环引用就放弃 */
+  }
+  // 渲染器的固定文案（页眉、页脚、图注…）—— 从**打包产物**里扫出来 ✓
+  // （源码在生产环境可能不在，但 dist/ 一定在 ✓）
+  try {
+    const distDir = path.join(resolveInnerRoot(), "dist");
+    for (const f of fs.readdirSync(distDir)) {
+      if (!f.endsWith(".js")) continue;
+      const txt = fs.readFileSync(path.join(distDir, f), "utf-8");
+      for (const ch of txt) {
+        const c = ch.codePointAt(0)!;
+        if (c > 0x2e80) chars.add(ch);
+      }
+    }
+  } catch {
+    /* 扫不到就靠报告正文 + GB2312 兜底 */
+  }
+  return Array.from(chars).join("");
 }
 
 function fontFaceBlock(fonts: FontAsset[]): string {
@@ -339,8 +470,63 @@ function restoreMineruScripts(html: string): string {
     .replace(/[$^_]\{([^{}]{0,40})\}/g, "$1");
 }
 
+/**
+ * 图版里的一张图 → `<img>`（**内联成 data URI**）。
+ *
+ * ## 为什么内联而不是给路径
+ *
+ * `page.setContent()` 的文档**没有 base URL** ⇒ 相对路径的 `<img src>` 不会加载 ✓
+ * （`file://` 还要额外的 CSP / 权限配合 ✗）。内联 data URI 一次解决 ✓。
+ *
+ * ## 图从哪来
+ *
+ * `dist/figures/<sha8>/p<page>_<i>.png` —— 由 `scripts/extract_figures.py`
+ * 从**源 PDF** 抽出来的位图 ✓（报告里的 `![](dist/figures/…)` 是它留下的引用 ✓）。
+ *
+ * ## 图不在了怎么办
+ *
+ * **明写「图缺失」**，不静默跳过 ✓ —— 静默跳过 = 读者以为原文就没有图 ✗，
+ * 而实际是**我们的图丢了** ✗。闸门「交付 PDF 的图数 == 报告里的图数」会红 ✓。
+ */
+function renderFigure(imgs: Array<{ alt: string; src: string }>): string {
+  const parts: string[] = [];
+  let caption = "";
+  for (const im of imgs) {
+    const abs = path.isAbsolute(im.src) ? im.src : path.join(projectRootDir(), im.src);
+    try {
+      if (!existsSync(abs)) {
+        parts.push(`<div class="fig-missing">［图缺失：${esc(im.src)}］</div>`);
+        continue;
+      }
+      const buf = readFileSync(abs);
+      const ext = (path.extname(abs) || ".png").toLowerCase();
+      const mime =
+        ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : "image/png";
+      const dataUri = `data:${mime};base64,${buf.toString("base64")}`;
+      parts.push(`<img src="${dataUri}" alt="${esc(im.alt)}">`);
+      if (!caption && im.alt) caption = im.alt;
+    } catch {
+      parts.push(`<div class="fig-missing">［图读取失败：${esc(im.src)}］</div>`);
+    }
+  }
+  const cap = caption ? `<figcaption class="fig-cap">${esc(caption)}</figcaption>` : "";
+  return `<figure class="fig">${parts.join("")}${cap}</figure>`;
+}
+
+/** 报告根目录（图片的相对路径按它解析） */
+function projectRootDir(): string {
+  // **唯一实现**在 server/_core/projectRoot.ts —— 不自己再写一份解析器
+  // （历史上这里自己写过一份，打包后会跑到外层仓库 ⇒ 静默读错目录 ⇒ 四次静默降级）。
+  return resolveInnerRoot();
+}
+
 function inlineMd(s: string): string {
   let t = esc(s ?? "");
+  // **markdown 的行分隔行**（`| --- | --- |`）→ 丢掉 ✓
+  // （它自己就是一行 ✓ —— 逐行处理也认得出 ✓）
+  if (/^\s*\|[\s:|-]*-{2,}[\s:|-]*\|\s*$/.test(t)) return "";
+  // 其余管道符 → 全角 ✓（列界 ✓；半角竖线在正文里会被当表头 ✓）
+  t = t.replace(/\|/g, " ｜ ").replace(/｜\s*｜/g, "｜");
   t = renderMath(t);
   t = restoreMineruScripts(t);
   t = t.replace(/`([^`\n]+)`/g, "<code>$1</code>");
@@ -357,9 +543,36 @@ function inlineMd(s: string): string {
 }
 
 /** Render a table cell — multi-line cells become <br> separated lines. */
+/**
+ * 单元里的 **markdown 表格** → 可读文本 ✓。
+ *
+ * 语料（MinerU ✓）里的表格是 markdown ✓ —— 引文被原样搬进单元后，
+ * 纸面上就印着 `| Vr | 激活条件 | | --- | | Vr ＞ 30km/h | TTC ≤ 1.4s` ✗。
+ * （浏览器实测发现的 ✗：278 页里 10 处 ✗，`render_gate.py` 查的是 HTML 标签 ✓，
+ *   查不到管道符 ✗。）
+ *
+ * ## 为什么修在**渲染层**而不是数据层
+ *
+ * 摘录是**引文** ✓ —— 它要能在源 PDF 的那一页上**被找到** ✓
+ * （回源核验靠的就是这个 ✓）。
+ * 数据层去掉分隔行 ✗ → 引文就找不到原文了 ✗ → 归属那一维会掉档 ✗。
+ *
+ * 所以：**数据保持忠实 ✓，纸面干净** ✓。
+ */
+function flattenMdTable(s: string): string {
+  return String(s ?? "")
+    // markdown 的行分隔（`| --- | --- |`）→ 丢掉 ✓
+    .replace(/\|\s*:?-{2,}:?\s*(?:\|\s*:?-{2,}:?\s*)*\|/g, " ")
+    // 其余管道符 → 全角竖线 ✓（表格的列界 ✓；半角竖线在正文里会被当表头 ✓）
+    .replace(/\|/g, " ｜ ")
+    // 连续的空单元（`| |`）→ 一个 ✓
+    .replace(/｜\s*｜/g, "｜")
+    .replace(/[ \t]{2,}/g, " ");
+}
+
 function cellHtml(s: string): string {
   if (!s) return "";
-  return s
+  return flattenMdTable(s)
     .split("\n")
     .map((l) => labelChips(inlineMd(l)))
     .join("<br>");
@@ -2086,7 +2299,10 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
         // table so a reader scanning for the fact sees it immediately.
         if (gapGuard) out.splice(out.length - 1, 0, gapGuard);
       } else if (rowLines.length) {
-        out.push(`<pre>${esc(tableText)}</pre>`);
+        // **解析失败时的兜底** ✓ —— 原样印出来就是**一堆 markdown 源码** ✗
+        // （`| --- |` 这种分隔行也印在纸上 ✗ —— 浏览器实测发现的 ✗）。
+        // 压成可读文本 ✓：读者至少看得懂内容 ✓。
+        out.push(`<pre>${esc(flattenMdTable(tableText))}</pre>`);
       }
       continue;
     }
@@ -2134,6 +2350,27 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
       continue;
     }
 
+    // 图版里的一张图（`![说明](路径)`）——
+    // 独占一行。**必须在段落分支之前** ✓（否则会被当成正文，
+    // 纸面上印着 `![](dist/figures/…)` 的源码 ✗）。
+    //
+    // **连续的几张图合成一个 figure** ✓ —— 同一页的图与它们的图题
+    // 一起走，不会被分页拆开（实测拆开后有 42 页「有标题没图」✗）。
+    const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (img) {
+      closeLists();
+      const imgs: Array<{ alt: string; src: string }> = [{ alt: img[1], src: img[2] }];
+      i++;
+      while (i < lines.length) {
+        const m2 = lines[i].trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (!m2) break;
+        imgs.push({ alt: m2[1], src: m2[2] });
+        i++;
+      }
+      out.push(renderFigure(imgs));
+      continue;
+    }
+
     // Paragraph (consume until blank / structural line)
     closeLists();
     const buf: string[] = [line];
@@ -2147,6 +2384,7 @@ function mdToHtml(md: string, tableOverrides?: Map<string, string>): string {
         /^\d+[.)]\s/.test(t) ||
         t.startsWith(">") ||
         t.startsWith("|") ||
+        /^!\[[^\]]*\]\([^)]+\)$/.test(t) ||
         IMPACT_LINE.test(t)
       )
         break;
@@ -2509,6 +2747,11 @@ td.cell-uv { background: #fdf3f0 !important; border-left: 2.5pt solid #c9542a; }
 .dashboard-intro { font-size: 9.5pt; color: #1c2733; margin: 0 0 4mm; line-height: 1.55; }
 .dashboard-intro strong { color: #c9542a; font-weight: 700; }
 .claim-figure { margin: 0 0 5mm; }
+/* 图版（源 PDF 原图）—— 宽度按 A4 内容宽自适应，高度按比例 ✓ */
+.fig { margin: 2mm 0 5mm; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+.fig img { max-width: 100%; height: auto; display: inline-block; border: 0.3mm solid #d9d2c2; margin: 0 1mm; }
+.fig-cap { font-size: 9pt; color: #4a4a4a; margin-top: 1.5mm; text-align: center; }
+.fig-missing { font-size: 9pt; color: #c9542a; border: 0.3mm dashed #c9542a; padding: 2mm; text-align: left; }
 .claim-figure .dashboard-bar { width: 100%; height: 18px; display: block; border-radius: 2mm; overflow: hidden; }
 .claim-caption { display: flex; gap: 8mm; margin-top: 1.5mm; font-size: 9pt; color: #4a4a4a; flex-wrap: wrap; }
 .claim-caption span { display: inline-flex; align-items: center; gap: 2mm; font-family: ${mono}; }
@@ -3026,9 +3269,17 @@ export class RenderLayoutError extends Error {
  * 与打印出来的不一样（分栏、@page 边距都只在 print 下生效）。
  */
 async function measureLayout(page: any, limitPx: number): Promise<LayoutOverflow[]> {
+  // ⚠ 回调里**不许有具名函数** ✓ ——
+  // `page.evaluate` 把回调**字符串化**送进浏览器 ✓，
+  // 而 `tsx`（开发模式 ✓）带 esbuild 的 `keepNames` ✓，
+  // 会把 `const clean = (s) => …` 编译成 `const clean = __name((s) => …, "clean")` ✓
+  // → 浏览器里没有 `__name` ✓ → **ReferenceError** ✓
+  // → 开发模式下「下载 PDF」整个坏掉 ✗（打包版没事 ✓ —— 闸门跑的是 bundle ✓，
+  //   所以闸门看不见这个差异 ✗）。
+  //
+  // 所以这里**展开成内联表达式** ✓。
   return await page.evaluate((limit: number) => {
     const out: any[] = [];
-    const clean = (s: string) => (s || "").replace(/\s+/g, " ").trim();
     const tables = Array.from(document.querySelectorAll("table"));
     tables.forEach((t, ti) => {
       const rows = Array.from(t.querySelectorAll("tr"));
@@ -3039,7 +3290,7 @@ async function measureLayout(page: any, limitPx: number): Promise<LayoutOverflow
             kind: "row",
             table: ti,
             row: ri,
-            preview: clean(r.textContent).slice(0, 80),
+            preview: String(r.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 80),
             measured: Math.round(h),
             limit: Math.round(limit),
             why: "这一行比一页还高，浏览器会把它切掉 —— 读者看不到后半截",
@@ -3051,7 +3302,7 @@ async function measureLayout(page: any, limitPx: number): Promise<LayoutOverflow
               kind: "cell-x",
               table: ti,
               row: ri,
-              preview: clean(c.textContent).slice(0, 80),
+              preview: String(c.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 80),
               measured: c.scrollWidth,
               limit: c.clientWidth,
               why: "单元里装不下 —— 文字横向溢出，会压到旁边的列上",
@@ -3070,7 +3321,7 @@ async function measureLayout(page: any, limitPx: number): Promise<LayoutOverflow
         kind: "clip-y",
         table: -1,
         row: -1,
-        preview: clean(el.textContent).slice(0, 80),
+        preview: String(el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 80),
         measured: el.scrollHeight,
         limit: el.clientHeight,
         why: "这个盒子 overflow:hidden 但内容比它高 —— 多出来的部分被切掉了",
@@ -3121,7 +3372,7 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
       (report as any)?.sourceDocuments?.map((d: any) => d?.key ?? d?.id ?? d?.label) ??
       []) as string[],
   );
-  const fonts = await loadFonts();
+  const fonts = await loadFonts({ charset: charsetOf(report) });
   const { chromium } = await import("playwright-core");
   const browser = await chromium.launch({ channel: "chrome" });
   try {
@@ -3261,7 +3512,29 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
     // anchor strings are dropped from the text layer entirely.
     // (TOC rows are fixed-height, so pagination does not shift between passes.)
     console.log(`[htmlRenderV8] pass-2 render without anchors (${pages.size}/${anchors.length} anchors found)`);
-    const finalPdf = await render(await buildHtml(report, fonts, { withAnchors: false }));
+    const html2 = await buildHtml(report, fonts, { withAnchors: false });
+    // **渲染统计** —— HTML 体积离 Chromium 的崩溃线还有多远 ✓
+    // （实测：80 MB ok / 100 MB **直接崩**（「Target closed」）✗ ——
+    //   整份中文字体 base64 进去是 98 MB ⇒ 交付件一度**离崩溃只差 1 MB** ✗）
+    try {
+      await fs.writeFile(
+        path.join(resolveInnerRoot(), "reports", ".render-stats.json"),
+        JSON.stringify(
+          {
+            htmlBytes: html2.length,
+            fontBytes: fonts.reduce((n, f) => n + f.dataUri.length, 0),
+            fontCount: fonts.length,
+            at: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
+        "utf-8",
+      );
+    } catch {
+      /* 统计写不了不影响出件 */
+    }
+    const finalPdf = await render(html2);
     const stamped = await addPdfBookmarks(finalPdf, report);
     // **元数据**（作者 / 管线版本）—— 放在渲染路径上，
     // 三个下载入口拿到的 PDF 才是**同一份**（完成标准 2）。

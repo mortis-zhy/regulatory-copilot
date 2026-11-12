@@ -130,6 +130,11 @@ const ENTRIES = [
   // 以前会崩在 `.map` 上，表现为一个裸的 500 HTML 页。
   // 单独成模块，好让闸门用半个负载直接驱动它。
   ["server/reports/export.ts", "dist/export.js"],
+  // figureGallery 从**源 PDF** 抽位图，给附录 B.2 的图版供图。
+  // 单独成模块，是为了让**离线重建**（rebuild_report.mjs）与**网页管线**
+  // （sidecarClient / agentRoutes）走**同一份实现** ——
+  // 两份实现就会有一份忘抽图，而「忘抽图」在纸面上看不出来 ✗。
+  ["server/reports/figureGallery.ts", "dist/figureGallery.js"],
 ];
 
 const SHARED = {

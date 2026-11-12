@@ -181,6 +181,14 @@ reports/last-report.BAK.json
 reports/uploads.json
 # 网页端管线生成的报告 PDF（原来落在仓库外的工作台目录；现在在仓库内 reports/）
 reports/GB4785_多版本横向对比研究报告.pdf
+# 渲染统计 —— HTML 体积 / 字体载荷（闸门要看「离 Chromium 崩溃线还有多远」）
+reports/.render-stats.json
+# 裁字统计 —— 裁字丢了哪些字 / 哪些字字体本来就没有
+reports/.font-subset.json
+reports/.font-missing.json
+reports/.figure-render.pdf
+# 任务隔离的产物（每个任务一份，浏览器实测留下的）
+reports/tasks/
 
 # 审计/排查脚本的临时输出（每次运行重写）
 reports/_*.txt

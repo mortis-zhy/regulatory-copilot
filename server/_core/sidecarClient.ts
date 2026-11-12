@@ -171,6 +171,17 @@ export async function buildSidecarReport(
   verified?: any,
 ): Promise<{ report: any; indicatorResults: any[] }> {
   const { buildMinerUReport } = await import("../reports/reportV6");
+  // 图版 —— 从**源 PDF** 抽位图（附录 B.2）。
+  // 网页上传的 PDF 也要有图 ⇒ 这条路**必须**挂图版 ✓；
+  // 离线重建（rebuild_report.mjs）走**同一份实现** ✓ —— 两份实现就会有一份忘抽 ✓。
+  const { attachFigureGallery } = await import("../reports/figureGallery");
+  try {
+    attachFigureGallery(extracted);
+  } catch (e) {
+    // 抽图失败**不许**让整份报告出不来 ✓ ——
+    // 但要**响亮**（console.error），不然就是「悄悄少了几十张图」✗。
+    console.error("[figures] 抽图失败（报告仍会出，但没有图版）：", e);
+  }
   const vd = verified ?? {
     numericChanges: [], topicColumns: [], stats: {}, renumberedOnly: [],
   };

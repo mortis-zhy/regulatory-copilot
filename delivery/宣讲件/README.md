@@ -61,16 +61,14 @@ node scripts/render_briefing.mjs
 素材（`assets/`、`figures/`）已 gitignore —— 它们都能重新生成：
 
 ```bash
-# ① 交付 PDF 的页面截图
-python -c "
-import fitz
-d=fitz.open('../PDF对比/㉚_闭环口径修正_249页_2026-10-27.pdf')
-for n,name in {1:'p01_cover',3:'p03_dashboard',20:'p20_matrix',100:'p100_eu',
-               238:'p238_appendixH',241:'p241_leadclause',9:'p09_paramindex'}.items():
-    d[n-1].get_pixmap(matrix=fitz.Matrix(2.2,2.2)).save(f'../宣讲件/assets/{name}.png')
-"
+# ① 交付 PDF 的页面截图 —— **页码按内容找，不手写** ✓
+#    （交付件 279 → 325 页（多了图版），手写的页码已经指错地方了 ✗）
+python scripts/rebuild_briefing_shots.py
 # ② 网站截图用 chrome-devtools MCP（9223 实例）截，存成 assets/w0*.png
 ```
+
+> 截图脚本按**内容**找页：「核心参数 A/B/C 同框总表」「量化参数表横向对比」
+> 「附录 H A/B 定性条款并排对照」「B.2.1 图版」—— 页数怎么变都不会指错 ✓。
 
 ## 改内容
 
