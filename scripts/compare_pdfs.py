@@ -54,15 +54,36 @@ def main():
         print(json.dumps({"error": "没有 PyMuPDF"}, ensure_ascii=False))
         return 2
 
+    def read_pages(path):
+        """读一份 PDF 的逐页文本，**读完就关** ✓。
+
+        ## 为什么**一份一份地**读
+
+        同时打开两份 MuPDF 文档再逐个 close() ⇒ **Windows 上崩** ✗
+        （实测：access violation，崩在 `pymupdf.close()` 里 ✗）。
+
+        症状极像「随机失败」✗：崩在**退出前** ⇒ 缓冲区里的输出有时冲掉了、有时没有 ✗
+        ⇒ 闸门看到的是「没给出 JSON」✗ ⇒
+        **「交付件与报告对不上」那道关随机变红** ✗（实测 8 次崩 8 次 ✗）。
+
+        找它花了两轮 ✗：先怀疑「内容不一样」（逐页比对明明 0 处不同 ✓），
+        再怀疑「路径带中文」（绝对路径有时又成功 ✓）——
+        真正的原因是**两份文档同时开着** ✗。
+
+        单份文档的 open → 抽 → close 是稳的 ✓（实测 4/4 ✓）⇒ 改成**一份一份来** ✓。
+        """
+        doc = fitz.open(path)
+        try:
+            return [norm(p.get_text()) for p in doc]
+        finally:
+            doc.close()
+
     try:
-        da = fitz.open(a_path)
-        db = fitz.open(b_path)
+        ta = read_pages(a_path)
+        tb = read_pages(b_path)
     except Exception as e:
         print(json.dumps({"error": "打不开 PDF：%s" % e}, ensure_ascii=False))
         return 2
-
-    ta = [norm(p.get_text()) for p in da]
-    tb = [norm(p.get_text()) for p in db]
 
     diff = []
     first = None
@@ -83,7 +104,10 @@ def main():
         "diffCount": len(diff),
         "firstDiff": first,
     }
+    # **先冲掉再返回** ✓ —— 否则崩溃/退出码会吃掉输出 ✗
+    sys.stdout.flush()
     print(json.dumps(out, ensure_ascii=False))
+    sys.stdout.flush()
     return 0 if not diff else 1
 
 
