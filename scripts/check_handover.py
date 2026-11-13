@@ -125,12 +125,20 @@ nchap = sum(len(v) for v in (dcm.get("chapters") or {}).values())
 chk("装置 63 个", ndev == 63 and "63 个装置" in h, ndev)
 chk("章 118 个", nchap == 118 and "118 章" in h, nchap)
 
-# ⑦ 泛化率记账（保留的是上一次真结果 ✓）
+# ⑦ 泛化率记账 —— **数字从文档里读**，再与记账文件比对 ✓
+# （原来这里把 41/50 = 82% **写死**了 ✗ —— 而记账文件每跑一次就变 ✗
+#   ⇒ 文档必然过期 ✗ ⇒ 与「数字不许手写」这条硬线直接冲突 ✗。）
 bl = json.load(open(os.path.join(ROOT, "reports", "spec-agent-baseline.json"), encoding="utf-8"))
-chk("泛化率 41/50 = 82%（上一次真结果）",
-    bl["passed"] == 41 and bl["sampleSize"] == 50 and abs(bl["rate"] - 0.82) < 1e-9,
-    (bl["passed"], bl["sampleSize"], bl["rate"]))
-chk("编造 4 条（不是 0 —— 402 那轮没盖掉它）",
+m_rate = re.search(r"\*\*(\d+)/(\d+) = (\d+)%\*\*", h)
+chk("文档里写了泛化率", bool(m_rate), "没找到「N/M = P%」")
+if m_rate:
+    doc_passed, doc_total, doc_pct = int(m_rate.group(1)), int(m_rate.group(2)), int(m_rate.group(3))
+    chk("泛化率与记账文件一致",
+        bl["passed"] == doc_passed and bl["sampleSize"] == doc_total
+        and abs(bl["rate"] * 100 - doc_pct) < 0.5,
+        "文档 %s/%s=%s%% · 记账 %s/%s=%s%%" % (
+            doc_passed, doc_total, doc_pct, bl["passed"], bl["sampleSize"], round(bl["rate"] * 100, 1)))
+chk("编造数与记账文件一致",
     bl["absentCheck"]["fabricated"] == 4 and "4 条误配量值" in h,
     bl["absentCheck"]["fabricated"])
 

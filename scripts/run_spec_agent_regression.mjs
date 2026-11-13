@@ -37,6 +37,7 @@ import {
 import {
   commonFailure as commonFailureImpl,
   buildAbsentBlock,
+  phaseOutcome,
 } from "./run_spec_agent_regression_accounting.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -85,24 +86,52 @@ for (const s of specs) {
 }
 
 // 覆盖不同的装置与版本，别都挑同一个灯
+//
+// ## 为什么**两轮**
+//
+// 原来只有一轮 ✗：每个装置**只取一条** ✗（`usedDevices.size < sampleSize/2` ✓）
+// —— 于是「要求 120 条」在**装置数不够**时**永远达不到** ✗
+// （实测：候选池 737 条 ✓、装置 50 个 ⇒ 只挑到 50 条 ✗，
+//   而日志却写「池子不够」✗ —— **说反了** ✗：池子够 ✓，是**挑选规则**卡住的 ✗）。
+//
+// 现在：第一轮每个装置取一条 ✓（多样性 ✓），
+// 第二轮**没凑够就补** ✓（同一装置可以再取 ✓）⇒ 「要求 N 条」真能到 N 条 ✓。
 const picked = [];
 const usedDevices = new Set();
 const sorted = pool.sort((a, b) => a.spec.id.localeCompare(b.spec.id));
+const slotKey = (p) => `${p.spec.id}::${p.version}`;
+const taken = new Set();
 for (const p of sorted) {
   if (ids.length && !ids.includes(p.spec.id)) continue;
   if (picked.length >= sampleSize) break;
-  if (usedDevices.has(p.device) && usedDevices.size < sampleSize / 2) continue;
+  if (usedDevices.has(p.device)) continue;
   usedDevices.add(p.device);
+  taken.add(slotKey(p));
   picked.push(p);
+}
+// 第二轮 —— 补齐到**要求的条数** ✓（多样性已经尽力了 ✓）
+if (!ids.length && picked.length < sampleSize) {
+  for (const p of sorted) {
+    if (picked.length >= sampleSize) break;
+    const k = slotKey(p);
+    if (taken.has(k)) continue;
+    taken.add(k);
+    picked.push(p);
+  }
 }
 if (ids.length) {
   picked.length = 0;
   for (const p of sorted) if (ids.includes(p.spec.id)) picked.push(p);
 }
 
+const nDevices = new Set(picked.map((p) => p.device)).size;
 console.log(
-  `[regression] 样本 ${picked.length} 个（候选池 ${pool.length} 个）· ` +
-    `装置 ${new Set(picked.map((p) => p.device)).size} 个`,
+  `[regression] 样本 ${picked.length} 个（**要求 ${sampleSize}**·候选池 ${pool.length} 条·` +
+    `装置 ${nDevices} 个）` +
+    (picked.length < sampleSize
+      ? ` —— **没凑够**：可选槽位只有 ${picked.length} 条可用` +
+        `（要「已知答案齐备 + 装置章号可推导」，二者缺一就不进池子 ✓）`
+      : ""),
 );
 
 /* --- 真模型调用 ---------------------------------------------------------- */
@@ -370,12 +399,25 @@ function commonFailure(rows) {
 }
 
 const didNotRun = commonFailure(rows);
-if (didNotRun) {
+// **主回归那半边**的「跑成几条」✓ ——
+// API 失败的那几条**不是「agent 不会」** ✗（是「模型没答」✗），
+// 混进「答错」里会把泛化率**压低** ✗ ⇒ 两个数都记 ✓（`rate` 与 `rateOverRan` ✓）。
+const mainNotRun = rows.filter((r) => r.error).length;
+const mainOutcome = phaseOutcome(rows.length, mainNotRun, didNotRun);
+if (mainOutcome.systemic) {
   console.log(
-    "\n[regression] ⚠⚠ 这一轮**根本没跑成** —— 不是泛化率问题：\n" +
-      `          ${didNotRun}\n` +
+    "\n[regression] ⚠⚠ 主回归**基本没跑成**（跑成 " +
+      `${mainOutcome.ran} / ${rows.length}）—— 不是泛化率问题：` +
+      `${String(didNotRun ?? "大量槽位调用失败").slice(0, 140)}\n` +
       "          （余额 / 模型可用性 / 网络）—— 这次的结果**不写进** baseline，" +
       "上一次的真结果保留。",
+  );
+} else if (mainNotRun) {
+  console.log(
+    `[regression] 主回归里有 ${mainNotRun} 条**没跑成**（调用失败 ✓）—— ` +
+      `泛化率按**跑成的 ${mainOutcome.ran} 条**算是 ` +
+      `${mainOutcome.ran ? (rows.filter((r) => r.pass).length / mainOutcome.ran * 100).toFixed(0) : "0"}%` +
+      `（含失败的保守口径是 ${(rate * 100).toFixed(0)}%）✓`,
   );
 }
 
@@ -391,44 +433,37 @@ if (didNotRun) {
 // 所以：**全盘同一个错 ⇒ 这一半不写进 baseline** ✓（保留上一次的真结果 ✓）；
 // **部分没跑成 ⇒ 写，但要写清楚「跑成几条 / 没跑成几条」** ✓。
 const absentDidNotRun = commonFailure(absentRows);
-if (absentDidNotRun) {
+const absentOutcome = phaseOutcome(
+  absentRows.length,
+  absentRows.filter((r) => r.kind === "not-run").length,
+  absentDidNotRun,
+);
+if (absentOutcome.systemic) {
   console.log(
-    "\n[regression] ⚠⚠ **编造率那半边根本没跑成** —— 不是「没编造」：\n" +
-      `          ${absentDidNotRun}\n` +
+    "\n[regression] ⚠⚠ **编造率那半边基本没跑成**（跑成 " +
+      `${absentOutcome.ran} / ${absentRows.length}）—— 不是「没编造」：` +
+      `${String(absentOutcome.reason ?? "大量槽位调用失败").slice(0, 140)}\n` +
       "          （余额 / 模型可用性 / 网络）—— 这一半的结果**不写进** baseline，" +
       "上一次的真结果保留。",
   );
 }
 
-// **分母也记下来** ✓ —— 「样本 120」常常是**要求**而不是**事实** ✓：
-// 候选池不够（要「已知答案齐备 + 装置章号可推导」）⇒ 实际只有 N 条 ✓。
-console.log(
-  `[regression] 实际样本 ${picked.length} 条（**要求 ${sampleSize}**，候选池 ${pool.length} 条）` +
-    (picked.length < sampleSize
-      ? ` —— 池子不够 ✗（要「已知答案齐备 + 装置章号可推导」，二者缺一就不进池子 ✓）`
-      : ""),
-);
-
-if (!dry && !didNotRun) {
+if (!dry && !mainOutcome.systemic) {
   const outPath = path.join(ROOT, "reports", "spec-agent-baseline.json");
   // 空槽那半边**没跑成** ⇒ **保留上一次的真结果** ✓，
   // 不要用这一轮的「0 条编造」把它盖掉 ✗。
   //
   // 实测（2026-11-13）：上一轮是真的 4 条编造 ✗；这一轮撞上 402 ⇒
-  // 40 条里 28 条没跑成 ⇒ 写出来的 `fabricated: 0` ✗
+  // 40 条里 39 条没跑成 ⇒ 写出来的 `fabricated: 0` ✗
   // ⇒ 读的人以为「编造问题解决了」✗ —— 其实只是**模型没答** ✗。
   // 这正是「宁可空着，不可错着」✗ —— **空着（保留旧值 + 标注）比错着好** ✓。
-  let absentBlock;
-  if (absentDidNotRun) {
-    const prev = readJson(outPath, null);
-    absentBlock = buildAbsentBlock({
-      absentRows,
-      absentDidNotRun,
-      previous: prev?.absentCheck ?? null,
-    });
-  } else {
-    absentBlock = buildAbsentBlock({ absentRows, absentDidNotRun: null, previous: null });
-  }
+  const prev = readJson(outPath, null);
+  const absentBlock = buildAbsentBlock({
+    absentRows,
+    absentDidNotRun: absentOutcome.systemic ? absentOutcome.reason : null,
+    previous: prev?.absentCheck ?? null,
+  });
+  const passedCount = rows.filter((r) => r.pass).length;
   fs.writeFileSync(
     outPath,
     JSON.stringify(
@@ -436,12 +471,20 @@ if (!dry && !didNotRun) {
         _comment:
           "取值规格提议 agent 的**泛化率实测**（真模型，藏起已知答案重找）。" +
           "这是记账，不是闸门 —— 它调模型、会花钱、会有抖动。" +
-          "**读法**：`rate` 是泛化率 ✓；`absentCheck.ran` / `absentCheck.notRun` " +
-          "说明编造率那半边**实际跑成几条** ✓ —— `fabricated` 只覆盖跑成的那几条 ✗。" +
+          "**读法**：`rate` 是保守口径（含没跑成的）✓；`rateOverRan` 只算**真跑成**的那些 ✓；" +
+          "`ran` / `notRun` 说明这一轮**真的跑了几条** ✓ —— " +
+          "`absentCheck.ran` / `absentCheck.notRun` 说明编造率那半边跑成了几条 ✓，" +
+          "**`fabricated` 只覆盖跑成的那几条** ✗。" +
           "（`_carriedOver` / `_notRun` 表示这一半没跑成 ✓。）",
         sampleSize: rows.length,
-        passed,
+        ran: mainOutcome.ran,
+        notRun: mainOutcome.notRun,
+        passed: passedCount,
         rate: Number(rate.toFixed(3)),
+        // **只按跑成的算** ✓ —— API 失败不是「agent 不会」✗
+        rateOverRan: mainOutcome.ran
+          ? Number((passedCount / mainOutcome.ran).toFixed(3))
+          : null,
         rows,
         absentCheck: absentBlock,
       },

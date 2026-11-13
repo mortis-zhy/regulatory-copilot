@@ -154,8 +154,58 @@ check(
   rowKinds[0].saidAbsent === false && rowKinds[0].fabricated === false,
 );
 
+// ⑧ **一半以上没跑成 ⇒ 这一轮不能代表能力** ✓
+//
+// 实测（2026-11-13）打脸了「全盘同一个错才算没跑成」的判据 ✗：
+// 40 条里 39 条撞上 402 ✗，但**错法不完全一样** ✗（截断位置不同 ✗）⇒ 判据不触发 ✗
+// ⇒ 「4 条编造」被盖成「0 条编造」✗ ✗。
+//
+// ⇒ 判据改成**比例** ✓。
+const partial = mod.buildAbsentBlock({
+  absentRows: [
+    { kind: "not-run", saidAbsent: false, fabricated: false, error: "HTTP 402 …(截断位置 A)" },
+    { kind: "not-run", saidAbsent: false, fabricated: false, error: "HTTP 402 …(截断位置 B)" },
+    { kind: "not-run", saidAbsent: false, fabricated: false, error: "HTTP 402 …(截断位置 C)" },
+    { kind: "said-absent", saidAbsent: true, fabricated: false, error: null },
+  ],
+  absentDidNotRun: null, // **错法不一样** ⇒ 老的判据不触发 ✗
+  previous: prev.absentCheck,
+});
+check(
+  "大部分没跑成（错法还不一样）→ 仍然保留上一次的编造数（4）",
+  partial.fabricated === 4 && typeof partial._carriedOver === "string",
+  `fabricated=${partial.fabricated} carried=${partial._carriedOver ? "有" : "无"}`,
+);
+
+// ⑨ 一半**没到**就没跑成 ⇒ 这一轮还能用 ✓（不能连累真结果 ✗）
+const small = mod.buildAbsentBlock({
+  absentRows: [
+    { kind: "said-absent", saidAbsent: true, fabricated: false, error: null },
+    { kind: "wrong-quantity", saidAbsent: false, fabricated: true, error: null },
+    { kind: "not-run", saidAbsent: false, fabricated: false, error: "HTTP 402" },
+    { kind: "said-absent", saidAbsent: true, fabricated: false, error: null },
+  ],
+  absentDidNotRun: null,
+  previous: null,
+});
+check(
+  "只有 1/4 没跑成 → 这一轮算数（不 carry over）",
+  small._carriedOver === undefined && small.fabricated === 1 && small.ran === 3 && small.notRun === 1,
+  JSON.stringify({ carried: small._carriedOver, fab: small.fabricated, ran: small.ran }),
+);
+
+// ⑩ 主回归那半边：**API 失败不是「agent 不会」** ⇒ 两个口径都记 ✓
+const main = mod.phaseOutcome(50, 5, "HTTP 402");
+check(
+  "主回归：ran/notRun 分开 · 一半没跑成才算系统性失败",
+  main.ran === 45 && main.notRun === 5 && main.systemic === false,
+  JSON.stringify(main),
+);
+const mainBad = mod.phaseOutcome(50, 39, "HTTP 402");
+check("主回归：39/50 没跑成 ⇒ 判「系统性失败」", mainBad.systemic === true, JSON.stringify(mainBad));
+
 if (failed) {
   console.error(`\n[test-regression-accounting] ${failed} 条没过 ✗\n`);
   process.exit(1);
 }
-console.log("\n[test-regression-accounting] 7 条全过 ✓\n");
+console.log("\n[test-regression-accounting] 10 条全过 ✓\n");

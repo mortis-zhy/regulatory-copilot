@@ -51,11 +51,33 @@ node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
 3. **Python 3 + PyMuPDF + fontTools + Pillow 要装好** ✓ —— 抽图、裁字、PDF 自检都用它们 ✗。
 
 **环境变量**：`.env`（**gitignore 了** ✓）里要有 `MINIMAX_API_KEY` ✓。
-**这把 key 是秘密** ✗ —— 绝不进版本库 ✗，绝不打印 ✗。提交前必须扫：
+**这些 key 是秘密** ✗ —— 绝不进版本库 ✗，绝不打印 ✗。提交前必须扫：
 
 ```bash
 git grep --cached -I -E "sk-[A-Za-z0-9_-]{20,}" -- .   # 必须没有输出 ✓
 ```
+
+### key 池的实测状态（2026-11-13）
+
+`server/_core/minimaxPool.ts` 读 `MINIMAX_API_KEY`（主）+ `MINIMAX_API_KEY_FALLBACK`
+（**逗号分隔多把** ✓，按顺序轮换 ✓）。主 key 报 **402 / 429 / 401 / 403** 就自动切下一把 ✓。
+
+本机登记过的 MiniMax key 实测：
+
+| key（只写前 8 位） | 状态 |
+|---|---|
+| `sk-cp-2B…`（主） | **402 Token Plan 用量上限** ✗ |
+| `sk-cp-Wc…`（兜底） | **✓ 可用** ✓ |
+| `sk-cp-mM…` / `sk-cp-QR…` | 401 invalid api key ✗（已失效） |
+| `sk-cp-XS…` | 402 用量上限 ✗ |
+
+⇒ **只有兜底那把能用** ✗ —— 但轮换**实测通过** ✓（主 key 402 → 自动切到第 2 把 → HTTP 200 ✓，1.8 s ✓）。
+
+⚠ **兜底那把是单点** ✗ —— 它也满的话整条 agent 链路就断 ✗ ⇒ 建议再登记一把 ✓。
+
+**另有一把 OpenAI key**（`sk-svcacct-…` ✓，登记在 CC Switch 的 `OpenAI` provider ✓）——
+它**不是 MiniMax key** ✗（打 MiniMax 报 401 ✓），本项目用不了 ✗；
+且本机**连不上 api.openai.com** ✗（超时 ✗ —— 见运维那台机器的网络配置 ✓）。
 
 ---
 
@@ -210,11 +232,13 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 指标 | 数 | 在哪 |
 |---|---|---|
-| 泛化率（有手写 spec 时） | **41/50 = 82%** | `reports/spec-agent-baseline.json` ✓ |
+| 泛化率（有手写 spec 时） | **40/50 = 80%** ✓ —— 其中 **45 条真跑成** ✓，5 条撞上 402（API 失败，**不是「agent 不会」** ✗）✓；只按跑成的算是 **89%** ✓ | `reports/spec-agent-baseline.json` ✓ |
 | 编造率（该版无此规定的槽位） | 40 条里 **4 条误配量值** ✓ —— 已逐条人核 ✓ | 同上 ✓ |
 
-⚠ **这两行是 2026-11-10 的结果** ✗ —— 2026-11-13 那轮撞上 402 没跑成 ✓，
-**记账保留的是上一次的真结果** ✓（新规矩 ✓）。
+⚠ **第二行是 2026-11-10 的结果** ✗ —— 2026-11-13 18:19 那轮**只跑成了 1 / 40 条**
+（又撞上 402 ✗）⇒ 那一半**不能代表能力** ✗ ⇒ **保留上一次的真结果 + 标注** ✓
+（文件里的 `_carriedOver` / `_attemptRan` / `_attemptNotRun` 写着这件事 ✓）。
+**「没跑成」不许被写成「没编造」** ✓ —— 这是这轮新立下的记账规矩 ✓。
 
 ### 硬编码台账（换标准前必看）
 
