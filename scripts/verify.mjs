@@ -4426,6 +4426,25 @@ check("the case pack's fingerprints match the corpus", () => {
   return `${declared.size} 版的指纹与语料一致`;
 });
 
+check("the handover document's numbers are still true", () => {
+  // 交接文档最常见的病是**数字过期** ✗ —— 写的时候是真的，
+  // 过两周代码变了、交付件重出了，文档还写着旧数 ✗。
+  // 下一个接手的人**照着旧数做决定** ✗ —— 那是「错着」 ✗。
+  //
+  // 本项目已经因为「手写的数」踩过好几次 ✓（讲稿里的「249 页」 ✓、
+  // 「97 项闸门」 ✓……）—— 所以规矩是：**数字不许手写** ✓。
+  //
+  // 那交接文档里的数怎么办 ✓？**让机器查** ✓ —— 把文档里引用的每个数
+  // 与**仓库里实际的状态**逐项比对 ✓（闸门数 / 页数 / 图数 / 四维状态 /
+  // 装置数 / 硬编码台账 / 泛化率 ……），对不上就红 ✓。
+  const { ok, out } = runPy(["scripts/check_handover.py"], "check-handover");
+  assert(
+    ok,
+    `交接文档里的数与仓库实际状态对不上 —— 它会**静静地骗人** ✗：\n        ${out.slice(-900)}`,
+  );
+  return out.trim().split("\n").pop().slice(0, 90);
+});
+
 check("the delivery review list is not stale", () => {
   // 交付件复核清单是**生成的**：它把闸门的结果收成一份人能读的东西 ✓
   //（客户问「这份报告哪些结论站得住」，答案在这份清单里 ✓）。
@@ -6567,6 +6586,13 @@ for (const t of [
   // scripts/run_spec_agent_regression.mjs 单独测，记账在
   // reports/spec-agent-baseline.json。
   "_test_spec_agent.mjs",
+  // 回归脚本的**记账规矩**：「没跑成」不许被记成「没编造」。
+  // **不调模型** ✓ —— 真模型那轮要花钱、还可能撞上 402 ✗；
+  // 这里直接驱动脚本用的**那一份判定函数** ✓（不另抄一份 ✓）。
+  // 起因：2026-11-13 跑 120 条那轮撞上 HTTP 402 ⇒ 空槽 40 条里 28 条
+  // 没跑成 ⇒ 文件写成 `fabricated: 0` ✗（上一轮真的 4 条 ✗）——
+  // 读的人会以为「编造问题解决了」✗，其实只是**模型没答** ✗。
+  "_test_regression_accounting.mjs",
   // 「换标准」实验：**没有手写 spec，还能不能产出装置↔章？**
   // 这是 agent-native 的**死结** —— 解开了才算数。
   // **不调模型**、不碰仓库里的数据（临时目录里跑）。
@@ -6664,6 +6690,44 @@ console.log(`\n=== ${checks - failures}/${checks} checks passed ===`);
       );
     } else {
       console.log(`  PASS  the briefing deck's gate count — ${checks} 项`);
+    }
+  }
+}
+
+// 交接文档（`HANDOVER.md`）里的闸门数 —— 同样在**总数确定之后**查 ✓
+//
+// 为什么不在 `check()` 里查 ✓：**这道关自己就是一道闸门** ✓ ——
+// 它每加一条，总数就 +1 ✗ ⇒ 文档里的数会**立刻过期** ✗
+// ⇒ 于是「每次加闸门都要改文档」✗ —— 而那正是「数字不许手写」要治的病 ✗。
+//
+// 所以：**总数相关的数，在总数确定之后查** ✓（与讲稿同一处 ✓）；
+// 与总数无关的数（页数、图数、四维状态……）由 `scripts/check_handover.py` 查 ✓。
+{
+  const handoverPath = resolve(ROOT, "HANDOVER.md");
+  if (existsSync(handoverPath)) {
+    const text = readFileSync(handoverPath, "utf-8");
+    // **每一处**声称闸门数的地方都要对 ✓ ——
+    // 只查一处的话，文档里其余几处会**悄悄过期** ✗
+    // （而读的人随手看到的是哪一处，谁也不知道 ✗）。
+    const claims = [...text.matchAll(/(\d+)\s*项(?:闸门|全绿)/g)].map((m) => Number(m[1]));
+    const wrong = claims.filter((n) => n !== checks);
+    if (!claims.length) {
+      failures++;
+      failedNames.push("the handover document's gate count");
+      console.log(
+        "  FAIL  the handover document's gate count — HANDOVER.md 里**没有**声称闸门数的地方",
+      );
+    } else if (wrong.length) {
+      failures++;
+      failedNames.push("the handover document's gate count");
+      console.log(
+        `  FAIL  the handover document's gate count — HANDOVER.md 里写的是 ` +
+          `${[...new Set(wrong)].join("、")} 项，本次是 ${checks} 项`,
+      );
+    } else {
+      console.log(
+        `  PASS  the handover document's gate count — ${checks} 项（${claims.length} 处都一致）`,
+      );
     }
   }
 }

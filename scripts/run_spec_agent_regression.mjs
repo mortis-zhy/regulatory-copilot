@@ -31,6 +31,13 @@ import {
   validateProposal,
   proposeSpec,
 } from "../dist/specAgent.js";
+// **记账规矩**（「没跑成」≠「没编造」）住在这一个文件里 ✓ ——
+// 脚本与用例都 import 它 ✓ ⇒ 用例测的就是脚本跑的那份 ✓。
+// （抄一份到用例里 = 两份实现会漂移 ✗）
+import {
+  commonFailure as commonFailureImpl,
+  buildAbsentBlock,
+} from "./run_spec_agent_regression_accounting.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 dotenv.config({ path: path.join(ROOT, ".env") });
@@ -271,13 +278,31 @@ for (const [i, p] of absentSample.entries()) {
   const existsInCorpus = gotNums.length > 0 &&
     gotNums.every((n) => corpusText.includes(n) || corpusText.includes(n + ".0"));
   const fabricated = !!proposal.source && v.ok;
-  const kind = !fabricated
-    ? proposal.absent
-      ? "said-absent"
-      : "no-conclusion"
-    : existsInCorpus
-      ? "wrong-quantity"
-      : "hallucinated";
+  // **「没跑成」与「跑成了、但模型没乱说」必须分开** ✓
+  //
+  // 这一段测的是**编造率** —— 它是整份回归里**最要紧**的数 ✗：
+  // agent 在「该版无此规定」的槽位上给出一个值 = 报告里多出一条这一版
+  // 根本没有的规定 ⇒ 客户照着改设计 ⇒ **最贵的错** ✓。
+  //
+  // 而 402（额度用完）、网络断了、模型不可用 ⇒ 那一条**根本没跑** ✗。
+  // 两种情况在 `fabricated` 这个布尔上**长得一模一样** ✗ ——
+  // 「没跑成」被记成「没编造」⇒ 文件里写着 `fabricated: 0` ✗
+  // ⇒ 读的人以为「编造问题解决了」✗，其实只是**模型没答** ✗。
+  //
+  // 实测（2026-11-13）：120 条那轮撞上 402 ⇒ 空槽 40 条里 **28 条没跑成** ✗
+  // ⇒ 文件写 `fabricated: 0`（上一轮是 **4**）✗ —— 读起来像「修好了」✗。
+  //
+  // 所以：**错误要记下来** ✓，且**没跑成的单独计数** ✓。
+  const notRun = !!proposal.error;
+  const kind = notRun
+    ? "not-run"
+    : !fabricated
+      ? proposal.absent
+        ? "said-absent"
+        : "no-conclusion"
+      : existsInCorpus
+        ? "wrong-quantity"
+        : "hallucinated";
   absentRows.push({
     id: p.spec.id,
     name: p.spec.name,
@@ -286,28 +311,43 @@ for (const [i, p] of absentSample.entries()) {
     saidAbsent: !!proposal.absent,
     fabricated,
     kind,
+    // **错误也记** ✓ —— 否则「没跑成」与「模型没找到」在文件里无法区分 ✗
+    error: proposal.error ?? null,
     source: proposal.source ?? null,
     got: { clause: v.clause ?? null, nums: gotNums },
   });
   console.log(
     `[空槽 ${i + 1}/${absentSample.length}] ${p.spec.id} · ${p.version} —— ` +
-      (proposal.absent
-        ? "✓ 判「该版无此规定」（与人工核验一致）"
-        : kind === "wrong-quantity"
-          ? `✗ **误配量值** ${JSON.stringify(gotNums)} @ §${v.clause}（数是真的，但不是这个参数的量值）`
-          : kind === "hallucinated"
-            ? `✗✗ **凭空生成** ${JSON.stringify(gotNums)} —— 原文里没有这个数`
-            : `△ 没能给出结论（${v.reason ?? proposal.error ?? "无产出"}）`),
+      (notRun
+        ? `⚠ **没跑成**（${String(proposal.error).slice(0, 120)}）`
+        : proposal.absent
+          ? "✓ 判「该版无此规定」（与人工核验一致）"
+          : kind === "wrong-quantity"
+            ? `✗ **误配量值** ${JSON.stringify(gotNums)} @ §${v.clause}（数是真的，但不是这个参数的量值）`
+            : kind === "hallucinated"
+              ? `✗✗ **凭空生成** ${JSON.stringify(gotNums)} —— 原文里没有这个数`
+              : `△ 没能给出结论（${v.reason ?? "无产出"}）`),
   );
 }
 const fab = absentRows.filter((r) => r.fabricated).length;
 const wrongQty = absentRows.filter((r) => r.kind === "wrong-quantity").length;
 const halluc = absentRows.filter((r) => r.kind === "hallucinated").length;
 const saidAbsent = absentRows.filter((r) => r.saidAbsent).length;
+const notRun = absentRows.filter((r) => r.kind === "not-run").length;
+// **真正跑成的那几条** —— 分母是它，不是样本总数 ✓
+const ranCount = absentRows.length - notRun;
 console.log(
-  `\n[regression] 空槽复核 ${absentRows.length} 条：判「无此规定」 ${saidAbsent} · ` +
-    `**误配量值 ${wrongQty}** · **凭空生成 ${halluc}** · 未结论 ${absentRows.length - saidAbsent - fab}`,
+  `\n[regression] 空槽复核 ${absentRows.length} 条（**跑成 ${ranCount}**${notRun ? ` · 没跑成 ${notRun}` : ""}）：` +
+    `判「无此规定」 ${saidAbsent} · **误配量值 ${wrongQty}** · **凭空生成 ${halluc}**` +
+    (notRun ? ` · **没跑成 ${notRun}（不计入上面的数）**` : ""),
 );
+if (notRun) {
+  console.log(
+    `[regression] ⚠ 有 ${notRun} 条**根本没跑成**（额度/网络/模型）—— ` +
+      `上面那些数**只覆盖跑成的那 ${ranCount} 条** ✓，` +
+      `不能当成「全样本 ${absentRows.length} 条都没编造」✗。`,
+  );
+}
 if (fab > 0) {
   console.log("[regression] ⚠ 这两类都意味着「报告里会多出一条这一版没有的规定」—— 逐条人工看：");
   for (const r of absentRows.filter((x) => x.fabricated)) {
@@ -326,15 +366,7 @@ if (fab > 0) {
  * 而它还会**覆盖掉上一次的真结果** ✗。
  */
 function commonFailure(rows) {
-  const errs = rows
-    .map((r) => String(r.error ?? "").trim())
-    .filter(Boolean)
-    .map((e) => e.slice(0, 120));
-  if (!errs.length) return null;
-  if (errs.length < rows.length) return null; // 不是全盘同一个错 → 是质量问题
-  const first = errs[0];
-  if (!errs.every((e) => e === first)) return null;
-  return first;
+  return commonFailureImpl(rows);
 }
 
 const didNotRun = commonFailure(rows);
@@ -347,25 +379,71 @@ if (didNotRun) {
   );
 }
 
+// 空槽（编造率）那半边**单独判**「没跑成」 ✓
+//
+// 为什么不能跟主回归共用一个判据 ✓：两半的**分母不一样** ✓ ——
+// 主回归 50 条全跑成、编造率那半边 28 条没跑成，是**可能同时发生**的 ✗
+// （实测 2026-11-13：主回归 44/50 ✓，而空槽 40 条里 28 条撞上 402 ✗）。
+//
+// 而共用一个判据的后果很具体 ✗：文件里写着 `fabricated: 0` ✓，
+// 读的人以为「编造问题解决了」✗ —— 其实只是**模型没答** ✗。
+//
+// 所以：**全盘同一个错 ⇒ 这一半不写进 baseline** ✓（保留上一次的真结果 ✓）；
+// **部分没跑成 ⇒ 写，但要写清楚「跑成几条 / 没跑成几条」** ✓。
+const absentDidNotRun = commonFailure(absentRows);
+if (absentDidNotRun) {
+  console.log(
+    "\n[regression] ⚠⚠ **编造率那半边根本没跑成** —— 不是「没编造」：\n" +
+      `          ${absentDidNotRun}\n` +
+      "          （余额 / 模型可用性 / 网络）—— 这一半的结果**不写进** baseline，" +
+      "上一次的真结果保留。",
+  );
+}
+
+// **分母也记下来** ✓ —— 「样本 120」常常是**要求**而不是**事实** ✓：
+// 候选池不够（要「已知答案齐备 + 装置章号可推导」）⇒ 实际只有 N 条 ✓。
+console.log(
+  `[regression] 实际样本 ${picked.length} 条（**要求 ${sampleSize}**，候选池 ${pool.length} 条）` +
+    (picked.length < sampleSize
+      ? ` —— 池子不够 ✗（要「已知答案齐备 + 装置章号可推导」，二者缺一就不进池子 ✓）`
+      : ""),
+);
+
 if (!dry && !didNotRun) {
   const outPath = path.join(ROOT, "reports", "spec-agent-baseline.json");
+  // 空槽那半边**没跑成** ⇒ **保留上一次的真结果** ✓，
+  // 不要用这一轮的「0 条编造」把它盖掉 ✗。
+  //
+  // 实测（2026-11-13）：上一轮是真的 4 条编造 ✗；这一轮撞上 402 ⇒
+  // 40 条里 28 条没跑成 ⇒ 写出来的 `fabricated: 0` ✗
+  // ⇒ 读的人以为「编造问题解决了」✗ —— 其实只是**模型没答** ✗。
+  // 这正是「宁可空着，不可错着」✗ —— **空着（保留旧值 + 标注）比错着好** ✓。
+  let absentBlock;
+  if (absentDidNotRun) {
+    const prev = readJson(outPath, null);
+    absentBlock = buildAbsentBlock({
+      absentRows,
+      absentDidNotRun,
+      previous: prev?.absentCheck ?? null,
+    });
+  } else {
+    absentBlock = buildAbsentBlock({ absentRows, absentDidNotRun: null, previous: null });
+  }
   fs.writeFileSync(
     outPath,
     JSON.stringify(
       {
         _comment:
           "取值规格提议 agent 的**泛化率实测**（真模型，藏起已知答案重找）。" +
-          "这是记账，不是闸门 —— 它调模型、会花钱、会有抖动。",
+          "这是记账，不是闸门 —— 它调模型、会花钱、会有抖动。" +
+          "**读法**：`rate` 是泛化率 ✓；`absentCheck.ran` / `absentCheck.notRun` " +
+          "说明编造率那半边**实际跑成几条** ✓ —— `fabricated` 只覆盖跑成的那几条 ✗。" +
+          "（`_carriedOver` / `_notRun` 表示这一半没跑成 ✓。）",
         sampleSize: rows.length,
         passed,
         rate: Number(rate.toFixed(3)),
         rows,
-        absentCheck: {
-          sampleSize: absentRows.length,
-          saidAbsent: absentRows.filter((r) => r.saidAbsent).length,
-          fabricated: fab,
-          rows: absentRows,
-        },
+        absentCheck: absentBlock,
       },
       null,
       1,

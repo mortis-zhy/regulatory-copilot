@@ -95,3 +95,15 @@ cat .claude/skills/parameter-spec/SKILL.md
 ## Scope note
 
 This is an MVP interface and governed data foundation. Production ingestion still requires an approved document parser, file-storage policy, source whitelist, background job strategy, and domain-specific parameter dictionaries.
+
+## 中文文档
+
+| 文档 | 回答什么问题 |
+|---|---|
+| [`HANDOVER.md`](HANDOVER.md) | **交接**：这是什么、现在到哪了、跑起来要哪几步、下一个人做什么 |
+| [`GENERALIZATION.md`](GENERALIZATION.md) | **换标准**：搬去另一套法规要动哪些地方（分层清单 + 40 条从事故里长出来的经验） |
+| [`delivery/PDF对比/分析报告/网站泛化能力_实测结论_2026-11-03.md`](delivery/PDF对比/分析报告/网站泛化能力_实测结论_2026-11-03.md) | **实测结论**：泛化到哪一步了、哪些是测出来的、哪些还是猜的 |
+| [`delivery/PDF对比/README.md`](delivery/PDF对比/README.md) | **交付记录**：每一版交付件改了什么、为什么改 |
+| [`.claude/skills/parameter-spec/SKILL.md`](.claude/skills/parameter-spec/SKILL.md) | **写参数 spec 之前必读**：抽取侧的十二个坑 |
+
+三条硬线：**宁可空着，不可错着** ✓ · **红灯不许交付** ✓ · **数字不许手写** ✓。
