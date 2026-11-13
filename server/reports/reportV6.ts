@@ -2898,8 +2898,11 @@ function buildACDiffSection(
     `> **这一节回答的是业务问题**：新国标（${versionLabel("A")}）与欧标（${versionDoc("C")}）**在哪些地方不一样**。`,
     "> 前面几节讲的是「A 相对 B 变了什么」—— 那是**国内**的视角；",
     "> 这一节是**出口**的视角：C 一直只作参照，而出口的人要按 C 核。",
+    "> **这一节与 §12.1 的区别**：§12.1 问「A 相对 B 变了什么」（国内视角）；",
+    "> 这一节问「A 与 C 差在哪」（出口视角）。两边的行**可以重叠** ——",
+    "> 一条参数既可能 A 改了，也同时与 C 不同。",
     "",
-    `本章 ${rows.length} 个参数里，**A 与 C 有实质差异的有 ${numDiff.length + cmpDiff.length + aOnly.length + cOnly.length} 条**（两版都有值且完全相同的 ${rows.length - numDiff.length - cmpDiff.length - aOnly.length - cOnly.length} 条见附录 G）：`,
+    `本章 ${rows.length} 个参数里，**A 与 C 有实质差异的有 ${numDiff.length + cmpDiff.length + aOnly.length + cOnly.length} 条**。其余参数可能是取值相同、两版均无可比数值或尚未定位，不能全部解释为要求完全相同；逐项依据见第 12 章及附录 G：`,
     "",
     "| 差异类别 | 条数 | 谁要动手 |",
     "|---|---|---|",
@@ -2980,9 +2983,6 @@ function buildACDiffSection(
           "",
         ]
       : []),
-    "> **这一节与 §12.1 的区别**：§12.1 问「A 相对 B 变了什么」（国内视角）；",
-    "> 这一节问「A 与 C 差在哪」（出口视角）。两边的行**可以重叠** ——",
-    "> 一条参数既可能 A 改了，也同时与 C 不同。",
     "",
   ].join("\n");
 }

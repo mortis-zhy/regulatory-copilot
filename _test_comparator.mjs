@@ -25,7 +25,7 @@
  *
  * 运行：node _test_comparator.mjs
  */
-import { comparatorBefore, COMPARATOR_TEXT } from "./dist/parameterMatrix.js";
+import { comparatorBefore, COMPARATOR_TEXT, judgeMatrixCells, verdictLabel } from "./dist/parameterMatrix.js";
 
 let failures = 0;
 const ok = (cond, msg) => {
@@ -38,6 +38,8 @@ const ok = (cond, msg) => {
 
 /** 取值紧前面的一段文字 → 期望的口径。 */
 const CASES = [
+  ["shall not be switched ON when the vehicle speed is below ", "<", "条件中的阈值不继承动作禁止的否定"],
+  ["shall not be less than 600 mm. is less than ", "<", "前一个限值的否定不作用于后一个限值"],
   // ── 中文：不否定 ──────────────────────────────────────────────
   ["离地高度小于 ", "<", "小于 → <"],
   ["离地安装高度小于 ", "<", "小于 → <"],
@@ -152,6 +154,18 @@ for (const [text, want, why] of CASES) {
 
 // ── 口径必须在原文里找得到（不许凭空出现） ──────────────────────
 console.log("\n口径的中文说法：");
+const cell = (comparator) => ({ status: "verified", nums: ["40"], comparator, value: "" });
+const absent = { status: "not-found", nums: [], value: "", miss: "not-specified" };
+ok(judgeMatrixCells({ X: cell("≥"), Y: cell("≥"), Z: cell(">") }, ["X", "Y", "Z"]).verdict === "c-diverged",
+  "参照版严格边界不同也必须进入差异组");
+ok(judgeMatrixCells({ X: cell("≥"), Y: absent, Z: cell(">") }, ["X", "Y", "Z"]).verdict !== "y-only",
+  "缺一版时不能把另两版边界不同写成取值一致");
+const fourCells = { X: cell("≥"), Y: cell("≥"), Z: cell("≥"), W: cell(">") };
+const fourJudge = judgeMatrixCells(fourCells, ["X", "Y", "Z", "W"]);
+ok(fourJudge.verdict === "c-diverged" && fourJudge.note.includes("W 边界口径不同"), "第四版不能被比较逻辑漏掉");
+ok(verdictLabel({ ...fourJudge, cells: fourCells }, ["X", "Y", "Z", "W"]).includes("W 不同"), "差异标签指向真正不同的版本");
+const { DRAFT_SYSTEM_PROMPT } = await import("./dist/agentPrompt.js");
+ok(!/至少输出\s*\d/.test(DRAFT_SYSTEM_PROMPT) && DRAFT_SYSTEM_PROMPT.includes("返回空数组"), "草稿证据不足允许空数组，不按最低条数凑数");
 ok(COMPARATOR_TEXT["<"] === "小于", "< → 小于");
 ok(COMPARATOR_TEXT["≤"] === "不大于", "≤ → 不大于");
 ok(COMPARATOR_TEXT["≥"] === "不小于", "≥ → 不小于");

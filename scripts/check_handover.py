@@ -60,7 +60,12 @@ print("\n=== 交接文档里的数 ===")
 # 闸门总数由 `scripts/verify.mjs` 在**跑完之后**查 ✓（与讲稿那道关同一个位置 ✓）——
 # 那时总数才确定 ✓。这里只查**与总数无关**的那些 ✓。
 vs = json.load(open(os.path.join(ROOT, "dist", "verify-summary.json"), encoding="utf-8"))
-chk("交付件页数与实际一致", vs["pages"] == 325 and "325 页" in h, vs["pages"])
+import fitz
+delivery_path = os.path.join(ROOT, "delivery", "PDF对比", "⑪_C列补全_最新版.pdf")
+declared_pages = re.search(r"\*\*交付件\*\*[^\n]*?\*\*(\d+) 页\*\*", h)
+d = fitz.open(delivery_path)
+chk("交付件页数与实际一致", bool(declared_pages) and int(declared_pages.group(1)) == d.page_count,
+    {"declared": declared_pages.group(1) if declared_pages else None, "actual": d.page_count})
 chk("图数与实际一致", vs.get("figures") == 102 and "102" in h, vs.get("figures"))
 chk("引文 517/517 与实际一致",
     vs.get("quotes", {}).get("hits") == 517 and "517 / 517" in h, vs.get("quotes"))
@@ -77,14 +82,13 @@ for f in ["delivery/PDF对比/⑪_C列补全_最新版.pdf",
 chk("讲稿 PDF 至少有一份", len(decks) >= 1, decks)
 
 # ③ 交付件 PDF 本身的页数与图数
-import fitz
-d = fitz.open(os.path.join(ROOT, "delivery", "PDF对比", "⑪_C列补全_最新版.pdf"))
 nimg = sum(len(p.get_images(full=True)) for p in d)
-chk("交付件 PDF 页数 = 325", d.page_count == 325, d.page_count)
 chk("交付件 PDF 图对象 = 102", nimg == 102, nimg)
 chk("交付件 PDF 书签 = 22", len(d.get_toc()) == 22, len(d.get_toc()))
 size_mb = os.path.getsize(os.path.join(ROOT, "delivery", "PDF对比", "⑪_C列补全_最新版.pdf")) / 1024 / 1024
-chk("交接文档写的 13.3 MB 与实际相符", abs(size_mb - 13.3) < 0.2, "%.2f MB" % size_mb)
+declared_size = re.search(r"\| 交付件 \|[^\n]*?\*\*([\d.]+) MB\*\*", h)
+chk("交接文档文件大小与实际相符", bool(declared_size) and
+    abs(size_mb - float(declared_size.group(1))) < 0.05, "%.2f MB" % size_mb)
 
 # ④ 四维状态
 rep = json.load(open(os.path.join(ROOT, "reports", "last-report.json"), encoding="utf-8"))

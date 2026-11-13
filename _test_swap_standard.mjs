@@ -137,5 +137,17 @@ if (failed) {
   process.exit(1);
 }
 console.log(
-  `  ✓ 没有手写 spec 也照样产出装置↔章（${nDevices} 个装置 · ${nChapters} 章 · 探针全过 · 与有 spec 时零矛盾）`,
+  `  ✓ 去掉取值正则、保留参数清单后仍产出装置↔章（${nDevices} 个装置 · ${nChapters} 章 · 探针全过 · 与有 spec 时零矛盾）`,
 );
+
+// 冷启动的另一层：连参数清单也不提供。用已知答案的合成 PDF 验实现，
+// 不调模型、不读取案例资料；这不等于第二部真实法规已通过语义验收。
+const discovery = spawnSync("python", ["-B", "scripts/test_requirement_discovery.py"], {
+  cwd: ROOT,
+  encoding: "utf-8",
+  timeout: 120_000,
+  env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+});
+ok(discovery.status === 0, `无参数清单的要求发现用例失败：${discovery.error?.message ?? ""}\n${discovery.stdout ?? ""}${discovery.stderr ?? ""}`);
+if (failed) process.exit(1);
+console.log("  ✓ 无参数清单的离线发现用例通过（实现与失败记账；非真实法规语义验收）");

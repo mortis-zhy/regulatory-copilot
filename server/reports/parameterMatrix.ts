@@ -907,7 +907,10 @@ function negationApplies(scope: string): boolean {
   if (!hits.length) return false;
   const last = hits[hits.length - 1];
   const between = s.slice(last.index + last[0].length);
-  if (/\b(?:and|or|but)\b/.test(between)) return false;
+  if (/\b(?:and|or|but|when|where|if)\b/.test(between)) return false;
+  // A previous comparison does not negate a later predicate (OCR can lose
+  // the intervening sentence): "not less than 600 mm. is less than 1300".
+  if (/\b(?:less|more|lower|higher)\s+than\b/.test(between)) return false;
   return true;
 }
 
@@ -1099,12 +1102,8 @@ function locate(
 
 /** Equality of two cells: numeric signature first, quoted prose as fallback. */
 function sameValue(a: Cell, b: Cell): boolean {
-  // **只比数值，不比口径。**
-  // 口径（小于 / 不大于）是**A 与 B 之间**的问题 ——
-  // 「新版有没有改这一条」才是报告要回答的；
-  // 而第三版是**参照**，它的口径表述方式与国标不同（R48 说 "no more than"，
-  // GB 说「不大于」），拿它参与判定只会造出假差异。
-  // A/B 的口径比较在 `judge()` 里单独做。
+  // Numeric equality only. Callers must also compare canonical comparators
+  // before claiming agreement, including reference versions and single gaps.
   if (a.nums.length && b.nums.length) return a.nums.join(",") === b.nums.join(",");
   // No numbers on either side (a prose requirement) — fall back to text, with
   // MinerU's markup flattened so <sub>3</sub> == $\mathrm{N_3G}$.
@@ -1119,6 +1118,9 @@ function sameValue(a: Cell, b: Cell): boolean {
       .toLowerCase();
   return flat(a) === flat(b);
 }
+
+/** Exposed for regression checks on arbitrary version keys and cell shapes. */
+export { judge as judgeMatrixCells };
 
 /**
  * Decide what a row means. `versions` is the corpus's version list, so the
@@ -1138,7 +1140,8 @@ function judge(
   // e.g. the electric-bicycle substitute lamp exists in A and C but not in B.
   if (missing.length === 1 && present.length === versions.length - 1 && present.length === 2) {
     const gap = missing[0];
-    if (sameValue(cells[present[0]], cells[present[1]])) {
+    if (sameValue(cells[present[0]], cells[present[1]]) &&
+        !comparatorDiffers(cells[present[0]], cells[present[1]])) {
       return {
         verdict: `${gap.toLowerCase()}-only`,
         // The verdict cell already reads "**C 未定位到**"; repeating it here
@@ -1170,6 +1173,9 @@ function judge(
     const parts: string[] = [];
     if (noSpec.length) parts.push(`${noSpec.join("/")} 无此规定（已核）`);
     if (notLoc.length) parts.push(`${notLoc.join("/")} 未定位到`);
+    if (present.length === 2 && comparatorDiffers(cells[present[0]], cells[present[1]])) {
+      parts.push(`${present.join("/")} 数值相同但边界口径不同`);
+    }
     return { verdict: "incomplete", note: parts.join("；") || `${v0}/${v1} 暂不判定` };
   }
   // Versions beyond the pair are cross-reference, not gate. They only decide
@@ -1198,11 +1204,18 @@ function judge(
     // A/B 一致**不等于三版一致** —— 第三版数值不同就说明有差异。
     // 旧代码只比 A/B，于是「A=B=5%、C=3%」这种**出口欧盟级**的差异被归档进
     // 「三版一致 / 不需要改设计」，附录 G 还把它逐条列了出来当范例。
-    const c = ref ? cells[ref] : undefined;
-    if (c && c.status === "verified" && c.nums.length && a.nums.length && !sameValue(c, a)) {
+    const differing = versions.slice(2).filter(v => {
+      const c = cells[v];
+      return c?.status === "verified" && c.nums.length && a.nums.length &&
+        (!sameValue(c, a) || comparatorDiffers(c, a));
+    });
+    if (differing.length) {
       return {
         verdict: "c-diverged",
-        note: `${v0}/${v1} 一致，但 ${ref} 取值不同（${c.nums.join(" / ")}）`,
+        note: `${v0}/${v1} 一致，但 ` + differing.map(v => {
+          const c = cells[v];
+          return `${v} ${comparatorDiffers(c, a) ? "边界口径不同" : "取值不同"}（${c.comparator ?? ""}${c.nums.join(" / ")}）`;
+        }).join("；"),
       };
     }
     return {
@@ -1474,8 +1487,9 @@ export function verdictLabel(row: Row, versions: Version[]): string {
   if (v === "comparator-differs") return `**${v0}/${v1} 口径不同**`;
   if (v === "same") return `${v0}/${v1} 一致`;
   if (v === "c-diverged") {
-    const ref = versions[2];
-    return ref ? `${v0}/${v1} 一致，${ref} 不同` : `${v0}/${v1} 一致`;
+    const refs = versions.slice(2).filter(k => row.cells[k]?.status === "verified" &&
+      (!sameValue(row.cells[k], row.cells[v0]) || comparatorDiffers(row.cells[k], row.cells[v0])));
+    return refs.length ? `${v0}/${v1} 一致，${refs.join("/")} 不同` : `${v0}/${v1} 一致`;
   }
   if (v === "incomplete") {
     const missing = versions.filter((k) => row.cells[k]?.status !== "verified");

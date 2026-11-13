@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { storagePut } from "../storage";
 import { streamMiniMaxChat, type ChatMessage } from "../integrations/minimax";
 import { runAgentLoop } from "../reports/agentLoop";
-import { AGENT_SYSTEM_PROMPT } from "../reports/agentPrompt";
+import { AGENT_SYSTEM_PROMPT, DRAFT_SYSTEM_PROMPT } from "../reports/agentPrompt";
 import { toolSchemas } from "../reports/agentTools";
 import { parseWithRagAnything } from "../integrations/ragAnything";
 import { renderPdf, renderWordHtml, type ReportPayload } from "../reports/export";
@@ -78,36 +78,7 @@ async function recognizeUploadVersion(
  * 版本角色 —— **从声明取**（`versions[].desc`）。
  * 原来这一行写死在提示词里，换标准时它会**继续说旧标准**。
  */
-const VERSION_ROLE_LINE = REPORT_META.versions
-  .map((v) => `- ${v.key} = ${v.desc}`)
-  .join("；");
-
-const SYSTEM_PROMPT = `你是企业法规对比智能体（Regulatory Copilot）。所有回答必须按"结构对齐 → 内容对比 →专业参数 → 联网证据"四层组织。每条结论都要带原文锚点（章节号 / 页码 / 表格编号），并明确区分三类信息——【原文事实】、【模型推断】、【待人工确认】。不要凭空生成法规原文，不要把没有证据的联网信息当作最终结论；当模型无法验证时，必须使用【待人工确认】前缀并给出建议的核实途径。
-
-【版本角色——最高优先级规则】
-${VERSION_ROLE_LINE}
-- 所有 changes 的语义 = **B → A**：oldExcerpt/原文 = B 的原文摘录，newExcerpt/新文 = A 的原文摘录
-- C 的内容只写进 anchor（如"C=6.1.1"），绝对不要拼进 newExcerpt
-- A 与 B 相同 = [保留]，不得作为 change 输出
-- 每条 change 必须【条款级】：条款号 + 具体技术内容/数值（禁止"章节数不同"这类元数据作 change 标题）
-
-【输出格式——必须严格遵守】你的每一次回答都必须：
-
-第一部分：四层组织的 markdown 详细分析。其中"内容对比"必须**逐条列出具体改动**：
-- 列出每一条**新增**的条款、定义、要求（草案 vs 现行版的"全新"内容）
-- 列出每一条**修改**的条款（旧值/新值，包括数值、文字、范围）
-- 列出每一条**删除**的条款（2019 版有、草案删除了什么）
-- 列出每一条**引用关系变化**（章节 X 现在引用了章节 Y 而以前没有）
-- 每一条改动都要带：旧文原文片段 + 新文原文片段 + 章节号 + 页码 + 是新增/修改/删除/引用变化
-
-**绝对禁止**：输出**中途停止**！结构对齐部分完成后必须**立即进入内容对比**；内容对比完成后必须立即进入专业参数；专业参数完成后必须立即进入联网证据；最后输出 JSON 块。**任何阶段都不能说"完整对比结束"或类似总结性句子后停止输出**。
-
-第二部分：在回答末尾必须输出一个 JSON 代码块（以 \`\`\`json 开始、以 \`\`\` 结束），其中必须包含以下三个数组，缺一不可：
-   - "changes": 数组，每项含 id、title、type（"added"/"removed"/"modified"/"renumbered"）、severity（"high"/"medium"/"low"）、oldExcerpt、newExcerpt、anchor 字段。任何旧值≠新值的差别都是一条 change，**至少输出 30 条**。
-   - "parameters": 数组，每项含 name、oldValue、newValue、unit、source 字段。**至少输出 25 条参数对比**。
-   - "evidence": 数组，每项含 title、sourceName、sourceUrl、level 字段。`;
-
-
+const SYSTEM_PROMPT = DRAFT_SYSTEM_PROMPT;
 
 /**
  * **这次问答的任务上下文** —— 取证工具靠它判断
