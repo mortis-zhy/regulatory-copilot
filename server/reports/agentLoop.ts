@@ -26,7 +26,7 @@
  * 中间还要把「我正在查 XX」给用户看。流式是必须的。
  */
 import { type ChatMessage } from "../integrations/minimax";
-import { withKeyRotation } from "../_core/minimaxPool";
+import { withKeyRotation, modelCredentialPool } from "../_core/minimaxPool";
 import { runAgentTool, toolSchemas, type ToolContext } from "./agentTools";
 // 版本清单 —— 声明里。收口指令要一份一份列全：
 // 少列一份，模型就会以为「那一版里没有」—— 而那是**错着说没有**。
@@ -97,18 +97,17 @@ async function callWithTools(
   reasoning: string;
   toolCalls: Array<{ id: string; name: string; args: Record<string, unknown> }>;
 }> {
-  const base = (process.env.MINIMAX_BASE_URL ?? "https://api.minimax.cn").replace(/\/$/, "");
-  const url = `${base}/v1/chat/completions`;
-
-  // **多把 key 依次试**：主 key 撞「Token Plan 用量上限」就自动切兜底 key。
-  // 否则配额一用完，整个 agent 问答链路就断了 —— 而报告生成、闸门、参数取值
-  // 全是确定性管线，不该被一把 key 卡住。
-  return withKeyRotation(async (key) => {
+  // **跨供应商**的凭据池 ✓ —— 每一项带自己的 baseUrl 与模型 ✓
+  // （MiniMax 额度满 ⇒ 自动切到池子里别的供应商 ✓，**不用改代码** ✓）。
+  return withKeyRotation(async (key, index) => {
+    const cred = modelCredentialPool()[index] ?? null;
+    const base = (cred?.baseUrl ?? process.env.MINIMAX_BASE_URL ?? "https://api.minimax.cn").replace(/\/$/, "");
+    const url = `${base}/v1/chat/completions`;
     const r = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: opts.model ?? process.env.MINIMAX_MODEL ?? "MiniMax-M3",
+        model: opts.model ?? cred?.model ?? process.env.MINIMAX_MODEL ?? "MiniMax-M3",
         messages,
         // **tools 为空时整个字段不发出去** —— 发了空数组模型也会当成「有工具」。
         // 收口轮靠这个真正断掉工具。

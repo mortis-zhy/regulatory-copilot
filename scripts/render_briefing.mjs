@@ -78,8 +78,13 @@ const GATES = (() => {
   //
   // 不然会死锁：「改了数 → 闸门红 → 讲稿出不来 → 数永远改不掉」。
   // 别的关红了就**拒绝出稿**（拿一个没过闸门的数去出稿 = 拿没核过的数糊过去）。
+  //
+  // **交接声明的闸门数**也归这一类 ✓ —— 它的红只是「文档里的数过期了」✓，
+  // 而**讲稿不引用那个数** ✓ ⇒ 不该把它当成「数据没核过」✗。
   const own = new Set(
-    (s.failedNames ?? []).filter((n) => n.includes("briefing deck")),
+    (s.failedNames ?? []).filter(
+      (n) => n.includes("briefing deck") || n.includes("handover document"),
+    ),
   );
   const others = (s.failedNames ?? []).filter((n) => !own.has(n));
   if (!s.total || (s.failed && others.length)) {

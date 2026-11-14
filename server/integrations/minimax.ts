@@ -1,10 +1,10 @@
 import { ENV } from "../_core/env";
-import { minimaxKeyPool, isKeyRotationError } from "../_core/minimaxPool";
+import { minimaxKeyPool, modelCredentialPool, isKeyRotationError, type ModelCredential } from "../_core/minimaxPool";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 export function isMiniMaxConfigured() {
-  return minimaxKeyPool().length > 0;
+  return modelCredentialPool().length > 0;
 }
 
 /**
@@ -32,10 +32,16 @@ async function* streamWithKey(
     body: JSON.stringify(payload),
   };
 
-  let response = await fetch(nativeUrl, init);
-  if (response.status === 402 || response.status === 404) {
-    // Native route refused this key outright — retry once on the compat route.
-    await response.text().catch(() => "");
+  let response: Response;
+  if (nativeUrl) {
+    // MiniMax 的原生路由 ✓（别的供应商没有这条路由 ✗ ⇒ 直接走兼容路由 ✓）
+    response = await fetch(nativeUrl, init);
+    if (response.status === 402 || response.status === 404) {
+      // Native route refused this key outright — retry once on the compat route.
+      await response.text().catch(() => "");
+      response = await fetch(compatUrl, init);
+    }
+  } else {
     response = await fetch(compatUrl, init);
   }
 
@@ -190,42 +196,49 @@ export async function* streamMiniMaxChat(
     onReasoning?: (delta: string) => void;
   },
 ): AsyncGenerator<string> {
-  const pool = minimaxKeyPool();
+  // **跨供应商**的凭据池 ✓ —— 每一项带自己的 baseUrl 与模型 ✓。
+  // MiniMax 的那几把排前面 ✓（原生路由更稳 ✓），
+  // 别的供应商（`MODEL_KEY_POOL` ✓）排在后面 ✓ ——
+  // 前面的额度/权限不可用时**自动切过去** ✓，**不用改代码** ✓。
+  const pool = modelCredentialPool();
   if (!pool.length) {
     throw new Error("MINIMAX_API_KEY is not configured");
   }
-  // Endpoint note: the OpenAI-compatible route `/v1/chat/completions` on some
-  // MiniMax accounts returns `402 insufficient_balance` even when the native
-  // route for the same key/model returns 200. We probe the native route first
-  // and only fall back to the compat route if the native one is unavailable.
-  //
-  // CRITICAL: the native route returns HTTP 200 even when the account has no
-  // balance — the failure is reported inside the body as
-  // `base_resp.status_code: 1008, status_msg: "insufficient balance"`.
-  // So HTTP status alone is NOT a success signal here; check both.
-  const base = ENV.minimaxBaseUrl.replace(/\/$/, "");
-  const nativeUrl = `${base}/v1/text/chatcompletion_v2`;
-  const compatUrl = `${base}/v1/chat/completions`;
-  const payload = {
-    model: options?.model ?? ENV.minimaxModel,
-    messages,
-    thinking: { type: "adaptive" },
-    stream: true,
-    temperature: options?.temperature ?? 0.2,
-    max_tokens: options?.maxTokens ?? 8192,
-  };
 
   let lastErr: Error | null = null;
   for (let i = 0; i < pool.length; i++) {
+    const cred: ModelCredential = pool[i];
+    // Endpoint note: the OpenAI-compatible route `/v1/chat/completions` on some
+    // MiniMax accounts returns `402 insufficient_balance` even when the native
+    // route for the same key/model returns 200. We probe the native route first
+    // and only fall back to the compat route if the native one is unavailable.
+    //
+    // CRITICAL: the native route returns HTTP 200 even when the account has no
+    // balance — the failure is reported inside the body as
+    // `base_resp.status_code: 1008, status_msg: "insufficient balance"`.
+    // So HTTP status alone is NOT a success signal here; check both.
+    const base = cred.baseUrl.replace(/\/$/, "");
+    const nativeUrl = cred.native ? `${base}/v1/text/chatcompletion_v2` : "";
+    const compatUrl = `${base}/v1/chat/completions`;
+    const payload: Record<string, unknown> = {
+      model: options?.model ?? cred.model,
+      messages,
+      stream: true,
+      temperature: options?.temperature ?? 0.2,
+      max_tokens: options?.maxTokens ?? 8192,
+    };
+    // **MiniMax 专有参数** ✓ —— 别的供应商不认 `thinking` ✗（发了会 400 ✗）
+    if (cred.native) payload.thinking = { type: "adaptive" };
+
     try {
-      yield* streamWithKey(pool[i], nativeUrl, compatUrl, payload, options);
+      yield* streamWithKey(cred.key, nativeUrl, compatUrl, payload, options);
       return;
     } catch (e) {
       const err = e as Error & { retriable?: boolean };
       const isLast = i === pool.length - 1;
       if (err?.retriable && !isLast) {
         console.warn(
-          `[minimax-stream] 第 ${i + 1} 把 key 不可用（${String(err.message).slice(0, 120)}），自动切下一把`,
+          `[model-stream] 第 ${i + 1} 把凭据不可用（${cred.provider}：${String(err.message).slice(0, 100)}），自动切下一把`,
         );
         lastErr = err;
         continue;
@@ -233,5 +246,5 @@ export async function* streamMiniMaxChat(
       throw e;
     }
   }
-  throw lastErr ?? new Error("MiniMax 无可用 key");
+  throw lastErr ?? new Error("无可用凭据");
 }

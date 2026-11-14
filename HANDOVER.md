@@ -4,7 +4,7 @@
 > **仓库**：`github-m:mortis-zhy/regulatory-copilot.git`（**公开仓库** ✓）
 > **分支**：`main`
 > **本轮提交**：`30f4b8d`（图版）→ `146bd3d`（R2 人核）→ `c401586`（快照+讲稿）→ `cf97316`（Windows dev）
-> **闸门**：**190 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
+> **闸门**：**191 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
 > **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **326 页** · **102 张源 PDF 原图** · 22 条书签
 
 > ⚠ **这份文档里的每个数都由机器查** ✓ —— `scripts/check_handover.py` ✓
@@ -36,7 +36,7 @@
 ```bash
 npm install                 # 或 pnpm install
 npm run dev                 # 开发模式（热重载）✓ —— Windows 上也能跑 ✓
-npm run verify              # 交付闸门：190 项 ✓（约 4 分钟，含渲染一份 PDF）
+npm run verify              # 交付闸门：191 项 ✓（约 4 分钟，含渲染一份 PDF）
 npm run briefing            # 重出讲稿（读 dist/verify-summary.json 的数 ✓）
 node rebuild_report.mjs     # 从语料重建 reports/last-report.json
 node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
@@ -62,22 +62,44 @@ git grep --cached -I -E "sk-[A-Za-z0-9_-]{20,}" -- .   # 必须没有输出 ✓
 `server/_core/minimaxPool.ts` 读 `MINIMAX_API_KEY`（主）+ `MINIMAX_API_KEY_FALLBACK`
 （**逗号分隔多把** ✓，按顺序轮换 ✓）。主 key 报 **402 / 429 / 401 / 403** 就自动切下一把 ✓。
 
-本机登记过的 MiniMax key 实测：
+本机登记过的 MiniMax key 实测（2026-11-14）：
 
 | key（只写前 8 位） | 状态 |
 |---|---|
 | `sk-cp-2B…`（主） | **402 Token Plan 用量上限** ✗ |
-| `sk-cp-Wc…`（兜底） | **✓ 可用** ✓ |
+| `sk-cp-Wc…`（兜底） | **402 用量上限** ✗（2026-11-13 被一次 120 条的 agent 回归跑满 ✓） |
 | `sk-cp-mM…` / `sk-cp-QR…` | 401 invalid api key ✗（已失效） |
 | `sk-cp-XS…` | 402 用量上限 ✗ |
 
-⇒ **只有兜底那把能用** ✗ —— 但轮换**实测通过** ✓（主 key 402 → 自动切到第 2 把 → HTTP 200 ✓，1.8 s ✓）。
+⇒ **MiniMax 这一家现在一把能用的都没有** ✗ ⇒ 要恢复调模型的活儿：
+**给 MiniMax 充值** ✓，或**加一把有额度的 key** ✓。
 
-⚠ **兜底那把是单点** ✗ —— 它也满的话整条 agent 链路就断 ✗ ⇒ 建议再登记一把 ✓。
+### 跨供应商凭据池（2026-11-14 加）✓
 
-**另有一把 OpenAI key**（`sk-svcacct-…` ✓，登记在 CC Switch 的 `OpenAI` provider ✓）——
-它**不是 MiniMax key** ✗（打 MiniMax 报 401 ✓），本项目用不了 ✗；
-且本机**连不上 api.openai.com** ✗（超时 ✗ —— 见运维那台机器的网络配置 ✓）。
+池子里的**每一项现在都带自己的 baseUrl 与模型** ✓ ⇒
+**MiniMax 额度满 ⇒ 自动切到别的供应商** ✓，**不用改代码** ✓。
+
+`.env`（**gitignore 的** ✓）：
+
+```
+# 格式：供应商|key|baseUrl|模型   （逗号分隔多条 ✓）
+# 分隔符用 `|` 而不是 `:` —— baseUrl 自己带 `:`（https://…）✗，用 `:` 切会切坏 ✓。
+MODEL_KEY_POOL=openai|sk-…|https://api.openai.com/v1|gpt-6.1-sol
+```
+
+**实测**（`scripts/…` 轮换真跑一遍 ✓）：依次试过
+`minimax(402) → minimax(402) → openai(传输失败)` ✓，
+最后报的是「**传输失败（网络/连接，不是模型的问题）**」✓ —— 报得清楚 ✓。
+
+⚠ **那把 OpenAI key 现在打不通** ✗ —— 不是 key 的问题 ✓（它有效 ✓），
+是**本机连不上 api.openai.com** ✗：
+直连超时 ✗（DNS 污染 ✓），Clash 的 `ChatGPT` 组里 7 个 GPT 节点**全部超时** ✗，
+**订阅服务器本身也连不上** ✗（节点域名有的已经**解析不出来** ✗ ⇒ 服务商那边挂了 ✗）。
+
+⇒ **恢复路径**：① 换一个还活着的订阅 ✓；或 ② 给 MiniMax 充值 ✓（最省事 ✓）。
+⇒ 另外：`Node 22 的 fetch` **不走系统代理** ✗ ⇒ 用 OpenAI 那把 key 跑本项目要
+**开 Clash 的 TUN** ✓（系统直连被接管 ✓ ⇒ 不用改代码 ✓），
+否则得给 fetch 装 `undici` 的 `ProxyAgent` ✓。
 
 ---
 
@@ -212,7 +234,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 项 | 数 |
 |---|---|
-| 闸门 | **190 项全绿** ✓ |
+| 闸门 | **191 项全绿** ✓ |
 | 交付件 | **326 页** · 22 条书签 · **102 张图** · **13.7 MB** |
 | 引文回源 | **517 / 517 命中** ✓ |
 | 矩阵 | 319 参数 × 3 版 = **957 格** · 数值/条款/页码未变；本轮修正比较符号与边界判定，详见 docs/source-review-2026-11-13.md |
@@ -350,7 +372,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 ## 附：常用命令速查
 
 ```bash
-npm run verify                                   # 190 项闸门
+npm run verify                                   # 191 项闸门
 npm run briefing                                 # 重出讲稿
 node rebuild_report.mjs                          # 重建报告 JSON
 node render_to_pdfdir.mjs                        # 出交付件
