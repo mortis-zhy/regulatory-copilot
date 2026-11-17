@@ -30,7 +30,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 let failed = 0;
+let n = 0;
 const check = (name, cond, detail = "") => {
+  n++;
   if (cond) {
     console.log(`  ✓ ${name}`);
   } else {
@@ -204,8 +206,35 @@ check(
 const mainBad = mod.phaseOutcome(50, 39, "HTTP 402");
 check("主回归：39/50 没跑成 ⇒ 判「系统性失败」", mainBad.systemic === true, JSON.stringify(mainBad));
 
+// ⑪ **失败分类**：七种病看起来一样，代价差一个数量级 ✗
+//
+// 实测（2026-11-17，60 条）：`systemVoltage.maxSteady.12v` A 是「模型说没有、
+// 而池子里这个槽位**本来就有值**」✗ —— 原来混在「错了」里 ✗ ⇒ R2 盲区看不见 ✗。
+const cls = mod.classifyFailure;
+check("通过 ⇒ 不分类", cls({ pass: true, ok: true, valueOk: true, clauseOk: true, pageOk: true }) === null);
+check(
+  "模型说「该版没有」⇒ false-absent（**最贵** ✗）",
+  cls({ pass: false, absent: true, ok: false, valueOk: false, clauseOk: false, pageOk: false }) === "false-absent",
+);
+check(
+  "正则一条都命中不了 ⇒ no-match（响亮失败 ✓）",
+  cls({ pass: false, absent: false, ok: false, valueOk: false, clauseOk: false, pageOk: false }) === "no-match",
+);
+check(
+  "条款页码都对、值错 ⇒ wrong-value（客户会照着改设计 ✗）",
+  cls({ pass: false, absent: false, ok: true, valueOk: false, clauseOk: true, pageOk: true }) === "wrong-value",
+);
+check(
+  "值对、条款错 ⇒ wrong-clause",
+  cls({ pass: false, absent: false, ok: true, valueOk: true, clauseOk: false, pageOk: true }) === "wrong-clause",
+);
+check(
+  "调用失败 ⇒ api-error（**不算能力** ✗）",
+  cls({ pass: false, error: "HTTP 402", ok: false, valueOk: false, clauseOk: false, pageOk: false }) === "api-error",
+);
+
 if (failed) {
   console.error(`\n[test-regression-accounting] ${failed} 条没过 ✗\n`);
   process.exit(1);
 }
-console.log("\n[test-regression-accounting] 10 条全过 ✓\n");
+console.log(`\n[test-regression-accounting] ${n} 条全过 ✓\n`);

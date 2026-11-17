@@ -38,7 +38,9 @@ import {
   commonFailure as commonFailureImpl,
   buildAbsentBlock,
   phaseOutcome,
+  classifyFailure,
 } from "./run_spec_agent_regression_accounting.mjs";
+import { pickSample } from "./spec_agent_sampling.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 dotenv.config({ path: path.join(ROOT, ".env") });
@@ -85,44 +87,9 @@ for (const s of specs) {
   }
 }
 
-// 覆盖不同的装置与版本，别都挑同一个灯
-//
-// ## 为什么**两轮**
-//
-// 原来只有一轮 ✗：每个装置**只取一条** ✗（`usedDevices.size < sampleSize/2` ✓）
-// —— 于是「要求 120 条」在**装置数不够**时**永远达不到** ✗
-// （实测：候选池 737 条 ✓、装置 50 个 ⇒ 只挑到 50 条 ✗，
-//   而日志却写「池子不够」✗ —— **说反了** ✗：池子够 ✓，是**挑选规则**卡住的 ✗）。
-//
-// 现在：第一轮每个装置取一条 ✓（多样性 ✓），
-// 第二轮**没凑够就补** ✓（同一装置可以再取 ✓）⇒ 「要求 N 条」真能到 N 条 ✓。
-const picked = [];
-const usedDevices = new Set();
-const sorted = pool.sort((a, b) => a.spec.id.localeCompare(b.spec.id));
-const slotKey = (p) => `${p.spec.id}::${p.version}`;
-const taken = new Set();
-for (const p of sorted) {
-  if (ids.length && !ids.includes(p.spec.id)) continue;
-  if (picked.length >= sampleSize) break;
-  if (usedDevices.has(p.device)) continue;
-  usedDevices.add(p.device);
-  taken.add(slotKey(p));
-  picked.push(p);
-}
-// 第二轮 —— 补齐到**要求的条数** ✓（多样性已经尽力了 ✓）
-if (!ids.length && picked.length < sampleSize) {
-  for (const p of sorted) {
-    if (picked.length >= sampleSize) break;
-    const k = slotKey(p);
-    if (taken.has(k)) continue;
-    taken.add(k);
-    picked.push(p);
-  }
-}
-if (ids.length) {
-  picked.length = 0;
-  for (const p of sorted) if (ids.includes(p.spec.id)) picked.push(p);
-}
+// **取样规则**住在一个单独模块里 ✓ —— 用例能直接驱动它（**不调模型** ✓）。
+// 规则本身与「为什么两轮」写在 `scripts/spec_agent_sampling.mjs` 的注释里 ✓。
+const picked = pickSample(pool, sampleSize, ids);
 
 const nDevices = new Set(picked.map((p) => p.device)).size;
 console.log(
@@ -220,6 +187,28 @@ for (const [i, p] of picked.entries()) {
   const valueOk = gotNums.length > 0 && gotNums.every((n) => expectedNums.includes(n));
   const pass = v.ok && clauseOk && pageOk && valueOk;
 
+  // **失败要分类** ✓ —— 只写「错了」的话，七种病看起来一样 ✗：
+  //
+  // | 类 | 是什么 | 有多贵 |
+  // |---|---|---|
+  // | `false-absent` | 模型说「该版没有」，而**池子里的槽位本身就有值** ✗ | **最贵** ✗（R2 档：错着说没有 ✗） |
+  // | `wrong-value` | 条款页码都对、**值取错** ✗ | 贵 ✗（数错了客户会照着改设计 ✗） |
+  // | `wrong-clause` | 值对、**条款指错** ✗ | 中（能回原文查 ✗） |
+  // | `no-match` | 正则**一条都命中不了** ✗ | 低 ✓（响亮失败 ✓） |
+  // | `api-error` | 没跑成 ✓（额度/网络 ✗） | 不算能力 ✗ |
+  //
+  // 实测（2026-11-17，60 条）：`systemVoltage.maxSteady.12v` A 就是 `false-absent` ✓ ——
+  // 原来的记账把它混进「错了」里 ✗ ⇒ **R2 那一档的盲区看不见** ✗。
+  const failureKind = classifyFailure({
+    pass,
+    error: proposal.error,
+    absent: proposal.absent,
+    ok: v.ok,
+    valueOk,
+    clauseOk,
+    pageOk,
+  });
+
   rows.push({
     id: p.spec.id,
     name: p.spec.name,
@@ -234,6 +223,7 @@ for (const [i, p] of picked.entries()) {
     // **错误也要记**：没有这一栏，失败只会显示成「没有产出正则」，
     // 分不清是「被截断」「轮次用尽」还是「模型就是没答」。
     error: proposal.error ?? null,
+    failureKind,
     pass,
   });
 
@@ -251,6 +241,33 @@ for (const [i, p] of picked.entries()) {
 
 const passed = rows.filter((r) => r.pass).length;
 const rate = rows.length ? passed / rows.length : 0;
+// **失败按类报** ✓ —— 尤其 `false-absent`（R2 档 ✗）：它是唯一「错了会让报告
+// 少一条规定」的那一类 ✗，必须单独点名 ✓，不能混在「错了 7 条」里 ✗。
+{
+  const kinds = {};
+  for (const r of rows) if (r.failureKind) kinds[r.failureKind] = (kinds[r.failureKind] ?? 0) + 1;
+  if (Object.keys(kinds).length) {
+    console.log(
+      "[regression] 失败分类：" +
+        Object.entries(kinds)
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, n]) => `${k} ${n}`)
+          .join(" · "),
+    );
+  }
+  const falseAbsent = rows.filter((r) => r.failureKind === "false-absent");
+  if (falseAbsent.length) {
+    console.log(
+      `[regression] ⚠ **${falseAbsent.length} 条误判「该版没有」**（R2 档 ✗ —— ` +
+        "池子里这个槽位**本来就有值** ✗）：",
+    );
+    for (const r of falseAbsent) {
+      console.log(
+        `   · ${r.id} ${r.version}：期望 §${r.expected.clause} ${JSON.stringify(r.expected.nums)}`,
+      );
+    }
+  }
+}
 console.log(
   `\n[regression] ${passed}/${rows.length} 对（${(rate * 100).toFixed(0)}%）· ` +
     `条款对 ${rows.filter((r) => r.got.clause && r.expected.clause.startsWith(r.got.clause.split(".").slice(0, 2).join("."))).length}` +
@@ -481,6 +498,16 @@ if (!dry && !mainOutcome.systemic) {
         notRun: mainOutcome.notRun,
         passed: passedCount,
         rate: Number(rate.toFixed(3)),
+        // **失败分类** ✓ —— 「错了 N 条」看不出贵贱 ✗；
+        // `false-absent` 是唯一「会让报告少一条规定」的那一类 ✗ ⇒ 必须单列 ✓。
+        failureKinds: Object.fromEntries(
+          Object.entries(
+            rows.reduce((acc, r) => {
+              if (r.failureKind) acc[r.failureKind] = (acc[r.failureKind] ?? 0) + 1;
+              return acc;
+            }, {}),
+          ),
+        ),
         // **只按跑成的算** ✓ —— API 失败不是「agent 不会」✗
         rateOverRan: mainOutcome.ran
           ? Number((passedCount / mainOutcome.ran).toFixed(3))

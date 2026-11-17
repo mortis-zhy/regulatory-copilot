@@ -4,7 +4,7 @@
 > **仓库**：`github-m:mortis-zhy/regulatory-copilot.git`（**公开仓库** ✓）
 > **分支**：`main`
 > **本轮提交**：`30f4b8d`（图版）→ `146bd3d`（R2 人核）→ `c401586`（快照+讲稿）→ `cf97316`（Windows dev）
-> **闸门**：**192 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
+> **闸门**：**193 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
 > **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **326 页** · **102 张源 PDF 原图** · 22 条书签
 
 > ⚠ **这份文档里的每个数都由机器查** ✓ —— `scripts/check_handover.py` ✓
@@ -36,7 +36,7 @@
 ```bash
 npm install                 # 或 pnpm install
 npm run dev                 # 开发模式（热重载）✓ —— Windows 上也能跑 ✓
-npm run verify              # 交付闸门：192 项 ✓（约 4 分钟，含渲染一份 PDF）
+npm run verify              # 交付闸门：193 项 ✓（约 4 分钟，含渲染一份 PDF）
 npm run briefing            # 重出讲稿（读 dist/verify-summary.json 的数 ✓）
 node rebuild_report.mjs     # 从语料重建 reports/last-report.json
 node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
@@ -245,7 +245,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 项 | 数 |
 |---|---|
-| 闸门 | **192 项全绿** ✓ |
+| 闸门 | **193 项全绿** ✓ |
 | 交付件 | **326 页** · 22 条书签 · **102 张图** · **13.7 MB** |
 | 引文回源 | **517 / 517 命中** ✓ |
 | 矩阵 | 319 参数 × 3 版 = **957 格** · 数值/条款/页码未变；本轮修正比较符号与边界判定，详见 docs/source-review-2026-11-13.md |
@@ -265,10 +265,11 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 指标 | 数 | 在哪 |
 |---|---|---|
-| 泛化率（有手写 spec 时） | **40/50 = 80%** ✓ —— 其中 **45 条真跑成** ✓，5 条撞上 402（API 失败，**不是「agent 不会」** ✗）✓；只按跑成的算是 **89%** ✓ | `reports/spec-agent-baseline.json` ✓ |
-| 编造率（该版无此规定的槽位） | 40 条里 **4 条误配量值** ✓ —— 已逐条人核 ✓ | 同上 ✓ |
+| 泛化率（有手写 spec 时） | **53/60 = 88.3%** ✓ —— **60 条全部真跑成** ✓（新抽样规则能到要求的条数 ✓） | `reports/spec-agent-baseline.json` ✓ |
+| 编造率（该版无此规定的槽位） | 20 条里 **1 条没跑成** ✗ · **编造 0 条** ✓（上一轮那 4 条已逐条人核 ✓ —— 判对了、没进交付件 ✓） | 同上 ✓ |
 
-⚠ **第二行是 2026-11-10 的结果** ✗ —— 2026-11-13 18:19 那轮**只跑成了 1 / 40 条**
+⚠ **读法**：`rate` 是保守口径（含没跑成的 ✓）；`rateOverRan` 只算真跑成的 ✓；`absentCheck.notRun` 说明那一半**实际跑成几条** ✓ ——
+**`fabricated` 只覆盖跑成的那几条** ✗。**「没跑成」不许被写成「没编造」** ✓。
 （又撞上 402 ✗）⇒ 那一半**不能代表能力** ✗ ⇒ **保留上一次的真结果 + 标注** ✓
 （文件里的 `_carriedOver` / `_attemptRan` / `_attemptNotRun` 写着这件事 ✓）。
 **「没跑成」不许被写成「没编造」** ✓ —— 这是这轮新立下的记账规矩 ✓。
@@ -358,6 +359,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 | **「没跑成」被记成「通过」** | 闸门/记账里出现假的「0 错」✗ | 「宁可空着，不可错着」✓ —— **没跑成 ≠ 通过** ✓ |
 | **手写的数字一定会过期** | 讲稿说「249 页」，交付件早就是 278 页 ✗ | 数字从 `dist/verify-summary.json` 注入 ✓ |
 | **页码写死的截图** | 交付件 279 → 325 页后，讲稿截图指到别的地方 ✗ | 截图**按内容找页** ✓（`scripts/rebuild_briefing_shots.py` ✓） |
+| **放宽比较词窗口** | 想把「符号未判定」变少 ✗ ⇒ 窗口 8→40 ✗ ⇒「不低于…水平面 150」被取成 ≥ ✓，而 R48「not more than 150 below」是 ≤ ✓ ⇒ 判定成「**口径不同**」✗ | 两句**语义等价、句式相反** ✓ ⇒ 局部规则判不出等价性 ✗ ⇒ 只能**留空** ✓。已回退 ✓（`_test_comparator.mjs` 钉住 ✓；详见实测结论 §二十四 ✓） |
 
 ---
 
@@ -383,7 +385,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 ## 附：常用命令速查
 
 ```bash
-npm run verify                                   # 192 项闸门
+npm run verify                                   # 193 项闸门
 npm run briefing                                 # 重出讲稿
 node rebuild_report.mjs                          # 重建报告 JSON
 node render_to_pdfdir.mjs                        # 出交付件

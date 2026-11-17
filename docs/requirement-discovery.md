@@ -84,7 +84,16 @@ python -B scripts/discover_requirements.py --pdf /path/to/source.pdf --version r
 python -B scripts/test_requirement_discovery.py
 node _test_swap_standard.mjs
 npm run verify
+
+# 清点表 ↔ 锚点快照（**不需要原始 PDF** ✓ —— 快照只含锚点与触发理由 ✓）
+python scripts/check_discovery_audit.py \
+  --audit docs/requirement-discovery-r148-audit.md \
+  --fixture docs/requirement-discovery-r148-anchors.json
 ```
+
+重跑扫描之后，要用 `--emit-fixture` 重新生成快照 ✓（命令见
+[R148 实测记录](requirement-discovery-r148-smoke.md) ✓）——
+否则闸门会红 ✓（这是**故意的** ✓：清点表过期会让人去修不存在的问题 ✗）。
 
 新增 Python 测试由已有 `_test_swap_standard.mjs` 调用，保留原有全部映射断言，不人为增加顶层闸门数。顶层结果只读 `dist/verify-summary.json`。
 

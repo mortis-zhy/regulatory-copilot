@@ -46,6 +46,32 @@ export function commonFailure(rows) {
 }
 
 /**
+ * **失败分类** —— 七种病看起来一样，代价差一个数量级 ✗。
+ *
+ * | 类 | 是什么 | 有多贵 |
+ * |---|---|---|
+ * | `false-absent` | 模型说「该版没有」，而池子里这个槽位**本来就有值** | **最贵**（R2：错着说没有） |
+ * | `wrong-value` | 条款页码都对、**值取错** | 贵（客户照着改设计） |
+ * | `wrong-clause` | 值对、**条款指错** | 中（能回原文查） |
+ * | `no-match` | 正则一条都命中不了 | 低（响亮失败） |
+ * | `api-error` | 没跑成（额度/网络） | 不算能力 |
+ * | `other` | 都过不了但归不进上面几类 | — |
+ *
+ * 实测（2026-11-17，60 条）：`systemVoltage.maxSteady.12v` A 是 `false-absent` ——
+ * 原来的记账把它混进「错了」里 ⇒ **R2 那一档的盲区看不见** ✗。
+ */
+export function classifyFailure({ pass, error, absent, ok, valueOk, clauseOk, pageOk }) {
+  if (pass) return null;
+  if (error) return "api-error";
+  // 池子里的槽位**本来就有已知答案** ⇒ 说「没有」就是误判 ✓
+  if (absent) return "false-absent";
+  if (!ok) return "no-match";
+  if (!valueOk) return "wrong-value";
+  if (!clauseOk || !pageOk) return "wrong-clause";
+  return "other";
+}
+
+/**
  * 一轮跑下来，**有多少条真的跑了**。
  *
  * ## 为什么要有「系统性失败」这个判据

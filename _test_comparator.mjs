@@ -166,6 +166,30 @@ ok(fourJudge.verdict === "c-diverged" && fourJudge.note.includes("W 边界口径
 ok(verdictLabel({ ...fourJudge, cells: fourCells }, ["X", "Y", "Z", "W"]).includes("W 不同"), "差异标签指向真正不同的版本");
 const { DRAFT_SYSTEM_PROMPT } = await import("./dist/agentPrompt.js");
 ok(!/至少输出\s*\d/.test(DRAFT_SYSTEM_PROMPT) && DRAFT_SYSTEM_PROMPT.includes("返回空数组"), "草稿证据不足允许空数组，不按最低条数凑数");
+// ─────────────────────────────────────────────────────────────
+// **句式相反、语义等价**的两句 —— **必须留空**（2026-11-17 实测回退的教训）
+//
+//   GB： 「应**不低于**与后窗玻璃下边缘相切的水平面 150 ㎜」
+//   R48：「shall **not be more than 150 mm below** the horizontal plane…」
+//
+// 两句说的是**同一个要求**（不低于 X−150 ⟺ 不超过低 150）。
+// 若把比较词窗口放宽到 40 字 ✗，GB 这句会取到「不低于」= ≥、
+// R48 那句会取到「not more than」= ≤ ⇒ 判定从「一致」变成
+// 「**C 边界口径不同**」✗ —— **一条假变化** ✗（2026-11-17 实测）。
+//
+// 判等**做不到**（要真正的语义对齐）⇒ **宁可留空** ✓。
+// 这条用例钉住：这类句式**不许**被取出比较词 ✓ ——
+// 谁再放宽窗口，这里就红 ✓。
+{
+  const gb = "5.7.4.2.2 S3 或 S4 类制动灯 与其视表面下边缘相切的水平面，应不低于与后窗玻璃下边缘相切的水平面150㎜，或其离地高度不小于850㎜";
+  const pos = gb.indexOf("150㎜");
+  const cmp = comparatorBefore(gb, pos);
+  ok(
+    cmp !== "≥",
+    `句式相反的句子被取了比较词（${cmp}）—— 会造出假变化，宁可留空`,
+  );
+}
+
 ok(COMPARATOR_TEXT["<"] === "小于", "< → 小于");
 ok(COMPARATOR_TEXT["≤"] === "不大于", "≤ → 不大于");
 ok(COMPARATOR_TEXT["≥"] === "不小于", "≥ → 不小于");

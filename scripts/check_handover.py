@@ -129,18 +129,23 @@ chk("章 118 个", nchap == 118 and "118 章" in h, nchap)
 # （原来这里把 41/50 = 82% **写死**了 ✗ —— 而记账文件每跑一次就变 ✗
 #   ⇒ 文档必然过期 ✗ ⇒ 与「数字不许手写」这条硬线直接冲突 ✗。）
 bl = json.load(open(os.path.join(ROOT, "reports", "spec-agent-baseline.json"), encoding="utf-8"))
-m_rate = re.search(r"\*\*(\d+)/(\d+) = (\d+)%\*\*", h)
+m_rate = re.search(r"\*\*(\d+)/(\d+) = ([\d.]+)%\*\*", h)
 chk("文档里写了泛化率", bool(m_rate), "没找到「N/M = P%」")
 if m_rate:
-    doc_passed, doc_total, doc_pct = int(m_rate.group(1)), int(m_rate.group(2)), int(m_rate.group(3))
+    doc_passed, doc_total, doc_pct = int(m_rate.group(1)), int(m_rate.group(2)), float(m_rate.group(3))
     chk("泛化率与记账文件一致",
         bl["passed"] == doc_passed and bl["sampleSize"] == doc_total
         and abs(bl["rate"] * 100 - doc_pct) < 0.5,
         "文档 %s/%s=%s%% · 记账 %s/%s=%s%%" % (
             doc_passed, doc_total, doc_pct, bl["passed"], bl["sampleSize"], round(bl["rate"] * 100, 1)))
-chk("编造数与记账文件一致",
-    bl["absentCheck"]["fabricated"] == 4 and "4 条误配量值" in h,
-    bl["absentCheck"]["fabricated"])
+# **编造数也从文档里读** ✓ —— 原来这里把「4 条」写死了 ✗，
+# 而记账文件每跑一次就变 ✗ ⇒ 文档必然过期 ✗（同一个病 ✗）。
+m_fab = re.search(r"\*\*编造 (\d+) 条\*\*", h)
+chk("文档里写了编造数", bool(m_fab), "没找到「**编造 N 条**」")
+if m_fab:
+    chk("编造数与记账文件一致",
+        bl["absentCheck"]["fabricated"] == int(m_fab.group(1)),
+        "文档 %s · 记账 %s" % (m_fab.group(1), bl["absentCheck"]["fabricated"]))
 
 # ⑧ 文档里引用的文件都存在
 for m in re.finditer(r"`([A-Za-z0-9_./\-]+\.(?:md|py|mjs|ts|json))`", h):
