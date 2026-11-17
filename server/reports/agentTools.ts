@@ -451,6 +451,22 @@ export type ToolResult = { ok: boolean; data: Json; note?: string };
 export type ToolContext = {
   /** 这次问答属于哪个任务。 */
   taskId?: string;
+  /**
+   * **当前这个任务里实际有哪几版**（`A` / `B` / …）。
+   *
+   * ## 为什么要它（同事 issue #2，2026-11-12 复核）
+   *
+   * 原话：**「上传 A 和 B 后删除 B，再查询 B 还能查到」** ✗
+   *
+   * 根因：工具查的是**整份语料的索引与源 PDF** ✓（A/B/C 三份都在 ✓），
+   * 而「这个任务里现在有哪几版」**根本没传进来** ✗ ⇒
+   * 用户删掉了 B ✗，工具照样能翻出 B 的条款、页码、原文 ✗ ——
+   * 读者会以为「**这份依据来自我选的文件**」✗。
+   *
+   * `undefined` = **没判**（老用法 / CLI）⇒ 不限制 ✓（向后兼容 ✓）；
+   * 给了数组（哪怕是空数组）⇒ **只允许这几版** ✓。
+   */
+  allowedVersions?: string[];
   /** 本次输入是不是案例包管的那一套。null = 没判（老用法）。 */
   casePack?: {
     applies: boolean;
@@ -462,6 +478,49 @@ export type ToolContext = {
   } | null;
 };
 
+/**
+ * 这次问答**能查哪几版**。
+ *
+ * 没传（老用法）⇒ 语料里有的全部 ✓；传了 ⇒ **只按它** ✓（空数组就是「一版都没有」✓）。
+ */
+export function versionsFor(ctx?: ToolContext): string[] {
+  if (ctx && Array.isArray(ctx.allowedVersions)) {
+    // **传了就按它** ✓ —— 空数组也是「传了」✓（用户把文件全删了 ⇒ 一版都不许查 ✓）
+    return ctx.allowedVersions.filter((v) => VER_LABEL[v] !== undefined || /^[A-Z]$/.test(v));
+  }
+  return versionKeys();
+}
+
+/** 人话版的「你现在只有这几版」—— 拒绝时要说清楚 ✓。 */
+function allowedVersionsNote(ctx: ToolContext): string {
+  const have = versionsFor(ctx);
+  return have.length
+    ? `当前任务里只有 ${have.map((v) => `${v}（${VER_LABEL[v] ?? v}）`).join("、")}`
+    : "当前任务里**一份文件都没有**";
+}
+
+/**
+ * 这个工具要的那几版，**当前任务里是不是都有**。
+ *
+ * 有几类工具是**跨版**的 ✓ —— 它们的答案只有在「它比的这几版都在」时
+ * 才算「来自当前任务的文件」✓：
+ *   · 变化判定（`get_diff_verdict`）比的是报告的那一对（A ↔ B）✓；
+ *   · 覆盖台账 / 要求台账是**整套案例包**的统计 ✓。
+ *
+ * 少了任何一版 ⇒ 那个答案的依据里就有**用户已经删掉的文件** ✗ ⇒ 不许答 ✓。
+ */
+function needsVersions(ctx: ToolContext | undefined, need: string[]): string | null {
+  if (!ctx || !Array.isArray(ctx.allowedVersions)) return null; // 老用法不限制 ✓
+  const have = versionsFor(ctx);
+  const missing = need.filter((v) => !have.includes(v));
+  if (!missing.length) return null;
+  return (
+    `这个答案要用到 ${need.map((v) => `${v}（${VER_LABEL[v] ?? v}）`).join("、")}，` +
+    `但 ${missing.map((v) => `${v}`).join("、")} **不在当前任务里**` +
+    `（${allowedVersionsNote(ctx)}）—— 不能拿它当依据 ✗`
+  );
+}
+
 /** 工具结果里附带的「证据来自哪里」。 */
 export function evidenceScopeOf(ctx?: ToolContext): Json {
   const cp = ctx?.casePack;
@@ -471,6 +530,9 @@ export function evidenceScopeOf(ctx?: ToolContext): Json {
     casePackId: cp?.casePackId ?? "（未声明）",
     standardFamily: cp?.family ?? "（未声明）",
     sourceFiles: cp?.sourceFiles ?? [],
+    // **这次能查的版本** ✓ —— 用户删掉的那一版不在这里 ✓
+    //（页面「取证记录」据此能说清「依据的是哪几版」✓）
+    versions: ctx && Array.isArray(ctx.allowedVersions) ? versionsFor(ctx) : null,
   };
 }
 
@@ -490,7 +552,34 @@ export async function runAgentTool(
       },
     };
   }
-  const res = await runAgentToolInner(name, args);
+  // **只查「当前任务里真的有」的那几版** ✓（同事 issue #2：
+  // 「上传 A 和 B 后删除 B，再查询 B 还能查到」✗）。
+  //
+  // 依据是**整份语料**（三版都在 ✓），而「这个任务现在有哪几版」原来
+  // 根本没传进来 ✗ ⇒ 删掉的那版照样查得到 ✗。
+  //
+  // 现在：问了不在当前任务里的版本 ⇒ **明确拒绝** ✓ 并说清「现在有哪几版」✓
+  // —— 而不是给一个**看起来有依据**的答案 ✗。
+  if (ctx && Array.isArray(ctx.allowedVersions)) {
+    const asked = String((args as Json)?.version ?? "").toUpperCase();
+    const have = versionsFor(ctx);
+    // `ALL` = 「哪些版都行」✓ ⇒ 按**当前任务里有的**来 ✓（不是「一版都不给」✗）
+    if (asked && asked !== "ALL" && !have.includes(asked)) {
+      return {
+        ok: false,
+        data: {
+          error:
+            `版本「${asked}」**不在当前任务里**（${allowedVersionsNote(ctx)}）—— ` +
+            `它可能是已经在页面上移除的文件。**不能拿它当依据** ✗。` +
+            (have.length ? `要查请改用 ${have.join(" / ")} ✓。` : "请先上传文件 ✓。"),
+          code: "version_not_in_task",
+          availableVersions: have,
+          evidenceScope: evidenceScopeOf(ctx),
+        },
+      };
+    }
+  }
+  const res = await runAgentToolInner(name, args, ctx);
   // 每条**成功的**结果都带上证据范围 —— 完成标准 1：
   // 「每条回答证据能回到当前任务的文件、条款和页码」。
   if (res && res.ok && res.data && typeof res.data === "object") {
@@ -499,7 +588,7 @@ export async function runAgentTool(
   return res;
 }
 
-async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> {
+async function runAgentToolInner(name: string, args: Json, ctx?: ToolContext): Promise<ToolResult> {
   switch (name) {
     /* ---------------------------------------------------------------- */
     case "lookup_clause": {
@@ -585,10 +674,14 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
         return { ok: false, data: { error: "摘录太短（≥4 字）" } };
       }
       const pages = await pdfPages();
-      const out: Json = { quote, hits: [], keywords: [] };
+      // **只在这些版本里找** ✓ —— `find_quote` 最容易犯 issue #2 那个错 ✗：
+      // 它**不接 `version` 参数**（整段去找 ✓），所以原来**永远**扫三版 ✗
+      // ⇒ 用户删掉的 B 照样能在这里被「找到」✗。
+      const scoped = versionsFor(ctx);
+      const out: Json = { quote, hits: [], keywords: [], searchedVersions: scoped };
 
       // 1) 整段连续命中
-      for (const v of ["A", "B", "C"]) {
+      for (const v of scoped) {
         const p = pages[v];
         if (!p) continue;
         const hit = findQuoteInPages(quote, p);
@@ -608,13 +701,13 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
       //    有了它，「这个概念在原文里根本没有」是一步就能确认的事实。
       const totalPages = Math.max(
         1,
-        ...["A", "B", "C"].map((v) => (pages[v]?.length ?? 0)),
+        ...scoped.map((v) => (pages[v]?.length ?? 0)),
       );
       const kw = keywordsOf(quote);
       for (const k of kw) {
         const where: Json[] = [];
         let hitCount = 0;
-        for (const v of ["A", "B", "C"]) {
+        for (const v of scoped) {
           const p = pages[v];
           if (!p) continue;
           const pn = findKeywordInPages(k, p);
@@ -701,7 +794,7 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
       const rows = rep?.parameterMatrix ?? [];
       const row = rows.find((r: Json) => String(r.id) === String(hit.id));
       const cells: Json = {};
-      for (const v of ["A", "B", "C"]) {
+      for (const v of versionsFor(ctx)) {
         const c = row?.cells?.[v];
         if (!c) continue;
         cells[v] = {
@@ -727,6 +820,11 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
 
     /* ---------------------------------------------------------------- */
     case "get_diff_verdict": {
+      // **跨版**（报告比的是前两版 ✓）—— 两版都在当前任务里才答 ✓
+      const missDiff = needsVersions(ctx, versionKeys().slice(0, 2));
+      if (missDiff) {
+        return { ok: false, data: { error: missDiff, code: "version_not_in_task" } };
+      }
       const q = String(args.name ?? "").trim();
       const vd = facts().diffVerdicts ?? {};
       const entries = Object.entries(vd as Record<string, Json>);
@@ -778,6 +876,17 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
 
     /* ---------------------------------------------------------------- */
     case "get_coverage_status": {
+      // **整套案例包**的台账 ✓ —— 当前任务里少一版，这些数就不是它的 ✓
+      const missCov = needsVersions(ctx, versionKeys());
+      if (missCov) {
+        return {
+          ok: false,
+          data: {
+            error: missCov + "。覆盖台账统计的是**整套资料**，缺一版就不代表当前任务 ✗。",
+            code: "version_not_in_task",
+          },
+        };
+      }
       const scope = String(args.scope ?? "both");
       const out: Json = {};
       if (scope === "limits" || scope === "both") {
@@ -818,8 +927,10 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
     case "list_requirement_gaps": {
       const v = String(args.version ?? "all").toUpperCase();
       const limit = Math.max(1, Math.min(200, Number(args.limit ?? 30)));
+      // `ALL` ⇒ **当前任务里真的有的那些版** ✓（不是语料里的全部 ✗）
+      const scope = v === "ALL" ? versionsFor(ctx) : [v];
       const rows = (ledger().rows ?? []).filter(
-        (r: Json) => r.disposition === "附录逐条" && (v === "ALL" || r.version === v),
+        (r: Json) => r.disposition === "附录逐条" && scope.includes(String(r.version)),
       );
       return {
         ok: true,
@@ -858,7 +969,7 @@ async function runAgentToolInner(name: string, args: Json): Promise<ToolResult> 
         };
       }
       const out: Json = { topic: hit.topic, versions: {} };
-      for (const v of ["A", "B", "C"]) {
+      for (const v of versionsFor(ctx)) {
         const c = hit[v];
         if (!c) continue;
         out.versions[v] = {

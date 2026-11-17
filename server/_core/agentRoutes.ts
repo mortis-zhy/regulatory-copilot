@@ -138,6 +138,8 @@ async function taskToolContext(
       // 案例包管的 ✓ → 取证**不回答** ✓（而不是拿一份用户已经不用的资料糊弄）✓
       return {
         taskId,
+        // **一版都没有** ✓ —— 工具据此拒绝一切版本 ✓（不只是案例包不适用 ✓）
+        allowedVersions: [],
         casePack: {
           applies: false,
           casePackId: "",
@@ -162,8 +164,23 @@ async function taskToolContext(
   try {
     const { matchCasePack, casePackSourceFiles } = await import("../reports/casePack");
     const m = await matchCasePack(docs);
+    // **这个任务里现在实际有哪几版** ✓ —— 由「客户端报的当前文件」
+    // 逐份认出版本得来 ✓（`perDoc[].matchedTo` ✓）。
+    //
+    // 同事 2026-11-12 复核：「上传 A 和 B 后删除 B，再查询 B 还能查到」✗ ——
+    // 工具查的是**整份语料**（三版都在 ✓），而「这个任务有哪几版」
+    // 原来**根本没传给工具** ✗ ⇒ 删掉的那版照样查得到 ✗。
+    //
+    // 只在**客户端报了清单**时才限制 ✓（`claimed === undefined` ⇒ 老用法 ⇒
+    // 不限制 ✓，否则 CLI 与老接口会被一刀切成「一版都没有」✗）。
+    const matched = m.perDoc
+      .map((d) => String((d as { matchedTo?: string | null }).matchedTo ?? ""))
+      .filter((k) => /^[A-Z]$/.test(k));
+    const allowedVersions =
+      claimed === undefined ? undefined : Array.from(new Set(matched)).sort();
     return {
       taskId,
+      ...(allowedVersions !== undefined ? { allowedVersions } : {}),
       casePack: {
         applies: m.applies,
         casePackId: m.casePackId,

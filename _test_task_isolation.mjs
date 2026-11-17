@@ -159,4 +159,71 @@ try {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ⑤ **删掉的版本不许再查到**（同事 2026-11-12 复核的原话：
+//    「上传 A 和 B 后删除 B，再查询 B 还能查到」✗）
+//
+// 判据**问行为** ✓：给工具一个「当前只有 A」的上下文 ⇒
+// 查 B 必须**被明确拒绝** ✓，且拒绝理由里说清「现在只有 A」✓。
+// 不判「代码里有没有 allowedVersions 这个词」✗ —— 那种判据会
+// 逼着人把实现改回去 ✗。
+// ─────────────────────────────────────────────────────────────
+const onlyA = { taskId: "t-onlyA", allowedVersions: ["A"] };
+
+const askB = await runAgentTool("lookup_clause", { version: "B", clause: "5.2.4.2" }, onlyA);
+ok(askB.ok === false, "当前任务只有 A，查 B 居然回答了（issue #2 没修好）");
+ok(
+  askB.data?.code === "version_not_in_task",
+  `拒绝理由的 code 不对：${JSON.stringify(askB.data?.code)}`,
+);
+ok(
+  String(askB.data?.error ?? "").includes("不在当前任务里"),
+  "拒绝理由没说清「不在当前任务里」",
+);
+ok(
+  JSON.stringify(askB.data?.availableVersions ?? []) === '["A"]',
+  "拒绝理由没告诉用户「现在有哪几版」",
+);
+
+const askA = await runAgentTool("lookup_clause", { version: "A", clause: "5.2.4.2" }, onlyA);
+ok(askA.ok !== false || askA.data?.code !== "version_not_in_task", "当前有的 A 被误拒了");
+
+// find_quote **不接 version 参数** ✓ —— 它最容易漏（原来永远扫三版 ✗）
+const quoteRes = await runAgentTool("find_quote", { quote: "5.2.4.2 高度" }, onlyA);
+ok(quoteRes && quoteRes.data, "find_quote 没返回结果");
+ok(
+  JSON.stringify(quoteRes.data?.searchedVersions) === '["A"]',
+  `find_quote 没按「当前任务的版本」搜：${JSON.stringify(quoteRes.data?.searchedVersions)}`,
+);
+ok(
+  (quoteRes.data?.hits ?? []).every((h) => h.version === "A"),
+  "find_quote 在删掉的版本里命中了",
+);
+
+// 一版都没有 ⇒ **一版都不许查**（用户把文件全删了）
+const none = { taskId: "t-none", allowedVersions: [] };
+const askAny = await runAgentTool("lookup_clause", { version: "A", clause: "5.2.4.2" }, none);
+ok(askAny.ok === false, "当前任务里一版都没有，查 A 居然回答了");
+
+// **跨版**的工具同样要拦 ✓ —— 它们不接 `version`，但答案里含着两版
+// （`get_diff_verdict` 比的是 A↔B ✓；覆盖台账是整套的 ✓）
+const diffOnlyA = await runAgentTool("get_diff_verdict", { name: "倒车灯" }, onlyA);
+ok(diffOnlyA.ok === false, "当前只有 A，却给出了 A↔B 的变化判定（依据含已删除的 B）");
+
+const covOnlyA = await runAgentTool("get_coverage_status", { scope: "limits" }, onlyA);
+ok(covOnlyA.ok === false, "当前只有 A，却给出了整套资料的覆盖台账");
+
+// **三版都在** ⇒ 这两个工具照常答 ✓（不能为了拦而把它们全废掉 ✗）
+const allThree = { taskId: "t-all", allowedVersions: ["A", "B", "C"] };
+const covAll = await runAgentTool("get_coverage_status", { scope: "limits" }, allThree);
+ok(covAll.data?.code !== "version_not_in_task", "三版都在时，覆盖台账被误拦了");
+
+// 老用法（没传 allowedVersions）⇒ **不限制** ✓（否则 CLI 会被一刀切死 ✗）
+const legacy = { taskId: "t-legacy" };
+const legacyRes = await runAgentTool("lookup_clause", { version: "B", clause: "5.2.4.2" }, legacy);
+ok(
+  legacyRes.data?.code !== "version_not_in_task",
+  "老用法（没传 allowedVersions）被误拦了",
+);
+
 console.log(`✓ 任务隔离用例全过（${n} 条断言）`);
