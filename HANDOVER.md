@@ -4,7 +4,7 @@
 > **仓库**：`github-m:mortis-zhy/regulatory-copilot.git`（**公开仓库** ✓）
 > **分支**：`main`
 > **本轮提交**：`30f4b8d`（图版）→ `146bd3d`（R2 人核）→ `c401586`（快照+讲稿）→ `cf97316`（Windows dev）
-> **闸门**：**191 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
+> **闸门**：**192 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
 > **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **326 页** · **102 张源 PDF 原图** · 22 条书签
 
 > ⚠ **这份文档里的每个数都由机器查** ✓ —— `scripts/check_handover.py` ✓
@@ -36,7 +36,7 @@
 ```bash
 npm install                 # 或 pnpm install
 npm run dev                 # 开发模式（热重载）✓ —— Windows 上也能跑 ✓
-npm run verify              # 交付闸门：191 项 ✓（约 4 分钟，含渲染一份 PDF）
+npm run verify              # 交付闸门：192 项 ✓（约 4 分钟，含渲染一份 PDF）
 npm run briefing            # 重出讲稿（读 dist/verify-summary.json 的数 ✓）
 node rebuild_report.mjs     # 从语料重建 reports/last-report.json
 node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
@@ -226,6 +226,17 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 - 真实输入试跑（UN R148）见 `docs/requirement-discovery-r148-smoke.md` ✓
   —— 状态是 `partial` ✓，**独立人工语义验收尚未做** ✓，**不报召回率** ✓。
 
+### ⑧ 离线要求发现：**标题不该算要求候选** + 清点表现在有机器核对（2026-11-17）
+
+- **假阳性**：R148 §4 里 **12 条纯标题**（「4.6. Failure provisions」）因为父条款带
+  `shall`，被 `parent_requirement_context` 判成了要求候选 ✗ ⇒ **夸大覆盖率** ✗。
+  现在纯标题不触发 ✓（条件引导句「In the case of…」**不是**标题 ✓，照旧登记 ✓）。
+  候选 **81 → 72** ✓；台账仍闭合 ✓（标题留在 `scanned_without_candidate` ✓）。
+- **清点表会过期** ✗（实测抓到 3 条：表说「未触发」，产物里早就有 ✓）。
+  现在 `scripts/check_discovery_audit.py` 逐条核对 ✓，
+  锚点快照 `docs/requirement-discovery-r148-anchors.json` 进了版本库 ✓
+  （**只含锚点与触发理由，不含标准原文** ✓）⇒ 闸门**不需要原始 PDF** 也能跑 ✓。
+
 ---
 
 ## 四、现在的状态（都是实测，不是估计）
@@ -234,7 +245,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 项 | 数 |
 |---|---|
-| 闸门 | **191 项全绿** ✓ |
+| 闸门 | **192 项全绿** ✓ |
 | 交付件 | **326 页** · 22 条书签 · **102 张图** · **13.7 MB** |
 | 引文回源 | **517 / 517 命中** ✓ |
 | 矩阵 | 319 参数 × 3 版 = **957 格** · 数值/条款/页码未变；本轮修正比较符号与边界判定，详见 docs/source-review-2026-11-13.md |
@@ -372,7 +383,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 ## 附：常用命令速查
 
 ```bash
-npm run verify                                   # 191 项闸门
+npm run verify                                   # 192 项闸门
 npm run briefing                                 # 重出讲稿
 node rebuild_report.mjs                          # 重建报告 JSON
 node render_to_pdfdir.mjs                        # 出交付件

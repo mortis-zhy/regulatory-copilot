@@ -59,6 +59,37 @@ class DiscoveryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_discovery(changed)
 
+    def test_bare_titles_are_not_requirement_candidates(self):
+        """**纯标题不算要求候选** —— 哪怕父条款里有 shall。
+
+        实测（2026-11-17，R148 §4）：12 条标题（「4.6. Failure provisions」
+        「4.4. Independent and interdependent lamps」）因为父条款带 shall，
+        被 `parent_requirement_context` 判成了要求候选 ✗ —— 假阳性 ✗，
+        结果是**夸大覆盖率** ✗。
+
+        但**条件引导句**（「In the case of…」「For lamps except…」）**不是**标题 ✓ ——
+        它们是子条款的适用条件 ✓，必须继续被登记 ✓。
+        """
+        result = run_discovery([snapshot(1,
+            "4.1 General requirements\nAll lamps shall meet these requirements.\n"
+            "4.1.1 Failure provisions\n"
+            "4.1.2 Light sources:\n"
+            "4.1.3 In the case of replaceable light sources:\n"
+            "4.1.4 The lamp shall open.\n")])
+        anchors = {c["clause"]: c for c in result["candidates"]}
+        self.assertNotIn("4.1.1", anchors, "纯标题（Failure provisions）被当成了要求候选")
+        self.assertNotIn("4.1.2", anchors, "标题（Light sources:）被当成了要求候选")
+        self.assertIn("4.1.3", anchors, "条件引导句（In the case of…）被误当标题丢掉了")
+        self.assertIn("parent_requirement_context", anchors["4.1.3"]["reasons"])
+        # 被丢掉的标题仍在**台账里** ✓（`scanned_without_candidate` ✓，不是消失 ✗）
+        title_fragments = [f for f in result["fragments"]
+                           if f["kind"] == "text" and "Failure provisions" in f["text"]]
+        self.assertTrue(title_fragments)
+        disp = {r["fragmentId"]: r["disposition"] for r in result["ledger"]}
+        for f in title_fragments:
+            self.assertIn(f["id"], disp, "标题片段从台账里消失了")
+            self.assertEqual(disp[f["id"]], "scanned_without_candidate")
+
     def test_parent_context_does_not_cross_unselected_page_gap(self):
         result = run_discovery([snapshot(1, "4.1 Measurements shall be made:\n"),
                                 {"number": 2, "selected": False},

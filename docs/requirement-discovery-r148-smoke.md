@@ -51,3 +51,52 @@ python -B scripts/discover_requirements.py --pdf tmp/r148-2021-1719.pdf --versio
 ## 父级证据上下文续轮
 
 同日进一步通用化：整数章标题边界启发式分开了第 4 章导言；候选带父级 `context` 和未核证据。新输出 `tmp/discovery/r148-context-run1`：81 个候选、79 个带上下文，状态仍 partial，全部自身与父级引文可在相应源页定位。4.7.1.3 已进入候选，带 4/4.7/4.7.1 上下文；系统尚未判定这些上下文应如何作为条件继承。新增数量包含标题/上下文线索，不是召回率成绩。32 个 Python 用例通过。
+
+
+## 第三轮：**标题不该算要求候选**（2026-11-17）
+
+逐条核对清点表时发现 **12 条纯标题**被算成了要求候选 ✗：
+
+| 锚点 | 原文（只有标题，没有义务） | 为什么被算进来 |
+|---|---|---|
+| 4.3 / 4.4 / 4.5 / 4.6 / 4.6.1 / 4.7 / 4.8 / 4.8.1 / 4.8.2 | 「Light sources:」「Failure provisions」「Test conditions」… | 父条款里有 shall ⇒ 触发 `parent_requirement_context` |
+
+**这是假阳性** ✗ —— 标题不是要求 ✓，把它算进候选数 = **夸大覆盖率** ✗。
+
+改法：`parent_requirement_context` 对**纯标题**不触发 ✓
+（判据：≤ 2 行、正文 ≤ 80 字、且**不以条件引导词开头** ✓）。
+但 **条件引导句**（「In the case of…:」「For lamps except…」）**照旧触发** ✓ ——
+它们是子条款的**适用条件** ✓，不是标题 ✗。
+
+| | 第二轮（context-run1） | 第三轮（context-run2） |
+|---|---|---|
+| 候选 | 81 | **72** |
+| 其中纯标题 | 12 ✗ | **0** ✓ |
+| 台账 | 396 片段全部有处置 ✓ | 同 ✓（标题仍在 `scanned_without_candidate` ✓） |
+
+## 清点表现在**有机器核对** ✓
+
+`docs/requirement-discovery-r148-audit.md` 是**人写的** ✓ —— 写的时候是对的 ✓，
+但扫描器后来跑过几轮 ✗ ⇒ 表里的「未触发候选」会**过期** ✗。
+
+实测就抓到了 ✗：3 条（4.3.1 / 4.7.1.3 / 4.8.2.3）表里写「未触发候选」✓，
+而产物里**早就有**了 ✗（靠父级上下文 ✓）。
+
+现在：
+
+```sh
+# ① 重跑扫描（需要原始 PDF）
+python -B scripts/discover_requirements.py --pdf tmp/r148-2021-1719.pdf \
+  --version R148-original-supplement3-2021 --pages 11-17 --out tmp/discovery/r148-context-run2
+
+# ② 核对清点表 + 重新生成锚点快照（**只含锚点与触发理由，不含原文** ✓）
+python scripts/check_discovery_audit.py --audit docs/requirement-discovery-r148-audit.md \
+  --run tmp/discovery/r148-context-run2/discovery.json \
+  --emit-fixture docs/requirement-discovery-r148-anchors.json
+```
+
+`npm run verify` 里有一道闸门 ✓：清点表 ↔ 锚点快照**逐条对得上** ✓ ——
+快照进了版本库 ✓ ⇒ **没有原始 PDF 的机器也能查** ✓（闸门不依赖 `tmp/` 里的第三方文件 ✓）。
+
+> 它仍然**只是开发侧**的定位核对 ✓ —— 不是独立人工语义验收 ✗，
+> 也不给召回率 / 正确率 ✗（没有独立逐项答案就不算 ✗）。

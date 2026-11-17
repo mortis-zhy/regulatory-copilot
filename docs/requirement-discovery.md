@@ -59,6 +59,10 @@ python -B scripts/discover_requirements.py --pdf /path/to/source.pdf --version r
 
 片段处置：`scanned_with_candidate`（有候选）、`scanned_without_candidate`（未识别候选）、`unsupported`（登记但未解析）、`parse_failed`（抽取异常）。页面状态为 `scanned`／`unsupported`／`parse_failed`／`not_processed`；文字中的表格或公式线索也会使整次执行为 `partial`。
 
+**纯标题不算要求候选** ✓ —— 判据：≤ 2 行、正文 ≤ 80 字、不以条件引导词（`In the case of` / `For` / `When` / `If` / `Where` / `Unless` / `Except`）开头 ✓。
+标题仍在**台账里**（`scanned_without_candidate` ✓），只是不进候选数 ✓——否则「父条款有 shall」会让整章的标题都变成「候选」✗，**夸大覆盖率** ✗。
+**条件引导句不是标题** ✓：它们自身的义务在子条款里 ✓，但是子条款的适用条件 ✓，照旧登记 ✓。
+
 候选 `evidenceStatus=located` 只表示引文与该页的**本次文本快照**一致。`semantics.status` 始终为 `unverified`；`subject/conditions/comparator` 留空并解释原因，不从词法命中猜语义。
 
 校验检查页清点、页面状态与片段一致、候选引用的页码／原文／源绑定 ID、片段处置分区、汇总和执行状态。它不是 PDF 签名系统，也不防止攻击者同时重写整份快照；复核源件时仍需对 PDF 指纹及源页原文。

@@ -4445,6 +4445,28 @@ check("the handover document's numbers are still true", () => {
   return out.trim().split("\n").pop().slice(0, 90);
 });
 
+check("the R148 discovery audit is not stale", () => {
+  // 清点表是**人写的** ✓ —— 写的时候是对的 ✓，但扫描器后来又跑过几轮 ✗。
+  // 过时的清点表最危险 ✗：读的人拿它当「这个扫描器漏了哪些」的依据 ✗，
+  // 而它列的漏项**其实早就补上了** ✗ ⇒ 去修一个**不存在的问题** ✗。
+  //
+  // 与「交付件复核清单 / 换标准操作清单」是同一类病 ✓ —— 清单会过期 ⇒ 必须有闸门盯着 ✓。
+  //
+  // 比的是**提交进仓库的锚点快照** ✓（`docs/requirement-discovery-r148-anchors.json` ✓，
+  // **只含条款锚点与触发理由，不含标准原文** ✓）——
+  // 所以**没有原始 PDF 的机器上也能跑** ✓（闸门不能依赖 tmp/ 里的第三方文件 ✗）。
+  const audit = "docs/requirement-discovery-r148-audit.md";
+  const fixture = "docs/requirement-discovery-r148-anchors.json";
+  assert(existsSync(resolve(ROOT, audit)), `找不到清点表 ${audit}`);
+  assert(existsSync(resolve(ROOT, fixture)), `找不到锚点快照 ${fixture}`);
+  const { ok, out } = runPy(
+    ["scripts/check_discovery_audit.py", "--audit", audit, "--fixture", fixture],
+    "check-discovery-audit",
+  );
+  assert(ok, `清点表与扫描产物对不上 —— 它会让人去修不存在的问题 ✗：\n        ${out.slice(-800)}`);
+  return out.trim().split("\n").pop().slice(0, 90);
+});
+
 check("the delivery review list is not stale", () => {
   // 交付件复核清单是**生成的**：它把闸门的结果收成一份人能读的东西 ✓
   //（客户问「这份报告哪些结论站得住」，答案在这份清单里 ✓）。

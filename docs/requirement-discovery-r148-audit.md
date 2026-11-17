@@ -2,7 +2,9 @@
 
 日期：2026-11-13。由同一开发过程从源页检查，不是独立人工答案或语义验收。
 
-源件与范围见 [试跑记录](requirement-discovery-r148-smoke.md)。表格按扫描器条款锚点列出，不能充当完整要求分母。源页正文已通读；4 章导言、父条款、脚注另列，未把它们从验收范围删除。
+源件与范围见 [试跑记录](requirement-discovery-r148-smoke.md)。
+
+> **这张表有机器核对** ✓：`python scripts/check_discovery_audit.py --audit docs/requirement-discovery-r148-audit.md --fixture docs/requirement-discovery-r148-anchors.json` ✓ —— `npm run verify` 里有闸门 ✓。表过期了 ⇒ 闸门红 ✓。表格按扫描器条款锚点列出，不能充当完整要求分母。源页正文已通读；4 章导言、父条款、脚注另列，未把它们从验收范围删除。
 
 ## 本轮修正
 
@@ -18,7 +20,7 @@
 | 4.1 | 11 | 候选已定位；对象、条件、量值归属未核 | 4.1. The requirements contained in sections 5 "General specifications" and 6 "Individual specifications" (and in the Annexes referenced in the said se |
 | 4.2 | 11 | 候选已定位；对象、条件、量值归属未核 | 4.2. The lamps must be so designed and constructed that in normal conditions of use, and notwithstanding the vibrations to which they may be subjected |
 | 4.3 | 11 | 标题保留，未触发候选 | 4.3. Light sources: |
-| 4.3.1 | 11 | 上下文待关联，未触发候选 | 4.3.1. In the case of replaceable light source(s): |
+| 4.3.1 | 11 | 条件引导句：候选已定位，**仅靠父级上下文**（自身无触发词）；适用条件须传给子条款 | 4.3.1. In the case of replaceable light source(s): |
 | 4.3.1.1 | 11 | 候选已定位；对象、条件、量值归属未核 | 4.3.1.1. The lamp shall only be equipped with light source(s) approved according to UN Regulation No. 37 and/or UN Regulation No. 128, provided that n |
 | 4.3.1.2 | 11 | 候选已定位；对象、条件、量值归属未核 | 4.3.1.2. In the case of a light source category or categories or type(s) is restricted for use in lamps on vehicles in use and originally equipped wit |
 | 4.3.1.3 | 11 | 候选已定位；对象、条件、量值归属未核 | 4.3.1.3. The design of the lamp shall be such that the light source(s) can be fixed in no other position but the correct one. |
@@ -50,7 +52,7 @@
 | 4.7.1 | 13 | 候选已定位；对象、条件、量值归属未核 | 4.7.1. All measurements, photometric and colorimetric, shall be made: |
 | 4.7.1.1 | 13 | 候选已定位；对象、条件、量值归属未核 | 4.7.1.1. In case of a lamp with replaceable light source, if not supplied by an electronic light source control gear or a variable intensity control,  |
 | 4.7.1.2 | 13 | 候选已定位；对象、条件、量值归属未核 | 4.7.1.2. In the case of a light source, which is operated independently from vehicle supply voltage and fully controlled by the system, or in the case |
-| 4.7.1.3 | 13 | 上下文待关联，未触发候选 | 4.7.1.3. In the case of a lamp equipped with non-replaceable light sources (filament light sources and other), with the light sources present in the l |
+| 4.7.1.3 | 13 | 条件引导句：候选已定位，**仅靠父级上下文**（自身无触发词）；测量义务在 4.7.1，须与子条款关联 | 4.7.1.3. In the case of a lamp equipped with non-replaceable light sources (filament light sources and other), with the light sources present in the l |
 | 4.7.1.3.1 | 13 | 候选已定位；对象、条件、量值归属未核 | 4.7.1.3.1. If operating directly under vehicle voltage system conditions all measurements on lamps equipped with non- replaceable light sources shall  |
 | 4.7.1.3.2 | 14 | 候选已定位；对象、条件、量值归属未核 | 4.7.1.3.2. If operated independently from vehicle supply voltage and fully controlled by the system, or in the case of a light source supplied by a sp |
 | 4.7.1.4 | 14 | 候选已定位；对象、条件、量值归属未核 | 4.7.1.4. In the case of a system that uses an electronic light source control gear or a variable intensity control being part of the lamp, the voltage |
@@ -72,7 +74,7 @@
 | 4.8.2 | 15 | 标题保留，未触发候选 | 4.8.2. Measurement methods |
 | 4.8.2.1 | 15 | 候选已定位；对象、条件、量值归属未核 | 4.8.2.1. The photometric performance shall be checked in accordance with the relevant sub-paragraph of paragraph 4.7. |
 | 4.8.2.2 | 15 | 候选已定位；对象、条件、量值归属未核 | 4.8.2.2. For multiple replaceable light sources: When equipped with light source(s) at 6,75 V, 13,5 V or 28,0 V, the luminous intensity values produce |
-| 4.8.2.3 | 15 | 上下文待关联，未触发候选 | 4.8.2.3. For lamps except those equipped with filament light source(s) |
+| 4.8.2.3 | 15 | 条件引导句：候选已定位，**仅靠父级上下文**（自身无触发词）；适用范围须传给 4.8.2.3.1/2 | 4.8.2.3. For lamps except those equipped with filament light source(s) |
 | 4.8.2.3.1 | 15 | 候选已定位；对象、条件、量值归属未核 | 4.8.2.3.1. For reversing lamps and maneuvering lamps, the luminous intensities measured after one minute and after 10 minutes of operation, shall comp |
 | 4.8.2.3.2 | 15 | 候选已定位；对象、条件、量值归属未核 | 4.8.2.3.2. For all other lamps, the luminous intensities measured after 1min and after 30min of operation shall comply with the minimum and maximum re |
 | 4.8.3 | 15 | 候选已定位；对象、条件、量值归属未核 | 4.8.3. If not otherwise specified, each signalling lamp shall conform to the intensities of light emitted outside the reference axis and within the an |
@@ -89,6 +91,22 @@
 | 4.8.10 | 16 | 候选已定位；对象、条件、量值归属未核 | 4.8.10. Particulars of the methods of measurement to be used are given in Annex 3. |
 | 4.8.11 | 16, 17 | 候选已定位；对象、条件、量值归属未核 | 4.8.11. If a rear position lamp and/or a rear end-outline marker lamp is reciprocally incorporated with a stop lamp producing either steady or variabl |
 | 4.9 | 17 | 候选已定位；对象、条件、量值归属未核 | 4.9. Colour of light emitted The colour of the light emitted shall be measured inside the field of the light distribution grid defined for the specifi |
+
+## 范围外的锚点（**不是第 4 章的要求**）
+
+扫描按**物理页**选（p11–p17 ✓），所以结果里必然混着**相邻章节**的条款 ✓ ——
+它们**不计入第 4 章的分母** ✗，但也不能从台账里消失 ✓：
+
+| 锚点 | 为什么在结果里 |
+|---|---|
+| 3.9 | p11 上半是第 3 章末尾 ✓ |
+| 4 | 第 4 章**章标题**（整数章号启发式认出来的 ✓），不是条款 ✓ |
+| 5.1.1 – 5.1.4、5.2.1 | p17 下半是第 5 章开头 ✓ |
+
+<!-- out-of-range: 3.9, 4, 5.1.1, 5.1.2, 5.1.3, 5.1.4, 5.2.1 -->
+
+> 按物理页选范围**不等于**按章节选 ✓ —— 首尾页总会带进邻章的一点内容 ✗。
+> 报「第 4 章要求数」时，必须从这个集合里扣掉它们 ✓。
 
 ## 仍未解决的问题
 

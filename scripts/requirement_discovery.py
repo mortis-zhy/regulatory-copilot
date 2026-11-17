@@ -23,6 +23,9 @@ MODAL = re.compile(
 TABLE = re.compile(r"\btable\s+[\w.-]+|表\s*[A-Za-z0-9一二三四五六七八九十]|^\s*\|.*\|", re.I | re.M)
 FIGURE = re.compile(r"\b(?:figure|fig\.)\s*[\w.-]+|图\s*[A-Za-z0-9一二三四五六七八九十]", re.I)
 LEGAL_EFFECT = re.compile(r"\b(?:is|are)\s+deemed\b|视为|视同", re.I)
+# **条件引导句**的开头 —— 「In the case of…」「For…」「When…」这类不算标题 ✓
+# （它们的义务在子条款里 ✓，但**自身**是条件，不是标题 ✗ —— 两者不能一视同仁 ✗）
+LEADIN_START = re.compile(r"^\s*(?:in\s+the\s+case|for|when|if|where|unless|except|in\s+case)\b", re.I)
 REFERENCE = re.compile(r"\b(?:paragraph|section|annex)\s+\d|第\s*[一二三四五六七八九十0-9]+\s*[条章节]|附录\s*[A-Z0-9]", re.I)
 FORMULA = re.compile(r"(?<![<>=])=(?!=)|[∑√]|\\(?:frac|sum)\b")
 DISPOSITIONS = ("scanned_with_candidate", "scanned_without_candidate", "unsupported", "parse_failed")
@@ -276,7 +279,26 @@ def discover(source: dict, pages: list[dict]) -> dict:
         reasons = []
         if MODAL.search(body):
             reasons.append("modal_token")
-        if context and any(MODAL.search("\n".join(e["quote"] for e in p["evidence"])) for p in context):
+        # **纯标题不算要求候选** ✓ —— 哪怕它的父条款里有 shall ✗。
+        #
+        # 实测（2026-11-17，R148 §4）：12 条**标题/小标题**（「4.6. Failure provisions」
+        # 「4.4. Independent and interdependent lamps」）因为父条款带 shall，
+        # 被 `parent_requirement_context` 判成了**要求候选** ✗ —— 那是**假阳性** ✗：
+        # 标题不是要求 ✓，把它算进候选数 = **夸大覆盖率** ✗。
+        #
+        # 但**条件引导句**（「In the case of…:」「For lamps except…」）**不是**标题 ✓ ——
+        # 它们自身的义务虽在子条款里 ✓，却是**子条款的适用条件** ✓
+        # ⇒ 仍保留 `parent_requirement_context` ✓（读者要能看到「这里有个条件」✓）。
+        title_like = (
+            len(group) <= 2
+            and len(re.sub(r"\s+", " ", body).strip()) <= 80
+            and not LEADIN_START.match(re.sub(r"\s+", " ", body).strip())
+        )
+        if (
+            context
+            and any(MODAL.search("\n".join(e["quote"] for e in p["evidence"])) for p in context)
+            and not title_like
+        ):
             reasons.append("parent_requirement_context")
         if LEGAL_EFFECT.search(body):
             reasons.append("legal_effect_token")
