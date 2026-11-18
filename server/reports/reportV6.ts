@@ -2391,6 +2391,8 @@ function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
   //
   // 这一节补上 ✓，但**只比「在不在、像不像」** ✓：
   //   · 图靠 pHash（64 位感知指纹）✓ —— 「像」**不是**「一致」✗；
+  //   · 图内数字靠 **OCR** ✓ —— 源 PDF 的文本层在图矩形里**一个字都没有** ✗
+  //     （实测 A 38 张 / B 33 张 ✓），而 OCR **会读错** ⇒ 只报「疑似不同」✗；
   //   · 表靠题注 / 可读表头 ✓ —— 没有指纹的表**不配对** ✗（只按行×列配会瞎配 ✗）；
   //   · 公式靠归一化后**完全相同** ✓ —— 近似公式不判 ✗（那要语义 ✗）。
   parts.push("", "## B.5 跨版素材对比（表 / 图 / 公式）", "");
@@ -2402,10 +2404,16 @@ function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
     const hashes = fs.existsSync(hashesPath)
       ? JSON.parse(fs.readFileSync(hashesPath, "utf-8"))
       : {};
+    // **图内文字**（OCR）✓ —— 源 PDF 的文本层在图矩形里**一个字都没有** ✗
+    // （字是画进位图的 ✓），只能 OCR ✓（`scripts/ocr_figures.py`）。
+    const ocrPath = path.join(process.cwd(), "reports", "figure-ocr.json");
+    const ocr = fs.existsSync(ocrPath)
+      ? JSON.parse(fs.readFileSync(ocrPath, "utf-8")).images ?? null
+      : null;
     const invs = ["A", "B", "C"]
       .map((label) => ({
         label,
-        inv: mm.buildInventory(label, data[label], hashes, data[label]?.figureGallery ?? null),
+        inv: mm.buildInventory(label, data[label], hashes, data[label]?.figureGallery ?? null, ocr),
       }))
       .filter((x) => x.inv.figures.length || x.inv.tables.length || x.inv.equations.length);
     if (invs.length < 2) {

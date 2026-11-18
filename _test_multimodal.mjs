@@ -18,6 +18,10 @@ import {
   normCell,
   looksGarbledCell,
   FIGURE_NEAR_DISTANCE,
+  OCR_MIN_CONF,
+  ocrNumber,
+  compareFigureOcr,
+  renderVersionDiff,
 } from "./dist/multimodal.js";
 
 let n = 0;
@@ -169,6 +173,128 @@ ok(!looksGarbledCell("W12绿色边界y=0.150+0.640x"), "正常的色度边界式
     "| a | b |\n| --- | --- |\n| 1 | 2 |",
   );
   ok(all.status === "skipped", "整表串行时应跳过");
+}
+
+// ⑨ **图内数值（OCR）** —— OCR 会读错 ⇒ 只收「整处就是一个数」✓，其余**整处丢掉** ✗
+ok(OCR_MIN_CONF > 0 && OCR_MIN_CONF < 1, "OCR 置信度门槛应在 (0,1)");
+{
+  const x = ocrNumber({ text: "80", conf: 0.99 });
+  ok(x && x.value === 80 && x.unit === "", "干净的整数应被收下");
+  const deg = ocrNumber({ text: "45。", conf: 0.92 });
+  ok(deg && deg.value === 45 && deg.unit === "°", "OCR 把度号读成句号时应还原成度");
+  const mm = ocrNumber({ text: "1.2mm", conf: 0.9 });
+  ok(mm && mm.value === 1.2 && mm.unit === "mm", "带单位的数值应被收下");
+  ok(ocrNumber({ text: "1,200", conf: 0.9 })?.value === 1200, "千分位应还原成 1200");
+  ok(Math.abs((ocrNumber({ text: "1,2", conf: 0.9 })?.value ?? 0) - 1.2) < 1e-9, "非千分位的逗号应按小数点");
+  // **带汉字/未知字母的整处丢弃** ✓（实测：布局A→布局4、2a,26类、功能1的7a）
+  ok(ocrNumber({ text: "布局4", conf: 0.98 }) === null, "带汉字的识别被当成数字了");
+  ok(ocrNumber({ text: "2a,26类", conf: 0.84 }) === null, "带未知字母/汉字的编号被当成数字了");
+  ok(ocrNumber({ text: "功能1的7a", conf: 0.95 }) === null, "图内标号被当成限值了");
+  ok(ocrNumber({ text: "60", conf: 0.3 }) === null, "低置信度识别应被丢弃");
+  // **单字母单位不收** ✓ —— 图内标号 `7a` / `2M` 会被读成「7 安」「2 米」✗
+  ok(ocrNumber({ text: "7a", conf: 0.9 }) === null, "带单字母的标号（7a）被当成量了");
+  ok(ocrNumber({ text: "2M", conf: 0.9 }) === null, "带单字母的标号（2M）被当成量了");
+}
+{
+  const A = [
+    { text: "80°", conf: 0.99 },
+    { text: "80°", conf: 0.98 },
+    { text: "45。", conf: 0.92 },
+  ];
+  const Bsame = [
+    { text: "80°", conf: 0.97 },
+    { text: "80°", conf: 0.96 },
+    { text: "45°", conf: 0.9 },
+  ];
+  const same = compareFigureOcr(A, Bsame);
+  ok(same.status === "compared" && same.diffs.length === 0 && same.same === 3, "两侧数字相同应报无差异");
+
+  const Bdiff = [
+    { text: "80°", conf: 0.97 },
+    { text: "80°", conf: 0.96 },
+    { text: "60。", conf: 0.9 },
+  ];
+  const d = compareFigureOcr(A, Bdiff);
+  ok(d.status === "compared" && d.diffs.length === 2, "45→60 应报两处（各缺一个）");
+  ok(
+    d.diffs.some((x) => x.label === "45°" && x.a === 1 && x.b === 0) &&
+      d.diffs.some((x) => x.label === "60°" && x.a === 0 && x.b === 1),
+    `差异内容不对：${JSON.stringify(d.diffs)}`,
+  );
+
+  // **次数也要比** ✓ —— 同一张图里 80° 出现 3 次 vs 2 次是不同 ✓
+  const cnt = compareFigureOcr(
+    [
+      { text: "80°", conf: 0.9 },
+      { text: "80°", conf: 0.9 },
+      { text: "80°", conf: 0.9 },
+    ],
+    [
+      { text: "80°", conf: 0.9 },
+      { text: "80°", conf: 0.9 },
+    ],
+  );
+  ok(
+    cnt.status === "compared" &&
+      cnt.diffs[0]?.label === "80°" &&
+      cnt.diffs[0].a === 3 &&
+      cnt.diffs[0].b === 2,
+    "同一个数的出现次数没被比",
+  );
+
+  // **裸数字单独一档** ✓ —— `2`、`4` 多是图内标号，只能当**弱**提示 ✗
+  const bare = compareFigureOcr(
+    [{ text: "2", conf: 0.95 }, { text: "4", conf: 0.95 }],
+    [{ text: "2", conf: 0.95 }, { text: "5", conf: 0.95 }],
+  );
+  ok(bare.status === "bare-only" && bare.bareDiffs.length === 2, "裸数字应单独成档并报差异");
+  // 两侧都有带单位数字时，裸数字差异**附在**主结果里、措辞更弱 ✓
+  const mixed = compareFigureOcr(
+    [{ text: "80°", conf: 0.95 }, { text: "4", conf: 0.95 }],
+    [{ text: "80°", conf: 0.95 }, { text: "5", conf: 0.95 }],
+  );
+  ok(
+    mixed.status === "compared" && mixed.diffs.length === 0 && mixed.bareDiffs.length === 2,
+    "带单位相同、裸数字不同时，应分别报告",
+  );
+
+  // 只有一侧读出数字 ⇒ **提示**，不是「那版删了这个数」✗
+  const one = compareFigureOcr(A, [{ text: "外配光镜", conf: 0.97 }]);
+  ok(one.status === "one-sided" && one.side === "a", "只有一侧有数字时应报 one-sided");
+
+  // 两侧都没数字 ⇒ **不比** ✓（不许写「相同」✗）
+  const none = compareFigureOcr(
+    [{ text: "外配光镜", conf: 0.97 }],
+    [{ text: "功能1", conf: 0.96 }],
+  );
+  ok(none.status === "no-numbers", "两侧都没数字时应报 no-numbers");
+
+  // 一边**一个字都没读出** ⇒ skipped ✓（多半是识别失败，不是图里没字 ✗）
+  const skip = compareFigureOcr([], [{ text: "80", conf: 0.9 }]);
+  ok(skip.status === "skipped" && skip.reason.includes("一个字都没读出"), "空识别应跳过并说明");
+
+  // 没有 OCR 数据（undefined）⇒ skipped ✓，不冒充「没数字」✗
+  const noData = compareFigureOcr(undefined, [{ text: "80", conf: 0.9 }]);
+  ok(noData.status === "skipped" && noData.reason.includes("OCR"), "无 OCR 数据时应跳过");
+}
+{
+  // 渲染：图内数值列 + 「OCR 会读错」的界线必须出现在报告里 ✓
+  const invA2 = {
+    ...invA,
+    figures: [
+      { ...fig(10, "0000000000000000"), ocr: [{ text: "80°", conf: 0.99 }, { text: "45。", conf: 0.9 }] },
+    ],
+  };
+  const invB2 = {
+    ...invB,
+    figures: [
+      { ...fig(20, "0000000000000000"), ocr: [{ text: "80°", conf: 0.99 }, { text: "60。", conf: 0.9 }] },
+    ],
+  };
+  const md = renderVersionDiff(diffVersions(invA2, invB2));
+  ok(md.includes("图内数值（OCR）"), "报告里没有「图内数值（OCR）」这一列");
+  ok(md.includes("疑似不同"), "45→60 的差异没出现在报告里");
+  ok(md.includes("会读错"), "报告没写「OCR 会读错」这条界线");
 }
 
 console.log(`\n✓ 多模态用例全过（${n} 条断言）`);

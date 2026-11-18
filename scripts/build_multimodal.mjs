@@ -10,6 +10,9 @@ const mm = await import(pathToFileURL(path.join(ROOT, "dist", "multimodal.js")).
 
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, "dist", "mineru-v4-data.json"), "utf8"));
 const hashes = JSON.parse(fs.readFileSync(path.join(ROOT, "reports", "figure-hashes.json"), "utf8"));
+// 图内文字 OCR —— **可选** ✓（没有就不比图内数值，明确写「未比」✓，不假装「相同」✗）
+const ocrPath = path.join(ROOT, "reports", "figure-ocr.json");
+const ocr = fs.existsSync(ocrPath) ? JSON.parse(fs.readFileSync(ocrPath, "utf8")).images ?? null : null;
 const report = JSON.parse(fs.readFileSync(path.join(ROOT, "reports", "last-report.json"), "utf8"));
 
 // 图版 —— **现算** ✓（与报告生成走**同一份实现** ✓，
@@ -26,7 +29,7 @@ if (versions.length < 2) {
 }
 
 const inv = {};
-for (const v of versions) inv[v] = mm.buildInventory(v, data[v], hashes, galleries[v]);
+for (const v of versions) inv[v] = mm.buildInventory(v, data[v], hashes, galleries[v], ocr);
 
 const diffs = [];
 for (let i = 0; i < versions.length; i++) {

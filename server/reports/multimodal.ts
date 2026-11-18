@@ -23,9 +23,25 @@
  * 3. **表格抽取串行的不许比** ✗ —— MinerU 会把整表串成一行
  *    （实测 B 版色度表：`WWWW34564561黄紫紫蓝色…` ✓），
  *    拿串行的表比单元格 = **造出假差异** ✗ ⇒ 只登记「未比对 + 原因」✓。
+ * 4. **OCR 读出的数不是原文** ✗ —— 源 PDF 文本层在图矩形里**一个字都没有**
+ *    （实测 A 38 张 / B 33 张 ✓，字是画进位图的 ✓），图内数字只能 OCR ✓。
+ *    而 OCR **会读错**（实测「布局A」→「布局4」✓）⇒ 只报「**疑似不同**」✓：
+ *    带单位的数字是主证据 ✓；裸数字单独一档（可能只是图内标号 ✓），措辞更弱 ✗。
+ *    **不许**把 OCR 的结果写成「两版一致」✗。
  */
 
-export type FigureRef = { file: string; page: number; w: number; h: number; phash: string };
+/** OCR 的一处识别结果 —— **不是原文** ✗（会读错），见 `scripts/ocr_figures.py`。 */
+export type OcrItem = { text: string; conf: number };
+
+export type FigureRef = {
+  file: string;
+  page: number;
+  w: number;
+  h: number;
+  phash: string;
+  /** 图内文字（OCR）。**undefined** = 这一版没跑 OCR ✓（与「跑过但没字」不同 ✗）。 */
+  ocr?: OcrItem[];
+};
 export type TableRef = {
   page: number;
   caption: string;
@@ -52,7 +68,50 @@ export type FigurePair = {
   distance: number;
   /** 「图像近似」——**不是**「一致」。 */
   note: string;
+  /** 图内**数值**的 OCR 对比 —— pHash 看不见的那一层 ✓。 */
+  ocr: FigureOcrDiff;
 };
+
+/** OCR 读出的一个**干净**数字（带可选单位）。 */
+export type OcrNumber = { value: number; unit: string; raw: string; conf: number };
+
+/** 一个数的「两侧出现次数差」。`a`/`b` 是**次数**，不是数值 ✗。 */
+export type NumberCountDiff = { label: string; a: number; b: number };
+
+/**
+ * 一对近似图之间的「图内数值」对比结果。
+ *
+ * **分两档** ✓：
+ * - **带单位**（`45°`、`12mm`、`5%`）—— 多半是限值，是**主证据** ✓；
+ * - **裸数字**（`80`）—— 多半是限值，但**也可能是图内标号**（`2`、`4`、`7`）✗，
+ *   所以单独一档、措辞更弱 ✓。
+ */
+export type FigureOcrDiff =
+  | {
+      status: "compared";
+      aNumbers: number;
+      bNumbers: number;
+      /** 两侧次数都一样的带单位数字个数 ✓ */
+      same: number;
+      /** 带单位数字的次数差（主证据）✓ */
+      diffs: NumberCountDiff[];
+      bareA: number;
+      bareB: number;
+      /** 裸数字的次数差 —— **可能只是标号** ✗ */
+      bareDiffs: NumberCountDiff[];
+      /** 置信度不足、**没参与**的识别处数 ✓（不是「没这个数」✗） */
+      lowConf: number;
+    }
+  | {
+      status: "bare-only";
+      bareA: number;
+      bareB: number;
+      bareDiffs: NumberCountDiff[];
+      lowConf: number;
+    }
+  | { status: "no-numbers"; lowConf: number }
+  | { status: "one-sided"; side: "a" | "b"; numbers: OcrNumber[]; lowConf: number; bare: number }
+  | { status: "skipped"; reason: string };
 
 export type VersionDiff = {
   a: string;
@@ -82,6 +141,165 @@ export type VersionDiff = {
 
 /** 图的 pHash 距离阈值 —— ≤ 这个数才算「近似」。 */
 export const FIGURE_NEAR_DISTANCE = 10;
+
+/** OCR 置信度门槛 —— 低于它的识别**不参与**比对 ✓（不是「没这个数」✗）。 */
+export const OCR_MIN_CONF = 0.6;
+
+/** 全角 → 半角（数字与字母）—— OCR 偶尔吐全角 ✓。 */
+function toHalfWidth(s: string): string {
+  return String(s ?? "")
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/／/g, "/")
+    .replace(/％/g, "%");
+}
+
+/**
+ * **一处** OCR 文字 → 一个干净数字。
+ *
+ * ## 为什么这么严
+ *
+ * 宁可**漏**，不可**错** ✓：只要识别结果里带一点不确定（汉字、未知字母、
+ * 多个数字挤在一起），就**整处丢掉** ✗（返回 `null`）。
+ *
+ * 实测的坑：`布局A` 被读成 `布局4`（带汉字 ⇒ 丢）✓；
+ * `2a,26类` 把编号读成数字（未知字母 + 汉字 ⇒ 丢）✓；
+ * `功能1的7a` 是图内标号，**不是限值**（汉字 ⇒ 丢）✓。
+ *
+ * 只有**整处就是一个数 + 可选单位**才收 ✓（`80`、`45°`、`1.2mm`、`12%`）。
+ */
+export function ocrNumber(item: OcrItem, minConf = OCR_MIN_CONF): OcrNumber | null {
+  if (!item || !(Number(item.conf) >= minConf)) return null;
+  let t = toHalfWidth(item.text).trim();
+  t = t
+    .replace(/^[\s,;:：、()（）[\]【】"'“”‘’]+/, "")
+    .replace(/[\s,;:：、()（）[\]【】"'“”‘’]+$/, "")
+    .replace(/\s+/g, "");
+  // 单位按**长的在前**排列 ✓（`km/h` 不能被 `km` 抢走、`mm` 不能被 `m` 抢走）。
+  // **不收单字母单位** ✗ —— 实测图内标号 `7a`、`2M`、`3M` 会被读成「7 安」「2 米」✗，
+  // 而那几个根本不是量 ✗（`7a` 是配光镜的**视表面标号** ✓）。
+  const m =
+    /^(\d{1,6}(?:[.,]\d{1,3})?)(km\/h|kcd|cm²|m²|m2|mm|cm|km|kg|min|lx|lm|cd|㎜|°|。|%|h|s)?$/.exec(
+      t,
+    );
+  if (!m) return null;
+  let num = m[1];
+  // 千分位：`1,200` → 1200 ✓；其余逗号按小数点 ✓（图里的限值不会有其它逗号用法）
+  num = /^\d{1,3}(?:,\d{3})+$/.test(num) ? num.replace(/,/g, "") : num.replace(/,/g, ".");
+  const value = Number(num);
+  if (!Number.isFinite(value)) return null;
+  const rawUnit = m[2] ?? "";
+  const unit =
+    rawUnit === "。"
+      ? "°" // OCR 把度号读成句号 ✓（实测 `45。` conf 0.92 ✓）——
+      : rawUnit === "㎜"
+        ? "mm"
+        : rawUnit === "m2"
+          ? "m²"
+          : rawUnit;
+  return { value, unit, raw: item.text, conf: Number(item.conf) };
+}
+
+function labelOf(n: OcrNumber): string {
+  return `${n.value}${n.unit}`;
+}
+
+/**
+ * 一对近似图的**图内数值**对比（OCR 层 ✓）。
+ *
+ * ## 界线（与 pHash 层同一条思路）
+ *
+ * 比的是「**OCR 读出来的数字**」，不是「图上的数字」✗ ——
+ * OCR 会读错（实测 `布局A`→`布局4`）✓、会漏读 ✓。
+ * 所以：
+ * - 只有**一侧**读出数字 ⇒ `one-sided` ✓（是「**提示**」，不是「那版删了这个数」✗）；
+ * - 两侧都读不出 ⇒ `no-numbers` ✓（**不比**，不写「相同」✗）；
+ * - 任一侧**整张图一个字都没读出** ⇒ `skipped` ✓（多半是 OCR 失败，不是图没字 ✗）。
+ *
+ * 比的是**次数多重集** ✓ —— 同一张图里 `80°` 出现三次和出现两次是**不同**的 ✓。
+ */
+export function compareFigureOcr(
+  a?: OcrItem[],
+  b?: OcrItem[],
+  minConf = OCR_MIN_CONF,
+): FigureOcrDiff {
+  if (!a || !b) {
+    return {
+      status: "skipped",
+      reason: "这张图没有 OCR 结果（未跑 scripts/ocr_figures.py，或图是新抽的）",
+    };
+  }
+  const lowConf =
+    a.filter((i) => !(Number(i.conf) >= minConf)).length +
+    b.filter((i) => !(Number(i.conf) >= minConf)).length;
+  if (!a.length || !b.length) {
+    return {
+      status: "skipped",
+      reason: `${!a.length ? "A" : "B"} 侧 OCR 一个字都没读出（多半是识别失败，不是图里没字）`,
+    };
+  }
+  const na = a.map((i) => ocrNumber(i, minConf)).filter((x): x is OcrNumber => !!x);
+  const nb = b.map((i) => ocrNumber(i, minConf)).filter((x): x is OcrNumber => !!x);
+  const ua = na.filter((n) => n.unit);
+  const ub = nb.filter((n) => n.unit);
+  const ba = na.filter((n) => !n.unit);
+  const bb = nb.filter((n) => !n.unit);
+  if (!na.length && !nb.length) return { status: "no-numbers", lowConf };
+  // **只有一侧**有带单位的数字 ⇒ 提示 ✓（不是「那版删了这个数」✗）
+  if (ua.length && !ub.length && !bb.length) {
+    return { status: "one-sided", side: "a", numbers: ua, lowConf, bare: ba.length };
+  }
+  if (ub.length && !ua.length && !ba.length) {
+    return { status: "one-sided", side: "b", numbers: ub, lowConf, bare: bb.length };
+  }
+  if (!ua.length && !ub.length) {
+    // 两侧都只有裸数字 ⇐ 只做**弱对比** ✓（可能全是标号 ✗）
+    const d = diffMultisets(ba, bb);
+    return { status: "bare-only", bareA: ba.length, bareB: bb.length, bareDiffs: d.diffs, lowConf };
+  }
+  const du = diffMultisets(ua, ub);
+  const db = diffMultisets(ba, bb);
+  return {
+    status: "compared",
+    aNumbers: ua.length,
+    bNumbers: ub.length,
+    same: du.same,
+    diffs: du.diffs,
+    bareA: ba.length,
+    bareB: bb.length,
+    bareDiffs: db.diffs,
+    lowConf,
+  };
+}
+
+/** 两个数字列表的**次数多重集**差异。 */
+function diffMultisets(
+  xs: OcrNumber[],
+  ys: OcrNumber[],
+): { same: number; diffs: NumberCountDiff[] } {
+  const count = (arr: OcrNumber[]): Map<string, number> => {
+    const m = new Map<string, number>();
+    for (const x of arr) m.set(labelOf(x), (m.get(labelOf(x)) ?? 0) + 1);
+    return m;
+  };
+  const ma = count(xs);
+  const mb = count(ys);
+  const labels = [...new Set([...ma.keys(), ...mb.keys()])].sort((x, y) => {
+    // 数字按大小排 ✓（`9` 不应排在 `80` 后面 ✗）
+    const nx = Number(x.replace(/[^\d.]/g, ""));
+    const ny = Number(y.replace(/[^\d.]/g, ""));
+    return nx - ny || x.localeCompare(y);
+  });
+  const diffs: NumberCountDiff[] = [];
+  let same = 0;
+  for (const k of labels) {
+    const ca = ma.get(k) ?? 0;
+    const cb = mb.get(k) ?? 0;
+    same += Math.min(ca, cb);
+    if (ca !== cb) diffs.push({ label: k, a: ca, b: cb });
+  }
+  return { same, diffs };
+}
 
 /** 64 位十六进制 pHash 的 Hamming 距离。 */
 export function hamming(a: string, b: string): number {
@@ -327,6 +545,8 @@ export function buildInventory(
   data: any,
   hashes: Record<string, { phash?: string; w?: number; h?: number }> = {},
   gallery?: { dir: string; pages: Record<string, Array<{ file: string; w: number; h: number }>> } | null,
+  /** `reports/figure-ocr.json` 的 `images` 部分（按图路径索引）✓ */
+  ocr?: Record<string, { items?: OcrItem[] }> | null,
 ): MultimodalInventory {
   const figures: FigureRef[] = [];
   if (gallery) {
@@ -334,12 +554,15 @@ export function buildInventory(
       for (const f of files) {
         const rel = `${gallery.dir}/${f.file}`;
         const h = hashes[rel];
+        const items = ocr?.[rel]?.items;
         figures.push({
           file: rel,
           page: Number(p),
           w: f.w,
           h: f.h,
           phash: h?.phash ?? "",
+          // 没跑 OCR 的图**不挂空数组** ✗ —— `[]` 会被当成「跑过、图上没字」✗
+          ...(items ? { ocr: items } : {}),
         });
       }
     }
@@ -404,7 +627,9 @@ export function diffVersions(invA: MultimodalInventory, invB: MultimodalInventor
       distance: c.d,
       note:
         `图像近似（pHash 距离 ${c.d} / 64）—— ` +
-        "「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗",
+        "「近似」**不是**「一致」：pHash 看不出图内数字/标注有没有变 ✗，另由 OCR 提示（会读错）✗",
+      // **图内数值**在配对之后另算 ✓ —— 用 OCR，不靠 pHash ✓
+      ocr: compareFigureOcr(c.a.ocr, c.b.ocr),
     });
   }
   const onlyInA = aFigs.filter((f) => !usedA.has(f.file));
@@ -498,11 +723,73 @@ export function renderVersionDiff(d: VersionDiff): string {
     "",
   );
   if (d.figures.paired.length) {
-    out.push(`| ${a} 页 | ${b} 页 | 距离 | 说明 |`, "|---|---|---|---|");
+    // **图内数值（OCR）** —— pHash 看不见的那一层 ✓。
+    const fmtDiffs = (ds: NumberCountDiff[]): string =>
+      ds
+        .slice(0, 3)
+        .map((x) => `${x.label}（A ${x.a} / B ${x.b}）`)
+        .join("、") + (ds.length > 3 ? ` 等 ${ds.length} 处` : "");
+    const ocrCell = (o: FigureOcrDiff): string => {
+      if (o.status === "compared") {
+        const weak = o.bareDiffs.length
+          ? `；裸数字另有 **${o.bareDiffs.length} 处**不同（可能只是标号 ✗）`
+          : "";
+        if (!o.diffs.length) {
+          return `带单位数字相同（A ${o.aNumbers} / B ${o.bNumbers} 个）${weak}`;
+        }
+        return (
+          `**疑似不同**：${fmtDiffs(o.diffs)}` +
+          (o.bareDiffs.length ? `；裸数字另有 ${o.bareDiffs.length} 处不同（可能只是标号 ✗）` : "")
+        );
+      }
+      if (o.status === "bare-only") {
+        return o.bareDiffs.length
+          ? `只有裸数字：**${o.bareDiffs.length} 处**不同（**可能只是标号** ✗）`
+          : `只有裸数字：相同（A ${o.bareA} / B ${o.bareB} 个，**可能只是标号** ✗）`;
+      }
+      if (o.status === "one-sided") {
+        const list = o.numbers.slice(0, 3).map(labelOf).join("、");
+        return `只有 ${o.side.toUpperCase()} 读出带单位的数字（${list}${o.numbers.length > 3 ? "…" : ""}）`;
+      }
+      if (o.status === "no-numbers") return "两侧都读不出数字";
+      return `未比（${o.reason}）`;
+    };
+    out.push(
+      `| ${a} 页 | ${b} 页 | 距离 | 图内数值（OCR） |`,
+      "|---|---|---|---|",
+    );
     for (const p of d.figures.paired) {
-      out.push(`| p${p.left.page} | p${p.right.page} | ${p.distance} | 图像近似（**非同一性证明**） |`);
+      out.push(`| p${p.left.page} | p${p.right.page} | ${p.distance} | ${ocrCell(p.ocr)} |`);
     }
     out.push("");
+    const oc = d.figures.paired.map((p) => p.ocr);
+    const sameN = oc.filter((o) => o.status === "compared" && !o.diffs.length).length;
+    const susN = oc.filter((o) => o.status === "compared" && o.diffs.length > 0).length;
+    const oneN = oc.filter((o) => o.status === "one-sided").length;
+    const noneN = oc.filter((o) => o.status === "no-numbers").length;
+    const skipN = oc.filter((o) => o.status === "skipped").length;
+    const bareOnlyN = oc.filter((o) => o.status === "bare-only").length;
+    const bareWeakN = oc.reduce((s, o) => {
+      if (o.status === "compared" || o.status === "bare-only") return s + o.bareDiffs.length;
+      return s;
+    }, 0);
+    out.push(
+      `**图内数值（OCR）**：配对 ${oc.length} 对 —— 两侧带单位数字相同 **${sameN}** · ` +
+        `**疑似不同 ${susN}** · 只有一侧读出 **${oneN}** · 只有裸数字 **${bareOnlyN}** · ` +
+        `读不出 **${noneN}** · 未比 **${skipN}**` +
+        (bareWeakN
+          ? ` · 裸数字差异 **${bareWeakN} 处**（分不清是限值还是图内标号 ✗，**仅供参考**）`
+          : ""),
+      "",
+    );
+    if (oc.length) {
+      out.push(
+        `> 图内数值来自 **OCR**（置信度 ≥ ${OCR_MIN_CONF}、只收「整处就是一个数 + 可选单位」的识别）✓ —— ` +
+          "OCR **会读错**（实测「布局A」读成「布局4」）✗、**会漏读** ✗，",
+        "> 所以「疑似不同」**只是提示**，**不是**结论；「相同」也**不是**原文一致的证明 ✗。须对照原图 ✗。",
+        "",
+      );
+    }
   }
   if (d.figures.onlyInA.length || d.figures.onlyInB.length) {
     out.push(

@@ -1,0 +1,3314 @@
+{
+ "_engine": "easyocr 1.7.2",
+ "_langs": [
+  "ch_sim",
+  "en"
+ ],
+ "_minConf": 0.0,
+ "_builtAt": "2026-11-18T14:18:36Z",
+ "_note": "OCR 结果**不是原文** —— 会读错；下游只当「可能变了」的提示用，须对照原图。",
+ "images": {
+  "dist/figures/2173836f/p100_0.png": {
+   "sha256": "da29489473d76fc7c6f22ab8879c1adcbc060b3ff5a7efd89116a13db075c661",
+   "items": []
+  },
+  "dist/figures/2173836f/p100_1.png": {
+   "sha256": "b38ad995e301c617ddd07b00c5a2adab4f6ec9b4f52337b2386c9f41daec6c7a",
+   "items": []
+  },
+  "dist/figures/2173836f/p100_2.png": {
+   "sha256": "ae35cc3d7cc4f060cdcfeb693827bb60c8595b5e5a41e32b54389dbbea57cad0",
+   "items": []
+  },
+  "dist/figures/2173836f/p101_0.png": {
+   "sha256": "5f0ed314801e20135b65e6c835e3a0bcab6a01ce64a5f49d99387ab4bd0719a2",
+   "items": [
+    {
+     "text": "10",
+     "conf": 1.0
+    },
+    {
+     "text": "10",
+     "conf": 0.998
+    }
+   ]
+  },
+  "dist/figures/2173836f/p101_1.png": {
+   "sha256": "a0c446b69457dfca36a2a3e4ec0605440214c3384a4801ef50ac6290a5528622",
+   "items": [
+    {
+     "text": "10",
+     "conf": 0.358
+    },
+    {
+     "text": "10",
+     "conf": 0.779
+    },
+    {
+     "text": "10",
+     "conf": 0.609
+    },
+    {
+     "text": "10",
+     "conf": 0.945
+    }
+   ]
+  },
+  "dist/figures/2173836f/p27_0.png": {
+   "sha256": "4d9455fa4f16ec1efb4e593447dbcf6d2b641d26d0c9931a4619410f6e3ea0d3",
+   "items": [
+    {
+     "text": "近光灯安装高度 (m)",
+     "conf": 0.782
+    },
+    {
+     "text": "1.6",
+     "conf": 0.589
+    },
+    {
+     "text": "1.5",
+     "conf": 0.646
+    },
+    {
+     "text": "1.4",
+     "conf": 0.919
+    },
+    {
+     "text": "1.3",
+     "conf": 0.855
+    },
+    {
+     "text": "1.2",
+     "conf": 0.801
+    },
+    {
+     "text": "1.1",
+     "conf": 0.953
+    },
+    {
+     "text": "1.0",
+     "conf": 0.985
+    },
+    {
+     "text": "0.9",
+     "conf": 0.93
+    },
+    {
+     "text": "0.8",
+     "conf": 0.722
+    },
+    {
+     "text": "0.7",
+     "conf": 0.91
+    },
+    {
+     "text": "0.6",
+     "conf": 0.42
+    },
+    {
+     "text": "0.5",
+     "conf": 0.627
+    },
+    {
+     "text": "0.4",
+     "conf": 0.657
+    },
+    {
+     "text": "0.3",
+     "conf": 0.972
+    },
+    {
+     "text": "0.2",
+     "conf": 0.864
+    },
+    {
+     "text": "0.1",
+     "conf": 0.994
+    },
+    {
+     "text": "#0.5",
+     "conf": 0.217
+    },
+    {
+     "text": "#1.5",
+     "conf": 0.255
+    },
+    {
+     "text": "#2.5",
+     "conf": 0.161
+    },
+    {
+     "text": "*3.5",
+     "conf": 0.369
+    },
+    {
+     "text": "近光灯倾斜度 (%)",
+     "conf": 0.61
+    }
+   ]
+  },
+  "dist/figures/2173836f/p30_0.png": {
+   "sha256": "afb84767785fd579688193709c318faf2683c5507929cb328ec33a94656799bb",
+   "items": [
+    {
+     "text": "4巳",
+     "conf": 0.18
+    }
+   ]
+  },
+  "dist/figures/2173836f/p38_0.png": {
+   "sha256": "5fb17ebb795a18993d6e2a5ad2b6017f3a547266474c68b1eeb51675d02146c1",
+   "items": [
+    {
+     "text": "16关",
+     "conf": 0.132
+    },
+    {
+     "text": "21,26关",
+     "conf": 0.396
+    },
+    {
+     "text": "布局A",
+     "conf": 0.558
+    },
+    {
+     "text": "布局B",
+     "conf": 0.809
+    },
+    {
+     "text": "26 |",
+     "conf": 0.241
+    },
+    {
+     "text": "1",
+     "conf": 0.699
+    }
+   ]
+  },
+  "dist/figures/2173836f/p38_1.png": {
+   "sha256": "47d36817ad485fa98c9dfe78c39b02f17edf5d19328dfc7330dac5ae14ec8db0",
+   "items": [
+    {
+     "text": "前转向信号灯",
+     "conf": 0.02
+    },
+    {
+     "text": "后转向信号灯",
+     "conf": 0.268
+    },
+    {
+     "text": "最前面的侧标忐灯",
+     "conf": 0.277
+    },
+    {
+     "text": "聂后面的琥珀色恻标志灯",
+     "conf": 0.168
+    },
+    {
+     "text": "则转回倌号灯",
+     "conf": 0.007
+    }
+   ]
+  },
+  "dist/figures/2173836f/p61_0.png": {
+   "sha256": "97f9a1486d3141b316aa41e352893936fa8256cf3a66bc5e55d0df10371e4ec0",
+   "items": []
+  },
+  "dist/figures/2173836f/p61_1.png": {
+   "sha256": "222c868674ebbecab14d34b434c5be2a06af357faa61c0799036d9d9c214cb4b",
+   "items": [
+    {
+     "text": "立! 正玎",
+     "conf": 0.0
+    },
+    {
+     "text": "ILADITZNI",
+     "conf": 0.086
+    },
+    {
+     "text": "芯{{0:协忐」 ('3:",
+     "conf": 0.0
+    },
+    {
+     "text": "Us;",
+     "conf": 0.278
+    }
+   ]
+  },
+  "dist/figures/2173836f/p62_0.png": {
+   "sha256": "2e7e429197c9372a6b33502f8dc107058572d06dee5158fe4ab2d3ca05fd8489",
+   "items": [
+    {
+     "text": "515」]",
+     "conf": 0.008
+    },
+    {
+     "text": "'3 :",
+     "conf": 0.17
+    },
+    {
+     "text": "i40:亦忐灯",
+     "conf": 0.014
+    },
+    {
+     "text": "MADS'芯;| (A1讣类",
+     "conf": 0.027
+    },
+    {
+     "text": "T0iff j305 :芯~ (48",
+     "conf": 0.001
+    },
+    {
+     "text": "晨T'71D5士::'",
+     "conf": 0.023
+    },
+    {
+     "text": "(11汕类",
+     "conf": 0.03
+    }
+   ]
+  },
+  "dist/figures/2173836f/p65_0.png": {
+   "sha256": "9d75b05daed0f061a8f1507ed6020465b47ab85c0b17966749051bacc57f6a9c",
+   "items": [
+    {
+     "text": "100",
+     "conf": 0.997
+    },
+    {
+     "text": "侧杯志灯",
+     "conf": 0.412
+    },
+    {
+     "text": "前示廓灯/前位灯",
+     "conf": 0.742
+    },
+    {
+     "text": "后不廓灯/后位灯",
+     "conf": 0.603
+    },
+    {
+     "text": "100",
+     "conf": 1.0
+    },
+    {
+     "text": "侧杯志灯",
+     "conf": 0.494
+    }
+   ]
+  },
+  "dist/figures/2173836f/p65_1.png": {
+   "sha256": "daf0d7f218433fa0fb902174f1421d8ad35d9aab1aedcc069c76d8e0b392eb61",
+   "items": [
+    {
+     "text": "5000",
+     "conf": 1.0
+    },
+    {
+     "text": "午身长度",
+     "conf": 0.262
+    },
+    {
+     "text": "2000",
+     "conf": 1.0
+    },
+    {
+     "text": "右侧转向",
+     "conf": 0.843
+    },
+    {
+     "text": "3750",
+     "conf": 0.996
+    },
+    {
+     "text": "2000",
+     "conf": 0.996
+    },
+    {
+     "text": "左侧转问",
+     "conf": 0.014
+    }
+   ]
+  },
+  "dist/figures/2173836f/p66_0.png": {
+   "sha256": "bb27beb1317744a86ce9657c02b654a94c177f24fdb29e3187f890e05b377756",
+   "items": [
+    {
+     "text": "3000",
+     "conf": 1.0
+    },
+    {
+     "text": "3000",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/2173836f/p66_1.png": {
+   "sha256": "e1f82ff39c2064e062b6438ede553015352b95c8104f815c9472e4dab839a024",
+   "items": [
+    {
+     "text": "3000",
+     "conf": 0.551
+    },
+    {
+     "text": "5000",
+     "conf": 1.0
+    },
+    {
+     "text": "5000",
+     "conf": 1.0
+    },
+    {
+     "text": "3000",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/2173836f/p73_0.png": {
+   "sha256": "bb598169c4c736b2481819a18ce629926597e987aadd16ab50dde40148272057",
+   "items": [
+    {
+     "text": "基于透光面的视表面",
+     "conf": 0.122
+    }
+   ]
+  },
+  "dist/figures/2173836f/p74_0.png": {
+   "sha256": "92e6343cd45dc143b6b68f526ddc60368a4b423dfdf1149cc8ea0416957b4477",
+   "items": [
+    {
+     "text": "屏蔽框,位置不唯",
+     "conf": 0.178
+    },
+    {
+     "text": "发光面",
+     "conf": 0.992
+    },
+    {
+     "text": "可根据需要用所有可能的屏蔽框来确定发光面",
+     "conf": 0.611
+    },
+    {
+     "text": "例如:  为确定最小和最大面积",
+     "conf": 0.683
+    }
+   ]
+  },
+  "dist/figures/2173836f/p74_1.png": {
+   "sha256": "e2b58e930dc65afd5a05dea5633c0ad351b9048ebafa168b8a68072f71c954d1",
+   "items": []
+  },
+  "dist/figures/2173836f/p75_0.png": {
+   "sha256": "b4f89f95b30a231ef07544efa233943f41190ff14630f8e027f9fbf311a1855c",
+   "items": []
+  },
+  "dist/figures/2173836f/p75_1.png": {
+   "sha256": "90406c0117ad3a3bf27c1b1067b9f3c8ef50941783fe2304e15d2ddf2c434e97",
+   "items": [
+    {
+     "text": "反射镜",
+     "conf": 0.962
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.99
+    },
+    {
+     "text": "7b",
+     "conf": 0.406
+    },
+    {
+     "text": "光源",
+     "conf": 0.993
+    },
+    {
+     "text": "光源",
+     "conf": 0.99
+    },
+    {
+     "text": "7a",
+     "conf": 0.839
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.982
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.972
+    }
+   ]
+  },
+  "dist/figures/2173836f/p75_2.png": {
+   "sha256": "58781817fed0f11c30bf05286cec9a8a1587daac4f3b3b05440a4a328d7e0b14",
+   "items": [
+    {
+     "text": "反射镜",
+     "conf": 0.991
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.94
+    },
+    {
+     "text": "76",
+     "conf": 0.735
+    },
+    {
+     "text": "光源",
+     "conf": 0.994
+    },
+    {
+     "text": "光源",
+     "conf": 0.98
+    },
+    {
+     "text": "内部光学组件2",
+     "conf": 0.946
+    },
+    {
+     "text": "内部光学组件",
+     "conf": 0.943
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.98
+    },
+    {
+     "text": "~外配光镜",
+     "conf": 0.656
+    }
+   ]
+  },
+  "dist/figures/2173836f/p76_0.png": {
+   "sha256": "73c822e41fdb6def6b61d40bbe8d25f3201fc75fe04296b7213ed39a555dd4a8",
+   "items": [
+    {
+     "text": "反射镜",
+     "conf": 0.987
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.978
+    },
+    {
+     "text": "76",
+     "conf": 0.386
+    },
+    {
+     "text": "光源",
+     "conf": 0.993
+    },
+    {
+     "text": "光源",
+     "conf": 0.986
+    },
+    {
+     "text": "7a",
+     "conf": 0.498
+    },
+    {
+     "text": "内部光学组件",
+     "conf": 0.982
+    },
+    {
+     "text": "内部光学组件",
+     "conf": 0.98
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.968
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.986
+    }
+   ]
+  },
+  "dist/figures/2173836f/p76_1.png": {
+   "sha256": "86d1a4ab96fa99cd3780d1f2abb441b7fb2fd45f31660cade07755b34affcf3d",
+   "items": [
+    {
+     "text": "外配光镜",
+     "conf": 0.961
+    },
+    {
+     "text": "7",
+     "conf": 0.998
+    },
+    {
+     "text": "光导管",
+     "conf": 0.909
+    },
+    {
+     "text": "7a",
+     "conf": 0.891
+    },
+    {
+     "text": "截面A一4",
+     "conf": 0.427
+    },
+    {
+     "text": "不考虑无纹理的外配光镜;按3.1.8b) ,\"76\"为视表面",
+     "conf": 0.633
+    }
+   ]
+  },
+  "dist/figures/2173836f/p76_2.png": {
+   "sha256": "ba8c114e406312d99ff68c2229b349aa9c7bdff00d4d964925209add2c62e2c6",
+   "items": [
+    {
+     "text": "功能1:光导管 ,反射器件",
+     "conf": 0.804
+    },
+    {
+     "text": "7a",
+     "conf": 0.992
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.988
+    },
+    {
+     "text": "功能2",
+     "conf": 0.971
+    },
+    {
+     "text": "76",
+     "conf": 0.385
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "截面A一4",
+     "conf": 0.705
+    },
+    {
+     "text": "不考虑无纹理的外配光镜,按3.1.8b)",
+     "conf": 0.937
+    },
+    {
+     "text": "76 \"为视表面 ,功能2的光无法穿透功能1",
+     "conf": 0.666
+    }
+   ]
+  },
+  "dist/figures/2173836f/p77_0.png": {
+   "sha256": "08ec40226eb42988041bcaba1eaefa7be3f26757bcf9f2e62b1616323343713f",
+   "items": [
+    {
+     "text": "7b",
+     "conf": 0.314
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.992
+    },
+    {
+     "text": "光源",
+     "conf": 0.986
+    },
+    {
+     "text": "7a",
+     "conf": 0.993
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.981
+    },
+    {
+     "text": "不考虑无纹理外配光镜 ,按3.1.8b) '76\"为视表面",
+     "conf": 0.548
+    },
+    {
+     "text": "\"X\"部分不属于本功能",
+     "conf": 0.395
+    }
+   ]
+  },
+  "dist/figures/2173836f/p77_1.png": {
+   "sha256": "af8684c6ddbf5d402f24e6ce110ec675d9a7db8edd5eb5822f59222fe7d194d7",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.345
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.778
+    },
+    {
+     "text": "投影面",
+     "conf": 0.906
+    }
+   ]
+  },
+  "dist/figures/2173836f/p77_2.png": {
+   "sha256": "1936d1a83e691544a672b8afdb5926a257858ed116b034e6e14a818699324299",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.754
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.747
+    },
+    {
+     "text": "投影面",
+     "conf": 0.812
+    }
+   ]
+  },
+  "dist/figures/2173836f/p78_0.png": {
+   "sha256": "b850eaf913e2e950ce7f43884fb29c2f5026b4f505bc900dc5e99a470642b4b8",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.244
+    },
+    {
+     "text": "X 部分不属于本功能",
+     "conf": 0.559
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.653
+    },
+    {
+     "text": "投影面",
+     "conf": 0.85
+    }
+   ]
+  },
+  "dist/figures/2173836f/p78_1.png": {
+   "sha256": "61671768fcd9252fe1d9f7d73d5ad5fe0f4a4482c35154ed5f17e13b23ad6dec",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.34
+    },
+    {
+     "text": "X部分不属于本功能",
+     "conf": 0.239
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.683
+    },
+    {
+     "text": "投影面",
+     "conf": 0.942
+    }
+   ]
+  },
+  "dist/figures/2173836f/p79_0.png": {
+   "sha256": "dece959be2d26c27347a3afa153e40ce5f2c875fd9e528fe723277359cb9c6d7",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.403
+    },
+    {
+     "text": "X部分不属于本功能",
+     "conf": 0.287
+    },
+    {
+     "text": "配光镜丧面",
+     "conf": 0.255
+    },
+    {
+     "text": "投影面",
+     "conf": 0.957
+    }
+   ]
+  },
+  "dist/figures/2173836f/p79_1.png": {
+   "sha256": "3f8fd8f718b849aa929dbd9a07fa65a9b50e0817b93cacba3c0b967c81c73247",
+   "items": [
+    {
+     "text": "功能1的7a",
+     "conf": 0.958
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.984
+    },
+    {
+     "text": "功能1",
+     "conf": 0.99
+    },
+    {
+     "text": "功能1与功能2不混合",
+     "conf": 0.908
+    },
+    {
+     "text": "功能2的7a-",
+     "conf": 0.929
+    },
+    {
+     "text": "功能2",
+     "conf": 0.99
+    },
+    {
+     "text": "7a",
+     "conf": 0.853
+    },
+    {
+     "text": "4一1",
+     "conf": 0.338
+    }
+   ]
+  },
+  "dist/figures/2173836f/p79_2.png": {
+   "sha256": "1446fd1ecc57b10f38c55fda7c7cd08971a74f4110dddab9936d9abfe22467e0",
+   "items": [
+    {
+     "text": "功能1的7a",
+     "conf": 0.976
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.993
+    },
+    {
+     "text": "功能1",
+     "conf": 0.965
+    },
+    {
+     "text": "2",
+     "conf": 0.999
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.922
+    },
+    {
+     "text": "功能2",
+     "conf": 0.983
+    },
+    {
+     "text": "功能2的7a",
+     "conf": 0.692
+    },
+    {
+     "text": "474",
+     "conf": 0.566
+    }
+   ]
+  },
+  "dist/figures/2173836f/p80_0.png": {
+   "sha256": "b6c2a6c0319881d0f085aa5878cbd88ae3979dd6f8daaa8fc85269be09fb6e32",
+   "items": [
+    {
+     "text": "76",
+     "conf": 0.341
+    },
+    {
+     "text": "外配",
+     "conf": 0.983
+    },
+    {
+     "text": "功能1",
+     "conf": 0.983
+    },
+    {
+     "text": "光镜",
+     "conf": 0.994
+    },
+    {
+     "text": "2",
+     "conf": 0.999
+    },
+    {
+     "text": "功能2",
+     "conf": 0.989
+    },
+    {
+     "text": "~T1功能1与功能2不混合",
+     "conf": 0.107
+    },
+    {
+     "text": "功能1:光导管",
+     "conf": 0.957
+    },
+    {
+     "text": "7b",
+     "conf": 0.779
+    },
+    {
+     "text": "外配",
+     "conf": 0.986
+    },
+    {
+     "text": "光镜_",
+     "conf": 0.258
+    },
+    {
+     "text": "功能2",
+     "conf": 0.983
+    },
+    {
+     "text": "金",
+     "conf": 0.101
+    },
+    {
+     "text": "2",
+     "conf": 0.998
+    },
+    {
+     "text": "功能1与功能2不混合",
+     "conf": 0.934
+    },
+    {
+     "text": "A-A",
+     "conf": 0.424
+    },
+    {
+     "text": "功能1:光导管",
+     "conf": 0.945
+    },
+    {
+     "text": "7b",
+     "conf": 0.619
+    },
+    {
+     "text": "外配",
+     "conf": 0.967
+    },
+    {
+     "text": "光镜_",
+     "conf": 0.241
+    },
+    {
+     "text": "功能2",
+     "conf": 0.989
+    },
+    {
+     "text": "岔",
+     "conf": 0.007
+    },
+    {
+     "text": "2",
+     "conf": 0.993
+    },
+    {
+     "text": "功能1与功能2不混合",
+     "conf": 0.912
+    },
+    {
+     "text": "4-4",
+     "conf": 0.622
+    }
+   ]
+  },
+  "dist/figures/2173836f/p81_0.png": {
+   "sha256": "52bc4aa11c47d41ad46f3f23f0f5c6a97821ce186d77fe1a738bff20c6bb12cf",
+   "items": [
+    {
+     "text": "功能1:光导管",
+     "conf": 0.912
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.982
+    },
+    {
+     "text": "功能2",
+     "conf": 0.972
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.937
+    },
+    {
+     "text": "7a",
+     "conf": 0.999
+    },
+    {
+     "text": "4-4",
+     "conf": 0.5
+    },
+    {
+     "text": "功能1:光导管",
+     "conf": 0.96
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.971
+    },
+    {
+     "text": "功能2",
+     "conf": 0.984
+    },
+    {
+     "text": "2",
+     "conf": 0.998
+    },
+    {
+     "text": "7a",
+     "conf": 0.985
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.932
+    },
+    {
+     "text": "4",
+     "conf": 0.978
+    },
+    {
+     "text": "A一A",
+     "conf": 0.211
+    },
+    {
+     "text": "功能1:光导管,反射器件",
+     "conf": 0.932
+    },
+    {
+     "text": "7a",
+     "conf": 0.842
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.982
+    },
+    {
+     "text": "功能2",
+     "conf": 0.984
+    },
+    {
+     "text": "A一4",
+     "conf": 0.324
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.956
+    }
+   ]
+  },
+  "dist/figures/2173836f/p82_0.png": {
+   "sha256": "6d81652ad93e576286aa941b5a0265c3b76d7ac76dc1b16b4fa2aea3c32b87bb",
+   "items": [
+    {
+     "text": "功能1:  光导管",
+     "conf": 0.839
+    },
+    {
+     "text": "反射器件",
+     "conf": 0.956
+    },
+    {
+     "text": "7a",
+     "conf": 0.74
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.987
+    },
+    {
+     "text": "功能2",
+     "conf": 0.982
+    },
+    {
+     "text": "76",
+     "conf": 0.476
+    },
+    {
+     "text": "功能1和功能2不混合",
+     "conf": 0.917
+    },
+    {
+     "text": "4-4",
+     "conf": 0.792
+    }
+   ]
+  },
+  "dist/figures/2173836f/p82_1.png": {
+   "sha256": "bf13385d1347408d8ff587d135d6894f96da33831b01c76775d84a6465a5af79",
+   "items": [
+    {
+     "text": "功能1:光导管",
+     "conf": 0.932
+    },
+    {
+     "text": "76",
+     "conf": 0.293
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.978
+    },
+    {
+     "text": "功能2",
+     "conf": 0.99
+    },
+    {
+     "text": "A",
+     "conf": 0.124
+    },
+    {
+     "text": "2",
+     "conf": 0.999
+    },
+    {
+     "text": "功能1和功能2混合",
+     "conf": 0.949
+    },
+    {
+     "text": "73",
+     "conf": 0.687
+    },
+    {
+     "text": "4-4",
+     "conf": 0.863
+    }
+   ]
+  },
+  "dist/figures/2173836f/p83_0.png": {
+   "sha256": "d1ea7877882f8695f97726cd86a90dd9799693e958b21b1b4fe315d0b151081d",
+   "items": [
+    {
+     "text": "前视红光不可见度",
+     "conf": 0.809
+    },
+    {
+     "text": "1591",
+     "conf": 0.942
+    },
+    {
+     "text": "区",
+     "conf": 0.99
+    },
+    {
+     "text": "域",
+     "conf": 0.504
+    },
+    {
+     "text": "159",
+     "conf": 0.697
+    },
+    {
+     "text": "25 m",
+     "conf": 0.941
+    },
+    {
+     "text": "4150",
+     "conf": 0.874
+    },
+    {
+     "text": "区",
+     "conf": 0.932
+    },
+    {
+     "text": "150",
+     "conf": 0.742
+    },
+    {
+     "text": "25 m",
+     "conf": 0.821
+    },
+    {
+     "text": "后视白光不可见度",
+     "conf": 0.713
+    }
+   ]
+  },
+  "dist/figures/92b25631/p110_0.png": {
+   "sha256": "fd4e6c3f9c76b763d6c9b2da311e23d4b0dc5924f336171de75e8c1380f9001b",
+   "items": [
+    {
+     "text": "8",
+     "conf": 1.0
+    },
+    {
+     "text": "3",
+     "conf": 1.0
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "3",
+     "conf": 0.391
+    },
+    {
+     "text": "8",
+     "conf": 1.0
+    },
+    {
+     "text": "7a一",
+     "conf": 0.849
+    },
+    {
+     "text": "Apparent surface basec",
+     "conf": 0.915
+    }
+   ]
+  },
+  "dist/figures/92b25631/p111_0.png": {
+   "sha256": "6e35793b6a0fd2d9f4bce1045ed30aae9759349dcd6cd0be44a339699c4f0120",
+   "items": [
+    {
+     "text": "Scrcens; otl",
+     "conf": 0.406
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "3",
+     "conf": 0.997
+    },
+    {
+     "text": "Illuminatine",
+     "conf": 0.734
+    }
+   ]
+  },
+  "dist/figures/92b25631/p111_1.png": {
+   "sha256": "377efaa525beb1c72c43c92348fe018cba844f7ba22ab5ef27d49de0d9901acd",
+   "items": [
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "3",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p112_0.png": {
+   "sha256": "ff091b68f723dedd25decb7c01d2aca826958a062faf19de899c206cbfc1b51e",
+   "items": [
+    {
+     "text": "8",
+     "conf": 1.0
+    },
+    {
+     "text": "4",
+     "conf": 1.0
+    },
+    {
+     "text": "It surfacc bascd On",
+     "conf": 0.245
+    },
+    {
+     "text": "Apparent surface basc",
+     "conf": 0.914
+    },
+    {
+     "text": "ninating surface",
+     "conf": 0.522
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "surfacc",
+     "conf": 0.554
+    }
+   ]
+  },
+  "dist/figures/92b25631/p112_1.png": {
+   "sha256": "322f7baeb23b6e7593fe4dee0c227751d1f89719ac4b86d9f9577280f1c4301c",
+   "items": [
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "18",
+     "conf": 0.398
+    }
+   ]
+  },
+  "dist/figures/92b25631/p113_0.png": {
+   "sha256": "e36a23d2776bf9bf340855b23f278c6a11d16227b95427efe5a626915b9ef170",
+   "items": [
+    {
+     "text": "5",
+     "conf": 1.0
+    },
+    {
+     "text": "7a",
+     "conf": 0.94
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "18",
+     "conf": 0.985
+    }
+   ]
+  },
+  "dist/figures/92b25631/p113_1.png": {
+   "sha256": "ffcb20019dbed9e8966a27d587570365270adc42520f9d8fc9a6ef4ce87a2b02",
+   "items": [
+    {
+     "text": "5",
+     "conf": 1.0
+    },
+    {
+     "text": "7a一",
+     "conf": 0.755
+    },
+    {
+     "text": "8",
+     "conf": 1.0
+    },
+    {
+     "text": "4",
+     "conf": 1.0
+    },
+    {
+     "text": "2",
+     "conf": 0.912
+    }
+   ]
+  },
+  "dist/figures/92b25631/p114_0.png": {
+   "sha256": "12f4bfbf24bf05b11015a231c57d35bf6cdcc1a92740b6dffdda876e601d2e5e",
+   "items": [
+    {
+     "text": "5",
+     "conf": 0.979
+    },
+    {
+     "text": "尺",
+     "conf": 0.954
+    },
+    {
+     "text": "7b",
+     "conf": 0.471
+    },
+    {
+     "text": "尺",
+     "conf": 0.959
+    },
+    {
+     "text": "5",
+     "conf": 0.459
+    },
+    {
+     "text": "5",
+     "conf": 1.0
+    },
+    {
+     "text": "5",
+     "conf": 0.333
+    },
+    {
+     "text": "7a",
+     "conf": 0.961
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p114_1.png": {
+   "sha256": "fb9b378b25c3d49d9374f7822c62f314cf03f50113929e8233d1e96a5ea8dd46",
+   "items": [
+    {
+     "text": "尺",
+     "conf": 0.848
+    },
+    {
+     "text": "6",
+     "conf": 0.924
+    },
+    {
+     "text": "7b",
+     "conf": 0.61
+    },
+    {
+     "text": "尺",
+     "conf": 0.944
+    },
+    {
+     "text": "8",
+     "conf": 0.306
+    },
+    {
+     "text": "5",
+     "conf": 0.314
+    },
+    {
+     "text": "7a",
+     "conf": 0.976
+    },
+    {
+     "text": "IO 2",
+     "conf": 0.672
+    },
+    {
+     "text": "I0",
+     "conf": 0.183
+    }
+   ]
+  },
+  "dist/figures/92b25631/p114_2.png": {
+   "sha256": "4b87899aa69a520d42016d3e24cecaf7410e16cebb9af346e35e664209ad4d4e",
+   "items": [
+    {
+     "text": "5",
+     "conf": 1.0
+    },
+    {
+     "text": "尺",
+     "conf": 0.932
+    },
+    {
+     "text": "7b",
+     "conf": 0.422
+    },
+    {
+     "text": "尺",
+     "conf": 0.855
+    },
+    {
+     "text": "5",
+     "conf": 0.195
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "7a",
+     "conf": 0.973
+    },
+    {
+     "text": "I0",
+     "conf": 0.67
+    },
+    {
+     "text": "I0",
+     "conf": 0.596
+    }
+   ]
+  },
+  "dist/figures/92b25631/p115_0.png": {
+   "sha256": "27c20b3db20dc0d0648b925061c821838b64a5ec6bbfb7ff059e05a419398a96",
+   "items": [
+    {
+     "text": "A",
+     "conf": 0.998
+    },
+    {
+     "text": "7b",
+     "conf": 0.339
+    },
+    {
+     "text": "LG",
+     "conf": 0.918
+    },
+    {
+     "text": "7a",
+     "conf": 0.993
+    },
+    {
+     "text": "Section",
+     "conf": 0.998
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    },
+    {
+     "text": "In the case where the non-textured",
+     "conf": 0.354
+    }
+   ]
+  },
+  "dist/figures/92b25631/p115_1.png": {
+   "sha256": "272d7882b4ce52fe8d4b069ba69b4de9f85c8d3f98f7d6b0607a7749b273529a",
+   "items": [
+    {
+     "text": "IA",
+     "conf": 0.717
+    },
+    {
+     "text": "LG,",
+     "conf": 0.966
+    },
+    {
+     "text": "Rand FI",
+     "conf": 0.494
+    },
+    {
+     "text": "7a一",
+     "conf": 0.405
+    },
+    {
+     "text": "F2",
+     "conf": 0.952
+    },
+    {
+     "text": "7b",
+     "conf": 0.479
+    },
+    {
+     "text": ";A",
+     "conf": 0.482
+    },
+    {
+     "text": "Section",
+     "conf": 0.991
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    },
+    {
+     "text": "In the case where the non textured outer lens is excluded;",
+     "conf": 0.484
+    },
+    {
+     "text": "76",
+     "conf": 0.122
+    },
+    {
+     "text": "HTTCTt CTITACC ACCOTMIC to",
+     "conf": 0.009
+    },
+    {
+     "text": "TITAUTATh",
+     "conf": 0.033
+    },
+    {
+     "text": "10",
+     "conf": 0.836
+    },
+    {
+     "text": "9r",
+     "conf": 0.119
+    }
+   ]
+  },
+  "dist/figures/92b25631/p116_0.png": {
+   "sha256": "7a2dfdfad26a8c4ee6da97e3f2c0468f2c950890ab917d72da907ac30cbda8d1",
+   "items": [
+    {
+     "text": "7b",
+     "conf": 0.758
+    },
+    {
+     "text": "尺",
+     "conf": 0.383
+    },
+    {
+     "text": "7a",
+     "conf": 0.996
+    }
+   ]
+  },
+  "dist/figures/92b25631/p116_1.png": {
+   "sha256": "b3b3a0cb85cee6637fef64dad2442a6437c8260c539ff0e7c247b85bca77c36e",
+   "items": [
+    {
+     "text": "DECLARED",
+     "conf": 0.994
+    },
+    {
+     "text": "AXIS OF",
+     "conf": 0.624
+    },
+    {
+     "text": "REFERENCE",
+     "conf": 0.994
+    },
+    {
+     "text": "Surface Of the lens",
+     "conf": 0.551
+    },
+    {
+     "text": "shown flat for",
+     "conf": 0.701
+    },
+    {
+     "text": "convenience",
+     "conf": 0.935
+    },
+    {
+     "text": "b",
+     "conf": 0.809
+    },
+    {
+     "text": "PROJEC",
+     "conf": 0.814
+    },
+    {
+     "text": "VIEW",
+     "conf": 0.956
+    }
+   ]
+  },
+  "dist/figures/92b25631/p117_0.png": {
+   "sha256": "6e1a412c389ba2bab61d3e9627bc0d350d3e8357070140de56ca4f530c47d1b1",
+   "items": [
+    {
+     "text": "DECLARED",
+     "conf": 0.989
+    },
+    {
+     "text": "AXIS OE",
+     "conf": 0.385
+    },
+    {
+     "text": "REFERENCE",
+     "conf": 0.779
+    },
+    {
+     "text": "Surface Of [h",
+     "conf": 0.359
+    },
+    {
+     "text": "shown flat fo",
+     "conf": 0.736
+    },
+    {
+     "text": "COIVCllicIcc",
+     "conf": 0.211
+    },
+    {
+     "text": "PROJECTED",
+     "conf": 0.891
+    }
+   ]
+  },
+  "dist/figures/92b25631/p117_1.png": {
+   "sha256": "cc5f6dbbd6098c0b484a7b887e3bfe3f4cdd4b9f44a5c4c9aa1a53f82f4bb1d0",
+   "items": [
+    {
+     "text": "DECLARED",
+     "conf": 0.61
+    },
+    {
+     "text": "AXIS OE",
+     "conf": 0.712
+    },
+    {
+     "text": "REFERENCE",
+     "conf": 0.929
+    },
+    {
+     "text": "Surface of the lels",
+     "conf": 0.371
+    },
+    {
+     "text": "Shown flat for",
+     "conf": 0.637
+    },
+    {
+     "text": "Xis not part ofthis functior",
+     "conf": 0.643
+    },
+    {
+     "text": "convenience",
+     "conf": 0.976
+    },
+    {
+     "text": "PROJECTED VIEW",
+     "conf": 0.81
+    }
+   ]
+  },
+  "dist/figures/92b25631/p118_0.png": {
+   "sha256": "8fccfa0b15b1459f5213e59ecc01e3f7472cd0573f9e28362c24e6ed7ebea12f",
+   "items": [
+    {
+     "text": "DECLARPD",
+     "conf": 0.761
+    },
+    {
+     "text": "AXIS OE",
+     "conf": 0.461
+    },
+    {
+     "text": "REFERENCE",
+     "conf": 0.779
+    },
+    {
+     "text": "Surface of the",
+     "conf": 0.642
+    },
+    {
+     "text": "Xis Iot",
+     "conf": 0.52
+    },
+    {
+     "text": "Ofthis",
+     "conf": 0.952
+    },
+    {
+     "text": "Shown tlat for",
+     "conf": 0.526
+    },
+    {
+     "text": "function",
+     "conf": 0.939
+    },
+    {
+     "text": "convenience",
+     "conf": 0.845
+    },
+    {
+     "text": "PROJECTED VIEI",
+     "conf": 0.689
+    },
+    {
+     "text": "Part",
+     "conf": 0.891
+    }
+   ]
+  },
+  "dist/figures/92b25631/p118_1.png": {
+   "sha256": "b3ee943b4172da255fca7a0bccafb95971e9e8201b937b456d72b6c4c03ec1a2",
+   "items": [
+    {
+     "text": "DECLARED",
+     "conf": 0.988
+    },
+    {
+     "text": "AXIS OP",
+     "conf": 0.355
+    },
+    {
+     "text": "REFERENCE",
+     "conf": 0.746
+    },
+    {
+     "text": "Xis not part ofthis finction",
+     "conf": 0.464
+    },
+    {
+     "text": "Surfacc ofthc",
+     "conf": 0.543
+    },
+    {
+     "text": "Shown flat fOI",
+     "conf": 0.788
+    },
+    {
+     "text": "convenicnce",
+     "conf": 0.635
+    },
+    {
+     "text": "PROJECTED",
+     "conf": 0.926
+    }
+   ]
+  },
+  "dist/figures/92b25631/p119_0.png": {
+   "sha256": "fb9a630439f99748bea30db89e18d27bb83787708d986620635450bff007e70c",
+   "items": [
+    {
+     "text": "7a for FI_",
+     "conf": 0.404
+    },
+    {
+     "text": "2",
+     "conf": 0.428
+    },
+    {
+     "text": "7a for F2",
+     "conf": 0.703
+    },
+    {
+     "text": "F2",
+     "conf": 0.937
+    },
+    {
+     "text": "7a一",
+     "conf": 0.261
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p119_1.png": {
+   "sha256": "8a842dfcba85e18c44d907089905c1e8fec65d2f77de1ff628701438056e799f",
+   "items": [
+    {
+     "text": "A",
+     "conf": 0.998
+    },
+    {
+     "text": "7a for F",
+     "conf": 0.587
+    },
+    {
+     "text": "F",
+     "conf": 0.519
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "F2",
+     "conf": 0.96
+    },
+    {
+     "text": "7a for F2-",
+     "conf": 0.411
+    },
+    {
+     "text": "'A",
+     "conf": 0.37
+    },
+    {
+     "text": "AA\"",
+     "conf": 0.463
+    }
+   ]
+  },
+  "dist/figures/92b25631/p120_0.png": {
+   "sha256": "6088bba5fc05acdf53f2e35587a5ffdd0a048469e3e725b55df04fdc670e0a5b",
+   "items": [
+    {
+     "text": "7b",
+     "conf": 0.652
+    },
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "F1",
+     "conf": 0.806
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "F2",
+     "conf": 0.952
+    },
+    {
+     "text": "'A",
+     "conf": 0.503
+    },
+    {
+     "text": "AA\"",
+     "conf": 0.426
+    }
+   ]
+  },
+  "dist/figures/92b25631/p120_1.png": {
+   "sha256": "520b913bde4466563c5b051f24f7042e504c6d22700be39a946723e3faf0da78",
+   "items": [
+    {
+     "text": "76",
+     "conf": 0.367
+    },
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "LGand F",
+     "conf": 0.99
+    },
+    {
+     "text": "F2",
+     "conf": 0.95
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "A",
+     "conf": 0.993
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p120_2.png": {
+   "sha256": "57e0e56a6776985a9564ccf457dcb69ae9731a1825998878cdaac61fdd67c5c5",
+   "items": [
+    {
+     "text": "7b",
+     "conf": 0.507
+    },
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "LGand F",
+     "conf": 0.984
+    },
+    {
+     "text": "F2",
+     "conf": 0.918
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "A",
+     "conf": 0.998
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p121_0.png": {
+   "sha256": "c2e9c3a5f8b49fa4f20a6bd612ac899a6bb1f6b412391bb67bd772c41bf10861",
+   "items": [
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "LG and F",
+     "conf": 0.642
+    },
+    {
+     "text": "F2",
+     "conf": 0.961
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "7a",
+     "conf": 0.984
+    },
+    {
+     "text": "A",
+     "conf": 0.999
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p121_1.png": {
+   "sha256": "2420a0a5c13783897c1a19b1778d1a6b6e238b115d68c6760be75cd310eccf3e",
+   "items": [
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "LG and F",
+     "conf": 0.481
+    },
+    {
+     "text": "F2",
+     "conf": 0.877
+    },
+    {
+     "text": "2",
+     "conf": 1.0
+    },
+    {
+     "text": "7a",
+     "conf": 0.984
+    },
+    {
+     "text": "A",
+     "conf": 0.998
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p121_2.png": {
+   "sha256": "5136873109e3da6dc964cfd49b029adee43ed083cf00f8cd41e667a65b3fc57e",
+   "items": [
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "LG, Rand Fl",
+     "conf": 0.509
+    },
+    {
+     "text": "7a",
+     "conf": 0.97
+    },
+    {
+     "text": "F2",
+     "conf": 0.984
+    },
+    {
+     "text": ";A",
+     "conf": 0.434
+    }
+   ]
+  },
+  "dist/figures/92b25631/p122_0.png": {
+   "sha256": "a340ae8ec86e0878587f94ac997f121609a2a992738321a8878be32cdb77e31a",
+   "items": [
+    {
+     "text": "A",
+     "conf": 0.712
+    },
+    {
+     "text": "LG,",
+     "conf": 0.8
+    },
+    {
+     "text": "Rand Fl",
+     "conf": 0.563
+    },
+    {
+     "text": "7a",
+     "conf": 0.608
+    },
+    {
+     "text": "F2",
+     "conf": 0.96
+    },
+    {
+     "text": "76",
+     "conf": 0.467
+    },
+    {
+     "text": ";A",
+     "conf": 0.545
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p122_1.png": {
+   "sha256": "cbe70897e75c4c039f74cd9d6964a5cc809fd970e9b6531ddca7d0bcc5f2d056",
+   "items": [
+    {
+     "text": "A",
+     "conf": 1.0
+    },
+    {
+     "text": "LGand F",
+     "conf": 0.966
+    },
+    {
+     "text": "76",
+     "conf": 0.382
+    },
+    {
+     "text": "F2",
+     "conf": 0.856
+    },
+    {
+     "text": "7a",
+     "conf": 0.447
+    },
+    {
+     "text": "A",
+     "conf": 0.998
+    },
+    {
+     "text": "AA",
+     "conf": 1.0
+    }
+   ]
+  },
+  "dist/figures/92b25631/p144_0.png": {
+   "sha256": "6893060f89a562982fb0e5a8ea5e183007022532d5b701f964ac4d4022e0708b",
+   "items": [
+    {
+     "text": "2m",
+     "conf": 0.982
+    },
+    {
+     "text": "3m",
+     "conf": 0.887
+    },
+    {
+     "text": "f10 m",
+     "conf": 0.539
+    },
+    {
+     "text": "f10m",
+     "conf": 0.842
+    }
+   ]
+  },
+  "dist/figures/92b25631/p144_1.png": {
+   "sha256": "e555d4fce86d8141c67f8422f30a48292a25c10004ad9a5422f198a35bfc32fc",
+   "items": [
+    {
+     "text": "UM",
+     "conf": 0.485
+    },
+    {
+     "text": "110 m",
+     "conf": 0.242
+    },
+    {
+     "text": "fI0mf",
+     "conf": 0.172
+    }
+   ]
+  },
+  "dist/figures/92b25631/p146_0.png": {
+   "sha256": "1106a05380ac060cd6d3167bcd06af0240afee0f5d8b955638e70bb6da6a98b5",
+   "items": []
+  },
+  "dist/figures/92b25631/p146_1.png": {
+   "sha256": "5d5e0b2117abd2a481d939e9ed7407fd7602b2cda3e141ae73ff006626730699",
+   "items": []
+  },
+  "dist/figures/92b25631/p146_2.png": {
+   "sha256": "9ba24e908af545373e4fad92979e65a4495a23ad31164cbed6fae41c0f8959c8",
+   "items": []
+  },
+  "dist/figures/92b25631/p146_3.png": {
+   "sha256": "c40c608cb0c101830ef46095447c4d7b499e7977cf1d3c153a056289cb8d55b4",
+   "items": []
+  },
+  "dist/figures/92b25631/p42_0.png": {
+   "sha256": "a0bc91ea9e3cf8a02a551c0d2791641841a47d9a8893b6d3ee8beed7b1c03664",
+   "items": [
+    {
+     "text": "Headlamp mounting height (m)",
+     "conf": 0.802
+    },
+    {
+     "text": "1.6",
+     "conf": 0.67
+    },
+    {
+     "text": "1.4",
+     "conf": 0.984
+    },
+    {
+     "text": "1.3",
+     "conf": 0.935
+    },
+    {
+     "text": "1.2",
+     "conf": 0.983
+    },
+    {
+     "text": "1.1",
+     "conf": 0.986
+    },
+    {
+     "text": "1.0",
+     "conf": 0.987
+    },
+    {
+     "text": "0.8",
+     "conf": 0.999
+    },
+    {
+     "text": "1.5",
+     "conf": 0.977
+    },
+    {
+     "text": "-2.5",
+     "conf": 0.473
+    },
+    {
+     "text": "-3.5",
+     "conf": 0.752
+    },
+    {
+     "text": "Aiming (%)",
+     "conf": 0.938
+    }
+   ]
+  },
+  "dist/figures/92b25631/p79_0.png": {
+   "sha256": "3929977aa31b2bdd149189dd057d1e0e873eaf1f74b2b937f453e3088b704603",
+   "items": [
+    {
+     "text": "Lotor tehicle",
+     "conf": 0.21
+    },
+    {
+     "text": "Orerallength",
+     "conf": 0.453
+    }
+   ]
+  },
+  "dist/figures/92b25631/p79_1.png": {
+   "sha256": "484956036241946f2cd2f1db1c5fd7764b5a37ffa5b9a5ada081e5286c8ca72d",
+   "items": [
+    {
+     "text": "Traler",
+     "conf": 0.557
+    },
+    {
+     "text": "Orerallength ecluding he drarbar",
+     "conf": 0.335
+    }
+   ]
+  },
+  "dist/figures/92b25631/p83_0.png": {
+   "sha256": "a1a16866c4395b4c46cdd62819b8e9ae583acba9c9be3587cd97cb31f4910b4a",
+   "items": [
+    {
+     "text": "Lighting units being simultaneously energized for a given lighting mode:",
+     "conf": 0.749
+    },
+    {
+     "text": "No_",
+     "conf": 0.234
+    },
+    {
+     "text": "and 9:",
+     "conf": 0.725
+    },
+    {
+     "text": "(two symmetrically placed lighting units)",
+     "conf": 0.841
+    },
+    {
+     "text": "No_",
+     "conf": 0.234
+    },
+    {
+     "text": "and 11:",
+     "conf": 0.446
+    },
+    {
+     "text": "(two symmetrically placed lighting units)",
+     "conf": 0.74
+    },
+    {
+     "text": "No_",
+     "conf": 0.438
+    },
+    {
+     "text": "4 and 8:",
+     "conf": 0.812
+    },
+    {
+     "text": "(two additional lighting units)",
+     "conf": 0.77
+    },
+    {
+     "text": "Lighting units not",
+     "conf": 0.828
+    },
+    {
+     "text": "energized for said lighting mode:",
+     "conf": 0.648
+    },
+    {
+     "text": "No_",
+     "conf": 0.438
+    },
+    {
+     "text": "2 and 10:",
+     "conf": 0.902
+    },
+    {
+     "text": "(two symmetrically placed lighting units)",
+     "conf": 0.85
+    },
+    {
+     "text": "No. 5:",
+     "conf": 0.783
+    },
+    {
+     "text": "(additional lighting unit)",
+     "conf": 0.906
+    },
+    {
+     "text": "No_",
+     "conf": 0.234
+    },
+    {
+     "text": "6 and 7:",
+     "conf": 0.666
+    },
+    {
+     "text": "(t0",
+     "conf": 0.496
+    },
+    {
+     "text": "symmetrically placed lighting units)",
+     "conf": 0.723
+    },
+    {
+     "text": "Horizontal dimcnsions 讧 Iml:",
+     "conf": 0.254
+    },
+    {
+     "text": "A <400",
+     "conf": 0.821
+    },
+    {
+     "text": "B2600_",
+     "conf": 0.813
+    },
+    {
+     "text": "OI",
+     "conf": 0.576
+    },
+    {
+     "text": "2400 a vehicle overall width",
+     "conf": 0.522
+    },
+    {
+     "text": "1,300 mnl",
+     "conf": 0.246
+    },
+    {
+     "text": "IOWCVCI",
+     "conf": 0.666
+    },
+    {
+     "text": "110",
+     "conf": 0.587
+    },
+    {
+     "text": "requirement for category Mi and Ni vehicles",
+     "conf": 0.548
+    },
+    {
+     "text": "C<200",
+     "conf": 0.994
+    },
+    {
+     "text": "卫<140",
+     "conf": 0.213
+    },
+    {
+     "text": "Vertical dimcnsions i Ill:",
+     "conf": 0.465
+    },
+    {
+     "text": "D< 400",
+     "conf": 0.947
+    },
+    {
+     "text": "卫2 250",
+     "conf": 0.149
+    },
+    {
+     "text": "6<1,200",
+     "conf": 0.665
+    },
+    {
+     "text": "bcing",
+     "conf": 0.533
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p25_0.png": {
+   "sha256": "e485b2c88bbc601a737be9a43ae24c7ca0a02f4200a86d15b1a4118967ee6055",
+   "items": [
+    {
+     "text": "hlm",
+     "conf": 0.556
+    },
+    {
+     "text": "1.3",
+     "conf": 0.562
+    },
+    {
+     "text": "1.2",
+     "conf": 0.747
+    },
+    {
+     "text": "11",
+     "conf": 0.986
+    },
+    {
+     "text": "1.0",
+     "conf": 0.979
+    },
+    {
+     "text": "0.8",
+     "conf": 0.988
+    },
+    {
+     "text": "0.5",
+     "conf": 0.885
+    },
+    {
+     "text": "1.0",
+     "conf": 0.941
+    },
+    {
+     "text": "1.5",
+     "conf": 0.548
+    },
+    {
+     "text": "2.0",
+     "conf": 0.911
+    },
+    {
+     "text": "2.5",
+     "conf": 0.779
+    },
+    {
+     "text": "3.0",
+     "conf": 0.956
+    },
+    {
+     "text": "3.5i/9",
+     "conf": 0.152
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p30_0.png": {
+   "sha256": "5fd457bd1b2757ef5d7af797ce1bae1e8cb80a0a344458baa73f0ce4708137cb",
+   "items": [
+    {
+     "text": "1, la,16类",
+     "conf": 0.341
+    },
+    {
+     "text": "80",
+     "conf": 1.0
+    },
+    {
+     "text": "60",
+     "conf": 0.943
+    },
+    {
+     "text": "80",
+     "conf": 1.0
+    },
+    {
+     "text": "2a,21类",
+     "conf": 0.519
+    },
+    {
+     "text": "布局4",
+     "conf": 0.984
+    },
+    {
+     "text": "45",
+     "conf": 1.0
+    },
+    {
+     "text": "45。",
+     "conf": 0.349
+    },
+    {
+     "text": "5,6类",
+     "conf": 0.68
+    },
+    {
+     "text": "80",
+     "conf": 1.0
+    },
+    {
+     "text": "2a,26类",
+     "conf": 0.838
+    },
+    {
+     "text": "布局B",
+     "conf": 0.857
+    },
+    {
+     "text": "45。",
+     "conf": 0.916
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p31_0.png": {
+   "sha256": "61c7a576440f2d812e75ba68370af2231d1b9cc726a5982b04d86cfbf03d7c0c",
+   "items": [
+    {
+     "text": "前转向信号灯",
+     "conf": 0.632
+    },
+    {
+     "text": "后转向信号灯",
+     "conf": 0.588
+    },
+    {
+     "text": "45",
+     "conf": 0.72
+    },
+    {
+     "text": "30",
+     "conf": 0.982
+    },
+    {
+     "text": "60",
+     "conf": 0.998
+    },
+    {
+     "text": "30。",
+     "conf": 0.816
+    },
+    {
+     "text": "45",
+     "conf": 0.752
+    },
+    {
+     "text": "45",
+     "conf": 0.794
+    },
+    {
+     "text": "45",
+     "conf": 1.0
+    },
+    {
+     "text": "45",
+     "conf": 0.999
+    },
+    {
+     "text": "45",
+     "conf": 1.0
+    },
+    {
+     "text": "最后面的琥珩色侧标忐灯",
+     "conf": 0.251
+    },
+    {
+     "text": "最前面的侧标志灯",
+     "conf": 0.73
+    },
+    {
+     "text": "侧转向信号灯",
+     "conf": 0.71
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p50_0.png": {
+   "sha256": "ea66c71d5cbd4ef41d694a2080a2e4acf18b0b4a3b6839543f989f0413b8abce",
+   "items": [
+    {
+     "text": "10",
+     "conf": 1.0
+    },
+    {
+     "text": "10",
+     "conf": 0.0
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p56_0.png": {
+   "sha256": "5415c463b518c50414ed738b09a2d57e10bd8a88e69067414b0a9d39451d6603",
+   "items": []
+  },
+  "dist/figures/f86e6c73/p63_0.png": {
+   "sha256": "f8e632b2e7117faebad965c60259b0405769496f1eba2d25ee953244118d06fe",
+   "items": [
+    {
+     "text": "基于透光面的视表面",
+     "conf": 0.916
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p63_1.png": {
+   "sha256": "b03eac70b240e1fed9427f3a3309ec2e614977cf7467251e0d3170055a985854",
+   "items": [
+    {
+     "text": "屏蔽框。位置不唯",
+     "conf": 0.122
+    },
+    {
+     "text": "发光面",
+     "conf": 0.98
+    },
+    {
+     "text": "可根据需要用所有可能的屏蔽框来确定发光面",
+     "conf": 0.23
+    },
+    {
+     "text": "例如:  为确定聂小和聂人面积",
+     "conf": 0.19
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p64_0.png": {
+   "sha256": "20444e6291ec0d55aae1fe44601b094e4c90c92156a6f453f7c45c534aaf8711",
+   "items": []
+  },
+  "dist/figures/f86e6c73/p64_1.png": {
+   "sha256": "d21c4580ea9e8ad3ad03d26437bd7c97302eed798830e75d7c89050d3fb2f9f1",
+   "items": [
+    {
+     "text": "7",
+     "conf": 0.898
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p65_0.png": {
+   "sha256": "0759c6df93461a55ddecfeecaa57b9343f3f7b6fa6ea4f3ff5c75c2747129867",
+   "items": [
+    {
+     "text": "反射镜",
+     "conf": 0.971
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.986
+    },
+    {
+     "text": "光源",
+     "conf": 0.991
+    },
+    {
+     "text": "7",
+     "conf": 0.999
+    },
+    {
+     "text": "光源",
+     "conf": 0.982
+    },
+    {
+     "text": "73",
+     "conf": 0.238
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.98
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.977
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p65_1.png": {
+   "sha256": "b570c4fe8107f2c47b1e4ba9050853f0214c4f2c5059e08a425e14146e736767",
+   "items": [
+    {
+     "text": "反射镜",
+     "conf": 0.99
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.978
+    },
+    {
+     "text": "71 _",
+     "conf": 0.495
+    },
+    {
+     "text": "光源",
+     "conf": 0.993
+    },
+    {
+     "text": "光源",
+     "conf": 0.993
+    },
+    {
+     "text": "7a",
+     "conf": 0.968
+    },
+    {
+     "text": "内部光学组件2",
+     "conf": 0.956
+    },
+    {
+     "text": "内部光学组件",
+     "conf": 0.968
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.962
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.888
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p65_2.png": {
+   "sha256": "97353fe4f751d31e1039904a803903684507cb8bc45f3a663463c00339163ac7",
+   "items": [
+    {
+     "text": "反射镜",
+     "conf": 0.986
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.976
+    },
+    {
+     "text": "7b",
+     "conf": 0.448
+    },
+    {
+     "text": "光源",
+     "conf": 0.985
+    },
+    {
+     "text": "光源",
+     "conf": 0.99
+    },
+    {
+     "text": "73",
+     "conf": 0.408
+    },
+    {
+     "text": "内部光学组件",
+     "conf": 0.981
+    },
+    {
+     "text": "内部光学组件",
+     "conf": 0.983
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.914
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.969
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p65_3.png": {
+   "sha256": "f0ebdc4f0e7e5651c8da68189a18a3aa4082c137ffa6c0a2bc76e4577bd7de6a",
+   "items": [
+    {
+     "text": "外配光镜",
+     "conf": 0.959
+    },
+    {
+     "text": "71",
+     "conf": 0.448
+    },
+    {
+     "text": "光导管",
+     "conf": 0.929
+    },
+    {
+     "text": "7a",
+     "conf": 0.93
+    },
+    {
+     "text": "截面44",
+     "conf": 0.729
+    },
+    {
+     "text": "不考虑无纹理的外配光镜,按3.106),\"7\"为视表面",
+     "conf": 0.44
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p66_0.png": {
+   "sha256": "3d34fe73e30f2edf00a9a9f7342229476ff5721ef1ca6573caea8095e7be7e42",
+   "items": [
+    {
+     "text": "功能1:光导管,反射器件",
+     "conf": 0.907
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.983
+    },
+    {
+     "text": "功能2",
+     "conf": 0.972
+    },
+    {
+     "text": "76",
+     "conf": 0.586
+    },
+    {
+     "text": "截面44",
+     "conf": 0.811
+    },
+    {
+     "text": "不考虑无纹理的外配光镜,按3.10b)",
+     "conf": 0.834
+    },
+    {
+     "text": "7b \"为视表面 ,功能2的光无法穿透功能1",
+     "conf": 0.452
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p66_1.png": {
+   "sha256": "7cbc44a0982a5956137955d0370df2ea3630a6be6f7c1387acc4eb7521035a77",
+   "items": [
+    {
+     "text": "71",
+     "conf": 0.495
+    },
+    {
+     "text": "反射镜",
+     "conf": 0.957
+    },
+    {
+     "text": "光源",
+     "conf": 0.966
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.949
+    },
+    {
+     "text": "不考虑无纹理外配光镜 ,按3.10b)*7\"为视表面",
+     "conf": 0.508
+    },
+    {
+     "text": "X\"部分不属于本功能",
+     "conf": 0.896
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p66_2.png": {
+   "sha256": "40e79a1634ee9861689a0db05780494e949fe350f1fd4f49e1d7eec407eda1a4",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.419
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.841
+    },
+    {
+     "text": "投影面",
+     "conf": 0.983
+    },
+    {
+     "text": "发光面",
+     "conf": 0.94
+    },
+    {
+     "text": "3.10  3)定义的透光面",
+     "conf": 0.274
+    },
+    {
+     "text": "边缘",
+     "conf": 0.939
+    },
+    {
+     "text": "9b",
+     "conf": 0.119
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p67_0.png": {
+   "sha256": "d239e2b36225370425675f0c64d03a5ec22a80f5cbea43eda780a64bae5f580e",
+   "items": [
+    {
+     "text": "声明的基雄轴线",
+     "conf": 0.093
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.938
+    },
+    {
+     "text": "投影面",
+     "conf": 0.97
+    },
+    {
+     "text": "发光面",
+     "conf": 0.978
+    },
+    {
+     "text": "3.10 a)定义的透光面",
+     "conf": 0.58
+    },
+    {
+     "text": "边缘",
+     "conf": 0.943
+    },
+    {
+     "text": "9-h",
+     "conf": 0.3
+    },
+    {
+     "text": "C-4",
+     "conf": 0.604
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p67_1.png": {
+   "sha256": "959ca94f03e5bd0ce40409270d38388265463465cc4d5c7295e6fe70fe6c4792",
+   "items": [
+    {
+     "text": "声明的基I轴线",
+     "conf": 0.278
+    },
+    {
+     "text": "X部分不属于本功能",
+     "conf": 0.762
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.284
+    },
+    {
+     "text": "投影面",
+     "conf": 0.784
+    },
+    {
+     "text": "发光面",
+     "conf": 0.984
+    },
+    {
+     "text": "边缘",
+     "conf": 0.99
+    },
+    {
+     "text": "8b",
+     "conf": 0.198
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p68_0.png": {
+   "sha256": "05f9bcd18820753e2ed127f0cb06cd5099562abedc0d65ec07e89ee9f4398d7f",
+   "items": [
+    {
+     "text": "声明的基准轴线一",
+     "conf": 0.31
+    },
+    {
+     "text": "X部分不属于本功能",
+     "conf": 0.686
+    },
+    {
+     "text": "配光镜衷面",
+     "conf": 0.226
+    },
+    {
+     "text": "投影面",
+     "conf": 0.959
+    },
+    {
+     "text": "3.10  a)定义的透光面",
+     "conf": 0.53
+    },
+    {
+     "text": "边缘",
+     "conf": 0.992
+    },
+    {
+     "text": "C4和e-f",
+     "conf": 0.354
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p68_1.png": {
+   "sha256": "9e2fdbb7020624fa0111d0baf9813c374bed8946ad12879854435965993ca5b3",
+   "items": [
+    {
+     "text": "声明的基准轴线",
+     "conf": 0.083
+    },
+    {
+     "text": "又部分不属于本功能",
+     "conf": 0.839
+    },
+    {
+     "text": "配光镜表面",
+     "conf": 0.922
+    },
+    {
+     "text": "投影面",
+     "conf": 0.953
+    },
+    {
+     "text": "3.10 a)定义的透光面",
+     "conf": 0.776
+    },
+    {
+     "text": "边缘",
+     "conf": 0.986
+    },
+    {
+     "text": "c'一d'和2一f'",
+     "conf": 0.294
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p69_0.png": {
+   "sha256": "047644b3551c14f476c154184079e064405bc12e74c977ce2fe17060e84674a0",
+   "items": [
+    {
+     "text": "功能1的73",
+     "conf": 0.459
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.975
+    },
+    {
+     "text": "功能1",
+     "conf": 0.963
+    },
+    {
+     "text": "功能1与功能2不混合",
+     "conf": 0.886
+    },
+    {
+     "text": "功能2的7a一",
+     "conf": 0.695
+    },
+    {
+     "text": "功能2",
+     "conf": 0.985
+    },
+    {
+     "text": "72",
+     "conf": 0.256
+    },
+    {
+     "text": "4一4",
+     "conf": 0.183
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p69_1.png": {
+   "sha256": "faa32413b8a26aa13f191329acf1c3852a094231be291ce0f57941d496fc649a",
+   "items": [
+    {
+     "text": "功能1的7a",
+     "conf": 0.65
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.984
+    },
+    {
+     "text": "功能1",
+     "conf": 0.942
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.839
+    },
+    {
+     "text": "功能2",
+     "conf": 0.98
+    },
+    {
+     "text": "功能2的7a",
+     "conf": 0.852
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p69_2.png": {
+   "sha256": "b70b1b73c62ae27aed9034d238bf0cee3d174f94302ec84afbd42036f61dbfd5",
+   "items": [
+    {
+     "text": "外配",
+     "conf": 0.945
+    },
+    {
+     "text": "功能1",
+     "conf": 0.983
+    },
+    {
+     "text": "光镜",
+     "conf": 0.972
+    },
+    {
+     "text": "功能2",
+     "conf": 0.978
+    },
+    {
+     "text": "与功能2不混合",
+     "conf": 0.917
+    },
+    {
+     "text": "功能1:光导管",
+     "conf": 0.916
+    },
+    {
+     "text": "76",
+     "conf": 0.458
+    },
+    {
+     "text": "外配",
+     "conf": 0.934
+    },
+    {
+     "text": "光镱_",
+     "conf": 0.01
+    },
+    {
+     "text": "功能2",
+     "conf": 0.961
+    },
+    {
+     "text": "功能1与功能2不混合",
+     "conf": 0.883
+    },
+    {
+     "text": "功能1:光导管",
+     "conf": 0.881
+    },
+    {
+     "text": "7b",
+     "conf": 0.69
+    },
+    {
+     "text": "外配",
+     "conf": 0.963
+    },
+    {
+     "text": "光镜",
+     "conf": 0.988
+    },
+    {
+     "text": "功能2",
+     "conf": 0.984
+    },
+    {
+     "text": "功能1与功能2不混合",
+     "conf": 0.898
+    },
+    {
+     "text": "A4功能1",
+     "conf": 0.085
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p70_0.png": {
+   "sha256": "b30b63751ec76e54e74133c0ebd3ff1f72b9bc24d525595f085795ebe319095e",
+   "items": [
+    {
+     "text": "功能1:光导管",
+     "conf": 0.618
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.658
+    },
+    {
+     "text": "功能2",
+     "conf": 0.974
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.657
+    },
+    {
+     "text": "功能1:光导管",
+     "conf": 0.97
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.777
+    },
+    {
+     "text": "功能2",
+     "conf": 0.983
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.939
+    },
+    {
+     "text": "44",
+     "conf": 0.98
+    },
+    {
+     "text": "功能1:光导筲,反射器件",
+     "conf": 0.592
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.803
+    },
+    {
+     "text": "功能2",
+     "conf": 0.971
+    },
+    {
+     "text": "」",
+     "conf": 0.511
+    },
+    {
+     "text": "功能1与功能2混合",
+     "conf": 0.936
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p70_1.png": {
+   "sha256": "ef8b4d60a40f170be1bf1e7b62db2411166bb7cfb73ae2bb49817757b9728375",
+   "items": [
+    {
+     "text": "功能1:  光导管",
+     "conf": 0.771
+    },
+    {
+     "text": "反射器件",
+     "conf": 0.856
+    },
+    {
+     "text": "73",
+     "conf": 0.662
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.975
+    },
+    {
+     "text": "功能2",
+     "conf": 0.976
+    },
+    {
+     "text": "76",
+     "conf": 0.748
+    },
+    {
+     "text": "功能1和功能2不混合",
+     "conf": 0.667
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p70_2.png": {
+   "sha256": "6553ce6ff8a89b8819bfeb5b6850a94e7666323d553e0664c7c8b9fe0c995389",
+   "items": [
+    {
+     "text": "功能1:光导管",
+     "conf": 0.269
+    },
+    {
+     "text": "76",
+     "conf": 0.728
+    },
+    {
+     "text": "外配光镜",
+     "conf": 0.941
+    },
+    {
+     "text": "功能2",
+     "conf": 0.953
+    },
+    {
+     "text": "M二",
+     "conf": 0.085
+    },
+    {
+     "text": "功能1和功能2混合",
+     "conf": 0.305
+    },
+    {
+     "text": "73",
+     "conf": 0.899
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p71_0.png": {
+   "sha256": "f05bc69243969595366ea67c71ec149affa11c7af38756f54ebd34ee9d9d5619",
+   "items": [
+    {
+     "text": "前视红光不可见度",
+     "conf": 0.948
+    },
+    {
+     "text": "15",
+     "conf": 1.0
+    },
+    {
+     "text": "碱",
+     "conf": 0.0
+    },
+    {
+     "text": "159",
+     "conf": 0.39
+    },
+    {
+     "text": "25 m",
+     "conf": 0.614
+    },
+    {
+     "text": "15",
+     "conf": 0.6
+    },
+    {
+     "text": "715-",
+     "conf": 0.049
+    },
+    {
+     "text": "25 m",
+     "conf": 0.585
+    },
+    {
+     "text": "后视白光不可见度",
+     "conf": 0.461
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p73_0.png": {
+   "sha256": "d5b4ccd6bb791e6e3e64925762b8a52ddfd5d3c7944d8c60fcb89360390bc5f1",
+   "items": [
+    {
+     "text": "十%",
+     "conf": 0.975
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p78_0.png": {
+   "sha256": "52aa9c8b94485dffe5cc2b9e9d9f7c6442d555b47971a2bc5338bc37e4a9faee",
+   "items": []
+  },
+  "dist/figures/f86e6c73/p78_1.png": {
+   "sha256": "6b8dedd4d701fb966e9250ee660f30770ff9e96e78faf3bc75224500010a74fb",
+   "items": []
+  },
+  "dist/figures/f86e6c73/p79_0.png": {
+   "sha256": "e0243b408594b46a0b75a3bb89c714fd94044ceddf38bcdc67622bff66d4ddef",
+   "items": []
+  },
+  "dist/figures/f86e6c73/p81_0.png": {
+   "sha256": "a9885d4d82102f6be4ae04648ce23a97d9df14edc86d49997ea6326214f7fbed",
+   "items": [
+    {
+     "text": "10 I",
+     "conf": 0.406
+    },
+    {
+     "text": "10 I",
+     "conf": 0.508
+    }
+   ]
+  },
+  "dist/figures/f86e6c73/p81_1.png": {
+   "sha256": "9bfadc8df867c82ab26ff5b14ee277450d7275ae4a0b6afaecfbfe0923bf9da2",
+   "items": [
+    {
+     "text": "10I",
+     "conf": 0.106
+    },
+    {
+     "text": "10I",
+     "conf": 0.464
+    },
+    {
+     "text": "10m",
+     "conf": 0.326
+    },
+    {
+     "text": "10 m",
+     "conf": 0.963
+    }
+   ]
+  }
+ }
+}

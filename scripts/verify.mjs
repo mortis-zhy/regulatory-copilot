@@ -3653,6 +3653,41 @@ check("the delivered PDF actually carries the figures (not just the index)", () 
   return `图进了交付件（${res.n} 张 · ${seen.size} 个文件 · ${res.pages} 页）`;
 });
 
+check("every figure in the gallery has an OCR result for that exact image", () => {
+  // 附录 B.5 的「图内数值（OCR）」靠 `reports/figure-ocr.json` ✓。
+  //
+  // 这一关盯的是**缓存不许悄悄过期** ✗：
+  // 图重抽了（换源 PDF / 换 dpi ⇒ 文件名相同、内容不同 ✓），
+  // 而 OCR 缓存还停在旧图上 ⇒ 报告拿**旧图的字**说**新图**的事 ✗，
+  // 而且**不报错** ✗。所以按**图片内容 sha256** 逐个对 ✓。
+  const hashesPath = resolve(ROOT, "reports/figure-hashes.json");
+  const ocrPath = resolve(ROOT, "reports/figure-ocr.json");
+  if (!existsSync(hashesPath)) return "skipped — 没有 reports/figure-hashes.json（先跑 hash_figures.py）";
+  if (!existsSync(ocrPath)) {
+    return "skipped — 没有 reports/figure-ocr.json（跑 python scripts/ocr_figures.py）";
+  }
+  const hashes = JSON.parse(readFileSync(hashesPath, "utf-8"));
+  const ocr = JSON.parse(readFileSync(ocrPath, "utf-8"));
+  assert(ocr._engine, "figure-ocr.json 没记引擎版本 —— 换引擎后结果无法复现");
+  assert(Array.isArray(ocr._langs) && ocr._langs.length, "figure-ocr.json 没记 OCR 语言");
+  const images = ocr.images ?? {};
+  const rels = Object.keys(hashes);
+  for (const rel of rels) {
+    const ent = images[rel];
+    assert(ent, `图 ${rel} 没有 OCR 结果 —— 跑 python scripts/ocr_figures.py`);
+    assert(
+      ent.sha256 === sha256(rel),
+      `图 ${rel} 的 OCR 是**旧图**的结果（sha256 不符）—— 跑 python scripts/ocr_figures.py`,
+    );
+    assert(Array.isArray(ent.items), `图 ${rel} 的 OCR 结果形状不对（缺 items）`);
+  }
+  const extra = Object.keys(images).filter((k) => !hashes[k]);
+  return (
+    `图内 OCR 覆盖 ${rels.length} 张（${ocr._engine}）` +
+    (extra.length ? ` · 另有 ${extra.length} 条是已不存在的旧图（不参与）` : "")
+  );
+});
+
 check("the font payload stays far below Chromium's size cliff", () => {
   // 实测（2026-11-12）：Chromium 的 `page.setContent()` 在 **100 MB** 左右
   // 会**把页面打崩**（「Target page, context or browser has been closed」）✗。
