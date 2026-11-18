@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-18T14:20:55.041Z",
+ "generatedAt": "2026-11-18T14:55:33.121Z",
  "inventory": {
   "A": {
    "version": "A",
@@ -1196,7 +1196,21 @@
        "text": "后视白光不可见度",
        "conf": 0.713
       }
-     ]
+     ],
+     "limits": {
+      "version": "A",
+      "figure": "dist/figures/2173836f/p83_0.png",
+      "page": 83,
+      "caption": "图B.1 前视红光不可见度和后视白光不可见度范围",
+      "depicts": "前视红光 / 后视白光不可见度范围（上下各 15°、25 m 处作界线）",
+      "values": [
+       "15°",
+       "25m"
+      ],
+      "valueBasis": "",
+      "adjudicated": false,
+      "annotator": "model-vision"
+     }
     },
     {
      "file": "dist/figures/2173836f/p100_0.png",
@@ -1566,7 +1580,23 @@
        "text": "45。",
        "conf": 0.916
       }
-     ]
+     ],
+     "limits": {
+      "version": "B",
+      "figure": "dist/figures/f86e6c73/p30_0.png",
+      "page": 30,
+      "caption": "图2 转向信号灯布局",
+      "depicts": "转向信号灯布局 A/B 的几何可见度角（1、1a、1b 类 / 2a、2b 类 / 5、6 类）",
+      "values": [
+       "80°",
+       "45°",
+       "60°",
+       "5°"
+      ],
+      "valueBasis": "",
+      "adjudicated": false,
+      "annotator": "model-vision"
+     }
     },
     {
      "file": "dist/figures/f86e6c73/p31_0.png",
@@ -2485,7 +2515,21 @@
        "text": "后视白光不可见度",
        "conf": 0.461
       }
-     ]
+     ],
+     "limits": {
+      "version": "B",
+      "figure": "dist/figures/f86e6c73/p71_0.png",
+      "page": 71,
+      "caption": "图C. 1 前视红光不可见度和后视白光不可见度范围",
+      "depicts": "前视红光 / 后视白光不可见度范围（上下各 15°、25 m 处作界线）",
+      "values": [
+       "15°",
+       "25m"
+      ],
+      "valueBasis": "",
+      "adjudicated": false,
+      "annotator": "model-vision"
+     }
     },
     {
      "file": "dist/figures/f86e6c73/p73_0.png",
@@ -4540,6 +4584,9 @@
       "ocr": {
        "status": "no-numbers",
        "lowConf": 4
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4575,6 +4622,9 @@
         }
        ],
        "lowConf": 5
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4600,6 +4650,9 @@
         }
        ],
        "lowConf": 10
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4616,6 +4669,9 @@
       "ocr": {
        "status": "skipped",
        "reason": "A 侧 OCR 一个字都没读出（多半是识别失败，不是图里没字）"
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4632,6 +4688,9 @@
       "ocr": {
        "status": "skipped",
        "reason": "A 侧 OCR 一个字都没读出（多半是识别失败，不是图里没字）"
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4657,6 +4716,9 @@
         }
        ],
        "lowConf": 2
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4673,6 +4735,9 @@
       "ocr": {
        "status": "skipped",
        "reason": "A 侧 OCR 一个字都没读出（多半是识别失败，不是图里没字）"
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4698,6 +4763,9 @@
         }
        ],
        "lowConf": 1
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4728,6 +4796,9 @@
         }
        ],
        "lowConf": 1
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4773,6 +4844,20 @@
         }
        ],
        "lowConf": 6
+      },
+      "limits": {
+       "status": "compared",
+       "same": true,
+       "a": [
+        "15°",
+        "25m"
+       ],
+       "b": [
+        "15°",
+        "25m"
+       ],
+       "adjudicated": false,
+       "visualOnly": true
       }
      },
      {
@@ -4798,6 +4883,9 @@
         }
        ],
        "lowConf": 3
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -4814,6 +4902,9 @@
       "ocr": {
        "status": "no-numbers",
        "lowConf": 5
+      },
+      "limits": {
+       "status": "none"
       }
      }
     ],
@@ -5699,7 +5790,23 @@
         "text": "45。",
         "conf": 0.916
        }
-      ]
+      ],
+      "limits": {
+       "version": "B",
+       "figure": "dist/figures/f86e6c73/p30_0.png",
+       "page": 30,
+       "caption": "图2 转向信号灯布局",
+       "depicts": "转向信号灯布局 A/B 的几何可见度角（1、1a、1b 类 / 2a、2b 类 / 5、6 类）",
+       "values": [
+        "80°",
+        "45°",
+        "60°",
+        "5°"
+       ],
+       "valueBasis": "",
+       "adjudicated": false,
+       "annotator": "model-vision"
+      }
      },
      {
       "file": "dist/figures/f86e6c73/p31_0.png",
@@ -6706,6 +6813,9 @@
         }
        ],
        "lowConf": 4
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -6731,6 +6841,9 @@
         }
        ],
        "lowConf": 1
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -6766,6 +6879,9 @@
         }
        ],
        "lowConf": 2
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -6826,6 +6942,9 @@
         }
        ],
        "lowConf": 7
+      },
+      "limits": {
+       "status": "none"
       }
      }
     ],
@@ -7912,7 +8031,21 @@
         "text": "后视白光不可见度",
         "conf": 0.713
        }
-      ]
+      ],
+      "limits": {
+       "version": "A",
+       "figure": "dist/figures/2173836f/p83_0.png",
+       "page": 83,
+       "caption": "图B.1 前视红光不可见度和后视白光不可见度范围",
+       "depicts": "前视红光 / 后视白光不可见度范围（上下各 15°、25 m 处作界线）",
+       "values": [
+        "15°",
+        "25m"
+       ],
+       "valueBasis": "",
+       "adjudicated": false,
+       "annotator": "model-vision"
+      }
      },
      {
       "file": "dist/figures/2173836f/p100_0.png",
@@ -9749,6 +9882,9 @@
       "ocr": {
        "status": "no-numbers",
        "lowConf": 3
+      },
+      "limits": {
+       "status": "none"
       }
      },
      {
@@ -9765,6 +9901,9 @@
       "ocr": {
        "status": "no-numbers",
        "lowConf": 4
+      },
+      "limits": {
+       "status": "none"
       }
      }
     ],
@@ -9889,7 +10028,23 @@
         "text": "45。",
         "conf": 0.916
        }
-      ]
+      ],
+      "limits": {
+       "version": "B",
+       "figure": "dist/figures/f86e6c73/p30_0.png",
+       "page": 30,
+       "caption": "图2 转向信号灯布局",
+       "depicts": "转向信号灯布局 A/B 的几何可见度角（1、1a、1b 类 / 2a、2b 类 / 5、6 类）",
+       "values": [
+        "80°",
+        "45°",
+        "60°",
+        "5°"
+       ],
+       "valueBasis": "",
+       "adjudicated": false,
+       "annotator": "model-vision"
+      }
      },
      {
       "file": "dist/figures/f86e6c73/p31_0.png",
@@ -10775,7 +10930,21 @@
         "text": "后视白光不可见度",
         "conf": 0.461
        }
-      ]
+      ],
+      "limits": {
+       "version": "B",
+       "figure": "dist/figures/f86e6c73/p71_0.png",
+       "page": 71,
+       "caption": "图C. 1 前视红光不可见度和后视白光不可见度范围",
+       "depicts": "前视红光 / 后视白光不可见度范围（上下各 15°、25 m 处作界线）",
+       "values": [
+        "15°",
+        "25m"
+       ],
+       "valueBasis": "",
+       "adjudicated": false,
+       "annotator": "model-vision"
+      }
      },
      {
       "file": "dist/figures/f86e6c73/p73_0.png",

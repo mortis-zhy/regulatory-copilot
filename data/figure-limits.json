@@ -1,0 +1,50 @@
+{
+  "_why": "图里的限值（角度/距离/百分比）机器读不准（OCR 会把 7a 读成 7 安），所以另开一张**人工标注**表。机器只核三件事：图真的存在、页码与图文件名一致、题注真的在那一页的原文里；**数值本身不判对错**。标 adjudicated:false 的表示还没人核过，报告里会点名。没标注的图**不是**没有限值 —— 只是没比。",
+  "_generator": "hand-annotated（模型读图后写入，待人工确认）",
+  "_schema": {
+    "version": "A/B/C",
+    "figure": "dist/figures/<sha8>/p<page>_<i>.png（必须出现在 reports/figure-hashes.json）",
+    "page": "该图的源 PDF 页码（必须等于文件名里的 p<page>）",
+    "caption": "图题（必须是这一页原文里的一串字，归一化空白后匹配）",
+    "depicts": "这张图画的是什么",
+    "values": "图里能读到的限值（没有限值就写空数组）",
+    "valueBasis": "原文里能佐证这些数值的句子（空 = 仅据图面判读，报告里会点名）",
+    "adjudicated": "是否已由人工核对过（false = 待核）",
+    "annotator": "谁标的（model-vision = 模型读图，待人工确认）"
+  },
+  "rows": [
+    {
+      "version": "A",
+      "figure": "dist/figures/2173836f/p83_0.png",
+      "page": 83,
+      "caption": "图B.1 前视红光不可见度和后视白光不可见度范围",
+      "depicts": "前视红光 / 后视白光不可见度范围（上下各 15°、25 m 处作界线）",
+      "values": ["15°", "25m"],
+      "valueBasis": "",
+      "adjudicated": false,
+      "annotator": "model-vision"
+    },
+    {
+      "version": "B",
+      "figure": "dist/figures/f86e6c73/p71_0.png",
+      "page": 71,
+      "caption": "图C. 1 前视红光不可见度和后视白光不可见度范围",
+      "depicts": "前视红光 / 后视白光不可见度范围（上下各 15°、25 m 处作界线）",
+      "values": ["15°", "25m"],
+      "valueBasis": "",
+      "adjudicated": false,
+      "annotator": "model-vision"
+    },
+    {
+      "version": "B",
+      "figure": "dist/figures/f86e6c73/p30_0.png",
+      "page": 30,
+      "caption": "图2 转向信号灯布局",
+      "depicts": "转向信号灯布局 A/B 的几何可见度角（1、1a、1b 类 / 2a、2b 类 / 5、6 类）",
+      "values": ["80°", "45°", "60°", "5°"],
+      "valueBasis": "",
+      "adjudicated": false,
+      "annotator": "model-vision"
+    }
+  ]
+}

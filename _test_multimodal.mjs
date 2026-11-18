@@ -21,6 +21,8 @@ import {
   OCR_MIN_CONF,
   ocrNumber,
   compareFigureOcr,
+  compareFigureLimits,
+  normLimitValue,
   renderVersionDiff,
 } from "./dist/multimodal.js";
 
@@ -295,6 +297,61 @@ ok(OCR_MIN_CONF > 0 && OCR_MIN_CONF < 1, "OCR 置信度门槛应在 (0,1)");
   ok(md.includes("图内数值（OCR）"), "报告里没有「图内数值（OCR）」这一列");
   ok(md.includes("疑似不同"), "45→60 的差异没出现在报告里");
   ok(md.includes("会读错"), "报告没写「OCR 会读错」这条界线");
+}
+
+// ⑩ **人工标注的图内限值** —— 只比标注 ✓；「仅据图面」必须点名 ✗
+ok(normLimitValue("15 °") === "15°", "标注值归一化没抹掉空格");
+ok(normLimitValue("25 m") === normLimitValue("25m"), "同一数值的两种写法没归一");
+{
+  const none = compareFigureLimits(undefined, undefined);
+  ok(none.status === "none", "两侧都没标注时不应勉强去比");
+
+  const one = compareFigureLimits(
+    { values: ["15°"], caption: "图1", depicts: "x", adjudicated: false, annotator: "model" },
+    undefined,
+  );
+  ok(one.status === "one-sided" && one.side === "a", "只有一侧标注时应报 one-sided");
+
+  const same = compareFigureLimits(
+    { values: ["15°", "25m"], caption: "图1", depicts: "x", adjudicated: false, annotator: "model" },
+    { values: ["25 m", "15 °"], caption: "图2", depicts: "x", adjudicated: false, annotator: "model" },
+  );
+  ok(same.status === "compared" && same.same === true, "写法不同的同一组值应判相同");
+  ok(same.visualOnly === true, "没有 valueBasis 时应标「仅据图面」");
+  ok(same.adjudicated === false, "未核的标注被当成已核了");
+
+  const diff = compareFigureLimits(
+    { values: ["15°", "25m"], caption: "图1", depicts: "x", adjudicated: true, valueBasis: "上下各 15°，25 m", annotator: "human" },
+    { values: ["15°", "20m"], caption: "图2", depicts: "x", adjudicated: true, valueBasis: "上下各 15°，20 m", annotator: "human" },
+  );
+  ok(diff.status === "compared" && diff.same === false, "标注值不同应判不同");
+  ok(diff.adjudicated === true && diff.visualOnly === false, "有原文佐证且已核的标注状态不对");
+}
+{
+  // 渲染：标注块必须写明「数值本身不判对错」「仅据图面」✗
+  const withLimits = {
+    ...invA,
+    figures: [
+      {
+        ...fig(10, "0000000000000000"),
+        limits: { values: ["15°"], caption: "图1", depicts: "x", adjudicated: false, annotator: "model" },
+      },
+    ],
+  };
+  const withLimitsB = {
+    ...invB,
+    figures: [
+      {
+        ...fig(20, "0000000000000000"),
+        limits: { values: ["15°"], caption: "图1", depicts: "x", adjudicated: false, annotator: "model" },
+      },
+    ],
+  };
+  const md = renderVersionDiff(diffVersions(withLimits, withLimitsB));
+  ok(md.includes("图内限值（人工标注）"), "报告里没有「图内限值（人工标注）」块");
+  ok(md.includes("标注相同"), "两侧标注相同没印出来");
+  ok(md.includes("仅据图面"), "没点名「仅据图面」");
+  ok(md.includes("数值本身不判对错"), "没写「数值本身不判对错」这条界线");
 }
 
 console.log(`\n✓ 多模态用例全过（${n} 条断言）`);

@@ -18,6 +18,7 @@
 import { prose } from "./reportProse";
 // 附录 B.5 的跨版素材对比（表/图/公式）✓ —— 与 CLI **同一份实现** ✓
 import { buildInventory, diffVersions, renderVersionDiff } from "./multimodal";
+import { renderSymbolTable } from "./formulaSymbols";
 import fs from "node:fs";
 import path from "node:path";
 import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
@@ -2410,10 +2411,25 @@ function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
     const ocr = fs.existsSync(ocrPath)
       ? JSON.parse(fs.readFileSync(ocrPath, "utf-8")).images ?? null
       : null;
+    // **图内限值（人工标注）** ✓ —— 机器只核位置（图 / 页码 / 题注回源）✓，
+    // 数值本身是人读图的结论 ✗（未核的在报告里点名 ✗）。
+    const limPath = path.join(process.cwd(), "data", "figure-limits.json");
+    const limRows: any[] = fs.existsSync(limPath)
+      ? JSON.parse(fs.readFileSync(limPath, "utf-8")).rows ?? []
+      : [];
+    const limByFig: Record<string, any> = {};
+    for (const r of limRows) limByFig[String(r.figure)] = r;
     const invs = ["A", "B", "C"]
       .map((label) => ({
         label,
-        inv: mm.buildInventory(label, data[label], hashes, data[label]?.figureGallery ?? null, ocr),
+        inv: mm.buildInventory(
+          label,
+          data[label],
+          hashes,
+          data[label]?.figureGallery ?? null,
+          ocr,
+          limByFig,
+        ),
       }))
       .filter((x) => x.inv.figures.length || x.inv.tables.length || x.inv.equations.length);
     if (invs.length < 2) {
@@ -2441,6 +2457,12 @@ function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
           parts.push(mm.renderVersionDiff(mm.diffVersions(invs[i].inv, invs[j].inv)));
         }
       }
+      // **公式符号表**（只出现一次 ✓ —— 符号是全篇的，不是哪一对的 ✓）。
+      const symPath = path.join(process.cwd(), "data", "formula-symbols.json");
+      const symLedger = fs.existsSync(symPath)
+        ? JSON.parse(fs.readFileSync(symPath, "utf-8"))
+        : null;
+      parts.push(renderSymbolTable(symLedger));
     }
   } catch (e) {
     // 素材比不了**不许**让整份报告出不来 ✓ —— 但要**写明**为什么 ✗

@@ -1,0 +1,74 @@
+{
+  "_generator": "scripts/extract_formula_symbols.py",
+  "_sourceSha256": {
+    "A": "2173836fae9f131400c3c50132697a2a735d5bd144dff4bc5b9ee4e87ed115c7",
+    "B": "f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085",
+    "C": "92b2563197df022afa3af225215608564c7d6c99240fec98f72bc017fdebc348"
+  },
+  "_note": "符号表只判**有没有定义 / 单位 / 页码**，不判语义（定义文字语言不同，须人判）。",
+  "blocks": [
+    {
+      "version": "A",
+      "page": 85,
+      "symbols": [
+        {
+          "symbol": "h1",
+          "definition": "是在垂直屏幕上测量的上述特性点的离地高度（单位：mm），该垂直屏幕与车辆纵向 对称平面垂直，且位于车前L距离处。",
+          "unit": "mm"
+        },
+        {
+          "symbol": "h2",
+          "definition": "是基准中心的离地高度（单位：mm），该基准中心是h1 特性点的标称原点。",
+          "unit": "mm"
+        },
+        {
+          "symbol": "L",
+          "definition": "是屏幕到基准中心间的距离（单位：mm）",
+          "unit": "mm"
+        }
+      ]
+    },
+    {
+      "version": "B",
+      "page": 72,
+      "symbols": [
+        {
+          "symbol": "h1",
+          "definition": "是在垂直屏幕上测量的上述特性点的离地高度,单位为毫米(mm),该垂直屏幕与车辆纵向 对称平面垂直,且位于车前L 距离处。",
+          "unit": "mm"
+        },
+        {
+          "symbol": "h2",
+          "definition": "是基准中心的离地高度,单位为毫米(mm),该基准中心是h1 特性点的标称原点。",
+          "unit": "mm"
+        },
+        {
+          "symbol": "L",
+          "definition": "是屏幕到基准中心间的距离,单位为毫米(mm)。",
+          "unit": "mm"
+        }
+      ]
+    },
+    {
+      "version": "C",
+      "page": 127,
+      "symbols": [
+        {
+          "symbol": "h1",
+          "definition": "the height above the ground, in millimetres, of the above- mentioned characteristic point, measured on a vertical screen perpendicular to the vehicle longitudinal median plane, placed at a horizontal distance L.",
+          "unit": "mm"
+        },
+        {
+          "symbol": "h2",
+          "definition": "the height above the ground, in millimetres, of the centre of reference (which is taken to be the nominal origin of the characteristic point chosen in h1):",
+          "unit": "mm"
+        },
+        {
+          "symbol": "L",
+          "definition": "the distance, in millimetres, from the screen to the centre of reference.",
+          "unit": "mm"
+        }
+      ]
+    }
+  ]
+}

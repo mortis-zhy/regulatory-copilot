@@ -33,6 +33,22 @@
 /** OCR 的一处识别结果 —— **不是原文** ✗（会读错），见 `scripts/ocr_figures.py`。 */
 export type OcrItem = { text: string; conf: number };
 
+/**
+ * 人工标注的「这张图里有哪些限值」✓ —— `data/figure-limits.json`。
+ *
+ * **数值本身不判对错** ✗：机器只能核「图存在 / 页码对 / 题注在那一页上」✓；
+ * `adjudicated: false` 表示**还没人核过** ✗，报告里必须写明 ✗。
+ */
+export type FigureLimit = {
+  values: string[];
+  caption: string;
+  depicts: string;
+  /** 原文里能佐证这些数值的句子（空 = **仅据图面判读** ✗） */
+  valueBasis?: string;
+  adjudicated: boolean;
+  annotator: string;
+};
+
 export type FigureRef = {
   file: string;
   page: number;
@@ -41,6 +57,8 @@ export type FigureRef = {
   phash: string;
   /** 图内文字（OCR）。**undefined** = 这一版没跑 OCR ✓（与「跑过但没字」不同 ✗）。 */
   ocr?: OcrItem[];
+  /** 人工标注的图内限值 ✓（没有 = 这张图没标注 ✗，不是「没有限值」✗） */
+  limits?: FigureLimit;
 };
 export type TableRef = {
   page: number;
@@ -70,6 +88,8 @@ export type FigurePair = {
   note: string;
   /** 图内**数值**的 OCR 对比 —— pHash 看不见的那一层 ✓。 */
   ocr: FigureOcrDiff;
+  /** 人工标注的图内限值对比 ✓（没有标注就不比 ✓）。 */
+  limits: FigureLimitDiff;
 };
 
 /** OCR 读出的一个**干净**数字（带可选单位）。 */
@@ -77,6 +97,28 @@ export type OcrNumber = { value: number; unit: string; raw: string; conf: number
 
 /** 一个数的「两侧出现次数差」。`a`/`b` 是**次数**，不是数值 ✗。 */
 export type NumberCountDiff = { label: string; a: number; b: number };
+
+/** 一对近似图上**人工标注**的限值对比 ✓。 */
+export type FigureLimitDiff =
+  | { status: "none" }
+  | {
+      status: "one-sided";
+      side: "a" | "b";
+      values: string[];
+      adjudicated: boolean;
+      /** 标注没有原文佐证（**仅据图面** ✗） */
+      visualOnly: boolean;
+    }
+  | {
+      status: "compared";
+      same: boolean;
+      a: string[];
+      b: string[];
+      /** 两侧**都**已人工核过 ✓ */
+      adjudicated: boolean;
+      /** 至少一侧**仅据图面**（无原文佐证）✗ */
+      visualOnly: boolean;
+    };
 
 /**
  * 一对近似图之间的「图内数值」对比结果。
@@ -269,6 +311,57 @@ export function compareFigureOcr(
     bareB: bb.length,
     bareDiffs: db.diffs,
     lowConf,
+  };
+}
+
+/** 标注值的归一化：只抹写法（空格 / 全半角 / ㎜ / 度号），不抹数字 ✓。 */
+export function normLimitValue(s: string): string {
+  return String(s ?? "")
+    .replace(/\s+/g, "")
+    .replace(/㎜/g, "mm")
+    .replace(/[（]/g, "(")
+    .replace(/[）]/g, ")")
+    .toLowerCase();
+}
+
+/**
+ * 一对近似图上**人工标注**的限值对比。
+ *
+ * **只比标注** ✗ —— 标注对不对是人的责任 ✓；机器只保证「有标注才比」
+ * 「仅据图面的标注**会被点名**」✓（不把一眼判读当成原文 ✗）。
+ */
+export function compareFigureLimits(a?: FigureLimit, b?: FigureLimit): FigureLimitDiff {
+  const va = a?.values ?? null;
+  const vb = b?.values ?? null;
+  if (!va && !vb) return { status: "none" };
+  const visual = (x: FigureLimit | undefined) => !!x && !String(x.valueBasis ?? "").trim();
+  if (!va) {
+    return {
+      status: "one-sided",
+      side: "b",
+      values: vb!,
+      adjudicated: !!b?.adjudicated,
+      visualOnly: visual(b),
+    };
+  }
+  if (!vb) {
+    return {
+      status: "one-sided",
+      side: "a",
+      values: va,
+      adjudicated: !!a?.adjudicated,
+      visualOnly: visual(a),
+    };
+  }
+  const ma = va.map(normLimitValue).sort();
+  const mb = vb.map(normLimitValue).sort();
+  return {
+    status: "compared",
+    same: ma.length === mb.length && ma.every((x, i) => x === mb[i]),
+    a: va,
+    b: vb,
+    adjudicated: !!a?.adjudicated && !!b?.adjudicated,
+    visualOnly: visual(a) || visual(b),
   };
 }
 
@@ -547,6 +640,8 @@ export function buildInventory(
   gallery?: { dir: string; pages: Record<string, Array<{ file: string; w: number; h: number }>> } | null,
   /** `reports/figure-ocr.json` 的 `images` 部分（按图路径索引）✓ */
   ocr?: Record<string, { items?: OcrItem[] }> | null,
+  /** `data/figure-limits.json` 的标注（按图路径索引）✓ */
+  limits?: Record<string, FigureLimit> | null,
 ): MultimodalInventory {
   const figures: FigureRef[] = [];
   if (gallery) {
@@ -563,6 +658,7 @@ export function buildInventory(
           phash: h?.phash ?? "",
           // 没跑 OCR 的图**不挂空数组** ✗ —— `[]` 会被当成「跑过、图上没字」✗
           ...(items ? { ocr: items } : {}),
+          ...(limits?.[rel] ? { limits: limits[rel] } : {}),
         });
       }
     }
@@ -630,6 +726,8 @@ export function diffVersions(invA: MultimodalInventory, invB: MultimodalInventor
         "「近似」**不是**「一致」：pHash 看不出图内数字/标注有没有变 ✗，另由 OCR 提示（会读错）✗",
       // **图内数值**在配对之后另算 ✓ —— 用 OCR，不靠 pHash ✓
       ocr: compareFigureOcr(c.a.ocr, c.b.ocr),
+      // 人工标注的限值（没人标注就不用比 ✓）
+      limits: compareFigureLimits(c.a.limits, c.b.limits),
     });
   }
   const onlyInA = aFigs.filter((f) => !usedA.has(f.file));
@@ -804,6 +902,47 @@ export function renderVersionDiff(d: VersionDiff): string {
       out.push(`- 只有 ${b}：` + d.figures.onlyInB.map((f) => `p${f.page}`).join("、"));
     }
     out.push("");
+  }
+
+  // **人工标注的图内限值** ✓ —— 有人标注才印（没标注 ≠ 图里没限值 ✗）
+  {
+    const rows: string[] = [];
+    const tag = (adjudicated: boolean, visualOnly: boolean): string =>
+      `（标注${adjudicated ? "**已人工核** ✓" : "**未核** ✗"}；` +
+      `${visualOnly ? "**仅据图面**、无原文佐证 ✗" : "有原文佐证 ✓"}）`;
+    for (const p of d.figures.paired) {
+      const L = p.limits;
+      if (L.status === "one-sided") {
+        rows.push(
+          `- p${p.left.page} ↔ p${p.right.page}：只有 ${L.side.toUpperCase()} 有标注 **${L.values.join("、")}**` +
+            (L.values.length ? "" : "（标注为「无图内限值」✓）") +
+            tag(L.adjudicated, L.visualOnly),
+        );
+      } else if (L.status === "compared") {
+        rows.push(
+          `- p${p.left.page} ↔ p${p.right.page}：标注值 ` +
+            `**${L.a.join("、") || "（无）"}** / **${L.b.join("、") || "（无）"}** —— ` +
+            (L.same ? "两侧**标注相同** ✓" : "**标注不同** ✗") +
+            tag(L.adjudicated, L.visualOnly),
+        );
+      }
+    }
+    for (const f of [...d.figures.onlyInA, ...d.figures.onlyInB]) {
+      if (!f.limits) continue;
+      rows.push(
+        `- 只有 ${f.limits ? (d.figures.onlyInA.includes(f) ? a : b) : ""} p${f.page}：` +
+          `标注 **${f.limits.values.join("、") || "（无图内限值）"}**（无可比对象）` +
+          tag(f.limits.adjudicated, !String(f.limits.valueBasis ?? "").trim()),
+      );
+    }
+    if (rows.length) {
+      out.push("**图内限值（人工标注）**：", "", ...rows, "");
+      out.push(
+        "> 标注由人写进 `data/figure-limits.json` ✓ —— 机器只核「图存在 / 页码对 / 题注回源」✓，" +
+          "**数值本身不判对错** ✗；标「仅据图面」的**没有原文佐证** ✗，须对照原图 ✗。",
+        "",
+      );
+    }
   }
 
   // 表

@@ -13,6 +13,12 @@ const hashes = JSON.parse(fs.readFileSync(path.join(ROOT, "reports", "figure-has
 // 图内文字 OCR —— **可选** ✓（没有就不比图内数值，明确写「未比」✓，不假装「相同」✗）
 const ocrPath = path.join(ROOT, "reports", "figure-ocr.json");
 const ocr = fs.existsSync(ocrPath) ? JSON.parse(fs.readFileSync(ocrPath, "utf8")).images ?? null : null;
+// 图内限值（人工标注）—— 没有就不比 ✓
+const limPath = path.join(ROOT, "data", "figure-limits.json");
+const limRows = fs.existsSync(limPath)
+  ? JSON.parse(fs.readFileSync(limPath, "utf8")).rows ?? []
+  : [];
+const limByFig = Object.fromEntries(limRows.map((r) => [String(r.figure), r]));
 const report = JSON.parse(fs.readFileSync(path.join(ROOT, "reports", "last-report.json"), "utf8"));
 
 // 图版 —— **现算** ✓（与报告生成走**同一份实现** ✓，
@@ -29,7 +35,7 @@ if (versions.length < 2) {
 }
 
 const inv = {};
-for (const v of versions) inv[v] = mm.buildInventory(v, data[v], hashes, galleries[v], ocr);
+for (const v of versions) inv[v] = mm.buildInventory(v, data[v], hashes, galleries[v], ocr, limByFig);
 
 const diffs = [];
 for (let i = 0; i < versions.length; i++) {
@@ -54,6 +60,14 @@ for (const v of versions) {
 }
 md.push("");
 for (const d of diffs) md.push(mm.renderVersionDiff(d));
+
+// 公式**符号表** —— 只出现一次 ✓（符号是全篇的，不是哪一对的 ✓）。
+const fsMod = await import("node:fs");
+const symPath = path.join(ROOT, "data", "formula-symbols.json");
+if (fsMod.existsSync(symPath)) {
+  const sym = await import(pathToFileURL(path.join(ROOT, "dist", "formulaSymbols.js")).href);
+  md.push(sym.renderSymbolTable(JSON.parse(fsMod.readFileSync(symPath, "utf8"))));
+}
 
 fs.writeFileSync(path.join(ROOT, "reports", "multimodal.md"), md.join("\n"));
 fs.writeFileSync(

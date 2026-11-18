@@ -138,6 +138,8 @@ const ENTRIES = [
   // multimodal 是**表/图/公式**的跨版对比（图靠 pHash ✓，表/公式靠指纹 ✓）。
   // 单独成模块：用例要用**合成的**素材驱动它（真语料只能验「跑得通」✗）。
   ["server/reports/multimodal.ts", "dist/multimodal.js"],
+  // 公式**符号表** —— 「式中：h1——…」的跨版对照（只比定义 / 单位 / 页码 ✓）。
+  ["server/reports/formulaSymbols.ts", "dist/formulaSymbols.js"],
 ];
 
 const SHARED = {

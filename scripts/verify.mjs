@@ -3688,6 +3688,37 @@ check("every figure in the gallery has an OCR result for that exact image", () =
   );
 });
 
+check("the annotated figure limits point at real figures and real captions", () => {
+  // 图里的限值机器读不准（OCR 会把 `7a` 读成「7 安」✗）⇒ 另开**人工标注**表 ✓。
+  // 机器只能核**位置**：图真的在、页码与文件名一致、题注真的在那一页原文里 ✓；
+  // **数值本身不判对错** ✗ —— 那是人看图的事 ✓。
+  // 没有原文佐证（valueBasis 空）却标 `adjudicated: true` ⇒ 红 ✓。
+  const { ok, out } = runPy(["scripts/check_figure_limits.py"], "figure-limits");
+  assert(ok, `图内限值标注有问题:\n        ${out.slice(-700)}`);
+  return out.trim().split("\n").pop();
+});
+
+check("the formula symbol table is not stale", () => {
+  // 符号表是**从源 PDF 抽的** ✓ —— 源文件换了而表没重出 ⇒ 它会静静地骗人 ✗
+  // （读者照着旧页码翻原文，翻到的是别的东西 ✗）。
+  // 与「复核清单」同一做法：生成到 tmp/，与**入库那份**逐字比 ✓（不顺手修好 ✗）。
+  const { ok, out } = runPy(
+    ["scripts/extract_formula_symbols.py", "--out", resolve(ROOT, "tmp", "formula-symbols.json")],
+    "formula-symbols",
+  );
+  assert(ok, `公式符号表生成失败:\n        ${out.slice(-600)}`);
+  const fresh = readFileSync(resolve(ROOT, "tmp", "formula-symbols.json"), "utf-8");
+  const committed = gitShow("data/formula-symbols.json");
+  assert(committed !== null, "找不到 data/formula-symbols.json —— 跑 python scripts/extract_formula_symbols.py");
+  assert(
+    fresh.replace(/\r\n/g, "\n") === String(committed).replace(/\r\n/g, "\n"),
+    "入库的公式符号表已经**过期**（源 PDF 或抽取逻辑变了）——\n" +
+      "        重出：python scripts/extract_formula_symbols.py",
+  );
+  const doc = JSON.parse(fresh);
+  return `公式符号表与源 PDF 一致（${(doc.blocks ?? []).length} 个定义块）`;
+});
+
 check("the font payload stays far below Chromium's size cliff", () => {
   // 实测（2026-11-12）：Chromium 的 `page.setContent()` 在 **100 MB** 左右
   // 会**把页面打崩**（「Target page, context or browser has been closed」）✗。
@@ -6661,6 +6692,10 @@ for (const t of [
   // **多模态对比**（表/图/公式）的已知答案用例：**不调模型** ✓。
   // 钉住三条硬线：图像近似 ≠ 一致 ✓、只按行×列配表是瞎配 ✓、串行表不许比 ✓。
   "_test_multimodal.mjs",
+  // **公式符号表**的已知答案用例：**不调模型** ✓。
+  // 钉住：只判「有没有定义 / 单位 / 页码」✓、未找到定义 ≠ 不存在 ✓、
+  // 一边没读出单位时**不算不同** ✓。
+  "_test_formula_symbols.mjs",
   // PDF 比较脚本的**稳定性**用例：它不许随机崩 ✗
   // （2026-11-13 实测：交付件重出成 326 页后，「交付件与报告对不上」**随机变红** ✗，
   //   报的是「没给出 JSON」✗ —— 真因是**同时打开两份 MuPDF 文档** ✗，
