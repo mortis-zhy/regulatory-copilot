@@ -69,7 +69,7 @@ export function compareSymbols(ledger: SymbolLedger | null | undefined): SymbolC
 }
 
 /** 定义截断 —— 报告里只要够认出是哪一条 ✓。 */
-function cut(s: string, n = 90): string {
+function cut(s: string, n = 70): string {
   const t = String(s ?? "").replace(/\|/g, "｜").replace(/\s+/g, " ").trim();
   return t.length > n ? t.slice(0, n) + "…" : t;
 }
@@ -88,8 +88,11 @@ export function renderSymbolTable(ledger: SymbolLedger | null | undefined): stri
     ].join("\n");
   }
   const out: string[] = [];
-  out.push("### 公式符号", "");
-  out.push(`**公式符号**：${c.rows.length} 个符号 × ${c.versions.length} 版（只比**有没有定义 / 单位 / 页码**）`, "");
+  out.push(
+    `**公式符号**：${c.rows.length} 个符号 × ${c.versions.length} 版 —— 只比**有没有定义 / 单位 / 页码** ✓；` +
+      "定义文字不同（中英）**不代表**含义不同 ✗；「未找到定义」也可能只是写法不同 ✗ —— **语义须人判** ✗。",
+    "",
+  );
   out.push(`| 符号 | ${c.versions.join(" | ")} | 判定 |`, "|---|" + "---|".repeat(c.versions.length) + "---|");
   for (const r of c.rows) {
     const cells = c.versions.map((v) => {
@@ -124,11 +127,5 @@ export function renderSymbolTable(ledger: SymbolLedger | null | undefined): stri
     if (defs.length) out.push(`- **${v}**（p${pages.join(" / p")}）：${defs.join("；")}`);
   }
   out.push("");
-  out.push(
-    "> 符号表只判「**有没有定义 / 单位 / 页码**」✓ —— " +
-      "三版的语言不同（中文 vs 英文），定义文字不同**不代表**含义不同 ✗；" +
-      "「未找到定义」也可能是写法不同 ✗。**语义是否一致须人判** ✗。",
-    "",
-  );
   return out.join("\n");
 }
