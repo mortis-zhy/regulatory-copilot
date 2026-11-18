@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-18T07:21:04.703Z",
+ "generatedAt": "2026-11-18T13:51:12.700Z",
  "inventory": {
   "A": {
    "version": "A",
@@ -278,7 +278,8 @@
      "rows": 3,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12绿色边界y=0.150+0.640xW23黄绿色边界y=0.440W34黄色边界x=0.500W45紫红色边界y=0.382W56紫色边界y=0.050+0.750xW61蓝色边界x=0.310 | x y W1 0.310 0.348 W2 0.453 0.440 W3 0.500 0.440 W4 0.500 0.382 W5 0.443 0.382 W6 0.310 0.283 |\n| 选择性黄色 | SY12 绿色边界y=1.290x-0.100 SY23 光谱轨迹SY34 红色边界y=0.138+0.580x SY45 黄白色边界y=0.440 SY51 白色边界y=0.940-x | x y SY1 0.454 0.486 SY2 0.480 0.519 SY3 0.545 0.454 SY4 0.521 0.440 |"
     },
     {
      "page": 17,
@@ -286,7 +287,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n|  |  | SY5 0.500 0.440 |\n| 琥珀色 | A12 绿色边界y=x-0.120 A23 光谱轨迹A34 红色边界y=0.390 A41白色边界y=0.790-0.670x | x y A1 0.545 0.425 A2 0.560 0.440 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线（其延长线穿过光谱轨迹红色和蓝色端点之间的紫色范围）R41紫色边界: y=0.980-x | x y R1 0.645 0.335 R2 0.665 0.335 R3 0.735 0.265 R4 0.721 0.259 |\n| 蓝绿色 | T12绿色边界y=0.500-0.500xT23白色边界x=0.200T34蓝色边界y=0.320 T41 光谱轨迹 | x y T1 0.013 0.494 T2 0.200 0.400 T3 0.200 0.320 T4 0.040 0.320 |"
     },
     {
      "page": 17,
@@ -294,7 +296,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12 蓝色边界y=0.843-1.182 x W23 紫罗兰色边界y=0.489x+0.146 W34 黄色边界y=0.968-1.010x W41 绿色边界y=1.442x-0.136 | x y W1 0.373 0.402 W2 0.417 0.350 W3 0.548 0.414 W4 0.450 0.513 |\n| 黄色 | Y12 绿色边界y=x-0.040 Y23 光谱轨迹Y34 红色边界y=0.200x+0.268 Y41 白色边界y=0.970-x | x y Y1 0.505 0.465 Y2 0.520 0.480 Y3 0.610 0.390 Y4 0.585 0.385 |\n| 琥珀色 | A12 绿色边界y=1.417x-0.347 A23 光谱轨迹A34 红色边界y=0.390 A41 白色边界y=0.790-0.670x | x y A1 0.545 0.425 A2 0.557 0.442 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线R41 紫色边界y=0.978 -x | x y R1 0.643 0.335 R2 0.665 0.335 R3 0.735 0.265 R4 0.720 0.258 |"
     },
     {
      "page": 18,
@@ -302,7 +305,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 橙色 | O12 黄色边界y=0.405 O23 白色边界y=0.994-1.042x O34 红色边界y=0.355 O14 光谱轨迹y=1.025-1.042x | x y O1 0.595 0.405 O2 0.565 0.405 O3 0.613 0.355 O4 0.643 0.355 |"
     },
     {
      "page": 18,
@@ -310,7 +314,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12 紫罗兰色边界y=x-0.030 W23 黄色边界y=0.740-x W34 绿色边界y=x+0.050 W41 蓝色边界y=0.570-x | x y W1 0.300 0.270 W2 0.385 0.355 W3 0.345 0.395 W4 0.260 0.310 |\n| 黄色 | Y12 红色边界y=0.534x+0.163 Y23 白色边界y=0.910-x Y34 绿色边界y=1.342x-0.090 Y41 光谱轨迹 | x y Y1 0.545 0.454 Y2 0.487 0.423 Y3 0.427 0.483 Y4 0.465 0.534 |\n| 红色 | R12 红色边界y=0.346-0.053x R23 紫色边界y=0.910-x R34 黄色边界y=0.350 R41 光谱轨迹 | x y R1 0.690 0.310 R2 0.595 0.315 R3 0.560 0.350 R4 0.650 0.350 |\n| 橙色 | O12 红色边界y=0.154x+0.266 O23光谱轨迹y=0.990-0.985xO34黄色边界y=0.391x+0.206O14白色边界y=0.910-x | x y O1 0.558 0.352 O2 0.636 0.364 O3 0.570 0.429 O4 0.506 0.404 |"
     },
     {
      "page": 18,
@@ -318,7 +323,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 红色 | FR12 红色边界y=0.346-0.053x FR23 紫色边界y=0.910-x FR34 黄色边界y=0.315+0.047x FR41 光谱轨迹 | x y FR1 0.690 0.310 FR2 0.595 0.315 FR3 0.569 0.341 FR4 0.655 0.345 |"
     },
     {
      "page": 19,
@@ -326,7 +332,8 @@
      "rows": 28,
      "cols": 2,
      "scrambled": false,
-     "key": "hdr:28x2:灯具名称|光色"
+     "key": "hdr:28x2:灯具名称|光色",
+     "content": "| 灯具名称 | 光色 |\n| --- | --- |\n| 远光灯 | 白色 |\n| 近光灯 | 白色 |\n| 前雾灯 | 白色或选择性黄色 |\n| 倒车灯 | 白色 |\n| 转向信号灯 | 琥珀色 |\n| 危险警告信号 | 琥珀色 |\n| 制动灯 | 红色 |\n| 紧急制动信号 | 琥珀色或红色 |\n| 牌照灯 | 白色 |\n| 前位灯 | 白色 |\n| 后位灯 | 红色 |\n| 后雾灯 | 红色 |\n| 驻车灯 | 前面白色，后面红色。若与侧转向信号灯、侧标志灯混合则为琥珀色 |\n| 侧标志灯 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯组合，或复合，或混合，或与后回复反射器组合或共有透光面，则最后面的侧标志灯可以为红色 |\n| 示廓灯 | 前面白色，后面红色 |\n| 昼间行驶灯 | 白色 |\n| 非三角形后回复反射器 | 红色 |\n| 三角形后回复反射器 | 红色 |\n| 非三角形前回复反射器（即白色或无色回复反射器） | 与入射光相同 |\n| 非三角形侧回复反射器 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯、最后面的红色侧标志灯或非三角形后回复反射器，组合或共有透光面则可以为红色 |\n| 角灯 | 白色 |\n| 醒目标志 | 车身反光标识:红色、白色和橙色车辆尾部标志板:红色和黄色 |\n| 自适应前照明系统（AFS） | 白色 |\n| 牵引杆挂车标志灯 | 前面白色，后面红色 |\n| 慢行灯 | 白色 |\n| 追尾警告信号 | 琥珀色 |\n| ADS标志灯 | 蓝绿色 |"
     },
     {
      "page": 25,
@@ -334,7 +341,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td>向上角度</td><td>传感器安装高度（传感器孔径中心距离地面距离）</td><td>向下角度</td></tr><tr><td rowspan=\"3\">5°</td><td>小于2.0m</td><td>2°</td></tr><tr><td>1.5m到2.5m</td><td>2°到5°</td></tr><tr><td>大于2.0m</td><td>5°</td></tr></tbody></table>"
     },
     {
      "page": 27,
@@ -342,7 +350,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td>安装高度h （单位:m）</td><td>倾斜上限（单位:%）</td><td>倾角下限（单位:%）</td></tr><tr><td>0.5 ≤ h ≤ 0.9</td><td>-0.50</td><td>- (h + 1.2)</td></tr><tr><td>0.9 ＜ h ≤ 1.2</td><td rowspan=\"2\">- (h×2.17-1.45)</td><td rowspan=\"2\">- (h×2.17+0.15)</td></tr><tr><td>1.2 ＜ h ≤ 1.5</td></tr></tbody></table>"
     },
     {
      "page": 71,
@@ -350,7 +359,8 @@
      "rows": 3,
      "cols": 2,
      "scrambled": false,
-     "key": "hdr:3x2:Vr|激活条件"
+     "key": "hdr:3x2:Vr|激活条件",
+     "content": "| Vr | 激活条件 |\n| --- | --- |\n| Vr ＞ 30km/h | TTC ≤ 1.4s |\n| Vr ≤ 30km/h | TTC ≤ 1.4s / 30km/h×Vr |"
     },
     {
      "page": 73,
@@ -358,7 +368,8 @@
      "rows": 10,
      "cols": 2,
      "scrambled": false,
-     "key": "hdr:10x2:编号|关键词"
+     "key": "hdr:10x2:编号|关键词",
+     "content": "| 编号 | 关键词 |\n| --- | --- |\n| 1 | 发光面 |\n| 2 | 基准轴线 |\n| 3 | 基准中心 |\n| 4 | 几何可见度角 |\n| 5 | 透光面 |\n| 6 | 基于发光面的视表面 |\n| 7a | 基于透光面的视表面，见3.1.8 a）定义（考虑有纹理外配光镜） |\n| 7b | 基于透光面的视表面，见3.1.8 b）定义（不考虑外无纹理配光镜） |\n| 8 | 观察方向 |"
     },
     {
      "page": 78,
@@ -366,7 +377,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:发光面|符合3.1.8a）的透光面"
+     "key": "hdr:2x3:发光面|符合3.1.8a）的透光面",
+     "content": "|  | 发光面 | 符合3.1.8 a）的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
     },
     {
      "page": 78,
@@ -374,7 +386,8 @@
      "rows": 2,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | 发光面 |\n| --- | --- |\n| 边缘 | a-b |"
     },
     {
      "page": 78,
@@ -382,7 +395,8 @@
      "rows": 2,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | 符合3.1.8 a）的透光面 |\n| --- | --- |\n| 边缘 | c-d和e-f |"
     },
     {
      "page": 84,
@@ -390,7 +404,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td colspan=\"3\">自动切换前照灯近光的条件</td></tr><tr><td>外界环境光注:使用经过余弦修正的照度计与车辆传感器安装位置等高的水平面上进行测量。</td><td>近光灯</td><td>响应时间</td></tr><tr><td>小于1000 lx</td><td>开启</td><td>不大于2s</td></tr><tr><td>1000 lx至7000 lx</td><td>由制造商确定</td><td>由制造商确定</td></tr><tr><td>大于7000 lx</td><td>关闭</td><td>大于5s，不大于300s</td></tr></tbody></table>"
     },
     {
      "page": 89,
@@ -398,7 +413,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td rowspan=\"4\">试验项目</td><td rowspan=\"2\">交通情况</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>高速公路（中间有隔离带）</td><td>乡村道路</td></tr><tr><td>速度</td><td>（50± 10）km/h</td><td>（100± 20）km/h</td><td>（80±20）km/h</td></tr><tr><td>对于全路段试验所占的百分比。</td><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>D</td><td>多辆来车和多辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>√</td><td>-</td><td>-</td></tr><tr><td>E</td><td>一辆或多辆静止车辆按一定频率出现，远光光束保持打开状态</td><td></td><td>√</td><td>√</td></tr></tbody></table>"
     },
     {
      "page": 92,
@@ -406,7 +422,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td rowspan=\"4\">试验项目</td><td rowspan=\"2\">交通情况</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>高速公路（中间有隔离带）</td><td>乡村道路</td></tr><tr><td>速度</td><td>（50± 10）km/h</td><td>（100± 20）km/h</td><td>（80±20）km/h</td></tr><tr><td>对于全路段试验所占的百分比。</td><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>D</td><td>多辆来车和多辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>√</td><td>-</td><td>-</td></tr><tr><td>E</td><td>一辆或多辆静止车辆按一定频率出现，自适应远光灯不应自动运行。</td><td></td><td>√</td><td>√</td></tr></tbody></table>"
     }
    ],
    "equations": [
@@ -674,7 +691,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": true,
-     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12绿色边界:y=0.150+0.640xW23黄绿色边界y=0.440WWWW34564561黄紫紫蓝色红色色边色边边界边界界界xxy===y000=...0530501.03008+20.750x | x y W1 0.310 0.348 WWWW2345 0000....455450043003 0000....443344880022 W6 0.310 0.283 |\n| 选择性黄色 | SY12绿色边界y=1.290x-0.100SSSYYY234345光红黄谱色白轨边色迹界边界y=y0=.103.844+00.580xSY51白色边界y=0.940-x | x y SSYY12 00..445840 00..458169 SY3 0.545 0.454 SY4 0.521 0.440 SY5 0.500 0.440 |\n| 琥珀色 | A12绿色边界y=x-0.120AAA243314白光红色谱色边轨边界迹界yy==00.7.39900-0.670x | x y AA12 00..554650 00..442450 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12黄色边界y=0.335RR围2334)光紫谱线(轨其迹延长线穿过光谱轨迹红色和蓝色端点之间的紫色范R41紫色边界:y=0.980-x | x y RR12 00..664655 00..333355 R3 0.735 0.265 R4 0.721 0.259 |"
     },
     {
      "page": 17,
@@ -682,7 +700,8 @@
      "rows": 3,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12蓝色边界:y=0.843-1.182xW23紫罗兰色边界y=0.489x+0.146WW4314绿黄色色边边界界yy==01..946482x--10.01.1036x | x y W1 0.373 0.402 WW23 00..451478 00..345104 W4 0.450 0.513 |\n| 黄色 | Y12绿色边界y=x-0.040Y23光谱轨迹YY4314白红色色边边界界yy==00..290700x-+x0.268 | x y Y1 0.505 0.465 YY23 00..562100 00..438900 Y4 0.585 0.385 |"
     },
     {
      "page": 18,
@@ -690,7 +709,8 @@
      "rows": 3,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 琥珀色 | A12绿色边界y=1.417x-0.347AAA234341光红白谱色色轨边边迹界界yy==00..379900-0.670x | x y AA12 00..554557 00..442452 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12黄色边界y=0.335RRR234341光紫紫谱线色轨边迹界y=0.978-x | x y RR12 00..664635 00..333355 R3 0.735 0.265 R4 0.720 0.258 |"
     },
     {
      "page": 18,
@@ -698,7 +718,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:4x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12紫罗兰色边界y=x-0.030W23黄色边界y=0.740-xWW3441绿蓝色色边边界界yy==0x.5+700,-05x0 | x y W1 0.300 0.270 WW23 00..338455 00..335955 W4 0.260 0.310 |\n| 黄色 | Y12红色边界y=0.534x+0.163Y23白色边界y=0.910-xYY3414绿光色谱边轨界迹y=1.342x-0.090 | x y Y1 0.545 0.454 YY23 00..448277 00..442833 Y4 0.465 0.534 |\n| 红色 | R12红色边界y=0.346-0.053xR23紫色边界y=0.910-xRR4341黄光谱色边轨迹界y=0.350 | x y R1 0.690 0.310 RR23 00..559650 00..331550 R4 0.650 0.350 |"
     },
     {
      "page": 18,
@@ -706,7 +727,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+     "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 红色 | FR12红色边界y=0.346-0.053xFFFRRR234341紫黄光色色谱边边轨界界迹yy==00..931105-+0x.047x | x y FFRR12 00..659905 00..331105 FR3 0.569 0.341 FR4 0.655 0.345 |"
     },
     {
      "page": 19,
@@ -714,7 +736,8 @@
      "rows": 27,
      "cols": 2,
      "scrambled": false,
-     "key": "hdr:27x2:灯具名称|光色"
+     "key": "hdr:27x2:灯具名称|光色",
+     "content": "| 灯具名称 | 光色 |\n| --- | --- |\n| 远光灯 | 白色 |\n| 近光灯 | 白色 |\n| 前雾灯 | 白色或选择性黄色 |\n| 制动灯 | 红色 |\n| 紧急制动信号 | 琥珀色或红色 |\n| 牌照灯 | 白色 |\n| 前位灯 | 白色 |\n| 后位灯 | 红色 |\n| 后雾灯 | 红色 |\n| 倒车灯 | 白色 |\n| 转向信号灯 | 琥珀色 |\n| 危险警告信号 | 琥珀色 |\n| 驻车灯 | 前面白色,后面红色。若与侧转向信号灯、侧标志灯混合则为琥珀色 |\n| 侧标志灯 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯组合,或复合,或混合,或与后回复反射器组合或共有透光面,则最后面的侧标志灯可以为红色 |\n| 示廓灯 | 前面白色,后面红色 |\n| 昼间行驶灯 | 白色 |\n| 非三角形后回复反射器 | 红色 |\n| 三角形后回复反射器 | 红色 |\n| 非三角形前回复反射器(即白色或无色回复反射器) | 与入射光相同 |\n| 非三角形侧回复反射器 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯、最后面的红色侧标志灯或非三角形后回复反射器,组合或共有透光面则可以为红色 |\n| 角灯 | 白色 |\n| 醒目标志 | 车身反光标识:红色和白色尾部标志板:红色和黄色 |\n| 自适应前照明系统(AFS) | 白色 |\n| 牵引杆挂车标志灯 | 前面白色,后面红色 |\n| 慢行灯 | 白色 |\n| 追尾警告信号 | 琥珀色 |"
     },
     {
      "page": 23,
@@ -722,7 +745,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td>向上角度</td><td colspan=\"3\">5°</td></tr><tr><td>传心感距器离安地装面距高离度)(传感器孔径中</td><td>小于2.0m</td><td>1.5m到2.5m</td><td>大于2.0m</td></tr><tr><td>向下角度</td><td>2°</td><td>2°~5°</td><td>5°</td></tr></tbody></table>"
     },
     {
      "page": 58,
@@ -730,7 +754,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tr><td> $v_{r}$ </td><td>激活条件</td></tr><tr><td> $v_{r} > 30 \\text{ km/h}$ </td><td>TTC $\\leqslant 1.4 \\text{ s}$ </td></tr><tr><td> $v_{r} \\leqslant 30 \\text{ km/h}$ </td><td>TTC $\\leqslant \\frac{1.4 \\text{ s} \\times v_{r}}{30 \\text{ km/h}}$ </td></tr><tr><td colspan=\"2\">注1: $v_{r}$ (Relative Speed——相对速度)指发出追尾警告信号的车辆与其同车道尾随车辆的速度差。注2:TTC(Time to collision—碰撞时间)指在相对速度( $v_{r}$ )假设保持不变的情况下,发出追尾警告信号的车辆与其同车道尾随车辆将发生碰撞的预估时间。</td></tr></table>"
     },
     {
      "page": 62,
@@ -738,7 +763,8 @@
      "rows": 10,
      "cols": 2,
      "scrambled": false,
-     "key": "hdr:10x2:编号|关键词"
+     "key": "hdr:10x2:编号|关键词",
+     "content": "| 编号 | 关键词 |\n| --- | --- |\n| 1 | 发光面 |\n| 2 | 基准轴线 |\n| 3 | 基准中心 |\n| 4 | 几何可见度角 |\n| 5 | 透光面 |\n| 6 | 基于发光面的视表面 |\n| 7a | 基于透光面的视表面3.10a)(考虑有纹理外配光镜) |\n| 7b | 基于透光面的视表面3.10b)(不考虑外无纹理配光镜) |\n| 8 | 观察方向 |"
     },
     {
      "page": 66,
@@ -746,7 +772,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+     "key": "hdr:2x3:发光面|3.10a)定义的透光面",
+     "content": "|  | 发光面 | 3.10 a)定义的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
     },
     {
      "page": 67,
@@ -754,7 +781,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+     "key": "hdr:2x3:发光面|3.10a)定义的透光面",
+     "content": "|  | 发光面 | 3.10 a)定义的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
     },
     {
      "page": 67,
@@ -762,7 +790,8 @@
      "rows": 2,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | 发光面 |\n| --- | --- |\n| 边缘 | a-b |"
     },
     {
      "page": 68,
@@ -770,7 +799,8 @@
      "rows": 2,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | 3.10 a)定义的透光面 |\n| --- | --- |\n| 边缘 | c-d和e-f |"
     },
     {
      "page": 68,
@@ -778,7 +808,8 @@
      "rows": 2,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | 3.10 a)定义的透光面 |\n| --- | --- |\n| 边缘 | ${\\mathrm{c}}^{\\prime } - {\\mathrm{d}}^{\\prime }$和${\\mathrm{e}}^{\\prime } - {\\mathrm{f}}^{\\prime }$ |"
     },
     {
      "page": 75,
@@ -786,7 +817,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td rowspan=\"6\">试验编号</td><td rowspan=\"6\">试验项目</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>中间有隔离带的道路,例如:高速公路</td><td>乡村道路</td></tr><tr><td colspan=\"3\">速度</td></tr><tr><td>(50±10)km/h</td><td>(100±20)km/h</td><td>(80±20)km/h</td></tr><tr><td colspan=\"3\">对于全路段试验所占的百分比</td></tr><tr><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>D</td><td>频多率辆出来现车和多辆前车按一定</td><td>√</td><td></td><td></td></tr></tbody></table>"
     },
     {
      "page": 76,
@@ -794,7 +826,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td rowspan=\"6\">试验编号</td><td rowspan=\"6\">试验项目</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>中间有隔离带的道路,例如:高速公路</td><td>乡村道路</td></tr><tr><td colspan=\"3\">速度</td></tr><tr><td>(50±10)km/h</td><td>(100±20)km/h</td><td>(80±20)km/h</td></tr><tr><td colspan=\"3\">对于全路段试验所占的百分比</td></tr><tr><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>D</td><td>频多率辆出来现车和多辆前车按一定</td><td>√</td><td></td><td></td></tr></tbody></table>"
     },
     {
      "page": 80,
@@ -802,7 +835,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td colspan=\"3\">自动切换前照灯近光的条件</td></tr><tr><td>外界环境光</td><td>近光灯</td><td>响应时间</td></tr><tr><td>小于1000lx</td><td>开启</td><td>不大于2s</td></tr><tr><td>1000lx~7000lx</td><td>由制造商确定</td><td>由制造商确定</td></tr><tr><td>大于7000lx</td><td>关闭</td><td>大于5s,不大于300s</td></tr><tr><td colspan=\"3\">注:使用经过余弦修正的照度计与车辆传感器安装位置等高的水平面上进行测量。</td></tr></tbody></table>"
     }
    ],
    "equations": [
@@ -1100,7 +1134,8 @@
      "rows": 3,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:3x3:WP29reference|Amendment|Supplement"
+     "key": "hdr:3x3:WP29reference|Amendment|Supplement",
+     "content": "| WP29 reference | Amendment | Supplement |\n| --- | --- | --- |\n| WP29/2024/28 |  | Baseline |\n| WP29/2025/36 |  | Suppl. 1 |\n|  |  |  |\n|  |  |  |\n|  |  |  |"
     },
     {
      "page": 18,
@@ -1108,7 +1143,8 @@
      "rows": 6,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x"
+     "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x",
+     "content": "| ${\\mathrm{W}}_{12}$ | green boundary | y = 0.150 + 0.640 x |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | yellowish green boundary | y = 0.440 |\n| ${\\mathrm{W}}_{34}$ | yellow boundary | x = 0.500 |\n| ${\\mathrm{W}}_{45}$ | reddish purple boundary | y = 0.382 |\n| ${\\mathrm{W}}_{56}$ | purple boundary | y = 0.050 + 0.750 x |\n| ${\\mathrm{W}}_{61}$ | blue boundary | x = 0.310 |"
     },
     {
      "page": 18,
@@ -1116,7 +1152,8 @@
      "rows": 7,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $W_{1}$ | 0.310 | 0.348 |\n| $W_{2}$ | 0.453 | 0.440 |\n| $W_{3}$ | 0.500 | 0.440 |\n| $W_{4}$ | 0.500 | 0.382 |\n| $W_{5}$ | 0.443 | 0.382 |\n| $W_{6}$ | 0.310 | 0.283 |"
     },
     {
      "page": 18,
@@ -1124,7 +1161,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100"
+     "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100",
+     "content": "| $SY_{12}$ | green boundary | y = 1.290 x - 0.100 |\n| --- | --- | --- |\n| $SY_{23}$ | the spectral locus |  |\n| $SY_{34}$ | red boundary | y = 0.138 + 0.580 x |\n| $SY_{45}$ | yellowish white boundary | y = 0.440 |\n| $SY_{51}$ | white boundary | y = 0.940 - x |"
     },
     {
      "page": 18,
@@ -1132,7 +1170,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $SY_1$ | 0.454 | 0.486 |\n| $SY_2$ | 0.480 | 0.519 |\n| $SY_3$ | 0.545 | 0.454 |"
     },
     {
      "page": 19,
@@ -1140,7 +1179,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "| $SY_4$ | 0.521 | 0.440 |\n| --- | --- | --- |\n| $SY_5$ | 0.500 | 0.440 |"
     },
     {
      "page": 19,
@@ -1148,7 +1188,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120"
+     "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120",
+     "content": "| $A_{12}$ | green boundary | y = x - 0.120 |\n| --- | --- | --- |\n| $A_{23}$ | the spectral locus |  |\n| $A_{34}$ | red boundary | y = 0.390 |\n| $A_{41}$ | white boundary | y = 0.790 - 0.670 x |"
     },
     {
      "page": 19,
@@ -1156,7 +1197,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $A_1$ | 0.545 | 0.425 |\n| $A_2$ | 0.560 | 0.440 |\n| $A_3$ | 0.609 | 0.390 |\n| $A_4$ | 0.597 | 0.390 |"
     },
     {
      "page": 19,
@@ -1164,7 +1206,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.645 | 0.335 |\n| $R_2$ | 0.665 | 0.335 |\n| $R_3$ | 0.735 | 0.265 |\n| $R_4$ | 0.721 | 0.259 |"
     },
     {
      "page": 19,
@@ -1172,7 +1215,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x"
+     "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x",
+     "content": "| ${\\mathrm{W}}_{12}$ | blue boundary: | y = 0.843 - 1.182 x |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | violet boundary | y = 0.489 x + 0.146 |\n| ${\\mathrm{W}}_{34}$ | yellow boundary | y = 0.968 - 1.010 x |\n| ${\\mathrm{W}}_{41}$ | green boundary | y = 1.442 x - 0.136 |"
     },
     {
      "page": 19,
@@ -1180,7 +1224,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $W_1$ | 0.373 | 0.402 |\n| $W_2$ | 0.417 | 0.350 |\n| $W_3$ | 0.548 | 0.414 |\n| $W_4$ | 0.450 | 0.513 |"
     },
     {
      "page": 19,
@@ -1188,7 +1233,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040"
+     "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040",
+     "content": "| ${\\mathrm{Y}}_{12}$ | green boundary | y = x - 0.040 |\n| --- | --- | --- |\n| ${\\mathrm{Y}}_{23}$ | the spectral locus |  |"
     },
     {
      "page": 20,
@@ -1196,7 +1242,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268"
+     "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268",
+     "content": "| ${\\mathrm{Y}}_{34}$ | red boundary | y = 0.200 x + 0.268 |\n| --- | --- | --- |\n| ${\\mathrm{Y}}_{41}$ | white boundary | y = 0.970 - x |"
     },
     {
      "page": 20,
@@ -1204,23 +1251,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
-    },
-    {
-     "page": 20,
-     "caption": "",
-     "rows": 4,
-     "cols": 3,
-     "scrambled": false,
-     "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347"
-    },
-    {
-     "page": 20,
-     "caption": "",
-     "rows": 5,
-     "cols": 3,
-     "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $Y_1$ | 0.505 | 0.465 |\n| $Y_2$ | 0.520 | 0.480 |\n| $Y_3$ | 0.610 | 0.390 |\n| $Y_4$ | 0.585 | 0.385 |"
     },
     {
      "page": 20,
@@ -1228,7 +1260,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335"
+     "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347",
+     "content": "| ${\\mathrm{A}}_{12}$ | green boundary | y = 1.417 x - 0.347 |\n| --- | --- | --- |\n| ${\\mathrm{A}}_{23}$ | the spectral locus |  |\n| ${\\mathrm{A}}_{34}$ | red boundary | y = 0.390 |\n| ${\\mathrm{A}}_{41}$ | white boundary | y = 0.790 - 0.670 x |"
     },
     {
      "page": 20,
@@ -1236,7 +1269,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $A_1$ | 0.545 | 0.425 |\n| $A_2$ | 0.557 | 0.442 |\n| $A_3$ | 0.609 | 0.390 |\n| $A_4$ | 0.597 | 0.390 |"
     },
     {
      "page": 20,
@@ -1244,7 +1278,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030"
+     "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335",
+     "content": "| ${\\mathrm{R}}_{12}$ | yellow boundary | y = 0.335 |\n| --- | --- | --- |\n| ${\\mathrm{R}}_{23}$ | the spectral locus |  |\n| ${\\mathrm{R}}_{34}$ | the purple line |  |\n| ${\\mathrm{R}}_{41}$ | purple boundary | y = 0.978 - x |"
     },
     {
      "page": 20,
@@ -1252,7 +1287,26 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.643 | 0.335 |\n| $R_2$ | 0.665 | 0.335 |\n| $R_3$ | 0.735 | 0.265 |\n| $R_4$ | 0.720 | 0.258 |"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030",
+     "content": "| ${\\mathrm{W}}_{12}$ | violet boundary | y = x - 0.030 |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | yellow boundary | y = 0.740 – x |\n| ${\\mathrm{W}}_{34}$ | green boundary | y = x + 0,050 |\n| ${\\mathrm{W}}_{41}$ | blue boundary | y = 0.570 – x |"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $W_1$ | 0.300 | 0.270 |\n| $W_2$ | 0.385 | 0.355 |\n| $W_3$ | 0.345 | 0.395 |\n| $W_4$ | 0.260 | 0.310\" |"
     },
     {
      "page": 21,
@@ -1260,7 +1314,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $Y_1$ | 0.545 | 0.454 |\n| $Y_2$ | 0.487 | 0.423 |\n| $Y_3$ | 0.427 | 0.483 |\n| $Y_4$ | 0.465 | 0.534 |"
     },
     {
      "page": 21,
@@ -1268,7 +1323,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x"
+     "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x",
+     "content": "| ${\\mathrm{R}}_{12}$ | red boundary | y = 0.346 - 0.053 x |\n| --- | --- | --- |\n| ${\\mathrm{R}}_{23}$ | purple boundary | y = 0.910 - x |\n| ${\\mathrm{R}}_{34}$ | yellow boundary | y = 0.350 |\n| ${\\mathrm{R}}_{41}$ | the spectral locus |  |"
     },
     {
      "page": 21,
@@ -1276,7 +1332,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.690 | 0.310 |\n| $R_2$ | 0.595 | 0.315 |\n| $R_3$ | 0.560 | 0.350 |\n| $R_4$ | 0.650 | 0.350\" |"
     },
     {
      "page": 21,
@@ -1284,7 +1341,8 @@
      "rows": 4,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x"
+     "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x",
+     "content": "| ${\\mathrm{{FR}}}_{12}$ | red boundary | y = 0.346 - 0.053 x |\n| --- | --- | --- |\n| ${\\mathrm{{FR}}}_{23}$ | purple boundary | y = 0.910 - x |\n| ${\\mathrm{{FR}}}_{34}$ | yellow boundary | y = 0.315 + 0.047 x |\n| ${\\mathrm{{FR}}}_{41}$ | the spectral locus |  |"
     },
     {
      "page": 21,
@@ -1292,7 +1350,8 @@
      "rows": 5,
      "cols": 3,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | x | y |\n| --- | --- | --- |\n| $FR_1$ | 0,690 | 0,310 |\n| $FR_2$ | 0,595 | 0,315 |\n| $FR_3$ | 0,569 | 0,341 |\n| $FR_4$ | 0,655 | 0,345 |"
     },
     {
      "page": 36,
@@ -1300,7 +1359,8 @@
      "rows": 14,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "| 5.35.3. | Neither flashing nor transforming of Driver Assistance Projection is permitted, |\n| --- | --- |\n| 5.35.4. | unless expressly allowed for the use cases described under the conditions in Annex 16. It shall be always possible to manually deactivate and reactivate the system which operates the Driver Assistant Projection. |\n| 5.35.5. | The projected symbols and patterns shall no longer be projected when their associated underlying conditions allowing them to be shown do not exist anymore. |\n| 5.35.6. | The projected symbols and patterns shall stop flashing when their associated underlying conditions allowing them to flash do not exist anymore. |\n| 5.35.7. | The Driver Assistance Projection shall be deactivated automatically in case of an electrically detectable failure of the system that affects the visual informationon the road given by the Driver Assistance Projection. |\n| 5.35.8. | The Driver Assistance Projection shall not interfere with information displayed by the Field of Vision Assistant as defined in UN Regulation No. 125. |\n| 5.35.9. | The Driver Assistance Projection shall not be switched ON when the windshield wiper is switched ON and its continuous operation has occurred for a period of at least two minutes. |\n| 5.35.10. | Except for the wrong way warning, predicted trajectory and risk of collision warning, Driver Assistance Projection shall not be switched ON when the vehicle speed is below 65 km/h. However, when the projection is already switched ON, it may remain switched ON as long as the vehicle speed remains above 40 km/h. |\n| 5.35.11. | Except for predicted trajectory, thelateral distance from the outer edges of the Driver Assistance Projection with respect to the longitudinal median plane or to the trajectory of the centre of gravity of the vehicle shall not be more than 1,250 mm. |\n| 5.35.12. | Irrespective of the requirements of paragraph 5.35.11., for predicted trajectory illustrated in Annex 16: |\n| 5.35.12.1. | The Driver Assistance Projection may be adapted according to the predicted trajectory of the centre of gravity of the vehicle. It shall not be wider than the width of the vehicle including any fitted accessories and trailer if applicable and, inany case, shall not be more than 2,600 mm. |\n| 5.35.13. | Compliance with paragraphs 5.35.11. and 5.35.12.1. shall be demonstrated by the manufacturer by calculation or by other means accepted by the Type Approval Authority. |\n| 6.6.1.6.1.1. | Individual specifications Main-beam headlamp Presence Mandatory on motor vehicles. Prohibited on trailers. |\n| 6.1.2. | Number Two, type approved according to Class B of the 01 or subsequent series of amendments to UN Regulation No. 149. |"
     },
     {
      "page": 39,
@@ -1308,7 +1368,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td>Upward angle</td><td colspan=\"3\">5°</td></tr><tr><td>Mounting height of the sensor (centre of sensor aperture above the ground)</td><td>Less than 2 m</td><td>Between 1.5 m and 2.5 m</td><td>Greater than 2.0m</td></tr><tr><td>Downward angle</td><td>2°</td><td>2° to 5°</td><td>5°</td></tr></tbody></table>"
     },
     {
      "page": 67,
@@ -1316,7 +1377,8 @@
      "rows": 7,
      "cols": 2,
      "scrambled": true,
-     "key": ""
+     "key": "",
+     "content": "|  | Two of the lamps visible from the rear may be grouped, combined or |\n| --- | --- |\n| 6.14.6.14.1. | reciprocally incorporated in accordance with paragraph5.7. The position of an end-outline marker lamp in relation to corresponding position lamp shall be such that the distance between the projections on a transverse vertical plane of the points nearest to one another on the apparent surfaces in the direction of the respective reference axes of the two lamps considered is not less than 200 mm. The additional lamps, as specified in paragraph 6.13.2. (a), used to mark the rear end outline of the vehicle, the trailer or the semi-trailer shall be fitted in such a way to make it visible within the fields of vision of the approved main rear-view devices for indirect vision. Rear retro-reflector, non-triangular Presence Mandatory on motor vehicles. Provided that they are grouped together with the other rear light-signalling devices, optional on trailers. |\n| 6.14.2. | Number Two,type-approved according to the requirements concerning Class IA or IB ha eliminato: retro-reflectors inthe 02 or subsequent series of amendments toUNRegulation No. 3, or in the 00 or subsequent series of amendments to UN Regulation No. 150. Additional retro-reflecting devices and materials (including two retro-reflectors not complying with paragraph 6.14.4. below), are permitted provided they do not impair the effectiveness of the mandatory lighting and light-signalling devices. |\n| 6.14.3. | Arrangement No special requirement. |\n| 6.14.4.6.14.4.1. | Position In width: that point on the illuminating surface which is farthest from the vehicle's median longitudinal plane shall not be more than 400 mm from the extreme outer edge of the vehicle. The distance between the inner edges of the two apparent surfaces in the direction of the reference axes shall: For M<sub>1</sub>and N<sub>1</sub>category vehicles: have no special requirement; For all other categories of vehicles: be not less than 600 mm. This distance may be reduced to 400 mm where the overall width of the vehicle is less than 1,300mm. |\n| 6.14.4.2. | In height: Above the ground, not less than 250 mm nor more than 900 mm (not more than 1,200 mm if grouped with any rear lamp(s), 1,500 mm if the shape of the bodywork makes it impossible to keep within 900 mm or 1200 mm respectively). |\n| 6.14.4.3.6.14.5. | In length: at the rear of the vehicle. Geometric visibility Horizontal angle: 30° inwards and outwards. |"
     },
     {
      "page": 92,
@@ -1324,7 +1386,8 @@
      "rows": 10,
      "cols": 2,
      "scrambled": true,
-     "key": ""
+     "key": "",
+     "content": "| 6.24.7. | Electrical connections |\n| --- | --- |\n| 6.24.8. | No special requirement. Tell-tale No special requirement. |\n| 6.24.9.6.24.9.1. | Other requirements The exterior courtesy lamp(s) shall not be switched ON unless the vehicle is stationary and one or more of the following conditions is satisfied: (a) The propulsion system is stopped; or (b) A driver or passenger door is openedor after being closed; or (c) A load compartment door is openedor after being closed. However, the exterior courtesy lamp(s) shall be switched OFF when the vehicle is no longer stationary. |\n| 6.24.9.1.1. | The exterior courtesy lamps may be switched ON and/or switched OFF manually or automatically. |\n| 6.24.9.1.2. | The exterior courtesy lamp or lamps may vary in luminous intensity and/or vary in apparent surface. The photometric characteristics of the exterior courtesy lamp(s) may vary in relation to the position of vehicle users. No sharp variation of intensity shall be observed during transition. |\n| 6.24.9.1.3.6.24.9.1.4. | The exterior courtesy lamp(s) shall not flash. At the discretion of the manufacturer the exterior courtesy lamp(s) may operate in any combination. |\n| 6.24.9.2. | Approved lamps emitting white light with the exception of main beam head lamps, daytime running lamps and reversing lamps may be switched ON as exterior courtesy lamp(s). In addition, rear position lamps, the parking lamps, the side marker lamps and/or the end-outline marker lamps may be switched ON. The conditions of paragraphs 5.11. and 5.12. above maynot apply. |\n| 6.24.9.3. | The technical service shall, to the satisfaction of the Type Approval Authority, perform a visual test to verify that there is no direct visibility of the apparent surface of the exterior courtesy lamps, if viewed by an observer moving on the boundary of a zone on a transverse plane 10m from the front of the vehicle, a transverse plane 10 m from the rear of the vehicle , and two longitudinal planes 10 m from each side of the vehicle; these four planes to extend from 1 m to 3 m above and perpendicularto the ground as shown in Annex 14. |\n| 6.24.9.4. | At the request of the applicant and with the consent of the Technical Service the requirements of paragraph 6.24.9.3. may be verified by a drawing or simulation or deemed be satisfactory if the applicant can prove that the luminous intensity of light emitted directly during the observation test described in Annex 14 is not more less than 0.5 cd per lamp. |\n| 6.25.6.25.1. | Rear-end collision alert signal Presence Optional The rear-end collision alert signal shall be given by the simultaneous operation of all the direction indicator lamps fitted as described in paragraph6.25.7. |"
     },
     {
      "page": 93,
@@ -1332,7 +1395,8 @@
      "rows": 3,
      "cols": 2,
      "scrambled": false,
-     "key": "hdr:3x2:Vr|switchON"
+     "key": "hdr:3x2:Vr|switchON",
+     "content": "| Vr | switch ON |\n| --- | --- |\n| Vr > 30 km/h | TTC ≤1.4 |\n| Vr ≤30 km/h | TTC ≤1.4 / 30 ×Vr |"
     },
     {
      "page": 94,
@@ -1340,7 +1404,8 @@
      "rows": 10,
      "cols": 2,
      "scrambled": true,
-     "key": ""
+     "key": "",
+     "content": "|  | Optional on motor vehiclesand trailers. |\n| --- | --- |\n| 6.26.2. | Number One or two (one per side)on vehicles not exceeding 6 m in length. A maximum of four (up to two per side) on vehicles above 6 m and up to and including 9 m in length. A maximum of six (up to three per side) on vehicles exceeding 9 m in length. However, installed lamps shall be type-approved according to the 00 or subsequent series of amendments to UN Regulation No. 23, or to the 00 or subsequent series of amendments to UN Regulation No. 148. |\n| 6.26.3. | Arrangement No special requirement, however the requirements of paragraph 6.26.9. apply. |\n| 6.26.4. | Position |\n| 6.26.4.1. | In width: No special requirement. |\n| 6.26.4.2. | In height: Above the ground, not more than 1,500 mm. |\n| 6.26.4.3. | In length: In the case of the installation of more than one manoeuvring lamp, lamps shall be mounted as symmetrically as practicable along each side of the vehicle. The distance between two adjacent manoeuvring lamps on the same side shall not be less than 0.5 m. |\n| 6.26.5. | Geometric Visibility No special requirement. |\n| 6.26.6. | Orientation Downwards, however the requirements of paragraph 6.26.9. apply. |\n| 6.26.7. | Electrical Connections Motor vehicles: Manoeuvring lamps shall be so connected that they cannot be switched ON unless the main-beam headlamps or the dipped-beam headlamps of the motor vehicle are switched ON at the same time. The manoeuvring lamp(s) shall be switched ON automatically for slow manoeuvres up to 15 km/h provided that one of the following conditions is fulfilled: (a) Prior to the vehicle being set in motion for the first time after each manual activation of the propulsion system; or (b) Reverse gear is engaged; or (c) A camera-based system which assists parking manoeuvresis operating. The manoeuvring lamps shall be automatically switched OFF if the forward speed of the vehicle exceeds 15 km/h and they shall remain switched OFF until the switch ON conditions are met again. Trailers: Manoeuvring lamps shall be so connected that they cannot be activated unless the position lamps of the trailer are switched ON at the same timeand shall take their input speed directly from the trailer. |"
     },
     {
      "page": 95,
@@ -1348,7 +1413,8 @@
      "rows": 10,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "| 6.27. | Answer-back signal |\n| --- | --- |\n| 6.27.1. | Presence |\n|  | Optional. |\n| 6.27.2. | Number |\n|  | In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. However, the number it may be less than or equal to the individual specifications applicable to the specific lamp. |\n| 6.27.3. | Arrangement |\n|  | In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.4. | Position |\n| 6.27.4.1. | In width: In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.4.2. | In height: in accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |"
     },
     {
      "page": 96,
@@ -1356,7 +1422,8 @@
      "rows": 11,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "| 6.27.4.3. | In length: In accordance with the individual specifications applicable to the |\n| --- | --- |\n| 6.27.5. | specific lamp used for the answer-back signal. Geometric visibility In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal.However,the geometric visibility may be reduced in comparison to the individual specifications applicable to the specific lamp. |\n| 6.27.6. | Orientation In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.7.6.27.7.1. | Electrical connections The answer-back signal shall only operate under the park condition of a vehicle. |\n| 6.27.7.2.6.27.7.3.6.27.7.4. | If the answer-back signalflashes, the frequency shall not exceed 2.0 Hz. The lampsused for the answer-back signal may operate in combination. Individual specific requirements for electrical connections and the conditions of paragraphs 5.11. and 5.12. may not apply to the lamps used for the answer-back signal. |\n| 6.27.8. | Tell-tale No special requirement. |\n| 6.27.9.6.27.9.1. | Other requirements The answer-back signal shall be provided by approved lighting and light-signalling devices and exterior courtesy lamps where in all these cases, the maximum luminous intensity per lamp does not exceed 700 cd on or above the HH line. However, front fog lamps, rear fog lamps and stop lamps are not permitted to be used. |\n| 6.27.9.2. | The answer-back signal may only be activated automatically in conjunction with the locking and unlocking of the door(s) and/or the detection of the vehicle user in proximity to the vehicle. |\n| 6.27.9.3. | The lamp used for the answer-back signal may flash and/or vary in luminous intensity and/or vary in apparent surface. |\n| 6.27.9.4. | The duration of the optical indication of the answer-back signal shall not exceed 3 seconds. |\n| 6.27.9.5. | Compliance with the requirements of paragraphs 6.27.9.1. to 6.27.9.4. shall be demonstrated by the applicant, using test reports or other means of verification accepted by the Type Approval Authority. The information shall be indicated in item 10.9. of the communication form. |"
     },
     {
      "page": 102,
@@ -1364,7 +1431,8 @@
      "rows": 14,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "| 12.7.2. | As of 1 September 2024, Contracting Parties applying this Regulation shall not |\n| --- | --- |\n| 12.7.3. | be obliged to accept UN type approvals to the preceding series of amendments, first issued after 1 September 2024. Until 1 September 2027, Contracting Parties applying this Regulation shall accept UN type approvals to the preceding series of amendments, first issued before 1 September 2024. |\n| 12.7.4. | As from 1 September 2027, Contracting Parties applying this Regulation shall not be obliged to accept type approvals issued to the preceding series of amendments to this Regulation. |\n| 12.7.5. | Notwithstanding the transitional provisions above, Contracting Parties who start to apply this Regulation after the date of entry into force of the most recent series of amendments are not obliged to accept UN type-approvals which were granted in accordance with any of the preceding series of amendments to this Regulation. |\n| 12.7.6. | Notwithstanding paragraph 12.7.4. Contracting Parties applying this Regulation shall continue to accept UN type approvals to the preceding series of amendments to this Regulation, for the vehicle types which are not affected by the changes introduced by the 08 series of amendments. |\n| 12.7.7. | Contracting Parties applying this Regulation may grant UN type approvals according to anypreceding series of amendments to this Regulation. |\n| 12.7.8 | Contracting Parties applying this Regulation shall continue to grant extensions of existing approvals to any preceding series of amendments to this Regulation. |\n| 12.8.12.8.1. | Transitional provisions applicable to 09 series of amendments. As from the official date of entry into force of the 09 series of amendments, no Contracting Party applying this Regulation shall refuse to grant or refuse to accept type approvals under this Regulation as amended by the 09 series of amendments. |\n| 12.8.2.12.8.2.1. | For vehicles of categories M, N<sub>1</sub>, O<sub>1</sub>and O<sub>2</sub>: As from 1 September 2027 Contracting Parties applying this Regulation shall not be obliged to accept type approvals to the preceding series of amendments, first issued after 1 September 2027. |\n| 12.8.2.2. | Until 1 September 2030, Contracting Parties applying this Regulation shall accept type approvals to the preceding series of amendments, first issued before 1 September 2027. |\n| 12.8.2.3. | As from 1 September 2030, Contracting Parties applying this Regulation shall not be obliged to accept type approvals, and extensions thereof, issued to the preceding series of amendments to this Regulation. |\n| 12.8.3.12.8.3.1. | For vehicles of categories N<sub>2</sub>, N<sub>3</sub>, O<sub>3</sub>and O<sub>4</sub>: As from 1 September 2028, Contracting Parties applying this Regulation shall not be obliged to accept type approvals to the preceding series of amendments, first issued after 1 September 2028. |\n| 12.8.3.2. | Until 1 September 2031, Contracting Parties applying this Regulation shall accept type approvals to the preceding series of amendments, first issued before 1 September 2028. |\n| 12.8.3.3. | As from 1 September 2031, Contracting Parties applying this Regulation shall not be obliged to accept type approvals, and extensions thereof, issued to the |"
     },
     {
      "page": 103,
@@ -1372,7 +1440,8 @@
      "rows": 5,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | preceding series of amendments to this Regulation. |\n| --- | --- |\n| 12.8.4. | Notwithstanding the transitional provisions above, Contracting Parties who start to apply this Regulation after the date of entry into force of the most recent series of amendments are not obliged to accept type approvals which were granted in accordance with any of the preceding series of amendments to this Regulation. |\n| 12.8.5. | Notwithstanding paragraphs 12.8.2.3. and 12.8.3.3., Contracting Parties applying this Regulation shall continue to accept type approvals to the preceding series of amendments to this Regulation, for the vehicle types which are not affected by the changes introduced by the 09 series of amendments. |\n| 12.8.6. | Contracting Parties applying this Regulation may grant type approvals according to any preceding series of amendments to this Regulation. |\n| 12.8.7. | Contracting Parties applying this Regulation shall continue to grant extensions of existing approvals to any preceding series of amendments to this Regulation. |"
     },
     {
      "page": 117,
@@ -1380,7 +1449,8 @@
      "rows": 2,
      "cols": 3,
      "scrambled": false,
-     "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)"
+     "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)",
+     "content": "|  | Illuminating surface | Declared Light-emitting surface according to 2.10.2. (a) |\n| --- | --- | --- |\n| Edges are | a and b | c and d |"
     },
     {
      "page": 117,
@@ -1388,7 +1458,8 @@
      "rows": 2,
      "cols": 2,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "|  | Illuminating surface |\n| --- | --- |\n| Edges are | a and b |"
     },
     {
      "page": 134,
@@ -1396,7 +1467,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td>Mounting height h [m]</td><td>Upper inclination limit [per cent]</td><td>Lower inclination limit [per cent]</td></tr><tr><td>0.5 ≤h ≤ 0.9</td><td>-0.50</td><td>- (h + 1.2)</td></tr><tr><td>0.9 &lt; h ≤ 1.2</td><td rowspan=\"2\">- (h x 2.17 - 1.45)</td><td rowspan=\"2\">- (h x 2.17 + 0.15)</td></tr><tr><td>1.2 &lt; h ≤ 1.5</td></tr></tbody></table>"
     },
     {
      "page": 140,
@@ -1404,7 +1476,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td rowspan=\"4\">Table 1 Test Section</td><td rowspan=\"2\">Traffic conditions</td><td colspan=\"3\">Road type</td></tr><tr><td>Urban areas</td><td>Multi-lane road, e.g. motorway</td><td>Country road</td></tr><tr><td>Speed</td><td>50 ± 10 km/h</td><td>100 ± 20 km/h</td><td>80 ± 20 km/h</td></tr><tr><td>Average percentage of the full test course length</td><td>10 per cent</td><td>20 per cent</td><td>70 per cent</td></tr><tr><td>A</td><td>Single oncoming vehicle or single preceding vehicle in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>B</td><td>Combined oncoming and preceding traffic situations, in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>C</td><td>Active and passive overtaking manoeuvres, in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>D</td><td>Oncoming bicycle, as described in paragraph 6.1.9.3.1.2.</td><td></td><td></td><td>X</td></tr><tr><td>E</td><td>Combined oncoming and preceding traffic situations</td><td>X</td><td></td><td></td></tr></tbody></table>"
     },
     {
      "page": 141,
@@ -1412,7 +1485,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td rowspan=\"4\">Table 2 Test Section</td><td rowspan=\"2\">Traffic conditions</td><td colspan=\"3\">Road type</td></tr><tr><td>Urban areas</td><td>Multi-lane road, e.g. motorway</td><td>Country road</td></tr><tr><td>Speed</td><td>50 ± 10km/h</td><td>100 ± 20km/h</td><td>80 ± 20km/h</td></tr><tr><td>Average percentage of the full test course length</td><td>10 per cent</td><td>20 per cent</td><td>70 per cent</td></tr><tr><td>A</td><td>Single oncoming vehicle or single preceding vehicle in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>B</td><td>Combined oncoming and preceding traffic situations. in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>C</td><td>Active and passive overtaking manoeuvres, in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>D</td><td>Oncoming bicycle, as described in paragraph 6.22.9.3.1.2.</td><td></td><td></td><td>X</td></tr><tr><td>E</td><td>Combined oncoming and preceding traffic situations</td><td>X</td><td></td><td></td></tr></tbody></table>"
     },
     {
      "page": 143,
@@ -1420,7 +1494,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td colspan=\"3\">Automatic switching conditions dipped-beam headlamps<sup>1</sup></td></tr><tr><td>Ambient light outside the vehicle<sup>2</sup></td><td>Dipped-beam headlamps</td><td>Response time</td></tr><tr><td>less than 1,000 lux</td><td>ON</td><td>no more than 2 seconds</td></tr><tr><td>between 1,000 lux and 7,000 lux</td><td>at manufacturer's discretion</td><td>at manufacturer's discretion</td></tr><tr><td>more than 7,000 lux</td><td>OFF</td><td>more than 5 seconds, but no more than300seconds</td></tr></tbody></table>"
     },
     {
      "page": 146,
@@ -1428,7 +1503,8 @@
      "rows": 0,
      "cols": 0,
      "scrambled": false,
-     "key": ""
+     "key": "",
+     "content": "<table><tbody><tr><td>Symbols and Pattern</td><td>Use case</td><td></td><td>Conditions and remarks</td></tr><tr><td></td><td>Slippery road warning Risk of collision warning</td><td></td><td>Triggered when the relative speed is larger than 30 km/h and Risk of Collision Timeis less than 1.4 s. Flashing at 4.0 hz +/- 1.0 hz allowed.</td></tr><tr><td></td><td>Wrong way warning</td><td></td><td>Activated when the vehicle is entering a one-way road or a highway in opposite direction. Flashing at 4.0 hz +/- 1.0 hz allowed.</td></tr><tr><td></td><td>Lane keeping assist warning</td><td></td><td>Activated if the vehicle unintentionally exits its</td></tr><tr><td rowspan=\"2\">or or</td><td></td><td></td><td>lane.</td></tr><tr><td>Predicted trajectory</td><td></td><td>This shape may change when adapted in conformity with the requirements in paragraph5.35.12.</td></tr></tbody></table>"
     },
     {
      "page": 147,
@@ -1436,7 +1512,8 @@
      "rows": 1,
      "cols": 3,
      "scrambled": true,
-     "key": ""
+     "key": "",
+     "content": "| This figure is showing an example of the basic quadrilateral shape of the Driver Assistance Projection for predicted trajectory, as seen from the driver's perspective of a car in straight forward motion. The dashed lines are not part of the projection. They are a representation of the lines delineating the lane on which the vehicle is travelling, and only added to clarify the image and lateral boundaries of the predicted trajectory projection. |  |  |\n| --- | --- | --- |"
     }
    ],
    "equations": [
@@ -1963,7 +2040,8 @@
        "rows": 3,
        "cols": 3,
        "scrambled": false,
-       "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+       "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+       "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12绿色边界y=0.150+0.640xW23黄绿色边界y=0.440W34黄色边界x=0.500W45紫红色边界y=0.382W56紫色边界y=0.050+0.750xW61蓝色边界x=0.310 | x y W1 0.310 0.348 W2 0.453 0.440 W3 0.500 0.440 W4 0.500 0.382 W5 0.443 0.382 W6 0.310 0.283 |\n| 选择性黄色 | SY12 绿色边界y=1.290x-0.100 SY23 光谱轨迹SY34 红色边界y=0.138+0.580x SY45 黄白色边界y=0.440 SY51 白色边界y=0.940-x | x y SY1 0.454 0.486 SY2 0.480 0.519 SY3 0.545 0.454 SY4 0.521 0.440 |"
       },
       "b": {
        "page": 17,
@@ -1971,10 +2049,25 @@
        "rows": 3,
        "cols": 3,
        "scrambled": false,
-       "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+       "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+       "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12蓝色边界:y=0.843-1.182xW23紫罗兰色边界y=0.489x+0.146WW4314绿黄色色边边界界yy==01..946482x--10.01.1036x | x y W1 0.373 0.402 WW23 00..451478 00..345104 W4 0.450 0.513 |\n| 黄色 | Y12绿色边界y=x-0.040Y23光谱轨迹YY4314白红色色边边界界yy==00..290700x-+x0.268 | x y Y1 0.505 0.465 YY23 00..562100 00..438900 Y4 0.585 0.385 |"
       },
       "by": "header",
-      "cellDiff": null
+      "cellDiff": {
+       "status": "compared",
+       "changes": [
+        {
+         "row": 3,
+         "col": 1,
+         "a": "选择性黄色",
+         "b": "黄色"
+        }
+       ],
+       "changed": 1,
+       "total": 5,
+       "unscorable": 4,
+       "note": "**文本**不同 —— 可能只是写法差异（单位/公式排版）✗，须人工判断是否实质 ✗；另有 4 格**抽取串行、没比** ✗"
+      }
      },
      {
       "a": {
@@ -1983,7 +2076,8 @@
        "rows": 2,
        "cols": 3,
        "scrambled": false,
-       "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+       "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+       "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 橙色 | O12 黄色边界y=0.405 O23 白色边界y=0.994-1.042x O34 红色边界y=0.355 O14 光谱轨迹y=1.025-1.042x | x y O1 0.595 0.405 O2 0.565 0.405 O3 0.613 0.355 O4 0.643 0.355 |"
       },
       "b": {
        "page": 18,
@@ -1991,10 +2085,25 @@
        "rows": 2,
        "cols": 3,
        "scrambled": false,
-       "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+       "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+       "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 红色 | FR12红色边界y=0.346-0.053xFFFRRR234341紫黄光色色谱边边轨界界迹yy==00..931105-+0x.047x | x y FFRR12 00..659905 00..331105 FR3 0.569 0.341 FR4 0.655 0.345 |"
       },
       "by": "header",
-      "cellDiff": null
+      "cellDiff": {
+       "status": "compared",
+       "changes": [
+        {
+         "row": 2,
+         "col": 1,
+         "a": "橙色",
+         "b": "红色"
+        }
+       ],
+       "changed": 1,
+       "total": 4,
+       "unscorable": 2,
+       "note": "**文本**不同 —— 可能只是写法差异（单位/公式排版）✗，须人工判断是否实质 ✗；另有 2 格**抽取串行、没比** ✗"
+      }
      },
      {
       "a": {
@@ -2003,7 +2112,8 @@
        "rows": 10,
        "cols": 2,
        "scrambled": false,
-       "key": "hdr:10x2:编号|关键词"
+       "key": "hdr:10x2:编号|关键词",
+       "content": "| 编号 | 关键词 |\n| --- | --- |\n| 1 | 发光面 |\n| 2 | 基准轴线 |\n| 3 | 基准中心 |\n| 4 | 几何可见度角 |\n| 5 | 透光面 |\n| 6 | 基于发光面的视表面 |\n| 7a | 基于透光面的视表面，见3.1.8 a）定义（考虑有纹理外配光镜） |\n| 7b | 基于透光面的视表面，见3.1.8 b）定义（不考虑外无纹理配光镜） |\n| 8 | 观察方向 |"
       },
       "b": {
        "page": 62,
@@ -2011,10 +2121,31 @@
        "rows": 10,
        "cols": 2,
        "scrambled": false,
-       "key": "hdr:10x2:编号|关键词"
+       "key": "hdr:10x2:编号|关键词",
+       "content": "| 编号 | 关键词 |\n| --- | --- |\n| 1 | 发光面 |\n| 2 | 基准轴线 |\n| 3 | 基准中心 |\n| 4 | 几何可见度角 |\n| 5 | 透光面 |\n| 6 | 基于发光面的视表面 |\n| 7a | 基于透光面的视表面3.10a)(考虑有纹理外配光镜) |\n| 7b | 基于透光面的视表面3.10b)(不考虑外无纹理配光镜) |\n| 8 | 观察方向 |"
       },
       "by": "header",
-      "cellDiff": null
+      "cellDiff": {
+       "status": "compared",
+       "changes": [
+        {
+         "row": 8,
+         "col": 2,
+         "a": "基于透光面的视表面，见3.1.8 a）定义（考虑有纹理外配光镜）",
+         "b": "基于透光面的视表面3.10a)(考虑有纹理外配光镜)"
+        },
+        {
+         "row": 9,
+         "col": 2,
+         "a": "基于透光面的视表面，见3.1.8 b）定义（不考虑外无纹理配光镜）",
+         "b": "基于透光面的视表面3.10b)(不考虑外无纹理配光镜)"
+        }
+       ],
+       "changed": 2,
+       "total": 20,
+       "unscorable": 0,
+       "note": "**文本**不同 —— 可能只是写法差异（单位/公式排版）✗，须人工判断是否实质 ✗"
+      }
      }
     ],
     "onlyInA": [
@@ -2024,7 +2155,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n|  |  | SY5 0.500 0.440 |\n| 琥珀色 | A12 绿色边界y=x-0.120 A23 光谱轨迹A34 红色边界y=0.390 A41白色边界y=0.790-0.670x | x y A1 0.545 0.425 A2 0.560 0.440 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线（其延长线穿过光谱轨迹红色和蓝色端点之间的紫色范围）R41紫色边界: y=0.980-x | x y R1 0.645 0.335 R2 0.665 0.335 R3 0.735 0.265 R4 0.721 0.259 |\n| 蓝绿色 | T12绿色边界y=0.500-0.500xT23白色边界x=0.200T34蓝色边界y=0.320 T41 光谱轨迹 | x y T1 0.013 0.494 T2 0.200 0.400 T3 0.200 0.320 T4 0.040 0.320 |"
      },
      {
       "page": 17,
@@ -2032,7 +2164,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12 蓝色边界y=0.843-1.182 x W23 紫罗兰色边界y=0.489x+0.146 W34 黄色边界y=0.968-1.010x W41 绿色边界y=1.442x-0.136 | x y W1 0.373 0.402 W2 0.417 0.350 W3 0.548 0.414 W4 0.450 0.513 |\n| 黄色 | Y12 绿色边界y=x-0.040 Y23 光谱轨迹Y34 红色边界y=0.200x+0.268 Y41 白色边界y=0.970-x | x y Y1 0.505 0.465 Y2 0.520 0.480 Y3 0.610 0.390 Y4 0.585 0.385 |\n| 琥珀色 | A12 绿色边界y=1.417x-0.347 A23 光谱轨迹A34 红色边界y=0.390 A41 白色边界y=0.790-0.670x | x y A1 0.545 0.425 A2 0.557 0.442 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线R41 紫色边界y=0.978 -x | x y R1 0.643 0.335 R2 0.665 0.335 R3 0.735 0.265 R4 0.720 0.258 |"
      },
      {
       "page": 18,
@@ -2040,7 +2173,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12 紫罗兰色边界y=x-0.030 W23 黄色边界y=0.740-x W34 绿色边界y=x+0.050 W41 蓝色边界y=0.570-x | x y W1 0.300 0.270 W2 0.385 0.355 W3 0.345 0.395 W4 0.260 0.310 |\n| 黄色 | Y12 红色边界y=0.534x+0.163 Y23 白色边界y=0.910-x Y34 绿色边界y=1.342x-0.090 Y41 光谱轨迹 | x y Y1 0.545 0.454 Y2 0.487 0.423 Y3 0.427 0.483 Y4 0.465 0.534 |\n| 红色 | R12 红色边界y=0.346-0.053x R23 紫色边界y=0.910-x R34 黄色边界y=0.350 R41 光谱轨迹 | x y R1 0.690 0.310 R2 0.595 0.315 R3 0.560 0.350 R4 0.650 0.350 |\n| 橙色 | O12 红色边界y=0.154x+0.266 O23光谱轨迹y=0.990-0.985xO34黄色边界y=0.391x+0.206O14白色边界y=0.910-x | x y O1 0.558 0.352 O2 0.636 0.364 O3 0.570 0.429 O4 0.506 0.404 |"
      },
      {
       "page": 18,
@@ -2048,7 +2182,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 红色 | FR12 红色边界y=0.346-0.053x FR23 紫色边界y=0.910-x FR34 黄色边界y=0.315+0.047x FR41 光谱轨迹 | x y FR1 0.690 0.310 FR2 0.595 0.315 FR3 0.569 0.341 FR4 0.655 0.345 |"
      },
      {
       "page": 19,
@@ -2056,7 +2191,8 @@
       "rows": 28,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:28x2:灯具名称|光色"
+      "key": "hdr:28x2:灯具名称|光色",
+      "content": "| 灯具名称 | 光色 |\n| --- | --- |\n| 远光灯 | 白色 |\n| 近光灯 | 白色 |\n| 前雾灯 | 白色或选择性黄色 |\n| 倒车灯 | 白色 |\n| 转向信号灯 | 琥珀色 |\n| 危险警告信号 | 琥珀色 |\n| 制动灯 | 红色 |\n| 紧急制动信号 | 琥珀色或红色 |\n| 牌照灯 | 白色 |\n| 前位灯 | 白色 |\n| 后位灯 | 红色 |\n| 后雾灯 | 红色 |\n| 驻车灯 | 前面白色，后面红色。若与侧转向信号灯、侧标志灯混合则为琥珀色 |\n| 侧标志灯 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯组合，或复合，或混合，或与后回复反射器组合或共有透光面，则最后面的侧标志灯可以为红色 |\n| 示廓灯 | 前面白色，后面红色 |\n| 昼间行驶灯 | 白色 |\n| 非三角形后回复反射器 | 红色 |\n| 三角形后回复反射器 | 红色 |\n| 非三角形前回复反射器（即白色或无色回复反射器） | 与入射光相同 |\n| 非三角形侧回复反射器 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯、最后面的红色侧标志灯或非三角形后回复反射器，组合或共有透光面则可以为红色 |\n| 角灯 | 白色 |\n| 醒目标志 | 车身反光标识:红色、白色和橙色车辆尾部标志板:红色和黄色 |\n| 自适应前照明系统（AFS） | 白色 |\n| 牵引杆挂车标志灯 | 前面白色，后面红色 |\n| 慢行灯 | 白色 |\n| 追尾警告信号 | 琥珀色 |\n| ADS标志灯 | 蓝绿色 |"
      },
      {
       "page": 25,
@@ -2064,7 +2200,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>向上角度</td><td>传感器安装高度（传感器孔径中心距离地面距离）</td><td>向下角度</td></tr><tr><td rowspan=\"3\">5°</td><td>小于2.0m</td><td>2°</td></tr><tr><td>1.5m到2.5m</td><td>2°到5°</td></tr><tr><td>大于2.0m</td><td>5°</td></tr></tbody></table>"
      },
      {
       "page": 27,
@@ -2072,7 +2209,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>安装高度h （单位:m）</td><td>倾斜上限（单位:%）</td><td>倾角下限（单位:%）</td></tr><tr><td>0.5 ≤ h ≤ 0.9</td><td>-0.50</td><td>- (h + 1.2)</td></tr><tr><td>0.9 ＜ h ≤ 1.2</td><td rowspan=\"2\">- (h×2.17-1.45)</td><td rowspan=\"2\">- (h×2.17+0.15)</td></tr><tr><td>1.2 ＜ h ≤ 1.5</td></tr></tbody></table>"
      },
      {
       "page": 71,
@@ -2080,7 +2218,8 @@
       "rows": 3,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:3x2:Vr|激活条件"
+      "key": "hdr:3x2:Vr|激活条件",
+      "content": "| Vr | 激活条件 |\n| --- | --- |\n| Vr ＞ 30km/h | TTC ≤ 1.4s |\n| Vr ≤ 30km/h | TTC ≤ 1.4s / 30km/h×Vr |"
      },
      {
       "page": 78,
@@ -2088,7 +2227,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:发光面|符合3.1.8a）的透光面"
+      "key": "hdr:2x3:发光面|符合3.1.8a）的透光面",
+      "content": "|  | 发光面 | 符合3.1.8 a）的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
      },
      {
       "page": 78,
@@ -2096,7 +2236,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 发光面 |\n| --- | --- |\n| 边缘 | a-b |"
      },
      {
       "page": 78,
@@ -2104,7 +2245,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 符合3.1.8 a）的透光面 |\n| --- | --- |\n| 边缘 | c-d和e-f |"
      },
      {
       "page": 84,
@@ -2112,7 +2254,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td colspan=\"3\">自动切换前照灯近光的条件</td></tr><tr><td>外界环境光注:使用经过余弦修正的照度计与车辆传感器安装位置等高的水平面上进行测量。</td><td>近光灯</td><td>响应时间</td></tr><tr><td>小于1000 lx</td><td>开启</td><td>不大于2s</td></tr><tr><td>1000 lx至7000 lx</td><td>由制造商确定</td><td>由制造商确定</td></tr><tr><td>大于7000 lx</td><td>关闭</td><td>大于5s，不大于300s</td></tr></tbody></table>"
      },
      {
       "page": 89,
@@ -2120,7 +2263,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">试验项目</td><td rowspan=\"2\">交通情况</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>高速公路（中间有隔离带）</td><td>乡村道路</td></tr><tr><td>速度</td><td>（50± 10）km/h</td><td>（100± 20）km/h</td><td>（80±20）km/h</td></tr><tr><td>对于全路段试验所占的百分比。</td><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>D</td><td>多辆来车和多辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>√</td><td>-</td><td>-</td></tr><tr><td>E</td><td>一辆或多辆静止车辆按一定频率出现，远光光束保持打开状态</td><td></td><td>√</td><td>√</td></tr></tbody></table>"
      },
      {
       "page": 92,
@@ -2128,7 +2272,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">试验项目</td><td rowspan=\"2\">交通情况</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>高速公路（中间有隔离带）</td><td>乡村道路</td></tr><tr><td>速度</td><td>（50± 10）km/h</td><td>（100± 20）km/h</td><td>（80±20）km/h</td></tr><tr><td>对于全路段试验所占的百分比。</td><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>D</td><td>多辆来车和多辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>√</td><td>-</td><td>-</td></tr><tr><td>E</td><td>一辆或多辆静止车辆按一定频率出现，自适应远光灯不应自动运行。</td><td></td><td>√</td><td>√</td></tr></tbody></table>"
      }
     ],
     "onlyInB": [
@@ -2138,7 +2283,8 @@
       "rows": 3,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 琥珀色 | A12绿色边界y=1.417x-0.347AAA234341光红白谱色色轨边边迹界界yy==00..379900-0.670x | x y AA12 00..554557 00..442452 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12黄色边界y=0.335RRR234341光紫紫谱线色轨边迹界y=0.978-x | x y RR12 00..664635 00..333355 R3 0.735 0.265 R4 0.720 0.258 |"
      },
      {
       "page": 18,
@@ -2146,7 +2292,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:4x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12紫罗兰色边界y=x-0.030W23黄色边界y=0.740-xWW3441绿蓝色色边边界界yy==0x.5+700,-05x0 | x y W1 0.300 0.270 WW23 00..338455 00..335955 W4 0.260 0.310 |\n| 黄色 | Y12红色边界y=0.534x+0.163Y23白色边界y=0.910-xYY3414绿光色谱边轨界迹y=1.342x-0.090 | x y Y1 0.545 0.454 YY23 00..448277 00..442833 Y4 0.465 0.534 |\n| 红色 | R12红色边界y=0.346-0.053xR23紫色边界y=0.910-xRR4341黄光谱色边轨迹界y=0.350 | x y R1 0.690 0.310 RR23 00..559650 00..331550 R4 0.650 0.350 |"
      },
      {
       "page": 19,
@@ -2154,7 +2301,8 @@
       "rows": 27,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:27x2:灯具名称|光色"
+      "key": "hdr:27x2:灯具名称|光色",
+      "content": "| 灯具名称 | 光色 |\n| --- | --- |\n| 远光灯 | 白色 |\n| 近光灯 | 白色 |\n| 前雾灯 | 白色或选择性黄色 |\n| 制动灯 | 红色 |\n| 紧急制动信号 | 琥珀色或红色 |\n| 牌照灯 | 白色 |\n| 前位灯 | 白色 |\n| 后位灯 | 红色 |\n| 后雾灯 | 红色 |\n| 倒车灯 | 白色 |\n| 转向信号灯 | 琥珀色 |\n| 危险警告信号 | 琥珀色 |\n| 驻车灯 | 前面白色,后面红色。若与侧转向信号灯、侧标志灯混合则为琥珀色 |\n| 侧标志灯 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯组合,或复合,或混合,或与后回复反射器组合或共有透光面,则最后面的侧标志灯可以为红色 |\n| 示廓灯 | 前面白色,后面红色 |\n| 昼间行驶灯 | 白色 |\n| 非三角形后回复反射器 | 红色 |\n| 三角形后回复反射器 | 红色 |\n| 非三角形前回复反射器(即白色或无色回复反射器) | 与入射光相同 |\n| 非三角形侧回复反射器 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯、最后面的红色侧标志灯或非三角形后回复反射器,组合或共有透光面则可以为红色 |\n| 角灯 | 白色 |\n| 醒目标志 | 车身反光标识:红色和白色尾部标志板:红色和黄色 |\n| 自适应前照明系统(AFS) | 白色 |\n| 牵引杆挂车标志灯 | 前面白色,后面红色 |\n| 慢行灯 | 白色 |\n| 追尾警告信号 | 琥珀色 |"
      },
      {
       "page": 23,
@@ -2162,7 +2310,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>向上角度</td><td colspan=\"3\">5°</td></tr><tr><td>传心感距器离安地装面距高离度)(传感器孔径中</td><td>小于2.0m</td><td>1.5m到2.5m</td><td>大于2.0m</td></tr><tr><td>向下角度</td><td>2°</td><td>2°~5°</td><td>5°</td></tr></tbody></table>"
      },
      {
       "page": 58,
@@ -2170,7 +2319,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tr><td> $v_{r}$ </td><td>激活条件</td></tr><tr><td> $v_{r} > 30 \\text{ km/h}$ </td><td>TTC $\\leqslant 1.4 \\text{ s}$ </td></tr><tr><td> $v_{r} \\leqslant 30 \\text{ km/h}$ </td><td>TTC $\\leqslant \\frac{1.4 \\text{ s} \\times v_{r}}{30 \\text{ km/h}}$ </td></tr><tr><td colspan=\"2\">注1: $v_{r}$ (Relative Speed——相对速度)指发出追尾警告信号的车辆与其同车道尾随车辆的速度差。注2:TTC(Time to collision—碰撞时间)指在相对速度( $v_{r}$ )假设保持不变的情况下,发出追尾警告信号的车辆与其同车道尾随车辆将发生碰撞的预估时间。</td></tr></table>"
      },
      {
       "page": 66,
@@ -2178,7 +2328,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面",
+      "content": "|  | 发光面 | 3.10 a)定义的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
      },
      {
       "page": 67,
@@ -2186,7 +2337,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面",
+      "content": "|  | 发光面 | 3.10 a)定义的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
      },
      {
       "page": 67,
@@ -2194,7 +2346,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 发光面 |\n| --- | --- |\n| 边缘 | a-b |"
      },
      {
       "page": 68,
@@ -2202,7 +2355,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 3.10 a)定义的透光面 |\n| --- | --- |\n| 边缘 | c-d和e-f |"
      },
      {
       "page": 68,
@@ -2210,7 +2364,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 3.10 a)定义的透光面 |\n| --- | --- |\n| 边缘 | ${\\mathrm{c}}^{\\prime } - {\\mathrm{d}}^{\\prime }$和${\\mathrm{e}}^{\\prime } - {\\mathrm{f}}^{\\prime }$ |"
      },
      {
       "page": 75,
@@ -2218,7 +2373,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"6\">试验编号</td><td rowspan=\"6\">试验项目</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>中间有隔离带的道路,例如:高速公路</td><td>乡村道路</td></tr><tr><td colspan=\"3\">速度</td></tr><tr><td>(50±10)km/h</td><td>(100±20)km/h</td><td>(80±20)km/h</td></tr><tr><td colspan=\"3\">对于全路段试验所占的百分比</td></tr><tr><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>D</td><td>频多率辆出来现车和多辆前车按一定</td><td>√</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 76,
@@ -2226,7 +2382,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"6\">试验编号</td><td rowspan=\"6\">试验项目</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>中间有隔离带的道路,例如:高速公路</td><td>乡村道路</td></tr><tr><td colspan=\"3\">速度</td></tr><tr><td>(50±10)km/h</td><td>(100±20)km/h</td><td>(80±20)km/h</td></tr><tr><td colspan=\"3\">对于全路段试验所占的百分比</td></tr><tr><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>D</td><td>频多率辆出来现车和多辆前车按一定</td><td>√</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 80,
@@ -2234,7 +2391,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td colspan=\"3\">自动切换前照灯近光的条件</td></tr><tr><td>外界环境光</td><td>近光灯</td><td>响应时间</td></tr><tr><td>小于1000lx</td><td>开启</td><td>不大于2s</td></tr><tr><td>1000lx~7000lx</td><td>由制造商确定</td><td>由制造商确定</td></tr><tr><td>大于7000lx</td><td>关闭</td><td>大于5s,不大于300s</td></tr><tr><td colspan=\"3\">注:使用经过余弦修正的照度计与车辆传感器安装位置等高的水平面上进行测量。</td></tr></tbody></table>"
      }
     ],
     "unscorableA": 0,
@@ -2828,7 +2986,8 @@
       "rows": 3,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12绿色边界y=0.150+0.640xW23黄绿色边界y=0.440W34黄色边界x=0.500W45紫红色边界y=0.382W56紫色边界y=0.050+0.750xW61蓝色边界x=0.310 | x y W1 0.310 0.348 W2 0.453 0.440 W3 0.500 0.440 W4 0.500 0.382 W5 0.443 0.382 W6 0.310 0.283 |\n| 选择性黄色 | SY12 绿色边界y=1.290x-0.100 SY23 光谱轨迹SY34 红色边界y=0.138+0.580x SY45 黄白色边界y=0.440 SY51 白色边界y=0.940-x | x y SY1 0.454 0.486 SY2 0.480 0.519 SY3 0.545 0.454 SY4 0.521 0.440 |"
      },
      {
       "page": 17,
@@ -2836,7 +2995,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n|  |  | SY5 0.500 0.440 |\n| 琥珀色 | A12 绿色边界y=x-0.120 A23 光谱轨迹A34 红色边界y=0.390 A41白色边界y=0.790-0.670x | x y A1 0.545 0.425 A2 0.560 0.440 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线（其延长线穿过光谱轨迹红色和蓝色端点之间的紫色范围）R41紫色边界: y=0.980-x | x y R1 0.645 0.335 R2 0.665 0.335 R3 0.735 0.265 R4 0.721 0.259 |\n| 蓝绿色 | T12绿色边界y=0.500-0.500xT23白色边界x=0.200T34蓝色边界y=0.320 T41 光谱轨迹 | x y T1 0.013 0.494 T2 0.200 0.400 T3 0.200 0.320 T4 0.040 0.320 |"
      },
      {
       "page": 17,
@@ -2844,7 +3004,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12 蓝色边界y=0.843-1.182 x W23 紫罗兰色边界y=0.489x+0.146 W34 黄色边界y=0.968-1.010x W41 绿色边界y=1.442x-0.136 | x y W1 0.373 0.402 W2 0.417 0.350 W3 0.548 0.414 W4 0.450 0.513 |\n| 黄色 | Y12 绿色边界y=x-0.040 Y23 光谱轨迹Y34 红色边界y=0.200x+0.268 Y41 白色边界y=0.970-x | x y Y1 0.505 0.465 Y2 0.520 0.480 Y3 0.610 0.390 Y4 0.585 0.385 |\n| 琥珀色 | A12 绿色边界y=1.417x-0.347 A23 光谱轨迹A34 红色边界y=0.390 A41 白色边界y=0.790-0.670x | x y A1 0.545 0.425 A2 0.557 0.442 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12 黄色边界y=0.335 R23 光谱轨迹R34 紫线R41 紫色边界y=0.978 -x | x y R1 0.643 0.335 R2 0.665 0.335 R3 0.735 0.265 R4 0.720 0.258 |"
      },
      {
       "page": 18,
@@ -2852,7 +3013,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 橙色 | O12 黄色边界y=0.405 O23 白色边界y=0.994-1.042x O34 红色边界y=0.355 O14 光谱轨迹y=1.025-1.042x | x y O1 0.595 0.405 O2 0.565 0.405 O3 0.613 0.355 O4 0.643 0.355 |"
      },
      {
       "page": 18,
@@ -2860,7 +3022,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12 紫罗兰色边界y=x-0.030 W23 黄色边界y=0.740-x W34 绿色边界y=x+0.050 W41 蓝色边界y=0.570-x | x y W1 0.300 0.270 W2 0.385 0.355 W3 0.345 0.395 W4 0.260 0.310 |\n| 黄色 | Y12 红色边界y=0.534x+0.163 Y23 白色边界y=0.910-x Y34 绿色边界y=1.342x-0.090 Y41 光谱轨迹 | x y Y1 0.545 0.454 Y2 0.487 0.423 Y3 0.427 0.483 Y4 0.465 0.534 |\n| 红色 | R12 红色边界y=0.346-0.053x R23 紫色边界y=0.910-x R34 黄色边界y=0.350 R41 光谱轨迹 | x y R1 0.690 0.310 R2 0.595 0.315 R3 0.560 0.350 R4 0.650 0.350 |\n| 橙色 | O12 红色边界y=0.154x+0.266 O23光谱轨迹y=0.990-0.985xO34黄色边界y=0.391x+0.206O14白色边界y=0.910-x | x y O1 0.558 0.352 O2 0.636 0.364 O3 0.570 0.429 O4 0.506 0.404 |"
      },
      {
       "page": 18,
@@ -2868,7 +3031,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 红色 | FR12 红色边界y=0.346-0.053x FR23 紫色边界y=0.910-x FR34 黄色边界y=0.315+0.047x FR41 光谱轨迹 | x y FR1 0.690 0.310 FR2 0.595 0.315 FR3 0.569 0.341 FR4 0.655 0.345 |"
      },
      {
       "page": 19,
@@ -2876,7 +3040,8 @@
       "rows": 28,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:28x2:灯具名称|光色"
+      "key": "hdr:28x2:灯具名称|光色",
+      "content": "| 灯具名称 | 光色 |\n| --- | --- |\n| 远光灯 | 白色 |\n| 近光灯 | 白色 |\n| 前雾灯 | 白色或选择性黄色 |\n| 倒车灯 | 白色 |\n| 转向信号灯 | 琥珀色 |\n| 危险警告信号 | 琥珀色 |\n| 制动灯 | 红色 |\n| 紧急制动信号 | 琥珀色或红色 |\n| 牌照灯 | 白色 |\n| 前位灯 | 白色 |\n| 后位灯 | 红色 |\n| 后雾灯 | 红色 |\n| 驻车灯 | 前面白色，后面红色。若与侧转向信号灯、侧标志灯混合则为琥珀色 |\n| 侧标志灯 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯组合，或复合，或混合，或与后回复反射器组合或共有透光面，则最后面的侧标志灯可以为红色 |\n| 示廓灯 | 前面白色，后面红色 |\n| 昼间行驶灯 | 白色 |\n| 非三角形后回复反射器 | 红色 |\n| 三角形后回复反射器 | 红色 |\n| 非三角形前回复反射器（即白色或无色回复反射器） | 与入射光相同 |\n| 非三角形侧回复反射器 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯、最后面的红色侧标志灯或非三角形后回复反射器，组合或共有透光面则可以为红色 |\n| 角灯 | 白色 |\n| 醒目标志 | 车身反光标识:红色、白色和橙色车辆尾部标志板:红色和黄色 |\n| 自适应前照明系统（AFS） | 白色 |\n| 牵引杆挂车标志灯 | 前面白色，后面红色 |\n| 慢行灯 | 白色 |\n| 追尾警告信号 | 琥珀色 |\n| ADS标志灯 | 蓝绿色 |"
      },
      {
       "page": 25,
@@ -2884,7 +3049,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>向上角度</td><td>传感器安装高度（传感器孔径中心距离地面距离）</td><td>向下角度</td></tr><tr><td rowspan=\"3\">5°</td><td>小于2.0m</td><td>2°</td></tr><tr><td>1.5m到2.5m</td><td>2°到5°</td></tr><tr><td>大于2.0m</td><td>5°</td></tr></tbody></table>"
      },
      {
       "page": 27,
@@ -2892,7 +3058,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>安装高度h （单位:m）</td><td>倾斜上限（单位:%）</td><td>倾角下限（单位:%）</td></tr><tr><td>0.5 ≤ h ≤ 0.9</td><td>-0.50</td><td>- (h + 1.2)</td></tr><tr><td>0.9 ＜ h ≤ 1.2</td><td rowspan=\"2\">- (h×2.17-1.45)</td><td rowspan=\"2\">- (h×2.17+0.15)</td></tr><tr><td>1.2 ＜ h ≤ 1.5</td></tr></tbody></table>"
      },
      {
       "page": 71,
@@ -2900,7 +3067,8 @@
       "rows": 3,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:3x2:Vr|激活条件"
+      "key": "hdr:3x2:Vr|激活条件",
+      "content": "| Vr | 激活条件 |\n| --- | --- |\n| Vr ＞ 30km/h | TTC ≤ 1.4s |\n| Vr ≤ 30km/h | TTC ≤ 1.4s / 30km/h×Vr |"
      },
      {
       "page": 73,
@@ -2908,7 +3076,8 @@
       "rows": 10,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:10x2:编号|关键词"
+      "key": "hdr:10x2:编号|关键词",
+      "content": "| 编号 | 关键词 |\n| --- | --- |\n| 1 | 发光面 |\n| 2 | 基准轴线 |\n| 3 | 基准中心 |\n| 4 | 几何可见度角 |\n| 5 | 透光面 |\n| 6 | 基于发光面的视表面 |\n| 7a | 基于透光面的视表面，见3.1.8 a）定义（考虑有纹理外配光镜） |\n| 7b | 基于透光面的视表面，见3.1.8 b）定义（不考虑外无纹理配光镜） |\n| 8 | 观察方向 |"
      },
      {
       "page": 78,
@@ -2916,7 +3085,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:发光面|符合3.1.8a）的透光面"
+      "key": "hdr:2x3:发光面|符合3.1.8a）的透光面",
+      "content": "|  | 发光面 | 符合3.1.8 a）的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
      },
      {
       "page": 78,
@@ -2924,7 +3094,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 发光面 |\n| --- | --- |\n| 边缘 | a-b |"
      },
      {
       "page": 78,
@@ -2932,7 +3103,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 符合3.1.8 a）的透光面 |\n| --- | --- |\n| 边缘 | c-d和e-f |"
      },
      {
       "page": 84,
@@ -2940,7 +3112,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td colspan=\"3\">自动切换前照灯近光的条件</td></tr><tr><td>外界环境光注:使用经过余弦修正的照度计与车辆传感器安装位置等高的水平面上进行测量。</td><td>近光灯</td><td>响应时间</td></tr><tr><td>小于1000 lx</td><td>开启</td><td>不大于2s</td></tr><tr><td>1000 lx至7000 lx</td><td>由制造商确定</td><td>由制造商确定</td></tr><tr><td>大于7000 lx</td><td>关闭</td><td>大于5s，不大于300s</td></tr></tbody></table>"
      },
      {
       "page": 89,
@@ -2948,7 +3121,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">试验项目</td><td rowspan=\"2\">交通情况</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>高速公路（中间有隔离带）</td><td>乡村道路</td></tr><tr><td>速度</td><td>（50± 10）km/h</td><td>（100± 20）km/h</td><td>（80±20）km/h</td></tr><tr><td>对于全路段试验所占的百分比。</td><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现，远光光束应能自动打开或关闭</td><td>-</td><td>√</td><td>√</td></tr><tr><td>D</td><td>多辆来车和多辆前车按一定频率出现，远光光束应能自动打开或关闭</td><td>√</td><td>-</td><td>-</td></tr><tr><td>E</td><td>一辆或多辆静止车辆按一定频率出现，远光光束保持打开状态</td><td></td><td>√</td><td>√</td></tr></tbody></table>"
      },
      {
       "page": 92,
@@ -2956,7 +3130,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">试验项目</td><td rowspan=\"2\">交通情况</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>高速公路（中间有隔离带）</td><td>乡村道路</td></tr><tr><td>速度</td><td>（50± 10）km/h</td><td>（100± 20）km/h</td><td>（80±20）km/h</td></tr><tr><td>对于全路段试验所占的百分比。</td><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现，自适应远光灯应能自动运行</td><td>-</td><td>√</td><td>√</td></tr><tr><td>D</td><td>多辆来车和多辆前车按一定频率出现，自适应远光灯应能自动运行</td><td>√</td><td>-</td><td>-</td></tr><tr><td>E</td><td>一辆或多辆静止车辆按一定频率出现，自适应远光灯不应自动运行。</td><td></td><td>√</td><td>√</td></tr></tbody></table>"
      }
     ],
     "onlyInB": [
@@ -2966,7 +3141,8 @@
       "rows": 3,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:3x3:WP29reference|Amendment|Supplement"
+      "key": "hdr:3x3:WP29reference|Amendment|Supplement",
+      "content": "| WP29 reference | Amendment | Supplement |\n| --- | --- | --- |\n| WP29/2024/28 |  | Baseline |\n| WP29/2025/36 |  | Suppl. 1 |\n|  |  |  |\n|  |  |  |\n|  |  |  |"
      },
      {
       "page": 18,
@@ -2974,7 +3150,8 @@
       "rows": 6,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x"
+      "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x",
+      "content": "| ${\\mathrm{W}}_{12}$ | green boundary | y = 0.150 + 0.640 x |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | yellowish green boundary | y = 0.440 |\n| ${\\mathrm{W}}_{34}$ | yellow boundary | x = 0.500 |\n| ${\\mathrm{W}}_{45}$ | reddish purple boundary | y = 0.382 |\n| ${\\mathrm{W}}_{56}$ | purple boundary | y = 0.050 + 0.750 x |\n| ${\\mathrm{W}}_{61}$ | blue boundary | x = 0.310 |"
      },
      {
       "page": 18,
@@ -2982,7 +3159,8 @@
       "rows": 7,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $W_{1}$ | 0.310 | 0.348 |\n| $W_{2}$ | 0.453 | 0.440 |\n| $W_{3}$ | 0.500 | 0.440 |\n| $W_{4}$ | 0.500 | 0.382 |\n| $W_{5}$ | 0.443 | 0.382 |\n| $W_{6}$ | 0.310 | 0.283 |"
      },
      {
       "page": 18,
@@ -2990,7 +3168,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100"
+      "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100",
+      "content": "| $SY_{12}$ | green boundary | y = 1.290 x - 0.100 |\n| --- | --- | --- |\n| $SY_{23}$ | the spectral locus |  |\n| $SY_{34}$ | red boundary | y = 0.138 + 0.580 x |\n| $SY_{45}$ | yellowish white boundary | y = 0.440 |\n| $SY_{51}$ | white boundary | y = 0.940 - x |"
      },
      {
       "page": 18,
@@ -2998,7 +3177,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $SY_1$ | 0.454 | 0.486 |\n| $SY_2$ | 0.480 | 0.519 |\n| $SY_3$ | 0.545 | 0.454 |"
      },
      {
       "page": 19,
@@ -3006,7 +3186,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| $SY_4$ | 0.521 | 0.440 |\n| --- | --- | --- |\n| $SY_5$ | 0.500 | 0.440 |"
      },
      {
       "page": 19,
@@ -3014,7 +3195,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120"
+      "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120",
+      "content": "| $A_{12}$ | green boundary | y = x - 0.120 |\n| --- | --- | --- |\n| $A_{23}$ | the spectral locus |  |\n| $A_{34}$ | red boundary | y = 0.390 |\n| $A_{41}$ | white boundary | y = 0.790 - 0.670 x |"
      },
      {
       "page": 19,
@@ -3022,7 +3204,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $A_1$ | 0.545 | 0.425 |\n| $A_2$ | 0.560 | 0.440 |\n| $A_3$ | 0.609 | 0.390 |\n| $A_4$ | 0.597 | 0.390 |"
      },
      {
       "page": 19,
@@ -3030,7 +3213,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.645 | 0.335 |\n| $R_2$ | 0.665 | 0.335 |\n| $R_3$ | 0.735 | 0.265 |\n| $R_4$ | 0.721 | 0.259 |"
      },
      {
       "page": 19,
@@ -3038,7 +3222,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x"
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x",
+      "content": "| ${\\mathrm{W}}_{12}$ | blue boundary: | y = 0.843 - 1.182 x |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | violet boundary | y = 0.489 x + 0.146 |\n| ${\\mathrm{W}}_{34}$ | yellow boundary | y = 0.968 - 1.010 x |\n| ${\\mathrm{W}}_{41}$ | green boundary | y = 1.442 x - 0.136 |"
      },
      {
       "page": 19,
@@ -3046,7 +3231,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $W_1$ | 0.373 | 0.402 |\n| $W_2$ | 0.417 | 0.350 |\n| $W_3$ | 0.548 | 0.414 |\n| $W_4$ | 0.450 | 0.513 |"
      },
      {
       "page": 19,
@@ -3054,7 +3240,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040"
+      "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040",
+      "content": "| ${\\mathrm{Y}}_{12}$ | green boundary | y = x - 0.040 |\n| --- | --- | --- |\n| ${\\mathrm{Y}}_{23}$ | the spectral locus |  |"
      },
      {
       "page": 20,
@@ -3062,7 +3249,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268"
+      "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268",
+      "content": "| ${\\mathrm{Y}}_{34}$ | red boundary | y = 0.200 x + 0.268 |\n| --- | --- | --- |\n| ${\\mathrm{Y}}_{41}$ | white boundary | y = 0.970 - x |"
      },
      {
       "page": 20,
@@ -3070,23 +3258,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
-     },
-     {
-      "page": 20,
-      "caption": "",
-      "rows": 4,
-      "cols": 3,
-      "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347"
-     },
-     {
-      "page": 20,
-      "caption": "",
-      "rows": 5,
-      "cols": 3,
-      "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $Y_1$ | 0.505 | 0.465 |\n| $Y_2$ | 0.520 | 0.480 |\n| $Y_3$ | 0.610 | 0.390 |\n| $Y_4$ | 0.585 | 0.385 |"
      },
      {
       "page": 20,
@@ -3094,7 +3267,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335"
+      "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347",
+      "content": "| ${\\mathrm{A}}_{12}$ | green boundary | y = 1.417 x - 0.347 |\n| --- | --- | --- |\n| ${\\mathrm{A}}_{23}$ | the spectral locus |  |\n| ${\\mathrm{A}}_{34}$ | red boundary | y = 0.390 |\n| ${\\mathrm{A}}_{41}$ | white boundary | y = 0.790 - 0.670 x |"
      },
      {
       "page": 20,
@@ -3102,7 +3276,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $A_1$ | 0.545 | 0.425 |\n| $A_2$ | 0.557 | 0.442 |\n| $A_3$ | 0.609 | 0.390 |\n| $A_4$ | 0.597 | 0.390 |"
      },
      {
       "page": 20,
@@ -3110,7 +3285,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030"
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335",
+      "content": "| ${\\mathrm{R}}_{12}$ | yellow boundary | y = 0.335 |\n| --- | --- | --- |\n| ${\\mathrm{R}}_{23}$ | the spectral locus |  |\n| ${\\mathrm{R}}_{34}$ | the purple line |  |\n| ${\\mathrm{R}}_{41}$ | purple boundary | y = 0.978 - x |"
      },
      {
       "page": 20,
@@ -3118,7 +3294,26 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.643 | 0.335 |\n| $R_2$ | 0.665 | 0.335 |\n| $R_3$ | 0.735 | 0.265 |\n| $R_4$ | 0.720 | 0.258 |"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030",
+      "content": "| ${\\mathrm{W}}_{12}$ | violet boundary | y = x - 0.030 |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | yellow boundary | y = 0.740 – x |\n| ${\\mathrm{W}}_{34}$ | green boundary | y = x + 0,050 |\n| ${\\mathrm{W}}_{41}$ | blue boundary | y = 0.570 – x |"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $W_1$ | 0.300 | 0.270 |\n| $W_2$ | 0.385 | 0.355 |\n| $W_3$ | 0.345 | 0.395 |\n| $W_4$ | 0.260 | 0.310\" |"
      },
      {
       "page": 21,
@@ -3126,7 +3321,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $Y_1$ | 0.545 | 0.454 |\n| $Y_2$ | 0.487 | 0.423 |\n| $Y_3$ | 0.427 | 0.483 |\n| $Y_4$ | 0.465 | 0.534 |"
      },
      {
       "page": 21,
@@ -3134,7 +3330,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x"
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x",
+      "content": "| ${\\mathrm{R}}_{12}$ | red boundary | y = 0.346 - 0.053 x |\n| --- | --- | --- |\n| ${\\mathrm{R}}_{23}$ | purple boundary | y = 0.910 - x |\n| ${\\mathrm{R}}_{34}$ | yellow boundary | y = 0.350 |\n| ${\\mathrm{R}}_{41}$ | the spectral locus |  |"
      },
      {
       "page": 21,
@@ -3142,7 +3339,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.690 | 0.310 |\n| $R_2$ | 0.595 | 0.315 |\n| $R_3$ | 0.560 | 0.350 |\n| $R_4$ | 0.650 | 0.350\" |"
      },
      {
       "page": 21,
@@ -3150,7 +3348,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x"
+      "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x",
+      "content": "| ${\\mathrm{{FR}}}_{12}$ | red boundary | y = 0.346 - 0.053 x |\n| --- | --- | --- |\n| ${\\mathrm{{FR}}}_{23}$ | purple boundary | y = 0.910 - x |\n| ${\\mathrm{{FR}}}_{34}$ | yellow boundary | y = 0.315 + 0.047 x |\n| ${\\mathrm{{FR}}}_{41}$ | the spectral locus |  |"
      },
      {
       "page": 21,
@@ -3158,7 +3357,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $FR_1$ | 0,690 | 0,310 |\n| $FR_2$ | 0,595 | 0,315 |\n| $FR_3$ | 0,569 | 0,341 |\n| $FR_4$ | 0,655 | 0,345 |"
      },
      {
       "page": 36,
@@ -3166,7 +3366,8 @@
       "rows": 14,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 5.35.3. | Neither flashing nor transforming of Driver Assistance Projection is permitted, |\n| --- | --- |\n| 5.35.4. | unless expressly allowed for the use cases described under the conditions in Annex 16. It shall be always possible to manually deactivate and reactivate the system which operates the Driver Assistant Projection. |\n| 5.35.5. | The projected symbols and patterns shall no longer be projected when their associated underlying conditions allowing them to be shown do not exist anymore. |\n| 5.35.6. | The projected symbols and patterns shall stop flashing when their associated underlying conditions allowing them to flash do not exist anymore. |\n| 5.35.7. | The Driver Assistance Projection shall be deactivated automatically in case of an electrically detectable failure of the system that affects the visual informationon the road given by the Driver Assistance Projection. |\n| 5.35.8. | The Driver Assistance Projection shall not interfere with information displayed by the Field of Vision Assistant as defined in UN Regulation No. 125. |\n| 5.35.9. | The Driver Assistance Projection shall not be switched ON when the windshield wiper is switched ON and its continuous operation has occurred for a period of at least two minutes. |\n| 5.35.10. | Except for the wrong way warning, predicted trajectory and risk of collision warning, Driver Assistance Projection shall not be switched ON when the vehicle speed is below 65 km/h. However, when the projection is already switched ON, it may remain switched ON as long as the vehicle speed remains above 40 km/h. |\n| 5.35.11. | Except for predicted trajectory, thelateral distance from the outer edges of the Driver Assistance Projection with respect to the longitudinal median plane or to the trajectory of the centre of gravity of the vehicle shall not be more than 1,250 mm. |\n| 5.35.12. | Irrespective of the requirements of paragraph 5.35.11., for predicted trajectory illustrated in Annex 16: |\n| 5.35.12.1. | The Driver Assistance Projection may be adapted according to the predicted trajectory of the centre of gravity of the vehicle. It shall not be wider than the width of the vehicle including any fitted accessories and trailer if applicable and, inany case, shall not be more than 2,600 mm. |\n| 5.35.13. | Compliance with paragraphs 5.35.11. and 5.35.12.1. shall be demonstrated by the manufacturer by calculation or by other means accepted by the Type Approval Authority. |\n| 6.6.1.6.1.1. | Individual specifications Main-beam headlamp Presence Mandatory on motor vehicles. Prohibited on trailers. |\n| 6.1.2. | Number Two, type approved according to Class B of the 01 or subsequent series of amendments to UN Regulation No. 149. |"
      },
      {
       "page": 39,
@@ -3174,7 +3375,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>Upward angle</td><td colspan=\"3\">5°</td></tr><tr><td>Mounting height of the sensor (centre of sensor aperture above the ground)</td><td>Less than 2 m</td><td>Between 1.5 m and 2.5 m</td><td>Greater than 2.0m</td></tr><tr><td>Downward angle</td><td>2°</td><td>2° to 5°</td><td>5°</td></tr></tbody></table>"
      },
      {
       "page": 93,
@@ -3182,7 +3384,8 @@
       "rows": 3,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:3x2:Vr|switchON"
+      "key": "hdr:3x2:Vr|switchON",
+      "content": "| Vr | switch ON |\n| --- | --- |\n| Vr > 30 km/h | TTC ≤1.4 |\n| Vr ≤30 km/h | TTC ≤1.4 / 30 ×Vr |"
      },
      {
       "page": 95,
@@ -3190,7 +3393,8 @@
       "rows": 10,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 6.27. | Answer-back signal |\n| --- | --- |\n| 6.27.1. | Presence |\n|  | Optional. |\n| 6.27.2. | Number |\n|  | In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. However, the number it may be less than or equal to the individual specifications applicable to the specific lamp. |\n| 6.27.3. | Arrangement |\n|  | In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.4. | Position |\n| 6.27.4.1. | In width: In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.4.2. | In height: in accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |"
      },
      {
       "page": 96,
@@ -3198,7 +3402,8 @@
       "rows": 11,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 6.27.4.3. | In length: In accordance with the individual specifications applicable to the |\n| --- | --- |\n| 6.27.5. | specific lamp used for the answer-back signal. Geometric visibility In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal.However,the geometric visibility may be reduced in comparison to the individual specifications applicable to the specific lamp. |\n| 6.27.6. | Orientation In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.7.6.27.7.1. | Electrical connections The answer-back signal shall only operate under the park condition of a vehicle. |\n| 6.27.7.2.6.27.7.3.6.27.7.4. | If the answer-back signalflashes, the frequency shall not exceed 2.0 Hz. The lampsused for the answer-back signal may operate in combination. Individual specific requirements for electrical connections and the conditions of paragraphs 5.11. and 5.12. may not apply to the lamps used for the answer-back signal. |\n| 6.27.8. | Tell-tale No special requirement. |\n| 6.27.9.6.27.9.1. | Other requirements The answer-back signal shall be provided by approved lighting and light-signalling devices and exterior courtesy lamps where in all these cases, the maximum luminous intensity per lamp does not exceed 700 cd on or above the HH line. However, front fog lamps, rear fog lamps and stop lamps are not permitted to be used. |\n| 6.27.9.2. | The answer-back signal may only be activated automatically in conjunction with the locking and unlocking of the door(s) and/or the detection of the vehicle user in proximity to the vehicle. |\n| 6.27.9.3. | The lamp used for the answer-back signal may flash and/or vary in luminous intensity and/or vary in apparent surface. |\n| 6.27.9.4. | The duration of the optical indication of the answer-back signal shall not exceed 3 seconds. |\n| 6.27.9.5. | Compliance with the requirements of paragraphs 6.27.9.1. to 6.27.9.4. shall be demonstrated by the applicant, using test reports or other means of verification accepted by the Type Approval Authority. The information shall be indicated in item 10.9. of the communication form. |"
      },
      {
       "page": 102,
@@ -3206,7 +3411,8 @@
       "rows": 14,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 12.7.2. | As of 1 September 2024, Contracting Parties applying this Regulation shall not |\n| --- | --- |\n| 12.7.3. | be obliged to accept UN type approvals to the preceding series of amendments, first issued after 1 September 2024. Until 1 September 2027, Contracting Parties applying this Regulation shall accept UN type approvals to the preceding series of amendments, first issued before 1 September 2024. |\n| 12.7.4. | As from 1 September 2027, Contracting Parties applying this Regulation shall not be obliged to accept type approvals issued to the preceding series of amendments to this Regulation. |\n| 12.7.5. | Notwithstanding the transitional provisions above, Contracting Parties who start to apply this Regulation after the date of entry into force of the most recent series of amendments are not obliged to accept UN type-approvals which were granted in accordance with any of the preceding series of amendments to this Regulation. |\n| 12.7.6. | Notwithstanding paragraph 12.7.4. Contracting Parties applying this Regulation shall continue to accept UN type approvals to the preceding series of amendments to this Regulation, for the vehicle types which are not affected by the changes introduced by the 08 series of amendments. |\n| 12.7.7. | Contracting Parties applying this Regulation may grant UN type approvals according to anypreceding series of amendments to this Regulation. |\n| 12.7.8 | Contracting Parties applying this Regulation shall continue to grant extensions of existing approvals to any preceding series of amendments to this Regulation. |\n| 12.8.12.8.1. | Transitional provisions applicable to 09 series of amendments. As from the official date of entry into force of the 09 series of amendments, no Contracting Party applying this Regulation shall refuse to grant or refuse to accept type approvals under this Regulation as amended by the 09 series of amendments. |\n| 12.8.2.12.8.2.1. | For vehicles of categories M, N<sub>1</sub>, O<sub>1</sub>and O<sub>2</sub>: As from 1 September 2027 Contracting Parties applying this Regulation shall not be obliged to accept type approvals to the preceding series of amendments, first issued after 1 September 2027. |\n| 12.8.2.2. | Until 1 September 2030, Contracting Parties applying this Regulation shall accept type approvals to the preceding series of amendments, first issued before 1 September 2027. |\n| 12.8.2.3. | As from 1 September 2030, Contracting Parties applying this Regulation shall not be obliged to accept type approvals, and extensions thereof, issued to the preceding series of amendments to this Regulation. |\n| 12.8.3.12.8.3.1. | For vehicles of categories N<sub>2</sub>, N<sub>3</sub>, O<sub>3</sub>and O<sub>4</sub>: As from 1 September 2028, Contracting Parties applying this Regulation shall not be obliged to accept type approvals to the preceding series of amendments, first issued after 1 September 2028. |\n| 12.8.3.2. | Until 1 September 2031, Contracting Parties applying this Regulation shall accept type approvals to the preceding series of amendments, first issued before 1 September 2028. |\n| 12.8.3.3. | As from 1 September 2031, Contracting Parties applying this Regulation shall not be obliged to accept type approvals, and extensions thereof, issued to the |"
      },
      {
       "page": 103,
@@ -3214,7 +3420,8 @@
       "rows": 5,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | preceding series of amendments to this Regulation. |\n| --- | --- |\n| 12.8.4. | Notwithstanding the transitional provisions above, Contracting Parties who start to apply this Regulation after the date of entry into force of the most recent series of amendments are not obliged to accept type approvals which were granted in accordance with any of the preceding series of amendments to this Regulation. |\n| 12.8.5. | Notwithstanding paragraphs 12.8.2.3. and 12.8.3.3., Contracting Parties applying this Regulation shall continue to accept type approvals to the preceding series of amendments to this Regulation, for the vehicle types which are not affected by the changes introduced by the 09 series of amendments. |\n| 12.8.6. | Contracting Parties applying this Regulation may grant type approvals according to any preceding series of amendments to this Regulation. |\n| 12.8.7. | Contracting Parties applying this Regulation shall continue to grant extensions of existing approvals to any preceding series of amendments to this Regulation. |"
      },
      {
       "page": 117,
@@ -3222,7 +3429,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)"
+      "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)",
+      "content": "|  | Illuminating surface | Declared Light-emitting surface according to 2.10.2. (a) |\n| --- | --- | --- |\n| Edges are | a and b | c and d |"
      },
      {
       "page": 117,
@@ -3230,7 +3438,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | Illuminating surface |\n| --- | --- |\n| Edges are | a and b |"
      },
      {
       "page": 134,
@@ -3238,7 +3447,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>Mounting height h [m]</td><td>Upper inclination limit [per cent]</td><td>Lower inclination limit [per cent]</td></tr><tr><td>0.5 ≤h ≤ 0.9</td><td>-0.50</td><td>- (h + 1.2)</td></tr><tr><td>0.9 &lt; h ≤ 1.2</td><td rowspan=\"2\">- (h x 2.17 - 1.45)</td><td rowspan=\"2\">- (h x 2.17 + 0.15)</td></tr><tr><td>1.2 &lt; h ≤ 1.5</td></tr></tbody></table>"
      },
      {
       "page": 140,
@@ -3246,7 +3456,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">Table 1 Test Section</td><td rowspan=\"2\">Traffic conditions</td><td colspan=\"3\">Road type</td></tr><tr><td>Urban areas</td><td>Multi-lane road, e.g. motorway</td><td>Country road</td></tr><tr><td>Speed</td><td>50 ± 10 km/h</td><td>100 ± 20 km/h</td><td>80 ± 20 km/h</td></tr><tr><td>Average percentage of the full test course length</td><td>10 per cent</td><td>20 per cent</td><td>70 per cent</td></tr><tr><td>A</td><td>Single oncoming vehicle or single preceding vehicle in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>B</td><td>Combined oncoming and preceding traffic situations, in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>C</td><td>Active and passive overtaking manoeuvres, in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>D</td><td>Oncoming bicycle, as described in paragraph 6.1.9.3.1.2.</td><td></td><td></td><td>X</td></tr><tr><td>E</td><td>Combined oncoming and preceding traffic situations</td><td>X</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 141,
@@ -3254,7 +3465,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">Table 2 Test Section</td><td rowspan=\"2\">Traffic conditions</td><td colspan=\"3\">Road type</td></tr><tr><td>Urban areas</td><td>Multi-lane road, e.g. motorway</td><td>Country road</td></tr><tr><td>Speed</td><td>50 ± 10km/h</td><td>100 ± 20km/h</td><td>80 ± 20km/h</td></tr><tr><td>Average percentage of the full test course length</td><td>10 per cent</td><td>20 per cent</td><td>70 per cent</td></tr><tr><td>A</td><td>Single oncoming vehicle or single preceding vehicle in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>B</td><td>Combined oncoming and preceding traffic situations. in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>C</td><td>Active and passive overtaking manoeuvres, in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>D</td><td>Oncoming bicycle, as described in paragraph 6.22.9.3.1.2.</td><td></td><td></td><td>X</td></tr><tr><td>E</td><td>Combined oncoming and preceding traffic situations</td><td>X</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 143,
@@ -3262,7 +3474,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td colspan=\"3\">Automatic switching conditions dipped-beam headlamps<sup>1</sup></td></tr><tr><td>Ambient light outside the vehicle<sup>2</sup></td><td>Dipped-beam headlamps</td><td>Response time</td></tr><tr><td>less than 1,000 lux</td><td>ON</td><td>no more than 2 seconds</td></tr><tr><td>between 1,000 lux and 7,000 lux</td><td>at manufacturer's discretion</td><td>at manufacturer's discretion</td></tr><tr><td>more than 7,000 lux</td><td>OFF</td><td>more than 5 seconds, but no more than300seconds</td></tr></tbody></table>"
      },
      {
       "page": 146,
@@ -3270,7 +3483,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>Symbols and Pattern</td><td>Use case</td><td></td><td>Conditions and remarks</td></tr><tr><td></td><td>Slippery road warning Risk of collision warning</td><td></td><td>Triggered when the relative speed is larger than 30 km/h and Risk of Collision Timeis less than 1.4 s. Flashing at 4.0 hz +/- 1.0 hz allowed.</td></tr><tr><td></td><td>Wrong way warning</td><td></td><td>Activated when the vehicle is entering a one-way road or a highway in opposite direction. Flashing at 4.0 hz +/- 1.0 hz allowed.</td></tr><tr><td></td><td>Lane keeping assist warning</td><td></td><td>Activated if the vehicle unintentionally exits its</td></tr><tr><td rowspan=\"2\">or or</td><td></td><td></td><td>lane.</td></tr><tr><td>Predicted trajectory</td><td></td><td>This shape may change when adapted in conformity with the requirements in paragraph5.35.12.</td></tr></tbody></table>"
      }
     ],
     "unscorableA": 0,
@@ -3846,7 +4060,8 @@
       "rows": 3,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12蓝色边界:y=0.843-1.182xW23紫罗兰色边界y=0.489x+0.146WW4314绿黄色色边边界界yy==01..946482x--10.01.1036x | x y W1 0.373 0.402 WW23 00..451478 00..345104 W4 0.450 0.513 |\n| 黄色 | Y12绿色边界y=x-0.040Y23光谱轨迹YY4314白红色色边边界界yy==00..290700x-+x0.268 | x y Y1 0.505 0.465 YY23 00..562100 00..438900 Y4 0.585 0.385 |"
      },
      {
       "page": 18,
@@ -3854,7 +4069,8 @@
       "rows": 3,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 琥珀色 | A12绿色边界y=1.417x-0.347AAA234341光红白谱色色轨边边迹界界yy==00..379900-0.670x | x y AA12 00..554557 00..442452 A3 0.609 0.390 A4 0.597 0.390 |\n| 红色 | R12黄色边界y=0.335RRR234341光紫紫谱线色轨边迹界y=0.978-x | x y RR12 00..664635 00..333355 R3 0.735 0.265 R4 0.720 0.258 |"
      },
      {
       "page": 18,
@@ -3862,7 +4078,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:4x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 白色 | W12紫罗兰色边界y=x-0.030W23黄色边界y=0.740-xWW3441绿蓝色色边边界界yy==0x.5+700,-05x0 | x y W1 0.300 0.270 WW23 00..338455 00..335955 W4 0.260 0.310 |\n| 黄色 | Y12红色边界y=0.534x+0.163Y23白色边界y=0.910-xYY3414绿光色谱边轨界迹y=1.342x-0.090 | x y Y1 0.545 0.454 YY23 00..448277 00..442833 Y4 0.465 0.534 |\n| 红色 | R12红色边界y=0.346-0.053xR23紫色边界y=0.910-xRR4341黄光谱色边轨迹界y=0.350 | x y R1 0.690 0.310 RR23 00..559650 00..331550 R4 0.650 0.350 |"
      },
      {
       "page": 18,
@@ -3870,7 +4087,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点",
+      "content": "| 颜色 | 色度区域边界 | 边界交点 |\n| --- | --- | --- |\n| 红色 | FR12红色边界y=0.346-0.053xFFFRRR234341紫黄光色色谱边边轨界界迹yy==00..931105-+0x.047x | x y FFRR12 00..659905 00..331105 FR3 0.569 0.341 FR4 0.655 0.345 |"
      },
      {
       "page": 19,
@@ -3878,7 +4096,8 @@
       "rows": 27,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:27x2:灯具名称|光色"
+      "key": "hdr:27x2:灯具名称|光色",
+      "content": "| 灯具名称 | 光色 |\n| --- | --- |\n| 远光灯 | 白色 |\n| 近光灯 | 白色 |\n| 前雾灯 | 白色或选择性黄色 |\n| 制动灯 | 红色 |\n| 紧急制动信号 | 琥珀色或红色 |\n| 牌照灯 | 白色 |\n| 前位灯 | 白色 |\n| 后位灯 | 红色 |\n| 后雾灯 | 红色 |\n| 倒车灯 | 白色 |\n| 转向信号灯 | 琥珀色 |\n| 危险警告信号 | 琥珀色 |\n| 驻车灯 | 前面白色,后面红色。若与侧转向信号灯、侧标志灯混合则为琥珀色 |\n| 侧标志灯 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯组合,或复合,或混合,或与后回复反射器组合或共有透光面,则最后面的侧标志灯可以为红色 |\n| 示廓灯 | 前面白色,后面红色 |\n| 昼间行驶灯 | 白色 |\n| 非三角形后回复反射器 | 红色 |\n| 三角形后回复反射器 | 红色 |\n| 非三角形前回复反射器(即白色或无色回复反射器) | 与入射光相同 |\n| 非三角形侧回复反射器 | 琥珀色。若与后位灯、后示廓灯、后雾灯、制动灯、最后面的红色侧标志灯或非三角形后回复反射器,组合或共有透光面则可以为红色 |\n| 角灯 | 白色 |\n| 醒目标志 | 车身反光标识:红色和白色尾部标志板:红色和黄色 |\n| 自适应前照明系统(AFS) | 白色 |\n| 牵引杆挂车标志灯 | 前面白色,后面红色 |\n| 慢行灯 | 白色 |\n| 追尾警告信号 | 琥珀色 |"
      },
      {
       "page": 23,
@@ -3886,7 +4105,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>向上角度</td><td colspan=\"3\">5°</td></tr><tr><td>传心感距器离安地装面距高离度)(传感器孔径中</td><td>小于2.0m</td><td>1.5m到2.5m</td><td>大于2.0m</td></tr><tr><td>向下角度</td><td>2°</td><td>2°~5°</td><td>5°</td></tr></tbody></table>"
      },
      {
       "page": 58,
@@ -3894,7 +4114,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tr><td> $v_{r}$ </td><td>激活条件</td></tr><tr><td> $v_{r} > 30 \\text{ km/h}$ </td><td>TTC $\\leqslant 1.4 \\text{ s}$ </td></tr><tr><td> $v_{r} \\leqslant 30 \\text{ km/h}$ </td><td>TTC $\\leqslant \\frac{1.4 \\text{ s} \\times v_{r}}{30 \\text{ km/h}}$ </td></tr><tr><td colspan=\"2\">注1: $v_{r}$ (Relative Speed——相对速度)指发出追尾警告信号的车辆与其同车道尾随车辆的速度差。注2:TTC(Time to collision—碰撞时间)指在相对速度( $v_{r}$ )假设保持不变的情况下,发出追尾警告信号的车辆与其同车道尾随车辆将发生碰撞的预估时间。</td></tr></table>"
      },
      {
       "page": 62,
@@ -3902,7 +4123,8 @@
       "rows": 10,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:10x2:编号|关键词"
+      "key": "hdr:10x2:编号|关键词",
+      "content": "| 编号 | 关键词 |\n| --- | --- |\n| 1 | 发光面 |\n| 2 | 基准轴线 |\n| 3 | 基准中心 |\n| 4 | 几何可见度角 |\n| 5 | 透光面 |\n| 6 | 基于发光面的视表面 |\n| 7a | 基于透光面的视表面3.10a)(考虑有纹理外配光镜) |\n| 7b | 基于透光面的视表面3.10b)(不考虑外无纹理配光镜) |\n| 8 | 观察方向 |"
      },
      {
       "page": 66,
@@ -3910,7 +4132,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面",
+      "content": "|  | 发光面 | 3.10 a)定义的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
      },
      {
       "page": 67,
@@ -3918,7 +4141,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面",
+      "content": "|  | 发光面 | 3.10 a)定义的透光面 |\n| --- | --- | --- |\n| 边缘 | a-b | c-d |"
      },
      {
       "page": 67,
@@ -3926,7 +4150,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 发光面 |\n| --- | --- |\n| 边缘 | a-b |"
      },
      {
       "page": 68,
@@ -3934,7 +4159,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 3.10 a)定义的透光面 |\n| --- | --- |\n| 边缘 | c-d和e-f |"
      },
      {
       "page": 68,
@@ -3942,7 +4168,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | 3.10 a)定义的透光面 |\n| --- | --- |\n| 边缘 | ${\\mathrm{c}}^{\\prime } - {\\mathrm{d}}^{\\prime }$和${\\mathrm{e}}^{\\prime } - {\\mathrm{f}}^{\\prime }$ |"
      },
      {
       "page": 75,
@@ -3950,7 +4177,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"6\">试验编号</td><td rowspan=\"6\">试验项目</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>中间有隔离带的道路,例如:高速公路</td><td>乡村道路</td></tr><tr><td colspan=\"3\">速度</td></tr><tr><td>(50±10)km/h</td><td>(100±20)km/h</td><td>(80±20)km/h</td></tr><tr><td colspan=\"3\">对于全路段试验所占的百分比</td></tr><tr><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现,远光光束应能自动打开和关闭</td><td></td><td>√</td><td>√</td></tr><tr><td>D</td><td>频多率辆出来现车和多辆前车按一定</td><td>√</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 76,
@@ -3958,7 +4186,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"6\">试验编号</td><td rowspan=\"6\">试验项目</td><td colspan=\"3\">路况</td></tr><tr><td>城区</td><td>中间有隔离带的道路,例如:高速公路</td><td>乡村道路</td></tr><tr><td colspan=\"3\">速度</td></tr><tr><td>(50±10)km/h</td><td>(100±20)km/h</td><td>(80±20)km/h</td></tr><tr><td colspan=\"3\">对于全路段试验所占的百分比</td></tr><tr><td>10%</td><td>20%</td><td>70%</td></tr><tr><td>A</td><td>一辆来车或一辆前车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>B</td><td>多辆来车和多辆前车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>C</td><td>主动和被动的超车按一定频率出现,自适应远光灯应能自动运行</td><td></td><td>√</td><td>√</td></tr><tr><td>D</td><td>频多率辆出来现车和多辆前车按一定</td><td>√</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 80,
@@ -3966,7 +4195,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td colspan=\"3\">自动切换前照灯近光的条件</td></tr><tr><td>外界环境光</td><td>近光灯</td><td>响应时间</td></tr><tr><td>小于1000lx</td><td>开启</td><td>不大于2s</td></tr><tr><td>1000lx~7000lx</td><td>由制造商确定</td><td>由制造商确定</td></tr><tr><td>大于7000lx</td><td>关闭</td><td>大于5s,不大于300s</td></tr><tr><td colspan=\"3\">注:使用经过余弦修正的照度计与车辆传感器安装位置等高的水平面上进行测量。</td></tr></tbody></table>"
      }
     ],
     "onlyInB": [
@@ -3976,7 +4206,8 @@
       "rows": 3,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:3x3:WP29reference|Amendment|Supplement"
+      "key": "hdr:3x3:WP29reference|Amendment|Supplement",
+      "content": "| WP29 reference | Amendment | Supplement |\n| --- | --- | --- |\n| WP29/2024/28 |  | Baseline |\n| WP29/2025/36 |  | Suppl. 1 |\n|  |  |  |\n|  |  |  |\n|  |  |  |"
      },
      {
       "page": 18,
@@ -3984,7 +4215,8 @@
       "rows": 6,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x"
+      "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x",
+      "content": "| ${\\mathrm{W}}_{12}$ | green boundary | y = 0.150 + 0.640 x |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | yellowish green boundary | y = 0.440 |\n| ${\\mathrm{W}}_{34}$ | yellow boundary | x = 0.500 |\n| ${\\mathrm{W}}_{45}$ | reddish purple boundary | y = 0.382 |\n| ${\\mathrm{W}}_{56}$ | purple boundary | y = 0.050 + 0.750 x |\n| ${\\mathrm{W}}_{61}$ | blue boundary | x = 0.310 |"
      },
      {
       "page": 18,
@@ -3992,7 +4224,8 @@
       "rows": 7,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $W_{1}$ | 0.310 | 0.348 |\n| $W_{2}$ | 0.453 | 0.440 |\n| $W_{3}$ | 0.500 | 0.440 |\n| $W_{4}$ | 0.500 | 0.382 |\n| $W_{5}$ | 0.443 | 0.382 |\n| $W_{6}$ | 0.310 | 0.283 |"
      },
      {
       "page": 18,
@@ -4000,7 +4233,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100"
+      "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100",
+      "content": "| $SY_{12}$ | green boundary | y = 1.290 x - 0.100 |\n| --- | --- | --- |\n| $SY_{23}$ | the spectral locus |  |\n| $SY_{34}$ | red boundary | y = 0.138 + 0.580 x |\n| $SY_{45}$ | yellowish white boundary | y = 0.440 |\n| $SY_{51}$ | white boundary | y = 0.940 - x |"
      },
      {
       "page": 18,
@@ -4008,7 +4242,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $SY_1$ | 0.454 | 0.486 |\n| $SY_2$ | 0.480 | 0.519 |\n| $SY_3$ | 0.545 | 0.454 |"
      },
      {
       "page": 19,
@@ -4016,7 +4251,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| $SY_4$ | 0.521 | 0.440 |\n| --- | --- | --- |\n| $SY_5$ | 0.500 | 0.440 |"
      },
      {
       "page": 19,
@@ -4024,7 +4260,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120"
+      "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120",
+      "content": "| $A_{12}$ | green boundary | y = x - 0.120 |\n| --- | --- | --- |\n| $A_{23}$ | the spectral locus |  |\n| $A_{34}$ | red boundary | y = 0.390 |\n| $A_{41}$ | white boundary | y = 0.790 - 0.670 x |"
      },
      {
       "page": 19,
@@ -4032,7 +4269,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $A_1$ | 0.545 | 0.425 |\n| $A_2$ | 0.560 | 0.440 |\n| $A_3$ | 0.609 | 0.390 |\n| $A_4$ | 0.597 | 0.390 |"
      },
      {
       "page": 19,
@@ -4040,7 +4278,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.645 | 0.335 |\n| $R_2$ | 0.665 | 0.335 |\n| $R_3$ | 0.735 | 0.265 |\n| $R_4$ | 0.721 | 0.259 |"
      },
      {
       "page": 19,
@@ -4048,7 +4287,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x"
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x",
+      "content": "| ${\\mathrm{W}}_{12}$ | blue boundary: | y = 0.843 - 1.182 x |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | violet boundary | y = 0.489 x + 0.146 |\n| ${\\mathrm{W}}_{34}$ | yellow boundary | y = 0.968 - 1.010 x |\n| ${\\mathrm{W}}_{41}$ | green boundary | y = 1.442 x - 0.136 |"
      },
      {
       "page": 19,
@@ -4056,7 +4296,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $W_1$ | 0.373 | 0.402 |\n| $W_2$ | 0.417 | 0.350 |\n| $W_3$ | 0.548 | 0.414 |\n| $W_4$ | 0.450 | 0.513 |"
      },
      {
       "page": 19,
@@ -4064,7 +4305,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040"
+      "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040",
+      "content": "| ${\\mathrm{Y}}_{12}$ | green boundary | y = x - 0.040 |\n| --- | --- | --- |\n| ${\\mathrm{Y}}_{23}$ | the spectral locus |  |"
      },
      {
       "page": 20,
@@ -4072,7 +4314,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268"
+      "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268",
+      "content": "| ${\\mathrm{Y}}_{34}$ | red boundary | y = 0.200 x + 0.268 |\n| --- | --- | --- |\n| ${\\mathrm{Y}}_{41}$ | white boundary | y = 0.970 - x |"
      },
      {
       "page": 20,
@@ -4080,23 +4323,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
-     },
-     {
-      "page": 20,
-      "caption": "",
-      "rows": 4,
-      "cols": 3,
-      "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347"
-     },
-     {
-      "page": 20,
-      "caption": "",
-      "rows": 5,
-      "cols": 3,
-      "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $Y_1$ | 0.505 | 0.465 |\n| $Y_2$ | 0.520 | 0.480 |\n| $Y_3$ | 0.610 | 0.390 |\n| $Y_4$ | 0.585 | 0.385 |"
      },
      {
       "page": 20,
@@ -4104,7 +4332,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335"
+      "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347",
+      "content": "| ${\\mathrm{A}}_{12}$ | green boundary | y = 1.417 x - 0.347 |\n| --- | --- | --- |\n| ${\\mathrm{A}}_{23}$ | the spectral locus |  |\n| ${\\mathrm{A}}_{34}$ | red boundary | y = 0.390 |\n| ${\\mathrm{A}}_{41}$ | white boundary | y = 0.790 - 0.670 x |"
      },
      {
       "page": 20,
@@ -4112,7 +4341,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $A_1$ | 0.545 | 0.425 |\n| $A_2$ | 0.557 | 0.442 |\n| $A_3$ | 0.609 | 0.390 |\n| $A_4$ | 0.597 | 0.390 |"
      },
      {
       "page": 20,
@@ -4120,7 +4350,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030"
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335",
+      "content": "| ${\\mathrm{R}}_{12}$ | yellow boundary | y = 0.335 |\n| --- | --- | --- |\n| ${\\mathrm{R}}_{23}$ | the spectral locus |  |\n| ${\\mathrm{R}}_{34}$ | the purple line |  |\n| ${\\mathrm{R}}_{41}$ | purple boundary | y = 0.978 - x |"
      },
      {
       "page": 20,
@@ -4128,7 +4359,26 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.643 | 0.335 |\n| $R_2$ | 0.665 | 0.335 |\n| $R_3$ | 0.735 | 0.265 |\n| $R_4$ | 0.720 | 0.258 |"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030",
+      "content": "| ${\\mathrm{W}}_{12}$ | violet boundary | y = x - 0.030 |\n| --- | --- | --- |\n| ${\\mathrm{W}}_{23}$ | yellow boundary | y = 0.740 – x |\n| ${\\mathrm{W}}_{34}$ | green boundary | y = x + 0,050 |\n| ${\\mathrm{W}}_{41}$ | blue boundary | y = 0.570 – x |"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $W_1$ | 0.300 | 0.270 |\n| $W_2$ | 0.385 | 0.355 |\n| $W_3$ | 0.345 | 0.395 |\n| $W_4$ | 0.260 | 0.310\" |"
      },
      {
       "page": 21,
@@ -4136,7 +4386,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $Y_1$ | 0.545 | 0.454 |\n| $Y_2$ | 0.487 | 0.423 |\n| $Y_3$ | 0.427 | 0.483 |\n| $Y_4$ | 0.465 | 0.534 |"
      },
      {
       "page": 21,
@@ -4144,7 +4395,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x"
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x",
+      "content": "| ${\\mathrm{R}}_{12}$ | red boundary | y = 0.346 - 0.053 x |\n| --- | --- | --- |\n| ${\\mathrm{R}}_{23}$ | purple boundary | y = 0.910 - x |\n| ${\\mathrm{R}}_{34}$ | yellow boundary | y = 0.350 |\n| ${\\mathrm{R}}_{41}$ | the spectral locus |  |"
      },
      {
       "page": 21,
@@ -4152,7 +4404,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $R_1$ | 0.690 | 0.310 |\n| $R_2$ | 0.595 | 0.315 |\n| $R_3$ | 0.560 | 0.350 |\n| $R_4$ | 0.650 | 0.350\" |"
      },
      {
       "page": 21,
@@ -4160,7 +4413,8 @@
       "rows": 4,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x"
+      "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x",
+      "content": "| ${\\mathrm{{FR}}}_{12}$ | red boundary | y = 0.346 - 0.053 x |\n| --- | --- | --- |\n| ${\\mathrm{{FR}}}_{23}$ | purple boundary | y = 0.910 - x |\n| ${\\mathrm{{FR}}}_{34}$ | yellow boundary | y = 0.315 + 0.047 x |\n| ${\\mathrm{{FR}}}_{41}$ | the spectral locus |  |"
      },
      {
       "page": 21,
@@ -4168,7 +4422,8 @@
       "rows": 5,
       "cols": 3,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | x | y |\n| --- | --- | --- |\n| $FR_1$ | 0,690 | 0,310 |\n| $FR_2$ | 0,595 | 0,315 |\n| $FR_3$ | 0,569 | 0,341 |\n| $FR_4$ | 0,655 | 0,345 |"
      },
      {
       "page": 36,
@@ -4176,7 +4431,8 @@
       "rows": 14,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 5.35.3. | Neither flashing nor transforming of Driver Assistance Projection is permitted, |\n| --- | --- |\n| 5.35.4. | unless expressly allowed for the use cases described under the conditions in Annex 16. It shall be always possible to manually deactivate and reactivate the system which operates the Driver Assistant Projection. |\n| 5.35.5. | The projected symbols and patterns shall no longer be projected when their associated underlying conditions allowing them to be shown do not exist anymore. |\n| 5.35.6. | The projected symbols and patterns shall stop flashing when their associated underlying conditions allowing them to flash do not exist anymore. |\n| 5.35.7. | The Driver Assistance Projection shall be deactivated automatically in case of an electrically detectable failure of the system that affects the visual informationon the road given by the Driver Assistance Projection. |\n| 5.35.8. | The Driver Assistance Projection shall not interfere with information displayed by the Field of Vision Assistant as defined in UN Regulation No. 125. |\n| 5.35.9. | The Driver Assistance Projection shall not be switched ON when the windshield wiper is switched ON and its continuous operation has occurred for a period of at least two minutes. |\n| 5.35.10. | Except for the wrong way warning, predicted trajectory and risk of collision warning, Driver Assistance Projection shall not be switched ON when the vehicle speed is below 65 km/h. However, when the projection is already switched ON, it may remain switched ON as long as the vehicle speed remains above 40 km/h. |\n| 5.35.11. | Except for predicted trajectory, thelateral distance from the outer edges of the Driver Assistance Projection with respect to the longitudinal median plane or to the trajectory of the centre of gravity of the vehicle shall not be more than 1,250 mm. |\n| 5.35.12. | Irrespective of the requirements of paragraph 5.35.11., for predicted trajectory illustrated in Annex 16: |\n| 5.35.12.1. | The Driver Assistance Projection may be adapted according to the predicted trajectory of the centre of gravity of the vehicle. It shall not be wider than the width of the vehicle including any fitted accessories and trailer if applicable and, inany case, shall not be more than 2,600 mm. |\n| 5.35.13. | Compliance with paragraphs 5.35.11. and 5.35.12.1. shall be demonstrated by the manufacturer by calculation or by other means accepted by the Type Approval Authority. |\n| 6.6.1.6.1.1. | Individual specifications Main-beam headlamp Presence Mandatory on motor vehicles. Prohibited on trailers. |\n| 6.1.2. | Number Two, type approved according to Class B of the 01 or subsequent series of amendments to UN Regulation No. 149. |"
      },
      {
       "page": 39,
@@ -4184,7 +4440,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>Upward angle</td><td colspan=\"3\">5°</td></tr><tr><td>Mounting height of the sensor (centre of sensor aperture above the ground)</td><td>Less than 2 m</td><td>Between 1.5 m and 2.5 m</td><td>Greater than 2.0m</td></tr><tr><td>Downward angle</td><td>2°</td><td>2° to 5°</td><td>5°</td></tr></tbody></table>"
      },
      {
       "page": 93,
@@ -4192,7 +4449,8 @@
       "rows": 3,
       "cols": 2,
       "scrambled": false,
-      "key": "hdr:3x2:Vr|switchON"
+      "key": "hdr:3x2:Vr|switchON",
+      "content": "| Vr | switch ON |\n| --- | --- |\n| Vr > 30 km/h | TTC ≤1.4 |\n| Vr ≤30 km/h | TTC ≤1.4 / 30 ×Vr |"
      },
      {
       "page": 95,
@@ -4200,7 +4458,8 @@
       "rows": 10,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 6.27. | Answer-back signal |\n| --- | --- |\n| 6.27.1. | Presence |\n|  | Optional. |\n| 6.27.2. | Number |\n|  | In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. However, the number it may be less than or equal to the individual specifications applicable to the specific lamp. |\n| 6.27.3. | Arrangement |\n|  | In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.4. | Position |\n| 6.27.4.1. | In width: In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.4.2. | In height: in accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |"
      },
      {
       "page": 96,
@@ -4208,7 +4467,8 @@
       "rows": 11,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 6.27.4.3. | In length: In accordance with the individual specifications applicable to the |\n| --- | --- |\n| 6.27.5. | specific lamp used for the answer-back signal. Geometric visibility In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal.However,the geometric visibility may be reduced in comparison to the individual specifications applicable to the specific lamp. |\n| 6.27.6. | Orientation In accordance with the individual specifications applicable to the specific lamp used for the answer-back signal. |\n| 6.27.7.6.27.7.1. | Electrical connections The answer-back signal shall only operate under the park condition of a vehicle. |\n| 6.27.7.2.6.27.7.3.6.27.7.4. | If the answer-back signalflashes, the frequency shall not exceed 2.0 Hz. The lampsused for the answer-back signal may operate in combination. Individual specific requirements for electrical connections and the conditions of paragraphs 5.11. and 5.12. may not apply to the lamps used for the answer-back signal. |\n| 6.27.8. | Tell-tale No special requirement. |\n| 6.27.9.6.27.9.1. | Other requirements The answer-back signal shall be provided by approved lighting and light-signalling devices and exterior courtesy lamps where in all these cases, the maximum luminous intensity per lamp does not exceed 700 cd on or above the HH line. However, front fog lamps, rear fog lamps and stop lamps are not permitted to be used. |\n| 6.27.9.2. | The answer-back signal may only be activated automatically in conjunction with the locking and unlocking of the door(s) and/or the detection of the vehicle user in proximity to the vehicle. |\n| 6.27.9.3. | The lamp used for the answer-back signal may flash and/or vary in luminous intensity and/or vary in apparent surface. |\n| 6.27.9.4. | The duration of the optical indication of the answer-back signal shall not exceed 3 seconds. |\n| 6.27.9.5. | Compliance with the requirements of paragraphs 6.27.9.1. to 6.27.9.4. shall be demonstrated by the applicant, using test reports or other means of verification accepted by the Type Approval Authority. The information shall be indicated in item 10.9. of the communication form. |"
      },
      {
       "page": 102,
@@ -4216,7 +4476,8 @@
       "rows": 14,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "| 12.7.2. | As of 1 September 2024, Contracting Parties applying this Regulation shall not |\n| --- | --- |\n| 12.7.3. | be obliged to accept UN type approvals to the preceding series of amendments, first issued after 1 September 2024. Until 1 September 2027, Contracting Parties applying this Regulation shall accept UN type approvals to the preceding series of amendments, first issued before 1 September 2024. |\n| 12.7.4. | As from 1 September 2027, Contracting Parties applying this Regulation shall not be obliged to accept type approvals issued to the preceding series of amendments to this Regulation. |\n| 12.7.5. | Notwithstanding the transitional provisions above, Contracting Parties who start to apply this Regulation after the date of entry into force of the most recent series of amendments are not obliged to accept UN type-approvals which were granted in accordance with any of the preceding series of amendments to this Regulation. |\n| 12.7.6. | Notwithstanding paragraph 12.7.4. Contracting Parties applying this Regulation shall continue to accept UN type approvals to the preceding series of amendments to this Regulation, for the vehicle types which are not affected by the changes introduced by the 08 series of amendments. |\n| 12.7.7. | Contracting Parties applying this Regulation may grant UN type approvals according to anypreceding series of amendments to this Regulation. |\n| 12.7.8 | Contracting Parties applying this Regulation shall continue to grant extensions of existing approvals to any preceding series of amendments to this Regulation. |\n| 12.8.12.8.1. | Transitional provisions applicable to 09 series of amendments. As from the official date of entry into force of the 09 series of amendments, no Contracting Party applying this Regulation shall refuse to grant or refuse to accept type approvals under this Regulation as amended by the 09 series of amendments. |\n| 12.8.2.12.8.2.1. | For vehicles of categories M, N<sub>1</sub>, O<sub>1</sub>and O<sub>2</sub>: As from 1 September 2027 Contracting Parties applying this Regulation shall not be obliged to accept type approvals to the preceding series of amendments, first issued after 1 September 2027. |\n| 12.8.2.2. | Until 1 September 2030, Contracting Parties applying this Regulation shall accept type approvals to the preceding series of amendments, first issued before 1 September 2027. |\n| 12.8.2.3. | As from 1 September 2030, Contracting Parties applying this Regulation shall not be obliged to accept type approvals, and extensions thereof, issued to the preceding series of amendments to this Regulation. |\n| 12.8.3.12.8.3.1. | For vehicles of categories N<sub>2</sub>, N<sub>3</sub>, O<sub>3</sub>and O<sub>4</sub>: As from 1 September 2028, Contracting Parties applying this Regulation shall not be obliged to accept type approvals to the preceding series of amendments, first issued after 1 September 2028. |\n| 12.8.3.2. | Until 1 September 2031, Contracting Parties applying this Regulation shall accept type approvals to the preceding series of amendments, first issued before 1 September 2028. |\n| 12.8.3.3. | As from 1 September 2031, Contracting Parties applying this Regulation shall not be obliged to accept type approvals, and extensions thereof, issued to the |"
      },
      {
       "page": 103,
@@ -4224,7 +4485,8 @@
       "rows": 5,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | preceding series of amendments to this Regulation. |\n| --- | --- |\n| 12.8.4. | Notwithstanding the transitional provisions above, Contracting Parties who start to apply this Regulation after the date of entry into force of the most recent series of amendments are not obliged to accept type approvals which were granted in accordance with any of the preceding series of amendments to this Regulation. |\n| 12.8.5. | Notwithstanding paragraphs 12.8.2.3. and 12.8.3.3., Contracting Parties applying this Regulation shall continue to accept type approvals to the preceding series of amendments to this Regulation, for the vehicle types which are not affected by the changes introduced by the 09 series of amendments. |\n| 12.8.6. | Contracting Parties applying this Regulation may grant type approvals according to any preceding series of amendments to this Regulation. |\n| 12.8.7. | Contracting Parties applying this Regulation shall continue to grant extensions of existing approvals to any preceding series of amendments to this Regulation. |"
      },
      {
       "page": 117,
@@ -4232,7 +4494,8 @@
       "rows": 2,
       "cols": 3,
       "scrambled": false,
-      "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)"
+      "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)",
+      "content": "|  | Illuminating surface | Declared Light-emitting surface according to 2.10.2. (a) |\n| --- | --- | --- |\n| Edges are | a and b | c and d |"
      },
      {
       "page": 117,
@@ -4240,7 +4503,8 @@
       "rows": 2,
       "cols": 2,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "|  | Illuminating surface |\n| --- | --- |\n| Edges are | a and b |"
      },
      {
       "page": 134,
@@ -4248,7 +4512,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>Mounting height h [m]</td><td>Upper inclination limit [per cent]</td><td>Lower inclination limit [per cent]</td></tr><tr><td>0.5 ≤h ≤ 0.9</td><td>-0.50</td><td>- (h + 1.2)</td></tr><tr><td>0.9 &lt; h ≤ 1.2</td><td rowspan=\"2\">- (h x 2.17 - 1.45)</td><td rowspan=\"2\">- (h x 2.17 + 0.15)</td></tr><tr><td>1.2 &lt; h ≤ 1.5</td></tr></tbody></table>"
      },
      {
       "page": 140,
@@ -4256,7 +4521,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">Table 1 Test Section</td><td rowspan=\"2\">Traffic conditions</td><td colspan=\"3\">Road type</td></tr><tr><td>Urban areas</td><td>Multi-lane road, e.g. motorway</td><td>Country road</td></tr><tr><td>Speed</td><td>50 ± 10 km/h</td><td>100 ± 20 km/h</td><td>80 ± 20 km/h</td></tr><tr><td>Average percentage of the full test course length</td><td>10 per cent</td><td>20 per cent</td><td>70 per cent</td></tr><tr><td>A</td><td>Single oncoming vehicle or single preceding vehicle in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>B</td><td>Combined oncoming and preceding traffic situations, in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>C</td><td>Active and passive overtaking manoeuvres, in a frequency so that the main beam will switch ON and OFF.</td><td></td><td>X</td><td>X</td></tr><tr><td>D</td><td>Oncoming bicycle, as described in paragraph 6.1.9.3.1.2.</td><td></td><td></td><td>X</td></tr><tr><td>E</td><td>Combined oncoming and preceding traffic situations</td><td>X</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 141,
@@ -4264,7 +4530,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td rowspan=\"4\">Table 2 Test Section</td><td rowspan=\"2\">Traffic conditions</td><td colspan=\"3\">Road type</td></tr><tr><td>Urban areas</td><td>Multi-lane road, e.g. motorway</td><td>Country road</td></tr><tr><td>Speed</td><td>50 ± 10km/h</td><td>100 ± 20km/h</td><td>80 ± 20km/h</td></tr><tr><td>Average percentage of the full test course length</td><td>10 per cent</td><td>20 per cent</td><td>70 per cent</td></tr><tr><td>A</td><td>Single oncoming vehicle or single preceding vehicle in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>B</td><td>Combined oncoming and preceding traffic situations. in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>C</td><td>Active and passive overtaking manoeuvres, in a frequency so that the adaptive main beam will react to demonstrate the adaptation process.</td><td></td><td>X</td><td>X</td></tr><tr><td>D</td><td>Oncoming bicycle, as described in paragraph 6.22.9.3.1.2.</td><td></td><td></td><td>X</td></tr><tr><td>E</td><td>Combined oncoming and preceding traffic situations</td><td>X</td><td></td><td></td></tr></tbody></table>"
      },
      {
       "page": 143,
@@ -4272,7 +4539,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td colspan=\"3\">Automatic switching conditions dipped-beam headlamps<sup>1</sup></td></tr><tr><td>Ambient light outside the vehicle<sup>2</sup></td><td>Dipped-beam headlamps</td><td>Response time</td></tr><tr><td>less than 1,000 lux</td><td>ON</td><td>no more than 2 seconds</td></tr><tr><td>between 1,000 lux and 7,000 lux</td><td>at manufacturer's discretion</td><td>at manufacturer's discretion</td></tr><tr><td>more than 7,000 lux</td><td>OFF</td><td>more than 5 seconds, but no more than300seconds</td></tr></tbody></table>"
      },
      {
       "page": 146,
@@ -4280,7 +4548,8 @@
       "rows": 0,
       "cols": 0,
       "scrambled": false,
-      "key": ""
+      "key": "",
+      "content": "<table><tbody><tr><td>Symbols and Pattern</td><td>Use case</td><td></td><td>Conditions and remarks</td></tr><tr><td></td><td>Slippery road warning Risk of collision warning</td><td></td><td>Triggered when the relative speed is larger than 30 km/h and Risk of Collision Timeis less than 1.4 s. Flashing at 4.0 hz +/- 1.0 hz allowed.</td></tr><tr><td></td><td>Wrong way warning</td><td></td><td>Activated when the vehicle is entering a one-way road or a highway in opposite direction. Flashing at 4.0 hz +/- 1.0 hz allowed.</td></tr><tr><td></td><td>Lane keeping assist warning</td><td></td><td>Activated if the vehicle unintentionally exits its</td></tr><tr><td rowspan=\"2\">or or</td><td></td><td></td><td>lane.</td></tr><tr><td>Predicted trajectory</td><td></td><td>This shape may change when adapted in conformity with the requirements in paragraph5.35.12.</td></tr></tbody></table>"
      }
     ],
     "unscorableA": 1,

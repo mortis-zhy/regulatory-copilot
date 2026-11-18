@@ -26,7 +26,16 @@
  */
 
 export type FigureRef = { file: string; page: number; w: number; h: number; phash: string };
-export type TableRef = { page: number; caption: string; rows: number; cols: number; scrambled: boolean; key: string };
+export type TableRef = {
+  page: number;
+  caption: string;
+  rows: number;
+  cols: number;
+  scrambled: boolean;
+  key: string;
+  /** 原始 markdown —— 只给**单元格比对**用 ✓（不印进报告 ✓，太吵 ✗）。 */
+  content: string;
+};
 export type EquationRef = { page: number; latex: string; key: string };
 
 export type MultimodalInventory = {
@@ -57,7 +66,7 @@ export type VersionDiff = {
     unhashable: number;
   };
   tables: {
-    paired: Array<{ a: TableRef; b: TableRef; by: "caption" | "header"; cellDiff: null | { note: string } }>;
+    paired: Array<{ a: TableRef; b: TableRef; by: "caption" | "header"; cellDiff: TableCellDiff }>;
     onlyInA: TableRef[];
     onlyInB: TableRef[];
     /** 串行表：只登记，不比对 ✓ */
@@ -178,6 +187,140 @@ export function normalizeLatex(latex: string): string {
   return s;
 }
 
+/** 一格里的一处差异 —— **文本**不同，不代表要求不同 ✗。 */
+export type CellChange = {
+  row: number;
+  col: number;
+  a: string;
+  b: string;
+};
+
+/** 单元格级差异的结果。 */
+export type TableCellDiff =
+  | {
+      status: "compared";
+      changes: CellChange[];
+      changed: number;
+      total: number;
+      /** 抽取串行、**没参与比对**的格数 ✓（不是「相同」✗） */
+      unscorable: number;
+      note: string;
+    }
+  | { status: "skipped"; reason: string };
+
+/**
+ * **一格**是不是抽取串行了。
+ *
+ * 这是逐格判据 ✓ —— 整表判据（`looksScrambled`）会漏：
+ * 实测 B 版色度表整表没被判串行 ✗，但格子里是 `WW23 00..451478` ✗（明显坏了 ✗）。
+ *
+ * 判据：
+ * - 连出两个点（`00..451478`）✓ —— OCR 把小数点与数字挤在一起 ✓；
+ * - 同一个**大写字母**连出 3 个（`FRRR`）✓ —— 合并单元的标签被重复拼接 ✓；
+ * - 同一个汉字连出 3 个 ✓。
+ */
+export function looksGarbledCell(s: string): boolean {
+  const t = String(s ?? "");
+  if (/\.\./.test(t)) return true;
+  if (/([A-Z])\1{2,}/.test(t)) return true;
+  if (/([一-鿿])\1{2,}/.test(t)) return true;
+  return false;
+}
+
+/** 把 markdown 表格解析成二维单元（只收 `|` 行，丢掉分隔行）。 */
+export function parseTableCells(content: string): string[][] {
+  return String(content ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("|"))
+    .filter((l) => !/^\|[\s:|-]+\|$/.test(l))
+    .map((l) =>
+      l
+        .replace(/^\|/, "")
+        .replace(/\|$/, "")
+        .split("|")
+        .map((c) => c.trim()),
+    );
+}
+
+/** 单元归一化：只抹**写法**（空白、全半角、常见单位写法），不抹数字 ✓。 */
+export function normCell(s: string): string {
+  return String(s ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\$|\\(?:mathrm|text|quad|,|;)/g, "")
+    .replace(/[（]/g, "(")
+    .replace(/[）]/g, ")")
+    .replace(/[，]/g, ",")
+    .replace(/[：]/g, ":")
+    .replace(/[％]/g, "%")
+    .replace(/㎜/g, "mm")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+/**
+ * 两表**单元格级**比对。
+ *
+ * ## 什么时候**不比**
+ *
+ * 任何一条不满足，就返回 `skipped` + 原因 ✓ —— **不猜** ✗：
+ * - 任一边串行（抽取坏了）✗；
+ * - 行数或列数不同 ✗（结构变了 ⇒ 逐格对读没有意义 ✗）；
+ * - 有一边是空表 ✗。
+ *
+ * ## 比出来的是什么
+ *
+ * **文本**不同 ✓ —— 带行号列号与两边原文 ✓。
+ * 它**不是**「要求不同」✗：可能只是写法差异（`㎜` vs `mm`、公式排版 ✓）。
+ * 所以措辞必须是「文本不同，须人工判断是否实质」✓。
+ */
+export function diffTableCells(aContent: string, bContent: string): TableCellDiff {
+  const A = parseTableCells(aContent);
+  const B = parseTableCells(bContent);
+  if (!A.length || !B.length) return { status: "skipped", reason: "有一边解析不出表格" };
+  if (A.length !== B.length || A[0].length !== B[0].length) {
+    return {
+      status: "skipped",
+      reason: `行×列不同（${A.length}×${A[0]?.length} vs ${B.length}×${B[0]?.length}）—— 结构变了，逐格对读没有意义`,
+    };
+  }
+  const changes: CellChange[] = [];
+  let total = 0;
+  let unscorable = 0;
+  let dataComparable = 0;
+  for (let r = 0; r < A.length; r++) {
+    for (let c = 0; c < A[r].length; c++) {
+      const a = A[r][c] ?? "";
+      const b = B[r][c] ?? "";
+      // **一格坏了就不比这一格** ✓ —— 拿乱码当「B 原文」印出去 ✗
+      // 比「少一格」更糟 ✗（读者会以为那就是标准原文 ✗）。
+      if (looksGarbledCell(a) || looksGarbledCell(b)) {
+        unscorable++;
+        continue;
+      }
+      total++;
+      if (r > 0) dataComparable++;
+      const x = normCell(a);
+      const y = normCell(b);
+      if (x !== y) changes.push({ row: r + 1, col: c + 1, a, b });
+    }
+  }
+  // **数据行一格都比不了** ⇒ 整表跳过 ✓ —— 只剩表头「相同」没有任何意义 ✗
+  if (dataComparable === 0) {
+    return { status: "skipped", reason: "数据行全部判为抽取串行 —— 只剩表头能比，不比" };
+  }
+  return {
+    status: "compared",
+    changes,
+    changed: changes.length,
+    total,
+    unscorable,
+    note:
+      "**文本**不同 —— 可能只是写法差异（单位/公式排版）✗，须人工判断是否实质 ✗" +
+      (unscorable ? `；另有 ${unscorable} 格**抽取串行、没比** ✗` : ""),
+  };
+}
+
 /** 版本 → 素材清单。图的 pHash 由 `scripts/hash_figures.py` 先算好 ✓。 */
 export function buildInventory(
   version: string,
@@ -210,6 +353,7 @@ export function buildInventory(
       cols,
       scrambled: looksScrambled(t.content ?? ""),
       key: tableKey(t.caption ?? "", t.content ?? ""),
+      content: String(t.content ?? ""),
     };
   });
   const equations: EquationRef[] = (data?.equations ?? [])
@@ -286,7 +430,8 @@ export function diffVersions(invA: MultimodalInventory, invB: MultimodalInventor
         a: ta,
         b: tb,
         by: ta.key.startsWith("cap:") ? "caption" : "header",
-        cellDiff: null,
+        // **配对之后才比单元格** ✓ —— 结构/串行不满足就 `skipped` + 原因 ✓
+        cellDiff: diffTableCells(ta.content, tb.content),
       });
       break;
     }
@@ -323,6 +468,20 @@ export function diffVersions(invA: MultimodalInventory, invB: MultimodalInventor
     },
     equations: { identical: eqIdentical, onlyInA: onlyEqA, onlyInB: onlyEqB },
   };
+}
+
+/**
+ * 表格单元里的文本 → 一行可印的字 ✓。
+ *
+ * **不转义 HTML** ✗ —— 报告的渲染层会自己转义 ✓，这里再转一次就是**双重转义** ✗。
+ * 只做两件事：把 `|` 换成全角 ✓（否则会把 markdown 表切坏 ✗）、压掉换行与空白 ✓。
+ */
+function cellText(s: string, max = 60): string {
+  return String(s ?? "")
+    .replace(/\|/g, "｜")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
 }
 
 /** 把两版差异写成 markdown（报告里直接嵌 ✓）。 */
@@ -370,11 +529,40 @@ export function renderVersionDiff(d: VersionDiff): string {
     "",
   );
   if (d.tables.paired.length) {
-    out.push(`| ${a} 页 | ${b} 页 | 依据 |`, "|---|---|---|");
+    out.push(`| ${a} 页 | ${b} 页 | 依据 | 单元格文本 |`, "|---|---|---|---|");
     for (const p of d.tables.paired) {
-      out.push(`| p${p.a.page} | p${p.b.page} | ${p.by === "caption" ? "题注" : "可读表头"} |`);
+      const cell =
+        p.cellDiff.status === "compared"
+          ? (p.cellDiff.changed === 0
+              ? "**全部相同**"
+              : `**${p.cellDiff.changed} / ${p.cellDiff.total} 格不同**`) +
+            (p.cellDiff.unscorable ? ` · ${p.cellDiff.unscorable} 格串行未比` : "")
+          : `未比（${p.cellDiff.reason.slice(0, 24)}…）`;
+      out.push(`| p${p.a.page} | p${p.b.page} | ${p.by === "caption" ? "题注" : "可读表头"} | ${cell} |`);
     }
     out.push("");
+    // **逐格差异只印前 6 处** ✓ —— 全印会把报告撑爆 ✗，而且读者也看不完 ✗
+    const withChanges = d.tables.paired.filter(
+      (p) => p.cellDiff.status === "compared" && p.cellDiff.changed > 0,
+    );
+    for (const p of withChanges.slice(0, 3)) {
+      if (p.cellDiff.status !== "compared") continue;
+      out.push(
+        `**表 p${p.a.page} ↔ p${p.b.page}** 的单元格文本差异（前 ${Math.min(6, p.cellDiff.changed)} 处，共 ${p.cellDiff.changed}）：`,
+        "",
+        `| 行 | 列 | ${a} | ${b} |`,
+        "|---|---|---|---|",
+      );
+      for (const c of p.cellDiff.changes.slice(0, 6)) {
+        out.push(`| ${c.row} | ${c.col} | ${cellText(c.a)} | ${cellText(c.b)} |`);
+      }
+      out.push("");
+    }
+    out.push(
+      `> 单元格差异是**文本**不同 ✓ —— 可能只是写法（\`㎜\` vs \`mm\`、公式排版）✗，` +
+        "**须人工判断是否实质变化** ✗。",
+      "",
+    );
   }
 
   // 公式

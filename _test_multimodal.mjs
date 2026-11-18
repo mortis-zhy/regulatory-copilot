@@ -13,6 +13,10 @@ import {
   tableKey,
   normalizeLatex,
   diffVersions,
+  diffTableCells,
+  parseTableCells,
+  normCell,
+  looksGarbledCell,
   FIGURE_NEAR_DISTANCE,
 } from "./dist/multimodal.js";
 
@@ -105,5 +109,66 @@ const invC = {
 };
 const d2 = diffVersions(invA, invC);
 ok(d2.tables.unscorableB === 1 && d2.tables.paired.length === 0, "串行表被拿去配对了");
+
+// ⑦ **单元格级**表 diff —— 只在「结构一致」时比 ✓，而且**只说文本不同** ✗
+const tA = "| 参数 | A 版 | B 版 |\n| --- | --- | --- |\n| 高度 | 350㎜ | 400mm |";
+const tB = "| 参数 | A 版 | B 版 |\n| --- | --- | --- |\n| 高度 | 350mm | 400mm |";
+ok(parseTableCells(tA).length === 2, "表头与数据行应解析成 2 行");
+ok(normCell("350㎜") === normCell("350mm"), "同一数值的两种单位写法没被归一");
+ok(normCell("1，200") === "1,200", "全角逗号没被归一");
+
+const same = diffTableCells(tA, tB);
+ok(
+  same.status === "compared" && same.changed === 0,
+  `只有单位写法不同应判「全部相同」，实得 ${JSON.stringify(same).slice(0, 80)}`,
+);
+
+const changed = diffTableCells(tA, "| 参数 | A 版 | B 版 |\n| --- | --- | --- |\n| 高度 | 350㎜ | 420mm |");
+ok(changed.status === "compared" && changed.changed === 1, "改了一个数应报 1 格不同");
+ok(
+  changed.changes[0].row === 2 && changed.changes[0].col === 3,
+  `差异位置不对：${JSON.stringify(changed.changes[0])}`,
+);
+ok(
+  changed.note.includes("须人工") && changed.note.includes("文本"),
+  "单元格差异的说明没写清「文本不同 ≠ 实质变化」",
+);
+
+// **结构变了 ⇒ 不比** ✓（行数不同 / 列数不同都跳过 ✓）
+const skipRows = diffTableCells(tA, "| 参数 | A 版 | B 版 |\n| --- | --- | --- |");
+ok(skipRows.status === "skipped" && skipRows.reason.includes("行×列"), "行数不同时应跳过并说明");
+const skipCols = diffTableCells(
+  tA,
+  "| 参数 | A 版 |\n| --- | --- |\n| 高度 | 350mm |",
+);
+ok(skipCols.status === "skipped", "列数不同时应跳过");
+
+// 串行表 ⇒ 在配对层就**不参与** ✓（已有用例覆盖），这里补一条：串行内容解析出来的列数是乱的 ✓
+ok(looksScrambled("| a | b |\n| --- | --- |\n| 色边色边 | x |"), "相邻重复两字组应判串行");
+
+// ⑧ **逐格**串行判据 —— 整表判据会漏（实测 B 版色度表 ✗）
+ok(looksGarbledCell("WW23 00..451478"), "连出两个点应判串行");
+ok(looksGarbledCell("FRRR234341紫黄"), "同一大写字母连出 3 个应判串行");
+ok(looksGarbledCell("边界界界y"), "同一汉字连出 3 个应判串行");
+ok(!looksGarbledCell("W12绿色边界y=0.150+0.640x"), "正常的色度边界式被误判成串行");
+{
+  // 一格坏了 ⇒ **那一格不比** ✓，不能拿乱码当原文印出去 ✗
+  const g = diffTableCells(
+    "| 参数 | 值 |\n| --- | --- |\n| 高度 | 350 |\n| 宽度 | 200 |",
+    "| 参数 | 值 |\n| --- | --- |\n| 高度 | 350 |\n| 宽度 | 20..0 |",
+  );
+  ok(g.status === "compared", "一格串行不应让整表跳过");
+  ok(g.unscorable === 1, `应报 1 格串行未比，实得 ${g.status === "compared" ? g.unscorable : g.status}`);
+  ok(g.changed === 0, "串行的格子被算成了「不同」");
+  ok(g.note.includes("串行"), "说明里没写清「有格子串行未比」");
+}
+{
+  // **整表**都串行 ⇒ 跳过 ✓
+  const all = diffTableCells(
+    "| a | b |\n| --- | --- |\n| 00..1 | FRRR |",
+    "| a | b |\n| --- | --- |\n| 1 | 2 |",
+  );
+  ok(all.status === "skipped", "整表串行时应跳过");
+}
 
 console.log(`\n✓ 多模态用例全过（${n} 条断言）`);
