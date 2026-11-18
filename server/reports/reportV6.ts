@@ -16,6 +16,8 @@
  * Run: node dist/report-v6.mjs
  */
 import { prose } from "./reportProse";
+// 附录 B.5 的跨版素材对比（表/图/公式）✓ —— 与 CLI **同一份实现** ✓
+import { buildInventory, diffVersions, renderVersionDiff } from "./multimodal";
 import fs from "node:fs";
 import path from "node:path";
 import { renderPdfFromReport, type RenderableReport } from "./htmlRender";
@@ -2380,6 +2382,66 @@ function buildAppendixB(data: Record<string, any>, slots: TitleSlots): string {
   }
   parts.push("## B.4 数据溯源（第 11 章指标 → 原文页）", "");
   parts.push("第 11.4 节每条指标的 B/A 数值均标注出现页码，可对照 PDF 原文直接验证。");
+
+  // ---- B.5 跨版素材对比（表 / 图 / 公式）---------------------------------
+  //
+  // 图版（B.2.1）把图**摆出来了** ✓，B.2 只是**索引** ✓ ——
+  // 但「A 的这张和 B 的那张是不是同一张」✗、「同一张表在两版差在哪」✗，
+  // 报告里**一个字都没有** ✗。
+  //
+  // 这一节补上 ✓，但**只比「在不在、像不像」** ✓：
+  //   · 图靠 pHash（64 位感知指纹）✓ —— 「像」**不是**「一致」✗；
+  //   · 表靠题注 / 可读表头 ✓ —— 没有指纹的表**不配对** ✗（只按行×列配会瞎配 ✗）；
+  //   · 公式靠归一化后**完全相同** ✓ —— 近似公式不判 ✗（那要语义 ✗）。
+  parts.push("", "## B.5 跨版素材对比（表 / 图 / 公式）", "");
+  try {
+    // **静态 import** ✓ —— ESM 里没有 `require` ✗（本项目已经踩过一次：
+    // 上传响应的 sha256 写成 `require("node:crypto")` ⇒ 抛错被 catch 吞掉 ⇒ 静默 ✗）。
+    const mm = { buildInventory, diffVersions, renderVersionDiff };
+    const hashesPath = path.join(process.cwd(), "reports", "figure-hashes.json");
+    const hashes = fs.existsSync(hashesPath)
+      ? JSON.parse(fs.readFileSync(hashesPath, "utf-8"))
+      : {};
+    const invs = ["A", "B", "C"]
+      .map((label) => ({
+        label,
+        inv: mm.buildInventory(label, data[label], hashes, data[label]?.figureGallery ?? null),
+      }))
+      .filter((x) => x.inv.figures.length || x.inv.tables.length || x.inv.equations.length);
+    if (invs.length < 2) {
+      parts.push(
+        "> 本份报告只有一版带素材（图/表/公式）—— **没有可比的第二版**，本节留空 ✓。",
+        "",
+      );
+    } else {
+      parts.push(
+        "> **本节只比「素材在不在、像不像」，不判语义** ✓：",
+        "> 图上的数字改了 pHash 也几乎不动 ✗；表里的条件改了也要人看 ✗。",
+        "> 「图像近似」**不是**「两版一致」✗，须人工核对。",
+        "",
+      );
+      for (const { label, inv } of invs) {
+        parts.push(
+          `**${label}**：图 ${inv.figures.length}（可算指纹 ${inv.figures.filter((f) => f.phash).length}）· ` +
+            `表 ${inv.tables.length}（串行、未比对 ${inv.tables.filter((t) => t.scrambled).length}）· ` +
+            `公式 ${inv.equations.length}`,
+        );
+      }
+      parts.push("");
+      for (let i = 0; i < invs.length; i++) {
+        for (let j = i + 1; j < invs.length; j++) {
+          parts.push(mm.renderVersionDiff(mm.diffVersions(invs[i].inv, invs[j].inv)));
+        }
+      }
+    }
+  } catch (e) {
+    // 素材比不了**不许**让整份报告出不来 ✓ —— 但要**写明**为什么 ✗
+    // （静默少一节 = 读者以为原文就没有这一节 ✗）
+    parts.push(
+      `> 本节未能生成：${esc(String((e as Error)?.message ?? e).slice(0, 160))}`,
+      "",
+    );
+  }
   return parts.join("\n");
 }
 

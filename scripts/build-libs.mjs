@@ -135,6 +135,9 @@ const ENTRIES = [
   // （sidecarClient / agentRoutes）走**同一份实现** ——
   // 两份实现就会有一份忘抽图，而「忘抽图」在纸面上看不出来 ✗。
   ["server/reports/figureGallery.ts", "dist/figureGallery.js"],
+  // multimodal 是**表/图/公式**的跨版对比（图靠 pHash ✓，表/公式靠指纹 ✓）。
+  // 单独成模块：用例要用**合成的**素材驱动它（真语料只能验「跑得通」✗）。
+  ["server/reports/multimodal.ts", "dist/multimodal.js"],
 ];
 
 const SHARED = {

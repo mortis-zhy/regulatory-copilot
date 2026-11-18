@@ -1,0 +1,4338 @@
+{
+ "generatedAt": "2026-11-18T07:21:04.703Z",
+ "inventory": {
+  "A": {
+   "version": "A",
+   "figures": [
+    {
+     "file": "dist/figures/2173836f/p27_0.png",
+     "page": 27,
+     "w": 1011,
+     "h": 837,
+     "phash": "ff4b8797849da13b"
+    },
+    {
+     "file": "dist/figures/2173836f/p30_0.png",
+     "page": 30,
+     "w": 964,
+     "h": 594,
+     "phash": "bfe0b03d6bb6d249"
+    },
+    {
+     "file": "dist/figures/2173836f/p38_0.png",
+     "page": 38,
+     "w": 932,
+     "h": 738,
+     "phash": "ba1be6b481c6c3ce"
+    },
+    {
+     "file": "dist/figures/2173836f/p38_1.png",
+     "page": 38,
+     "w": 895,
+     "h": 495,
+     "phash": "bb44e4bdc33d3e60"
+    },
+    {
+     "file": "dist/figures/2173836f/p61_0.png",
+     "page": 61,
+     "w": 923,
+     "h": 443,
+     "phash": "9fa7aa01e57e068f"
+    },
+    {
+     "file": "dist/figures/2173836f/p61_1.png",
+     "page": 61,
+     "w": 873,
+     "h": 424,
+     "phash": "b9fac03487c339da"
+    },
+    {
+     "file": "dist/figures/2173836f/p62_0.png",
+     "page": 62,
+     "w": 1128,
+     "h": 460,
+     "phash": "bab9853486cf3c1e"
+    },
+    {
+     "file": "dist/figures/2173836f/p65_0.png",
+     "page": 65,
+     "w": 1246,
+     "h": 422,
+     "phash": "e79898a4a55ee65b"
+    },
+    {
+     "file": "dist/figures/2173836f/p65_1.png",
+     "page": 65,
+     "w": 900,
+     "h": 583,
+     "phash": "bf46916ee46ec07e"
+    },
+    {
+     "file": "dist/figures/2173836f/p66_0.png",
+     "page": 66,
+     "w": 928,
+     "h": 442,
+     "phash": "efd0c03f1bec9ac3"
+    },
+    {
+     "file": "dist/figures/2173836f/p66_1.png",
+     "page": 66,
+     "w": 800,
+     "h": 439,
+     "phash": "ab9cb0e1c99eb4e1"
+    },
+    {
+     "file": "dist/figures/2173836f/p73_0.png",
+     "page": 73,
+     "w": 548,
+     "h": 656,
+     "phash": "b83848c7c7c7c738"
+    },
+    {
+     "file": "dist/figures/2173836f/p74_0.png",
+     "page": 74,
+     "w": 690,
+     "h": 740,
+     "phash": "bf9363c0711fe15e"
+    },
+    {
+     "file": "dist/figures/2173836f/p74_1.png",
+     "page": 74,
+     "w": 386,
+     "h": 822,
+     "phash": "ed91cab69a6d1339"
+    },
+    {
+     "file": "dist/figures/2173836f/p75_0.png",
+     "page": 75,
+     "w": 298,
+     "h": 778,
+     "phash": "e8b4943a934a6ce7"
+    },
+    {
+     "file": "dist/figures/2173836f/p75_1.png",
+     "page": 75,
+     "w": 1061,
+     "h": 333,
+     "phash": "9aa5a5ebe249e11c"
+    },
+    {
+     "file": "dist/figures/2173836f/p75_2.png",
+     "page": 75,
+     "w": 993,
+     "h": 285,
+     "phash": "dae1a5aaa31ce33c"
+    },
+    {
+     "file": "dist/figures/2173836f/p76_0.png",
+     "page": 76,
+     "w": 1053,
+     "h": 252,
+     "phash": "daa7a5a0ae58eb54"
+    },
+    {
+     "file": "dist/figures/2173836f/p76_1.png",
+     "page": 76,
+     "w": 923,
+     "h": 524,
+     "phash": "be87fac1981c1d1f"
+    },
+    {
+     "file": "dist/figures/2173836f/p76_2.png",
+     "page": 76,
+     "w": 1022,
+     "h": 524,
+     "phash": "bfcae4cc3f32c187"
+    },
+    {
+     "file": "dist/figures/2173836f/p77_0.png",
+     "page": 77,
+     "w": 753,
+     "h": 528,
+     "phash": "b838c7c7873ab81a"
+    },
+    {
+     "file": "dist/figures/2173836f/p77_1.png",
+     "page": 77,
+     "w": 1037,
+     "h": 477,
+     "phash": "b9b1f1d24e2e4696"
+    },
+    {
+     "file": "dist/figures/2173836f/p77_2.png",
+     "page": 77,
+     "w": 893,
+     "h": 469,
+     "phash": "bfb1f3d88c0ec42f"
+    },
+    {
+     "file": "dist/figures/2173836f/p78_0.png",
+     "page": 78,
+     "w": 1050,
+     "h": 488,
+     "phash": "b9bd90d1258ede0e"
+    },
+    {
+     "file": "dist/figures/2173836f/p78_1.png",
+     "page": 78,
+     "w": 975,
+     "h": 550,
+     "phash": "b9b9b0d141af9c56"
+    },
+    {
+     "file": "dist/figures/2173836f/p79_0.png",
+     "page": 79,
+     "w": 1058,
+     "h": 517,
+     "phash": "b9bdd0d1218ede0e"
+    },
+    {
+     "file": "dist/figures/2173836f/p79_1.png",
+     "page": 79,
+     "w": 1300,
+     "h": 459,
+     "phash": "bc3cc3c3c33f1958"
+    },
+    {
+     "file": "dist/figures/2173836f/p79_2.png",
+     "page": 79,
+     "w": 1175,
+     "h": 458,
+     "phash": "bce2c0dbc33cbb42"
+    },
+    {
+     "file": "dist/figures/2173836f/p80_0.png",
+     "page": 80,
+     "w": 1058,
+     "h": 1469,
+     "phash": "8ff8f82f05e1d01e"
+    },
+    {
+     "file": "dist/figures/2173836f/p81_0.png",
+     "page": 81,
+     "w": 1093,
+     "h": 1512,
+     "phash": "bf0fe1e33fe3c090"
+    },
+    {
+     "file": "dist/figures/2173836f/p82_0.png",
+     "page": 82,
+     "w": 1300,
+     "h": 504,
+     "phash": "bbe3cc3db8c2871a"
+    },
+    {
+     "file": "dist/figures/2173836f/p82_1.png",
+     "page": 82,
+     "w": 1300,
+     "h": 579,
+     "phash": "9f2fe0d899c3263e"
+    },
+    {
+     "file": "dist/figures/2173836f/p83_0.png",
+     "page": 83,
+     "w": 1041,
+     "h": 1315,
+     "phash": "b9ea3195b3373162"
+    },
+    {
+     "file": "dist/figures/2173836f/p100_0.png",
+     "page": 100,
+     "w": 732,
+     "h": 248,
+     "phash": "b4364bcb199966c5"
+    },
+    {
+     "file": "dist/figures/2173836f/p100_1.png",
+     "page": 100,
+     "w": 732,
+     "h": 251,
+     "phash": "b9e5867a29926e2d"
+    },
+    {
+     "file": "dist/figures/2173836f/p100_2.png",
+     "page": 100,
+     "w": 370,
+     "h": 464,
+     "phash": "a5931c6d9a986337"
+    },
+    {
+     "file": "dist/figures/2173836f/p101_0.png",
+     "page": 101,
+     "w": 1300,
+     "h": 347,
+     "phash": "f24ecd3132cc78b3"
+    },
+    {
+     "file": "dist/figures/2173836f/p101_1.png",
+     "page": 101,
+     "w": 1300,
+     "h": 813,
+     "phash": "e1619e9e61711ecc"
+    }
+   ],
+   "tables": [
+    {
+     "page": 16,
+     "caption": "",
+     "rows": 3,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 17,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 17,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 28,
+     "cols": 2,
+     "scrambled": false,
+     "key": "hdr:28x2:灯具名称|光色"
+    },
+    {
+     "page": 25,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 27,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 71,
+     "caption": "",
+     "rows": 3,
+     "cols": 2,
+     "scrambled": false,
+     "key": "hdr:3x2:Vr|激活条件"
+    },
+    {
+     "page": 73,
+     "caption": "",
+     "rows": 10,
+     "cols": 2,
+     "scrambled": false,
+     "key": "hdr:10x2:编号|关键词"
+    },
+    {
+     "page": 78,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:发光面|符合3.1.8a）的透光面"
+    },
+    {
+     "page": 78,
+     "caption": "",
+     "rows": 2,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 78,
+     "caption": "",
+     "rows": 2,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 84,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 89,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 92,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    }
+   ],
+   "equations": [
+    {
+     "page": 36,
+     "latex": "\\mathrm{h} \\leqslant 0.8 \\quad \\text {限值：} -1.0\\% \\sim -3.0\\%",
+     "key": "h\\leqslant0.8限值：-1.0\\%\\sim-3.0\\%"
+    },
+    {
+     "page": 36,
+     "latex": "\\mathrm{h} > 0.8 \\quad \\text{限值：} -1.5\\% \\sim -3.5\\%",
+     "key": "h>0.8限值：-1.5\\%\\sim-3.5\\%"
+    },
+    {
+     "page": 36,
+     "latex": "\\text {初始照准：} - 2.0\\% \\sim -2.5\\%",
+     "key": "初始照准：-2.0\\%\\sim-2.5\\%"
+    },
+    {
+     "page": 85,
+     "latex": "\\frac {(h _ {1} - h _ {2})}{L} \\times 1 0 0\\tag{1}",
+     "key": "\\frac{(h_{1}-h_{2})}{L}\\times100"
+    }
+   ]
+  },
+  "B": {
+   "version": "B",
+   "figures": [
+    {
+     "file": "dist/figures/f86e6c73/p25_0.png",
+     "page": 25,
+     "w": 617,
+     "h": 544,
+     "phash": "b162cc8c7333cc8f"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p30_0.png",
+     "page": 30,
+     "w": 853,
+     "h": 567,
+     "phash": "e87394c4e3369b0b"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p31_0.png",
+     "page": 31,
+     "w": 809,
+     "h": 390,
+     "phash": "aba2c7d80f5a07cb"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p50_0.png",
+     "page": 50,
+     "w": 547,
+     "h": 353,
+     "phash": "9aa5a53a4a37b5c1"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p56_0.png",
+     "page": 56,
+     "w": 781,
+     "h": 362,
+     "phash": "9fa78a07877e068f"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p63_0.png",
+     "page": 63,
+     "w": 617,
+     "h": 758,
+     "phash": "b8383cc7c3c7c3c1"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p63_1.png",
+     "page": 63,
+     "w": 627,
+     "h": 713,
+     "phash": "9f9267c0781f709f"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p64_0.png",
+     "page": 64,
+     "w": 332,
+     "h": 820,
+     "phash": "e933c6a7916d1339"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p64_1.png",
+     "page": 64,
+     "w": 307,
+     "h": 856,
+     "phash": "e8a5b13a92586ce7"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p65_0.png",
+     "page": 65,
+     "w": 946,
+     "h": 281,
+     "phash": "9ea1a5a3d46be354"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p65_1.png",
+     "page": 65,
+     "w": 946,
+     "h": 241,
+     "phash": "dae1b5aaa51ec30e"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p65_2.png",
+     "page": 65,
+     "w": 949,
+     "h": 201,
+     "phash": "daafb5a3ac31aa11"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p65_3.png",
+     "page": 65,
+     "w": 694,
+     "h": 414,
+     "phash": "bc837cc13ccd3cc3"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p66_0.png",
+     "page": 66,
+     "w": 763,
+     "h": 371,
+     "phash": "bed2ecc83b38c1c7"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p66_1.png",
+     "page": 66,
+     "w": 598,
+     "h": 412,
+     "phash": "b87847c787b81a4e"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p66_2.png",
+     "page": 66,
+     "w": 1281,
+     "h": 575,
+     "phash": "b9b79171c349ec2c"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p67_0.png",
+     "page": 67,
+     "w": 1262,
+     "h": 606,
+     "phash": "b9b7d0e9c0ce864b"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p67_1.png",
+     "page": 67,
+     "w": 1263,
+     "h": 672,
+     "phash": "babd91c9c02787d6"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p68_0.png",
+     "page": 68,
+     "w": 1266,
+     "h": 798,
+     "phash": "b8b9f0d9c06587c6"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p68_1.png",
+     "page": 68,
+     "w": 1293,
+     "h": 750,
+     "phash": "bdb9b0d1c1659b96"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p69_0.png",
+     "page": 69,
+     "w": 1019,
+     "h": 383,
+     "phash": "bc3cc3c3c33f3950"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p69_1.png",
+     "page": 69,
+     "w": 971,
+     "h": 374,
+     "phash": "b83ac498c785bbc3"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p69_2.png",
+     "page": 69,
+     "w": 657,
+     "h": 847,
+     "phash": "aff8b82f07e1d01e"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p70_0.png",
+     "page": 70,
+     "w": 605,
+     "h": 840,
+     "phash": "bf0fe1e23fe3c0d0"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p70_1.png",
+     "page": 70,
+     "w": 797,
+     "h": 293,
+     "phash": "be63cc2d38ca875e"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p70_2.png",
+     "page": 70,
+     "w": 772,
+     "h": 308,
+     "phash": "8f6be01cd9d38c56"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p71_0.png",
+     "page": 71,
+     "w": 1108,
+     "h": 1327,
+     "phash": "98e83995b135317a"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p73_0.png",
+     "page": 73,
+     "w": 1255,
+     "h": 372,
+     "phash": "c2899976b5acc619"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p78_0.png",
+     "page": 78,
+     "w": 218,
+     "h": 258,
+     "phash": "bbcfb40e58f063e1"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p78_1.png",
+     "page": 78,
+     "w": 222,
+     "h": 221,
+     "phash": "b86bd0a787989a39"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p79_0.png",
+     "page": 79,
+     "w": 360,
+     "h": 456,
+     "phash": "a7931c6c989c63b7"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p81_0.png",
+     "page": 81,
+     "w": 1235,
+     "h": 308,
+     "phash": "f24e8d73268c78b3"
+    },
+    {
+     "file": "dist/figures/f86e6c73/p81_1.png",
+     "page": 81,
+     "w": 1232,
+     "h": 746,
+     "phash": "a4669a9b65641a9b"
+    }
+   ],
+   "tables": [
+    {
+     "page": 17,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": true,
+     "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 17,
+     "caption": "",
+     "rows": 3,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 3,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 27,
+     "cols": 2,
+     "scrambled": false,
+     "key": "hdr:27x2:灯具名称|光色"
+    },
+    {
+     "page": 23,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 58,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 62,
+     "caption": "",
+     "rows": 10,
+     "cols": 2,
+     "scrambled": false,
+     "key": "hdr:10x2:编号|关键词"
+    },
+    {
+     "page": 66,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+    },
+    {
+     "page": 67,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+    },
+    {
+     "page": 67,
+     "caption": "",
+     "rows": 2,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 68,
+     "caption": "",
+     "rows": 2,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 68,
+     "caption": "",
+     "rows": 2,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 75,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 76,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 80,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    }
+   ],
+   "equations": [
+    {
+     "page": 28,
+     "latex": "h \\leqslant 0.8 \\mathrm{m} \\quad \\begin{array}{l} \\text {限值}: -1.0\\% \\sim -3.0\\% \\\\ \\text {初始照准}: -1.5\\% \\sim -2.0\\% \\end{array}",
+     "key": "h\\leqslant0.8m限值:-1.0\\%\\sim-3.0\\%初始照准:-1.5\\%\\sim-2.0\\%"
+    },
+    {
+     "page": 28,
+     "latex": "\\begin{array}{l l} h > 0. 8 \\mathrm{m} & \\text {限值:} - 1. 5 \\% \\sim - 3. 5 \\% \\\\ & \\text {初始照准:} - 2. 0 \\% \\sim - 2. 5 \\% \\end{array}",
+     "key": "h>0.8m&限值:-1.5\\%\\sim-3.5\\%&初始照准:-2.0\\%\\sim-2.5\\%"
+    },
+    {
+     "page": 72,
+     "latex": "\\text {倾斜度} = \\frac {\\left(h _ {1} - h _ {2}\\right)}{L} \\times 1 0 0\\tag{……(D.1}",
+     "key": "倾斜度=\\frac{(h_{1}-h_{2})}{L}\\times100"
+    }
+   ]
+  },
+  "C": {
+   "version": "C",
+   "figures": [
+    {
+     "file": "dist/figures/92b25631/p42_0.png",
+     "page": 42,
+     "w": 755,
+     "h": 579,
+     "phash": "fa4b869e8c99a32f"
+    },
+    {
+     "file": "dist/figures/92b25631/p79_0.png",
+     "page": 79,
+     "w": 651,
+     "h": 332,
+     "phash": "de19a15a6ae1a75e"
+    },
+    {
+     "file": "dist/figures/92b25631/p79_1.png",
+     "page": 79,
+     "w": 542,
+     "h": 328,
+     "phash": "f814a5c16b7cb563"
+    },
+    {
+     "file": "dist/figures/92b25631/p83_0.png",
+     "page": 83,
+     "w": 785,
+     "h": 576,
+     "phash": "be33565e4a1e5678"
+    },
+    {
+     "file": "dist/figures/92b25631/p110_0.png",
+     "page": 110,
+     "w": 499,
+     "h": 559,
+     "phash": "b838cc8387c7873b"
+    },
+    {
+     "file": "dist/figures/92b25631/p111_0.png",
+     "page": 111,
+     "w": 440,
+     "h": 571,
+     "phash": "b8c3cc3ac719c867"
+    },
+    {
+     "file": "dist/figures/92b25631/p111_1.png",
+     "page": 111,
+     "w": 298,
+     "h": 519,
+     "phash": "b6c35c2cd333dc8c"
+    },
+    {
+     "file": "dist/figures/92b25631/p112_0.png",
+     "page": 112,
+     "w": 506,
+     "h": 562,
+     "phash": "acf2cb3c904ff908"
+    },
+    {
+     "file": "dist/figures/92b25631/p112_1.png",
+     "page": 112,
+     "w": 408,
+     "h": 536,
+     "phash": "e29dda6493c998a5"
+    },
+    {
+     "file": "dist/figures/92b25631/p113_0.png",
+     "page": 113,
+     "w": 449,
+     "h": 591,
+     "phash": "e4b9daccb2c39928"
+    },
+    {
+     "file": "dist/figures/92b25631/p113_1.png",
+     "page": 113,
+     "w": 421,
+     "h": 591,
+     "phash": "e836e7d319a4345a"
+    },
+    {
+     "file": "dist/figures/92b25631/p114_0.png",
+     "page": 114,
+     "w": 741,
+     "h": 289,
+     "phash": "d8bfa488da087e8d"
+    },
+    {
+     "file": "dist/figures/92b25631/p114_1.png",
+     "page": 114,
+     "w": 734,
+     "h": 258,
+     "phash": "da6ea600fa13d3ab"
+    },
+    {
+     "file": "dist/figures/92b25631/p114_2.png",
+     "page": 114,
+     "w": 750,
+     "h": 226,
+     "phash": "db3fa524ba10f2b3"
+    },
+    {
+     "file": "dist/figures/92b25631/p115_0.png",
+     "page": 115,
+     "w": 545,
+     "h": 376,
+     "phash": "bc877cc338ec38c3"
+    },
+    {
+     "file": "dist/figures/92b25631/p115_1.png",
+     "page": 115,
+     "w": 741,
+     "h": 355,
+     "phash": "fe9868e87b385bc6"
+    },
+    {
+     "file": "dist/figures/92b25631/p116_0.png",
+     "page": 116,
+     "w": 651,
+     "h": 365,
+     "phash": "b838c7c73a1b853c"
+    },
+    {
+     "file": "dist/figures/92b25631/p116_1.png",
+     "page": 116,
+     "w": 779,
+     "h": 336,
+     "phash": "930311a5cdecded2"
+    },
+    {
+     "file": "dist/figures/92b25631/p117_0.png",
+     "page": 117,
+     "w": 778,
+     "h": 381,
+     "phash": "b321a343d75eac5c"
+    },
+    {
+     "file": "dist/figures/92b25631/p117_1.png",
+     "page": 117,
+     "w": 865,
+     "h": 389,
+     "phash": "808081a16b5effc6"
+    },
+    {
+     "file": "dist/figures/92b25631/p118_0.png",
+     "page": 118,
+     "w": 813,
+     "h": 346,
+     "phash": "b0100889ad52ff7f"
+    },
+    {
+     "file": "dist/figures/92b25631/p118_1.png",
+     "page": 118,
+     "w": 825,
+     "h": 363,
+     "phash": "9daf9bc451aad2c4"
+    },
+    {
+     "file": "dist/figures/92b25631/p119_0.png",
+     "page": 119,
+     "w": 779,
+     "h": 321,
+     "phash": "b131c5c5ce6c32da"
+    },
+    {
+     "file": "dist/figures/92b25631/p119_1.png",
+     "page": 119,
+     "w": 753,
+     "h": 328,
+     "phash": "b930c5f5c6a5fa0a"
+    },
+    {
+     "file": "dist/figures/92b25631/p120_0.png",
+     "page": 120,
+     "w": 704,
+     "h": 365,
+     "phash": "9e02e11c3ee1fa3e"
+    },
+    {
+     "file": "dist/figures/92b25631/p120_1.png",
+     "page": 120,
+     "w": 741,
+     "h": 348,
+     "phash": "8f43f01c1ed32d2f"
+    },
+    {
+     "file": "dist/figures/92b25631/p120_2.png",
+     "page": 120,
+     "w": 731,
+     "h": 345,
+     "phash": "8f43f01c1ec32f2f"
+    },
+    {
+     "file": "dist/figures/92b25631/p121_0.png",
+     "page": 121,
+     "w": 753,
+     "h": 368,
+     "phash": "9f5fe0301ec2cf2d"
+    },
+    {
+     "file": "dist/figures/92b25631/p121_1.png",
+     "page": 121,
+     "w": 741,
+     "h": 335,
+     "phash": "9f57e03c1ec23d2d"
+    },
+    {
+     "file": "dist/figures/92b25631/p121_2.png",
+     "page": 121,
+     "w": 729,
+     "h": 308,
+     "phash": "f842e87e79e2ce14"
+    },
+    {
+     "file": "dist/figures/92b25631/p122_0.png",
+     "page": 122,
+     "w": 722,
+     "h": 317,
+     "phash": "bc4ac9eb397ac28c"
+    },
+    {
+     "file": "dist/figures/92b25631/p122_1.png",
+     "page": 122,
+     "w": 699,
+     "h": 310,
+     "phash": "9f57e018d2c23f5d"
+    },
+    {
+     "file": "dist/figures/92b25631/p144_0.png",
+     "page": 144,
+     "w": 933,
+     "h": 248,
+     "phash": "f24e8d7132cc78b3"
+    },
+    {
+     "file": "dist/figures/92b25631/p144_1.png",
+     "page": 144,
+     "w": 930,
+     "h": 582,
+     "phash": "e5619e9e61711ecc"
+    },
+    {
+     "file": "dist/figures/92b25631/p146_0.png",
+     "page": 146,
+     "w": 229,
+     "h": 230,
+     "phash": "82847e8669e17939"
+    },
+    {
+     "file": "dist/figures/92b25631/p146_1.png",
+     "page": 146,
+     "w": 253,
+     "h": 224,
+     "phash": "f9c6a1d6d6f28619"
+    },
+    {
+     "file": "dist/figures/92b25631/p146_2.png",
+     "page": 146,
+     "w": 236,
+     "h": 216,
+     "phash": "c16c1ac16c9ba66b"
+    },
+    {
+     "file": "dist/figures/92b25631/p146_3.png",
+     "page": 146,
+     "w": 212,
+     "h": 206,
+     "phash": "9fb3e10c93ed489d"
+    }
+   ],
+   "tables": [
+    {
+     "page": 2,
+     "caption": "",
+     "rows": 3,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:3x3:WP29reference|Amendment|Supplement"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 6,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 7,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100"
+    },
+    {
+     "page": 18,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120"
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x"
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 19,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030"
+    },
+    {
+     "page": 20,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 21,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 21,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x"
+    },
+    {
+     "page": 21,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 21,
+     "caption": "",
+     "rows": 4,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x"
+    },
+    {
+     "page": 21,
+     "caption": "",
+     "rows": 5,
+     "cols": 3,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 36,
+     "caption": "",
+     "rows": 14,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 39,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 67,
+     "caption": "",
+     "rows": 7,
+     "cols": 2,
+     "scrambled": true,
+     "key": ""
+    },
+    {
+     "page": 92,
+     "caption": "",
+     "rows": 10,
+     "cols": 2,
+     "scrambled": true,
+     "key": ""
+    },
+    {
+     "page": 93,
+     "caption": "",
+     "rows": 3,
+     "cols": 2,
+     "scrambled": false,
+     "key": "hdr:3x2:Vr|switchON"
+    },
+    {
+     "page": 94,
+     "caption": "",
+     "rows": 10,
+     "cols": 2,
+     "scrambled": true,
+     "key": ""
+    },
+    {
+     "page": 95,
+     "caption": "",
+     "rows": 10,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 96,
+     "caption": "",
+     "rows": 11,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 102,
+     "caption": "",
+     "rows": 14,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 103,
+     "caption": "",
+     "rows": 5,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 117,
+     "caption": "",
+     "rows": 2,
+     "cols": 3,
+     "scrambled": false,
+     "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)"
+    },
+    {
+     "page": 117,
+     "caption": "",
+     "rows": 2,
+     "cols": 2,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 134,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 140,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 141,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 143,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 146,
+     "caption": "",
+     "rows": 0,
+     "cols": 0,
+     "scrambled": false,
+     "key": ""
+    },
+    {
+     "page": 147,
+     "caption": "",
+     "rows": 1,
+     "cols": 3,
+     "scrambled": true,
+     "key": ""
+    }
+   ],
+   "equations": [
+    {
+     "page": 19,
+     "latex": "\\mathrm{R} _ {3 4}",
+     "key": "R_{34}"
+    },
+    {
+     "page": 19,
+     "latex": "\\mathrm{R} _ {4 1}",
+     "key": "R_{41}"
+    },
+    {
+     "page": 19,
+     "latex": "\\mathrm{y} = 0. 9 8 0 - \\mathrm{x}",
+     "key": "y=0.980-x"
+    },
+    {
+     "page": 21,
+     "latex": "\\mathrm{Y} _ {4 1}",
+     "key": "Y_{41}"
+    },
+    {
+     "page": 127,
+     "latex": "\\frac {\\left(\\mathrm{h} _ {1} - \\mathrm{h} _ {2}\\right)}{\\mathrm{L}} \\times 1 0 0",
+     "key": "\\frac{(h_{1}-h_{2})}{L}\\times100"
+    }
+   ]
+  }
+ },
+ "diffs": [
+  {
+   "a": "A",
+   "b": "B",
+   "figures": {
+    "paired": [
+     {
+      "left": {
+       "page": 79,
+       "file": "dist/figures/2173836f/p79_1.png"
+      },
+      "right": {
+       "page": 69,
+       "file": "dist/figures/f86e6c73/p69_0.png"
+      },
+      "distance": 2,
+      "note": "图像近似（pHash 距离 2 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 81,
+       "file": "dist/figures/2173836f/p81_0.png"
+      },
+      "right": {
+       "page": 70,
+       "file": "dist/figures/f86e6c73/p70_0.png"
+      },
+      "distance": 2,
+      "note": "图像近似（pHash 距离 2 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 80,
+       "file": "dist/figures/2173836f/p80_0.png"
+      },
+      "right": {
+       "page": 69,
+       "file": "dist/figures/f86e6c73/p69_2.png"
+      },
+      "distance": 3,
+      "note": "图像近似（pHash 距离 3 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 100,
+       "file": "dist/figures/2173836f/p100_2.png"
+      },
+      "right": {
+       "page": 79,
+       "file": "dist/figures/f86e6c73/p79_0.png"
+      },
+      "distance": 5,
+      "note": "图像近似（pHash 距离 5 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 61,
+       "file": "dist/figures/2173836f/p61_0.png"
+      },
+      "right": {
+       "page": 56,
+       "file": "dist/figures/f86e6c73/p56_0.png"
+      },
+      "distance": 6,
+      "note": "图像近似（pHash 距离 6 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 101,
+       "file": "dist/figures/2173836f/p101_0.png"
+      },
+      "right": {
+       "page": 81,
+       "file": "dist/figures/f86e6c73/p81_0.png"
+      },
+      "distance": 6,
+      "note": "图像近似（pHash 距离 6 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 75,
+       "file": "dist/figures/2173836f/p75_0.png"
+      },
+      "right": {
+       "page": 64,
+       "file": "dist/figures/f86e6c73/p64_1.png"
+      },
+      "distance": 8,
+      "note": "图像近似（pHash 距离 8 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 75,
+       "file": "dist/figures/2173836f/p75_2.png"
+      },
+      "right": {
+       "page": 65,
+       "file": "dist/figures/f86e6c73/p65_1.png"
+      },
+      "distance": 8,
+      "note": "图像近似（pHash 距离 8 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 82,
+       "file": "dist/figures/2173836f/p82_0.png"
+      },
+      "right": {
+       "page": 70,
+       "file": "dist/figures/f86e6c73/p70_1.png"
+      },
+      "distance": 8,
+      "note": "图像近似（pHash 距离 8 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 83,
+       "file": "dist/figures/2173836f/p83_0.png"
+      },
+      "right": {
+       "page": 71,
+       "file": "dist/figures/f86e6c73/p71_0.png"
+      },
+      "distance": 8,
+      "note": "图像近似（pHash 距离 8 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 76,
+       "file": "dist/figures/2173836f/p76_2.png"
+      },
+      "right": {
+       "page": 66,
+       "file": "dist/figures/f86e6c73/p66_0.png"
+      },
+      "distance": 9,
+      "note": "图像近似（pHash 距离 9 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 77,
+       "file": "dist/figures/2173836f/p77_0.png"
+      },
+      "right": {
+       "page": 66,
+       "file": "dist/figures/f86e6c73/p66_1.png"
+      },
+      "distance": 10,
+      "note": "图像近似（pHash 距离 10 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     }
+    ],
+    "onlyInA": [
+     {
+      "file": "dist/figures/2173836f/p27_0.png",
+      "page": 27,
+      "w": 1011,
+      "h": 837,
+      "phash": "ff4b8797849da13b"
+     },
+     {
+      "file": "dist/figures/2173836f/p30_0.png",
+      "page": 30,
+      "w": 964,
+      "h": 594,
+      "phash": "bfe0b03d6bb6d249"
+     },
+     {
+      "file": "dist/figures/2173836f/p38_0.png",
+      "page": 38,
+      "w": 932,
+      "h": 738,
+      "phash": "ba1be6b481c6c3ce"
+     },
+     {
+      "file": "dist/figures/2173836f/p38_1.png",
+      "page": 38,
+      "w": 895,
+      "h": 495,
+      "phash": "bb44e4bdc33d3e60"
+     },
+     {
+      "file": "dist/figures/2173836f/p61_1.png",
+      "page": 61,
+      "w": 873,
+      "h": 424,
+      "phash": "b9fac03487c339da"
+     },
+     {
+      "file": "dist/figures/2173836f/p62_0.png",
+      "page": 62,
+      "w": 1128,
+      "h": 460,
+      "phash": "bab9853486cf3c1e"
+     },
+     {
+      "file": "dist/figures/2173836f/p65_0.png",
+      "page": 65,
+      "w": 1246,
+      "h": 422,
+      "phash": "e79898a4a55ee65b"
+     },
+     {
+      "file": "dist/figures/2173836f/p65_1.png",
+      "page": 65,
+      "w": 900,
+      "h": 583,
+      "phash": "bf46916ee46ec07e"
+     },
+     {
+      "file": "dist/figures/2173836f/p66_0.png",
+      "page": 66,
+      "w": 928,
+      "h": 442,
+      "phash": "efd0c03f1bec9ac3"
+     },
+     {
+      "file": "dist/figures/2173836f/p66_1.png",
+      "page": 66,
+      "w": 800,
+      "h": 439,
+      "phash": "ab9cb0e1c99eb4e1"
+     },
+     {
+      "file": "dist/figures/2173836f/p73_0.png",
+      "page": 73,
+      "w": 548,
+      "h": 656,
+      "phash": "b83848c7c7c7c738"
+     },
+     {
+      "file": "dist/figures/2173836f/p74_0.png",
+      "page": 74,
+      "w": 690,
+      "h": 740,
+      "phash": "bf9363c0711fe15e"
+     },
+     {
+      "file": "dist/figures/2173836f/p74_1.png",
+      "page": 74,
+      "w": 386,
+      "h": 822,
+      "phash": "ed91cab69a6d1339"
+     },
+     {
+      "file": "dist/figures/2173836f/p75_1.png",
+      "page": 75,
+      "w": 1061,
+      "h": 333,
+      "phash": "9aa5a5ebe249e11c"
+     },
+     {
+      "file": "dist/figures/2173836f/p76_0.png",
+      "page": 76,
+      "w": 1053,
+      "h": 252,
+      "phash": "daa7a5a0ae58eb54"
+     },
+     {
+      "file": "dist/figures/2173836f/p76_1.png",
+      "page": 76,
+      "w": 923,
+      "h": 524,
+      "phash": "be87fac1981c1d1f"
+     },
+     {
+      "file": "dist/figures/2173836f/p77_1.png",
+      "page": 77,
+      "w": 1037,
+      "h": 477,
+      "phash": "b9b1f1d24e2e4696"
+     },
+     {
+      "file": "dist/figures/2173836f/p77_2.png",
+      "page": 77,
+      "w": 893,
+      "h": 469,
+      "phash": "bfb1f3d88c0ec42f"
+     },
+     {
+      "file": "dist/figures/2173836f/p78_0.png",
+      "page": 78,
+      "w": 1050,
+      "h": 488,
+      "phash": "b9bd90d1258ede0e"
+     },
+     {
+      "file": "dist/figures/2173836f/p78_1.png",
+      "page": 78,
+      "w": 975,
+      "h": 550,
+      "phash": "b9b9b0d141af9c56"
+     },
+     {
+      "file": "dist/figures/2173836f/p79_0.png",
+      "page": 79,
+      "w": 1058,
+      "h": 517,
+      "phash": "b9bdd0d1218ede0e"
+     },
+     {
+      "file": "dist/figures/2173836f/p79_2.png",
+      "page": 79,
+      "w": 1175,
+      "h": 458,
+      "phash": "bce2c0dbc33cbb42"
+     },
+     {
+      "file": "dist/figures/2173836f/p82_1.png",
+      "page": 82,
+      "w": 1300,
+      "h": 579,
+      "phash": "9f2fe0d899c3263e"
+     },
+     {
+      "file": "dist/figures/2173836f/p100_0.png",
+      "page": 100,
+      "w": 732,
+      "h": 248,
+      "phash": "b4364bcb199966c5"
+     },
+     {
+      "file": "dist/figures/2173836f/p100_1.png",
+      "page": 100,
+      "w": 732,
+      "h": 251,
+      "phash": "b9e5867a29926e2d"
+     },
+     {
+      "file": "dist/figures/2173836f/p101_1.png",
+      "page": 101,
+      "w": 1300,
+      "h": 813,
+      "phash": "e1619e9e61711ecc"
+     }
+    ],
+    "onlyInB": [
+     {
+      "file": "dist/figures/f86e6c73/p25_0.png",
+      "page": 25,
+      "w": 617,
+      "h": 544,
+      "phash": "b162cc8c7333cc8f"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p30_0.png",
+      "page": 30,
+      "w": 853,
+      "h": 567,
+      "phash": "e87394c4e3369b0b"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p31_0.png",
+      "page": 31,
+      "w": 809,
+      "h": 390,
+      "phash": "aba2c7d80f5a07cb"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p50_0.png",
+      "page": 50,
+      "w": 547,
+      "h": 353,
+      "phash": "9aa5a53a4a37b5c1"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p63_0.png",
+      "page": 63,
+      "w": 617,
+      "h": 758,
+      "phash": "b8383cc7c3c7c3c1"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p63_1.png",
+      "page": 63,
+      "w": 627,
+      "h": 713,
+      "phash": "9f9267c0781f709f"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p64_0.png",
+      "page": 64,
+      "w": 332,
+      "h": 820,
+      "phash": "e933c6a7916d1339"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p65_0.png",
+      "page": 65,
+      "w": 946,
+      "h": 281,
+      "phash": "9ea1a5a3d46be354"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p65_2.png",
+      "page": 65,
+      "w": 949,
+      "h": 201,
+      "phash": "daafb5a3ac31aa11"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p65_3.png",
+      "page": 65,
+      "w": 694,
+      "h": 414,
+      "phash": "bc837cc13ccd3cc3"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p66_2.png",
+      "page": 66,
+      "w": 1281,
+      "h": 575,
+      "phash": "b9b79171c349ec2c"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p67_0.png",
+      "page": 67,
+      "w": 1262,
+      "h": 606,
+      "phash": "b9b7d0e9c0ce864b"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p67_1.png",
+      "page": 67,
+      "w": 1263,
+      "h": 672,
+      "phash": "babd91c9c02787d6"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p68_0.png",
+      "page": 68,
+      "w": 1266,
+      "h": 798,
+      "phash": "b8b9f0d9c06587c6"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p68_1.png",
+      "page": 68,
+      "w": 1293,
+      "h": 750,
+      "phash": "bdb9b0d1c1659b96"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p69_1.png",
+      "page": 69,
+      "w": 971,
+      "h": 374,
+      "phash": "b83ac498c785bbc3"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p70_2.png",
+      "page": 70,
+      "w": 772,
+      "h": 308,
+      "phash": "8f6be01cd9d38c56"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p73_0.png",
+      "page": 73,
+      "w": 1255,
+      "h": 372,
+      "phash": "c2899976b5acc619"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p78_0.png",
+      "page": 78,
+      "w": 218,
+      "h": 258,
+      "phash": "bbcfb40e58f063e1"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p78_1.png",
+      "page": 78,
+      "w": 222,
+      "h": 221,
+      "phash": "b86bd0a787989a39"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p81_1.png",
+      "page": 81,
+      "w": 1232,
+      "h": 746,
+      "phash": "a4669a9b65641a9b"
+     }
+    ],
+    "unhashable": 0
+   },
+   "tables": {
+    "paired": [
+     {
+      "a": {
+       "page": 16,
+       "caption": "",
+       "rows": 3,
+       "cols": 3,
+       "scrambled": false,
+       "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+      },
+      "b": {
+       "page": 17,
+       "caption": "",
+       "rows": 3,
+       "cols": 3,
+       "scrambled": false,
+       "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+      },
+      "by": "header",
+      "cellDiff": null
+     },
+     {
+      "a": {
+       "page": 18,
+       "caption": "",
+       "rows": 2,
+       "cols": 3,
+       "scrambled": false,
+       "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+      },
+      "b": {
+       "page": 18,
+       "caption": "",
+       "rows": 2,
+       "cols": 3,
+       "scrambled": false,
+       "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+      },
+      "by": "header",
+      "cellDiff": null
+     },
+     {
+      "a": {
+       "page": 73,
+       "caption": "",
+       "rows": 10,
+       "cols": 2,
+       "scrambled": false,
+       "key": "hdr:10x2:编号|关键词"
+      },
+      "b": {
+       "page": 62,
+       "caption": "",
+       "rows": 10,
+       "cols": 2,
+       "scrambled": false,
+       "key": "hdr:10x2:编号|关键词"
+      },
+      "by": "header",
+      "cellDiff": null
+     }
+    ],
+    "onlyInA": [
+     {
+      "page": 17,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 17,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 28,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:28x2:灯具名称|光色"
+     },
+     {
+      "page": 25,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 27,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 71,
+      "caption": "",
+      "rows": 3,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:3x2:Vr|激活条件"
+     },
+     {
+      "page": 78,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:发光面|符合3.1.8a）的透光面"
+     },
+     {
+      "page": 78,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 78,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 84,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 89,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 92,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     }
+    ],
+    "onlyInB": [
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 3,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 27,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:27x2:灯具名称|光色"
+     },
+     {
+      "page": 23,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 58,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 66,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+     },
+     {
+      "page": 67,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+     },
+     {
+      "page": 67,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 68,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 68,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 75,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 76,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 80,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     }
+    ],
+    "unscorableA": 0,
+    "unscorableB": 1
+   },
+   "equations": {
+    "identical": [],
+    "onlyInA": [
+     {
+      "page": 36,
+      "latex": "\\mathrm{h} \\leqslant 0.8 \\quad \\text {限值：} -1.0\\% \\sim -3.0\\%",
+      "key": "h\\leqslant0.8限值：-1.0\\%\\sim-3.0\\%"
+     },
+     {
+      "page": 36,
+      "latex": "\\mathrm{h} > 0.8 \\quad \\text{限值：} -1.5\\% \\sim -3.5\\%",
+      "key": "h>0.8限值：-1.5\\%\\sim-3.5\\%"
+     },
+     {
+      "page": 36,
+      "latex": "\\text {初始照准：} - 2.0\\% \\sim -2.5\\%",
+      "key": "初始照准：-2.0\\%\\sim-2.5\\%"
+     },
+     {
+      "page": 85,
+      "latex": "\\frac {(h _ {1} - h _ {2})}{L} \\times 1 0 0\\tag{1}",
+      "key": "\\frac{(h_{1}-h_{2})}{L}\\times100"
+     }
+    ],
+    "onlyInB": [
+     {
+      "page": 28,
+      "latex": "h \\leqslant 0.8 \\mathrm{m} \\quad \\begin{array}{l} \\text {限值}: -1.0\\% \\sim -3.0\\% \\\\ \\text {初始照准}: -1.5\\% \\sim -2.0\\% \\end{array}",
+      "key": "h\\leqslant0.8m限值:-1.0\\%\\sim-3.0\\%初始照准:-1.5\\%\\sim-2.0\\%"
+     },
+     {
+      "page": 28,
+      "latex": "\\begin{array}{l l} h > 0. 8 \\mathrm{m} & \\text {限值:} - 1. 5 \\% \\sim - 3. 5 \\% \\\\ & \\text {初始照准:} - 2. 0 \\% \\sim - 2. 5 \\% \\end{array}",
+      "key": "h>0.8m&限值:-1.5\\%\\sim-3.5\\%&初始照准:-2.0\\%\\sim-2.5\\%"
+     },
+     {
+      "page": 72,
+      "latex": "\\text {倾斜度} = \\frac {\\left(h _ {1} - h _ {2}\\right)}{L} \\times 1 0 0\\tag{……(D.1}",
+      "key": "倾斜度=\\frac{(h_{1}-h_{2})}{L}\\times100"
+     }
+    ]
+   }
+  },
+  {
+   "a": "A",
+   "b": "C",
+   "figures": {
+    "paired": [
+     {
+      "left": {
+       "page": 101,
+       "file": "dist/figures/2173836f/p101_1.png"
+      },
+      "right": {
+       "page": 144,
+       "file": "dist/figures/92b25631/p144_1.png"
+      },
+      "distance": 1,
+      "note": "图像近似（pHash 距离 1 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 101,
+       "file": "dist/figures/2173836f/p101_0.png"
+      },
+      "right": {
+       "page": 144,
+       "file": "dist/figures/92b25631/p144_0.png"
+      },
+      "distance": 2,
+      "note": "图像近似（pHash 距离 2 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 73,
+       "file": "dist/figures/2173836f/p73_0.png"
+      },
+      "right": {
+       "page": 110,
+       "file": "dist/figures/92b25631/p110_0.png"
+      },
+      "distance": 8,
+      "note": "图像近似（pHash 距离 8 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 27,
+       "file": "dist/figures/2173836f/p27_0.png"
+      },
+      "right": {
+       "page": 42,
+       "file": "dist/figures/92b25631/p42_0.png"
+      },
+      "distance": 10,
+      "note": "图像近似（pHash 距离 10 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     }
+    ],
+    "onlyInA": [
+     {
+      "file": "dist/figures/2173836f/p30_0.png",
+      "page": 30,
+      "w": 964,
+      "h": 594,
+      "phash": "bfe0b03d6bb6d249"
+     },
+     {
+      "file": "dist/figures/2173836f/p38_0.png",
+      "page": 38,
+      "w": 932,
+      "h": 738,
+      "phash": "ba1be6b481c6c3ce"
+     },
+     {
+      "file": "dist/figures/2173836f/p38_1.png",
+      "page": 38,
+      "w": 895,
+      "h": 495,
+      "phash": "bb44e4bdc33d3e60"
+     },
+     {
+      "file": "dist/figures/2173836f/p61_0.png",
+      "page": 61,
+      "w": 923,
+      "h": 443,
+      "phash": "9fa7aa01e57e068f"
+     },
+     {
+      "file": "dist/figures/2173836f/p61_1.png",
+      "page": 61,
+      "w": 873,
+      "h": 424,
+      "phash": "b9fac03487c339da"
+     },
+     {
+      "file": "dist/figures/2173836f/p62_0.png",
+      "page": 62,
+      "w": 1128,
+      "h": 460,
+      "phash": "bab9853486cf3c1e"
+     },
+     {
+      "file": "dist/figures/2173836f/p65_0.png",
+      "page": 65,
+      "w": 1246,
+      "h": 422,
+      "phash": "e79898a4a55ee65b"
+     },
+     {
+      "file": "dist/figures/2173836f/p65_1.png",
+      "page": 65,
+      "w": 900,
+      "h": 583,
+      "phash": "bf46916ee46ec07e"
+     },
+     {
+      "file": "dist/figures/2173836f/p66_0.png",
+      "page": 66,
+      "w": 928,
+      "h": 442,
+      "phash": "efd0c03f1bec9ac3"
+     },
+     {
+      "file": "dist/figures/2173836f/p66_1.png",
+      "page": 66,
+      "w": 800,
+      "h": 439,
+      "phash": "ab9cb0e1c99eb4e1"
+     },
+     {
+      "file": "dist/figures/2173836f/p74_0.png",
+      "page": 74,
+      "w": 690,
+      "h": 740,
+      "phash": "bf9363c0711fe15e"
+     },
+     {
+      "file": "dist/figures/2173836f/p74_1.png",
+      "page": 74,
+      "w": 386,
+      "h": 822,
+      "phash": "ed91cab69a6d1339"
+     },
+     {
+      "file": "dist/figures/2173836f/p75_0.png",
+      "page": 75,
+      "w": 298,
+      "h": 778,
+      "phash": "e8b4943a934a6ce7"
+     },
+     {
+      "file": "dist/figures/2173836f/p75_1.png",
+      "page": 75,
+      "w": 1061,
+      "h": 333,
+      "phash": "9aa5a5ebe249e11c"
+     },
+     {
+      "file": "dist/figures/2173836f/p75_2.png",
+      "page": 75,
+      "w": 993,
+      "h": 285,
+      "phash": "dae1a5aaa31ce33c"
+     },
+     {
+      "file": "dist/figures/2173836f/p76_0.png",
+      "page": 76,
+      "w": 1053,
+      "h": 252,
+      "phash": "daa7a5a0ae58eb54"
+     },
+     {
+      "file": "dist/figures/2173836f/p76_1.png",
+      "page": 76,
+      "w": 923,
+      "h": 524,
+      "phash": "be87fac1981c1d1f"
+     },
+     {
+      "file": "dist/figures/2173836f/p76_2.png",
+      "page": 76,
+      "w": 1022,
+      "h": 524,
+      "phash": "bfcae4cc3f32c187"
+     },
+     {
+      "file": "dist/figures/2173836f/p77_0.png",
+      "page": 77,
+      "w": 753,
+      "h": 528,
+      "phash": "b838c7c7873ab81a"
+     },
+     {
+      "file": "dist/figures/2173836f/p77_1.png",
+      "page": 77,
+      "w": 1037,
+      "h": 477,
+      "phash": "b9b1f1d24e2e4696"
+     },
+     {
+      "file": "dist/figures/2173836f/p77_2.png",
+      "page": 77,
+      "w": 893,
+      "h": 469,
+      "phash": "bfb1f3d88c0ec42f"
+     },
+     {
+      "file": "dist/figures/2173836f/p78_0.png",
+      "page": 78,
+      "w": 1050,
+      "h": 488,
+      "phash": "b9bd90d1258ede0e"
+     },
+     {
+      "file": "dist/figures/2173836f/p78_1.png",
+      "page": 78,
+      "w": 975,
+      "h": 550,
+      "phash": "b9b9b0d141af9c56"
+     },
+     {
+      "file": "dist/figures/2173836f/p79_0.png",
+      "page": 79,
+      "w": 1058,
+      "h": 517,
+      "phash": "b9bdd0d1218ede0e"
+     },
+     {
+      "file": "dist/figures/2173836f/p79_1.png",
+      "page": 79,
+      "w": 1300,
+      "h": 459,
+      "phash": "bc3cc3c3c33f1958"
+     },
+     {
+      "file": "dist/figures/2173836f/p79_2.png",
+      "page": 79,
+      "w": 1175,
+      "h": 458,
+      "phash": "bce2c0dbc33cbb42"
+     },
+     {
+      "file": "dist/figures/2173836f/p80_0.png",
+      "page": 80,
+      "w": 1058,
+      "h": 1469,
+      "phash": "8ff8f82f05e1d01e"
+     },
+     {
+      "file": "dist/figures/2173836f/p81_0.png",
+      "page": 81,
+      "w": 1093,
+      "h": 1512,
+      "phash": "bf0fe1e33fe3c090"
+     },
+     {
+      "file": "dist/figures/2173836f/p82_0.png",
+      "page": 82,
+      "w": 1300,
+      "h": 504,
+      "phash": "bbe3cc3db8c2871a"
+     },
+     {
+      "file": "dist/figures/2173836f/p82_1.png",
+      "page": 82,
+      "w": 1300,
+      "h": 579,
+      "phash": "9f2fe0d899c3263e"
+     },
+     {
+      "file": "dist/figures/2173836f/p83_0.png",
+      "page": 83,
+      "w": 1041,
+      "h": 1315,
+      "phash": "b9ea3195b3373162"
+     },
+     {
+      "file": "dist/figures/2173836f/p100_0.png",
+      "page": 100,
+      "w": 732,
+      "h": 248,
+      "phash": "b4364bcb199966c5"
+     },
+     {
+      "file": "dist/figures/2173836f/p100_1.png",
+      "page": 100,
+      "w": 732,
+      "h": 251,
+      "phash": "b9e5867a29926e2d"
+     },
+     {
+      "file": "dist/figures/2173836f/p100_2.png",
+      "page": 100,
+      "w": 370,
+      "h": 464,
+      "phash": "a5931c6d9a986337"
+     }
+    ],
+    "onlyInB": [
+     {
+      "file": "dist/figures/92b25631/p79_0.png",
+      "page": 79,
+      "w": 651,
+      "h": 332,
+      "phash": "de19a15a6ae1a75e"
+     },
+     {
+      "file": "dist/figures/92b25631/p79_1.png",
+      "page": 79,
+      "w": 542,
+      "h": 328,
+      "phash": "f814a5c16b7cb563"
+     },
+     {
+      "file": "dist/figures/92b25631/p83_0.png",
+      "page": 83,
+      "w": 785,
+      "h": 576,
+      "phash": "be33565e4a1e5678"
+     },
+     {
+      "file": "dist/figures/92b25631/p111_0.png",
+      "page": 111,
+      "w": 440,
+      "h": 571,
+      "phash": "b8c3cc3ac719c867"
+     },
+     {
+      "file": "dist/figures/92b25631/p111_1.png",
+      "page": 111,
+      "w": 298,
+      "h": 519,
+      "phash": "b6c35c2cd333dc8c"
+     },
+     {
+      "file": "dist/figures/92b25631/p112_0.png",
+      "page": 112,
+      "w": 506,
+      "h": 562,
+      "phash": "acf2cb3c904ff908"
+     },
+     {
+      "file": "dist/figures/92b25631/p112_1.png",
+      "page": 112,
+      "w": 408,
+      "h": 536,
+      "phash": "e29dda6493c998a5"
+     },
+     {
+      "file": "dist/figures/92b25631/p113_0.png",
+      "page": 113,
+      "w": 449,
+      "h": 591,
+      "phash": "e4b9daccb2c39928"
+     },
+     {
+      "file": "dist/figures/92b25631/p113_1.png",
+      "page": 113,
+      "w": 421,
+      "h": 591,
+      "phash": "e836e7d319a4345a"
+     },
+     {
+      "file": "dist/figures/92b25631/p114_0.png",
+      "page": 114,
+      "w": 741,
+      "h": 289,
+      "phash": "d8bfa488da087e8d"
+     },
+     {
+      "file": "dist/figures/92b25631/p114_1.png",
+      "page": 114,
+      "w": 734,
+      "h": 258,
+      "phash": "da6ea600fa13d3ab"
+     },
+     {
+      "file": "dist/figures/92b25631/p114_2.png",
+      "page": 114,
+      "w": 750,
+      "h": 226,
+      "phash": "db3fa524ba10f2b3"
+     },
+     {
+      "file": "dist/figures/92b25631/p115_0.png",
+      "page": 115,
+      "w": 545,
+      "h": 376,
+      "phash": "bc877cc338ec38c3"
+     },
+     {
+      "file": "dist/figures/92b25631/p115_1.png",
+      "page": 115,
+      "w": 741,
+      "h": 355,
+      "phash": "fe9868e87b385bc6"
+     },
+     {
+      "file": "dist/figures/92b25631/p116_0.png",
+      "page": 116,
+      "w": 651,
+      "h": 365,
+      "phash": "b838c7c73a1b853c"
+     },
+     {
+      "file": "dist/figures/92b25631/p116_1.png",
+      "page": 116,
+      "w": 779,
+      "h": 336,
+      "phash": "930311a5cdecded2"
+     },
+     {
+      "file": "dist/figures/92b25631/p117_0.png",
+      "page": 117,
+      "w": 778,
+      "h": 381,
+      "phash": "b321a343d75eac5c"
+     },
+     {
+      "file": "dist/figures/92b25631/p117_1.png",
+      "page": 117,
+      "w": 865,
+      "h": 389,
+      "phash": "808081a16b5effc6"
+     },
+     {
+      "file": "dist/figures/92b25631/p118_0.png",
+      "page": 118,
+      "w": 813,
+      "h": 346,
+      "phash": "b0100889ad52ff7f"
+     },
+     {
+      "file": "dist/figures/92b25631/p118_1.png",
+      "page": 118,
+      "w": 825,
+      "h": 363,
+      "phash": "9daf9bc451aad2c4"
+     },
+     {
+      "file": "dist/figures/92b25631/p119_0.png",
+      "page": 119,
+      "w": 779,
+      "h": 321,
+      "phash": "b131c5c5ce6c32da"
+     },
+     {
+      "file": "dist/figures/92b25631/p119_1.png",
+      "page": 119,
+      "w": 753,
+      "h": 328,
+      "phash": "b930c5f5c6a5fa0a"
+     },
+     {
+      "file": "dist/figures/92b25631/p120_0.png",
+      "page": 120,
+      "w": 704,
+      "h": 365,
+      "phash": "9e02e11c3ee1fa3e"
+     },
+     {
+      "file": "dist/figures/92b25631/p120_1.png",
+      "page": 120,
+      "w": 741,
+      "h": 348,
+      "phash": "8f43f01c1ed32d2f"
+     },
+     {
+      "file": "dist/figures/92b25631/p120_2.png",
+      "page": 120,
+      "w": 731,
+      "h": 345,
+      "phash": "8f43f01c1ec32f2f"
+     },
+     {
+      "file": "dist/figures/92b25631/p121_0.png",
+      "page": 121,
+      "w": 753,
+      "h": 368,
+      "phash": "9f5fe0301ec2cf2d"
+     },
+     {
+      "file": "dist/figures/92b25631/p121_1.png",
+      "page": 121,
+      "w": 741,
+      "h": 335,
+      "phash": "9f57e03c1ec23d2d"
+     },
+     {
+      "file": "dist/figures/92b25631/p121_2.png",
+      "page": 121,
+      "w": 729,
+      "h": 308,
+      "phash": "f842e87e79e2ce14"
+     },
+     {
+      "file": "dist/figures/92b25631/p122_0.png",
+      "page": 122,
+      "w": 722,
+      "h": 317,
+      "phash": "bc4ac9eb397ac28c"
+     },
+     {
+      "file": "dist/figures/92b25631/p122_1.png",
+      "page": 122,
+      "w": 699,
+      "h": 310,
+      "phash": "9f57e018d2c23f5d"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_0.png",
+      "page": 146,
+      "w": 229,
+      "h": 230,
+      "phash": "82847e8669e17939"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_1.png",
+      "page": 146,
+      "w": 253,
+      "h": 224,
+      "phash": "f9c6a1d6d6f28619"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_2.png",
+      "page": 146,
+      "w": 236,
+      "h": 216,
+      "phash": "c16c1ac16c9ba66b"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_3.png",
+      "page": 146,
+      "w": 212,
+      "h": 206,
+      "phash": "9fb3e10c93ed489d"
+     }
+    ],
+    "unhashable": 0
+   },
+   "tables": {
+    "paired": [],
+    "onlyInA": [
+     {
+      "page": 16,
+      "caption": "",
+      "rows": 3,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 17,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 17,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 28,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:28x2:灯具名称|光色"
+     },
+     {
+      "page": 25,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 27,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 71,
+      "caption": "",
+      "rows": 3,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:3x2:Vr|激活条件"
+     },
+     {
+      "page": 73,
+      "caption": "",
+      "rows": 10,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:10x2:编号|关键词"
+     },
+     {
+      "page": 78,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:发光面|符合3.1.8a）的透光面"
+     },
+     {
+      "page": 78,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 78,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 84,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 89,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 92,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     }
+    ],
+    "onlyInB": [
+     {
+      "page": 2,
+      "caption": "",
+      "rows": 3,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:3x3:WP29reference|Amendment|Supplement"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 6,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 7,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x"
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x"
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 36,
+      "caption": "",
+      "rows": 14,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 39,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 93,
+      "caption": "",
+      "rows": 3,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:3x2:Vr|switchON"
+     },
+     {
+      "page": 95,
+      "caption": "",
+      "rows": 10,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 96,
+      "caption": "",
+      "rows": 11,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 102,
+      "caption": "",
+      "rows": 14,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 103,
+      "caption": "",
+      "rows": 5,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 117,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)"
+     },
+     {
+      "page": 117,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 134,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 140,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 141,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 143,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 146,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     }
+    ],
+    "unscorableA": 0,
+    "unscorableB": 4
+   },
+   "equations": {
+    "identical": [
+     {
+      "a": {
+       "page": 85,
+       "latex": "\\frac {(h _ {1} - h _ {2})}{L} \\times 1 0 0\\tag{1}",
+       "key": "\\frac{(h_{1}-h_{2})}{L}\\times100"
+      },
+      "b": {
+       "page": 127,
+       "latex": "\\frac {\\left(\\mathrm{h} _ {1} - \\mathrm{h} _ {2}\\right)}{\\mathrm{L}} \\times 1 0 0",
+       "key": "\\frac{(h_{1}-h_{2})}{L}\\times100"
+      }
+     }
+    ],
+    "onlyInA": [
+     {
+      "page": 36,
+      "latex": "\\mathrm{h} \\leqslant 0.8 \\quad \\text {限值：} -1.0\\% \\sim -3.0\\%",
+      "key": "h\\leqslant0.8限值：-1.0\\%\\sim-3.0\\%"
+     },
+     {
+      "page": 36,
+      "latex": "\\mathrm{h} > 0.8 \\quad \\text{限值：} -1.5\\% \\sim -3.5\\%",
+      "key": "h>0.8限值：-1.5\\%\\sim-3.5\\%"
+     },
+     {
+      "page": 36,
+      "latex": "\\text {初始照准：} - 2.0\\% \\sim -2.5\\%",
+      "key": "初始照准：-2.0\\%\\sim-2.5\\%"
+     }
+    ],
+    "onlyInB": [
+     {
+      "page": 19,
+      "latex": "\\mathrm{R} _ {3 4}",
+      "key": "R_{34}"
+     },
+     {
+      "page": 19,
+      "latex": "\\mathrm{R} _ {4 1}",
+      "key": "R_{41}"
+     },
+     {
+      "page": 19,
+      "latex": "\\mathrm{y} = 0. 9 8 0 - \\mathrm{x}",
+      "key": "y=0.980-x"
+     },
+     {
+      "page": 21,
+      "latex": "\\mathrm{Y} _ {4 1}",
+      "key": "Y_{41}"
+     }
+    ]
+   }
+  },
+  {
+   "a": "B",
+   "b": "C",
+   "figures": {
+    "paired": [
+     {
+      "left": {
+       "page": 81,
+       "file": "dist/figures/f86e6c73/p81_0.png"
+      },
+      "right": {
+       "page": 144,
+       "file": "dist/figures/92b25631/p144_0.png"
+      },
+      "distance": 4,
+      "note": "图像近似（pHash 距离 4 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     },
+     {
+      "left": {
+       "page": 65,
+       "file": "dist/figures/f86e6c73/p65_3.png"
+      },
+      "right": {
+       "page": 115,
+       "file": "dist/figures/92b25631/p115_0.png"
+      },
+      "distance": 6,
+      "note": "图像近似（pHash 距离 6 / 64）—— 「近似」**不是**「一致」：图上的数字/标注有没有变**看不出来**，须人工核对 ✗"
+     }
+    ],
+    "onlyInA": [
+     {
+      "file": "dist/figures/f86e6c73/p25_0.png",
+      "page": 25,
+      "w": 617,
+      "h": 544,
+      "phash": "b162cc8c7333cc8f"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p30_0.png",
+      "page": 30,
+      "w": 853,
+      "h": 567,
+      "phash": "e87394c4e3369b0b"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p31_0.png",
+      "page": 31,
+      "w": 809,
+      "h": 390,
+      "phash": "aba2c7d80f5a07cb"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p50_0.png",
+      "page": 50,
+      "w": 547,
+      "h": 353,
+      "phash": "9aa5a53a4a37b5c1"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p56_0.png",
+      "page": 56,
+      "w": 781,
+      "h": 362,
+      "phash": "9fa78a07877e068f"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p63_0.png",
+      "page": 63,
+      "w": 617,
+      "h": 758,
+      "phash": "b8383cc7c3c7c3c1"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p63_1.png",
+      "page": 63,
+      "w": 627,
+      "h": 713,
+      "phash": "9f9267c0781f709f"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p64_0.png",
+      "page": 64,
+      "w": 332,
+      "h": 820,
+      "phash": "e933c6a7916d1339"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p64_1.png",
+      "page": 64,
+      "w": 307,
+      "h": 856,
+      "phash": "e8a5b13a92586ce7"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p65_0.png",
+      "page": 65,
+      "w": 946,
+      "h": 281,
+      "phash": "9ea1a5a3d46be354"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p65_1.png",
+      "page": 65,
+      "w": 946,
+      "h": 241,
+      "phash": "dae1b5aaa51ec30e"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p65_2.png",
+      "page": 65,
+      "w": 949,
+      "h": 201,
+      "phash": "daafb5a3ac31aa11"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p66_0.png",
+      "page": 66,
+      "w": 763,
+      "h": 371,
+      "phash": "bed2ecc83b38c1c7"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p66_1.png",
+      "page": 66,
+      "w": 598,
+      "h": 412,
+      "phash": "b87847c787b81a4e"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p66_2.png",
+      "page": 66,
+      "w": 1281,
+      "h": 575,
+      "phash": "b9b79171c349ec2c"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p67_0.png",
+      "page": 67,
+      "w": 1262,
+      "h": 606,
+      "phash": "b9b7d0e9c0ce864b"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p67_1.png",
+      "page": 67,
+      "w": 1263,
+      "h": 672,
+      "phash": "babd91c9c02787d6"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p68_0.png",
+      "page": 68,
+      "w": 1266,
+      "h": 798,
+      "phash": "b8b9f0d9c06587c6"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p68_1.png",
+      "page": 68,
+      "w": 1293,
+      "h": 750,
+      "phash": "bdb9b0d1c1659b96"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p69_0.png",
+      "page": 69,
+      "w": 1019,
+      "h": 383,
+      "phash": "bc3cc3c3c33f3950"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p69_1.png",
+      "page": 69,
+      "w": 971,
+      "h": 374,
+      "phash": "b83ac498c785bbc3"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p69_2.png",
+      "page": 69,
+      "w": 657,
+      "h": 847,
+      "phash": "aff8b82f07e1d01e"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p70_0.png",
+      "page": 70,
+      "w": 605,
+      "h": 840,
+      "phash": "bf0fe1e23fe3c0d0"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p70_1.png",
+      "page": 70,
+      "w": 797,
+      "h": 293,
+      "phash": "be63cc2d38ca875e"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p70_2.png",
+      "page": 70,
+      "w": 772,
+      "h": 308,
+      "phash": "8f6be01cd9d38c56"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p71_0.png",
+      "page": 71,
+      "w": 1108,
+      "h": 1327,
+      "phash": "98e83995b135317a"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p73_0.png",
+      "page": 73,
+      "w": 1255,
+      "h": 372,
+      "phash": "c2899976b5acc619"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p78_0.png",
+      "page": 78,
+      "w": 218,
+      "h": 258,
+      "phash": "bbcfb40e58f063e1"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p78_1.png",
+      "page": 78,
+      "w": 222,
+      "h": 221,
+      "phash": "b86bd0a787989a39"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p79_0.png",
+      "page": 79,
+      "w": 360,
+      "h": 456,
+      "phash": "a7931c6c989c63b7"
+     },
+     {
+      "file": "dist/figures/f86e6c73/p81_1.png",
+      "page": 81,
+      "w": 1232,
+      "h": 746,
+      "phash": "a4669a9b65641a9b"
+     }
+    ],
+    "onlyInB": [
+     {
+      "file": "dist/figures/92b25631/p42_0.png",
+      "page": 42,
+      "w": 755,
+      "h": 579,
+      "phash": "fa4b869e8c99a32f"
+     },
+     {
+      "file": "dist/figures/92b25631/p79_0.png",
+      "page": 79,
+      "w": 651,
+      "h": 332,
+      "phash": "de19a15a6ae1a75e"
+     },
+     {
+      "file": "dist/figures/92b25631/p79_1.png",
+      "page": 79,
+      "w": 542,
+      "h": 328,
+      "phash": "f814a5c16b7cb563"
+     },
+     {
+      "file": "dist/figures/92b25631/p83_0.png",
+      "page": 83,
+      "w": 785,
+      "h": 576,
+      "phash": "be33565e4a1e5678"
+     },
+     {
+      "file": "dist/figures/92b25631/p110_0.png",
+      "page": 110,
+      "w": 499,
+      "h": 559,
+      "phash": "b838cc8387c7873b"
+     },
+     {
+      "file": "dist/figures/92b25631/p111_0.png",
+      "page": 111,
+      "w": 440,
+      "h": 571,
+      "phash": "b8c3cc3ac719c867"
+     },
+     {
+      "file": "dist/figures/92b25631/p111_1.png",
+      "page": 111,
+      "w": 298,
+      "h": 519,
+      "phash": "b6c35c2cd333dc8c"
+     },
+     {
+      "file": "dist/figures/92b25631/p112_0.png",
+      "page": 112,
+      "w": 506,
+      "h": 562,
+      "phash": "acf2cb3c904ff908"
+     },
+     {
+      "file": "dist/figures/92b25631/p112_1.png",
+      "page": 112,
+      "w": 408,
+      "h": 536,
+      "phash": "e29dda6493c998a5"
+     },
+     {
+      "file": "dist/figures/92b25631/p113_0.png",
+      "page": 113,
+      "w": 449,
+      "h": 591,
+      "phash": "e4b9daccb2c39928"
+     },
+     {
+      "file": "dist/figures/92b25631/p113_1.png",
+      "page": 113,
+      "w": 421,
+      "h": 591,
+      "phash": "e836e7d319a4345a"
+     },
+     {
+      "file": "dist/figures/92b25631/p114_0.png",
+      "page": 114,
+      "w": 741,
+      "h": 289,
+      "phash": "d8bfa488da087e8d"
+     },
+     {
+      "file": "dist/figures/92b25631/p114_1.png",
+      "page": 114,
+      "w": 734,
+      "h": 258,
+      "phash": "da6ea600fa13d3ab"
+     },
+     {
+      "file": "dist/figures/92b25631/p114_2.png",
+      "page": 114,
+      "w": 750,
+      "h": 226,
+      "phash": "db3fa524ba10f2b3"
+     },
+     {
+      "file": "dist/figures/92b25631/p115_1.png",
+      "page": 115,
+      "w": 741,
+      "h": 355,
+      "phash": "fe9868e87b385bc6"
+     },
+     {
+      "file": "dist/figures/92b25631/p116_0.png",
+      "page": 116,
+      "w": 651,
+      "h": 365,
+      "phash": "b838c7c73a1b853c"
+     },
+     {
+      "file": "dist/figures/92b25631/p116_1.png",
+      "page": 116,
+      "w": 779,
+      "h": 336,
+      "phash": "930311a5cdecded2"
+     },
+     {
+      "file": "dist/figures/92b25631/p117_0.png",
+      "page": 117,
+      "w": 778,
+      "h": 381,
+      "phash": "b321a343d75eac5c"
+     },
+     {
+      "file": "dist/figures/92b25631/p117_1.png",
+      "page": 117,
+      "w": 865,
+      "h": 389,
+      "phash": "808081a16b5effc6"
+     },
+     {
+      "file": "dist/figures/92b25631/p118_0.png",
+      "page": 118,
+      "w": 813,
+      "h": 346,
+      "phash": "b0100889ad52ff7f"
+     },
+     {
+      "file": "dist/figures/92b25631/p118_1.png",
+      "page": 118,
+      "w": 825,
+      "h": 363,
+      "phash": "9daf9bc451aad2c4"
+     },
+     {
+      "file": "dist/figures/92b25631/p119_0.png",
+      "page": 119,
+      "w": 779,
+      "h": 321,
+      "phash": "b131c5c5ce6c32da"
+     },
+     {
+      "file": "dist/figures/92b25631/p119_1.png",
+      "page": 119,
+      "w": 753,
+      "h": 328,
+      "phash": "b930c5f5c6a5fa0a"
+     },
+     {
+      "file": "dist/figures/92b25631/p120_0.png",
+      "page": 120,
+      "w": 704,
+      "h": 365,
+      "phash": "9e02e11c3ee1fa3e"
+     },
+     {
+      "file": "dist/figures/92b25631/p120_1.png",
+      "page": 120,
+      "w": 741,
+      "h": 348,
+      "phash": "8f43f01c1ed32d2f"
+     },
+     {
+      "file": "dist/figures/92b25631/p120_2.png",
+      "page": 120,
+      "w": 731,
+      "h": 345,
+      "phash": "8f43f01c1ec32f2f"
+     },
+     {
+      "file": "dist/figures/92b25631/p121_0.png",
+      "page": 121,
+      "w": 753,
+      "h": 368,
+      "phash": "9f5fe0301ec2cf2d"
+     },
+     {
+      "file": "dist/figures/92b25631/p121_1.png",
+      "page": 121,
+      "w": 741,
+      "h": 335,
+      "phash": "9f57e03c1ec23d2d"
+     },
+     {
+      "file": "dist/figures/92b25631/p121_2.png",
+      "page": 121,
+      "w": 729,
+      "h": 308,
+      "phash": "f842e87e79e2ce14"
+     },
+     {
+      "file": "dist/figures/92b25631/p122_0.png",
+      "page": 122,
+      "w": 722,
+      "h": 317,
+      "phash": "bc4ac9eb397ac28c"
+     },
+     {
+      "file": "dist/figures/92b25631/p122_1.png",
+      "page": 122,
+      "w": 699,
+      "h": 310,
+      "phash": "9f57e018d2c23f5d"
+     },
+     {
+      "file": "dist/figures/92b25631/p144_1.png",
+      "page": 144,
+      "w": 930,
+      "h": 582,
+      "phash": "e5619e9e61711ecc"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_0.png",
+      "page": 146,
+      "w": 229,
+      "h": 230,
+      "phash": "82847e8669e17939"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_1.png",
+      "page": 146,
+      "w": 253,
+      "h": 224,
+      "phash": "f9c6a1d6d6f28619"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_2.png",
+      "page": 146,
+      "w": 236,
+      "h": 216,
+      "phash": "c16c1ac16c9ba66b"
+     },
+     {
+      "file": "dist/figures/92b25631/p146_3.png",
+      "page": 146,
+      "w": 212,
+      "h": 206,
+      "phash": "9fb3e10c93ed489d"
+     }
+    ],
+    "unhashable": 0
+   },
+   "tables": {
+    "paired": [],
+    "onlyInA": [
+     {
+      "page": 17,
+      "caption": "",
+      "rows": 3,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 3,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:3x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:颜色|色度区域边界|边界交点"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 27,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:27x2:灯具名称|光色"
+     },
+     {
+      "page": 23,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 58,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 62,
+      "caption": "",
+      "rows": 10,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:10x2:编号|关键词"
+     },
+     {
+      "page": 66,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+     },
+     {
+      "page": 67,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:发光面|3.10a)定义的透光面"
+     },
+     {
+      "page": 67,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 68,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 68,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 75,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 76,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 80,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     }
+    ],
+    "onlyInB": [
+     {
+      "page": 2,
+      "caption": "",
+      "rows": 3,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:3x3:WP29reference|Amendment|Supplement"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 6,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:6x3:${\\mathrm{W}}_{12}$|greenboundary|y=0.150+0.640x"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 7,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:5x3:$SY_{12}$|greenboundary|y=1.290x-0.100"
+     },
+     {
+      "page": 18,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:$A_{12}$|greenboundary|y=x-0.120"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|blueboundary:|y=0.843-1.182x"
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 19,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:${\\mathrm{Y}}_{12}$|greenboundary|y=x-0.040"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:${\\mathrm{Y}}_{34}$|redboundary|y=0.200x+0.268"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{A}}_{12}$|greenboundary|y=1.417x-0.347"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|yellowboundary|y=0.335"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{W}}_{12}$|violetboundary|y=x-0.030"
+     },
+     {
+      "page": 20,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{R}}_{12}$|redboundary|y=0.346-0.053x"
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 4,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:4x3:${\\mathrm{{FR}}}_{12}$|redboundary|y=0.346-0.053x"
+     },
+     {
+      "page": 21,
+      "caption": "",
+      "rows": 5,
+      "cols": 3,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 36,
+      "caption": "",
+      "rows": 14,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 39,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 93,
+      "caption": "",
+      "rows": 3,
+      "cols": 2,
+      "scrambled": false,
+      "key": "hdr:3x2:Vr|switchON"
+     },
+     {
+      "page": 95,
+      "caption": "",
+      "rows": 10,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 96,
+      "caption": "",
+      "rows": 11,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 102,
+      "caption": "",
+      "rows": 14,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 103,
+      "caption": "",
+      "rows": 5,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 117,
+      "caption": "",
+      "rows": 2,
+      "cols": 3,
+      "scrambled": false,
+      "key": "hdr:2x3:Illuminatingsurface|DeclaredLight-emittingsurfaceaccordingto2.10.2.(a)"
+     },
+     {
+      "page": 117,
+      "caption": "",
+      "rows": 2,
+      "cols": 2,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 134,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 140,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 141,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 143,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     },
+     {
+      "page": 146,
+      "caption": "",
+      "rows": 0,
+      "cols": 0,
+      "scrambled": false,
+      "key": ""
+     }
+    ],
+    "unscorableA": 1,
+    "unscorableB": 4
+   },
+   "equations": {
+    "identical": [],
+    "onlyInA": [
+     {
+      "page": 28,
+      "latex": "h \\leqslant 0.8 \\mathrm{m} \\quad \\begin{array}{l} \\text {限值}: -1.0\\% \\sim -3.0\\% \\\\ \\text {初始照准}: -1.5\\% \\sim -2.0\\% \\end{array}",
+      "key": "h\\leqslant0.8m限值:-1.0\\%\\sim-3.0\\%初始照准:-1.5\\%\\sim-2.0\\%"
+     },
+     {
+      "page": 28,
+      "latex": "\\begin{array}{l l} h > 0. 8 \\mathrm{m} & \\text {限值:} - 1. 5 \\% \\sim - 3. 5 \\% \\\\ & \\text {初始照准:} - 2. 0 \\% \\sim - 2. 5 \\% \\end{array}",
+      "key": "h>0.8m&限值:-1.5\\%\\sim-3.5\\%&初始照准:-2.0\\%\\sim-2.5\\%"
+     },
+     {
+      "page": 72,
+      "latex": "\\text {倾斜度} = \\frac {\\left(h _ {1} - h _ {2}\\right)}{L} \\times 1 0 0\\tag{……(D.1}",
+      "key": "倾斜度=\\frac{(h_{1}-h_{2})}{L}\\times100"
+     }
+    ],
+    "onlyInB": [
+     {
+      "page": 19,
+      "latex": "\\mathrm{R} _ {3 4}",
+      "key": "R_{34}"
+     },
+     {
+      "page": 19,
+      "latex": "\\mathrm{R} _ {4 1}",
+      "key": "R_{41}"
+     },
+     {
+      "page": 19,
+      "latex": "\\mathrm{y} = 0. 9 8 0 - \\mathrm{x}",
+      "key": "y=0.980-x"
+     },
+     {
+      "page": 21,
+      "latex": "\\mathrm{Y} _ {4 1}",
+      "key": "Y_{41}"
+     },
+     {
+      "page": 127,
+      "latex": "\\frac {\\left(\\mathrm{h} _ {1} - \\mathrm{h} _ {2}\\right)}{\\mathrm{L}} \\times 1 0 0",
+      "key": "\\frac{(h_{1}-h_{2})}{L}\\times100"
+     }
+    ]
+   }
+  }
+ ]
+}

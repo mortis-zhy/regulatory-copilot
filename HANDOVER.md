@@ -4,8 +4,8 @@
 > **仓库**：`github-m:mortis-zhy/regulatory-copilot.git`（**公开仓库** ✓）
 > **分支**：`main`
 > **本轮提交**：`30f4b8d`（图版）→ `146bd3d`（R2 人核）→ `c401586`（快照+讲稿）→ `cf97316`（Windows dev）
-> **闸门**：**193 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
-> **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **326 页** · **102 张源 PDF 原图** · 22 条书签
+> **闸门**：**194 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
+> **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **327 页** · **102 张源 PDF 原图** · 22 条书签
 
 > ⚠ **这份文档里的每个数都由机器查** ✓ —— `scripts/check_handover.py` ✓
 > （页数、图数、四维状态、装置数、硬编码台账、泛化率 …… 逐项与仓库实际状态比对 ✓）。
@@ -15,7 +15,7 @@
 
 ## 〇、三十秒版：这是什么、现在到哪了、下一个人做什么
 
-**是什么**：把两份或多份法规文件（PDF）放进去 → 逐章三版对照 → 每个取值都带条款号与页码、能回原文核 → 出一份 326 页的可核验 PDF。
+**是什么**：把两份或多份法规文件（PDF）放进去 → 逐章三版对照 → 每个取值都带条款号与页码、能回原文核 → 出一份 327 页的可核验 PDF。
 
 **到哪了**：机制层**已换标准友好** ✓（换一套法规会**明确拒绝**而不是讲错标准 ✓）；内容层**还是 GB 4785 这一套** ✗。
 
@@ -36,7 +36,7 @@
 ```bash
 npm install                 # 或 pnpm install
 npm run dev                 # 开发模式（热重载）✓ —— Windows 上也能跑 ✓
-npm run verify              # 交付闸门：193 项 ✓（约 4 分钟，含渲染一份 PDF）
+npm run verify              # 交付闸门：194 项 ✓（约 4 分钟，含渲染一份 PDF）
 npm run briefing            # 重出讲稿（读 dist/verify-summary.json 的数 ✓）
 node rebuild_report.mjs     # 从语料重建 reports/last-report.json
 node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
@@ -245,8 +245,8 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 项 | 数 |
 |---|---|
-| 闸门 | **193 项全绿** ✓ |
-| 交付件 | **326 页** · 22 条书签 · **102 张图** · **13.7 MB** |
+| 闸门 | **194 项全绿** ✓ |
+| 交付件 | **327 页** · 22 条书签 · **102 张图** · **13.34 MB** |
 | 引文回源 | **517 / 517 命中** ✓ |
 | 矩阵 | 319 参数 × 3 版 = **957 格** · 数值/条款/页码未变；本轮修正比较符号与边界判定，详见 docs/source-review-2026-11-13.md |
 
@@ -385,7 +385,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 ## 附：常用命令速查
 
 ```bash
-npm run verify                                   # 193 项闸门
+npm run verify                                   # 194 项闸门
 npm run briefing                                 # 重出讲稿
 node rebuild_report.mjs                          # 重建报告 JSON
 node render_to_pdfdir.mjs                        # 出交付件

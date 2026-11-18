@@ -1,0 +1,656 @@
+{
+ "dist/figures/2173836f/p100_0.png": {
+  "phash": "b4364bcb199966c5",
+  "w": 732,
+  "h": 248,
+  "bytes": 43806
+ },
+ "dist/figures/2173836f/p100_1.png": {
+  "phash": "b9e5867a29926e2d",
+  "w": 732,
+  "h": 251,
+  "bytes": 20491
+ },
+ "dist/figures/2173836f/p100_2.png": {
+  "phash": "a5931c6d9a986337",
+  "w": 370,
+  "h": 464,
+  "bytes": 23766
+ },
+ "dist/figures/2173836f/p101_0.png": {
+  "phash": "f24ecd3132cc78b3",
+  "w": 1300,
+  "h": 347,
+  "bytes": 33022
+ },
+ "dist/figures/2173836f/p101_1.png": {
+  "phash": "e1619e9e61711ecc",
+  "w": 1300,
+  "h": 813,
+  "bytes": 28718
+ },
+ "dist/figures/2173836f/p27_0.png": {
+  "phash": "ff4b8797849da13b",
+  "w": 1011,
+  "h": 837,
+  "bytes": 244409
+ },
+ "dist/figures/2173836f/p30_0.png": {
+  "phash": "bfe0b03d6bb6d249",
+  "w": 964,
+  "h": 594,
+  "bytes": 69867
+ },
+ "dist/figures/2173836f/p38_0.png": {
+  "phash": "ba1be6b481c6c3ce",
+  "w": 932,
+  "h": 738,
+  "bytes": 64048
+ },
+ "dist/figures/2173836f/p38_1.png": {
+  "phash": "bb44e4bdc33d3e60",
+  "w": 895,
+  "h": 495,
+  "bytes": 64948
+ },
+ "dist/figures/2173836f/p61_0.png": {
+  "phash": "9fa7aa01e57e068f",
+  "w": 923,
+  "h": 443,
+  "bytes": 53149
+ },
+ "dist/figures/2173836f/p61_1.png": {
+  "phash": "b9fac03487c339da",
+  "w": 873,
+  "h": 424,
+  "bytes": 80631
+ },
+ "dist/figures/2173836f/p62_0.png": {
+  "phash": "bab9853486cf3c1e",
+  "w": 1128,
+  "h": 460,
+  "bytes": 118812
+ },
+ "dist/figures/2173836f/p65_0.png": {
+  "phash": "e79898a4a55ee65b",
+  "w": 1246,
+  "h": 422,
+  "bytes": 138815
+ },
+ "dist/figures/2173836f/p65_1.png": {
+  "phash": "bf46916ee46ec07e",
+  "w": 900,
+  "h": 583,
+  "bytes": 166228
+ },
+ "dist/figures/2173836f/p66_0.png": {
+  "phash": "efd0c03f1bec9ac3",
+  "w": 928,
+  "h": 442,
+  "bytes": 78820
+ },
+ "dist/figures/2173836f/p66_1.png": {
+  "phash": "ab9cb0e1c99eb4e1",
+  "w": 800,
+  "h": 439,
+  "bytes": 85968
+ },
+ "dist/figures/2173836f/p73_0.png": {
+  "phash": "b83848c7c7c7c738",
+  "w": 548,
+  "h": 656,
+  "bytes": 117637
+ },
+ "dist/figures/2173836f/p74_0.png": {
+  "phash": "bf9363c0711fe15e",
+  "w": 690,
+  "h": 740,
+  "bytes": 102228
+ },
+ "dist/figures/2173836f/p74_1.png": {
+  "phash": "ed91cab69a6d1339",
+  "w": 386,
+  "h": 822,
+  "bytes": 86698
+ },
+ "dist/figures/2173836f/p75_0.png": {
+  "phash": "e8b4943a934a6ce7",
+  "w": 298,
+  "h": 778,
+  "bytes": 72609
+ },
+ "dist/figures/2173836f/p75_1.png": {
+  "phash": "9aa5a5ebe249e11c",
+  "w": 1061,
+  "h": 333,
+  "bytes": 58075
+ },
+ "dist/figures/2173836f/p75_2.png": {
+  "phash": "dae1a5aaa31ce33c",
+  "w": 993,
+  "h": 285,
+  "bytes": 76424
+ },
+ "dist/figures/2173836f/p76_0.png": {
+  "phash": "daa7a5a0ae58eb54",
+  "w": 1053,
+  "h": 252,
+  "bytes": 67676
+ },
+ "dist/figures/2173836f/p76_1.png": {
+  "phash": "be87fac1981c1d1f",
+  "w": 923,
+  "h": 524,
+  "bytes": 129131
+ },
+ "dist/figures/2173836f/p76_2.png": {
+  "phash": "bfcae4cc3f32c187",
+  "w": 1022,
+  "h": 524,
+  "bytes": 187344
+ },
+ "dist/figures/2173836f/p77_0.png": {
+  "phash": "b838c7c7873ab81a",
+  "w": 753,
+  "h": 528,
+  "bytes": 129122
+ },
+ "dist/figures/2173836f/p77_1.png": {
+  "phash": "b9b1f1d24e2e4696",
+  "w": 1037,
+  "h": 477,
+  "bytes": 52792
+ },
+ "dist/figures/2173836f/p77_2.png": {
+  "phash": "bfb1f3d88c0ec42f",
+  "w": 893,
+  "h": 469,
+  "bytes": 48487
+ },
+ "dist/figures/2173836f/p78_0.png": {
+  "phash": "b9bd90d1258ede0e",
+  "w": 1050,
+  "h": 488,
+  "bytes": 50068
+ },
+ "dist/figures/2173836f/p78_1.png": {
+  "phash": "b9b9b0d141af9c56",
+  "w": 975,
+  "h": 550,
+  "bytes": 104422
+ },
+ "dist/figures/2173836f/p79_0.png": {
+  "phash": "b9bdd0d1218ede0e",
+  "w": 1058,
+  "h": 517,
+  "bytes": 55356
+ },
+ "dist/figures/2173836f/p79_1.png": {
+  "phash": "bc3cc3c3c33f1958",
+  "w": 1300,
+  "h": 459,
+  "bytes": 196687
+ },
+ "dist/figures/2173836f/p79_2.png": {
+  "phash": "bce2c0dbc33cbb42",
+  "w": 1175,
+  "h": 458,
+  "bytes": 122018
+ },
+ "dist/figures/2173836f/p80_0.png": {
+  "phash": "8ff8f82f05e1d01e",
+  "w": 1058,
+  "h": 1469,
+  "bytes": 303202
+ },
+ "dist/figures/2173836f/p81_0.png": {
+  "phash": "bf0fe1e33fe3c090",
+  "w": 1093,
+  "h": 1512,
+  "bytes": 283557
+ },
+ "dist/figures/2173836f/p82_0.png": {
+  "phash": "bbe3cc3db8c2871a",
+  "w": 1300,
+  "h": 504,
+  "bytes": 165821
+ },
+ "dist/figures/2173836f/p82_1.png": {
+  "phash": "9f2fe0d899c3263e",
+  "w": 1300,
+  "h": 579,
+  "bytes": 177507
+ },
+ "dist/figures/2173836f/p83_0.png": {
+  "phash": "b9ea3195b3373162",
+  "w": 1041,
+  "h": 1315,
+  "bytes": 145172
+ },
+ "dist/figures/92b25631/p110_0.png": {
+  "phash": "b838cc8387c7873b",
+  "w": 499,
+  "h": 559,
+  "bytes": 100801
+ },
+ "dist/figures/92b25631/p111_0.png": {
+  "phash": "b8c3cc3ac719c867",
+  "w": 440,
+  "h": 571,
+  "bytes": 84048
+ },
+ "dist/figures/92b25631/p111_1.png": {
+  "phash": "b6c35c2cd333dc8c",
+  "w": 298,
+  "h": 519,
+  "bytes": 51396
+ },
+ "dist/figures/92b25631/p112_0.png": {
+  "phash": "acf2cb3c904ff908",
+  "w": 506,
+  "h": 562,
+  "bytes": 60557
+ },
+ "dist/figures/92b25631/p112_1.png": {
+  "phash": "e29dda6493c998a5",
+  "w": 408,
+  "h": 536,
+  "bytes": 43706
+ },
+ "dist/figures/92b25631/p113_0.png": {
+  "phash": "e4b9daccb2c39928",
+  "w": 449,
+  "h": 591,
+  "bytes": 57424
+ },
+ "dist/figures/92b25631/p113_1.png": {
+  "phash": "e836e7d319a4345a",
+  "w": 421,
+  "h": 591,
+  "bytes": 66555
+ },
+ "dist/figures/92b25631/p114_0.png": {
+  "phash": "d8bfa488da087e8d",
+  "w": 741,
+  "h": 289,
+  "bytes": 89372
+ },
+ "dist/figures/92b25631/p114_1.png": {
+  "phash": "da6ea600fa13d3ab",
+  "w": 734,
+  "h": 258,
+  "bytes": 102634
+ },
+ "dist/figures/92b25631/p114_2.png": {
+  "phash": "db3fa524ba10f2b3",
+  "w": 750,
+  "h": 226,
+  "bytes": 91494
+ },
+ "dist/figures/92b25631/p115_0.png": {
+  "phash": "bc877cc338ec38c3",
+  "w": 545,
+  "h": 376,
+  "bytes": 79404
+ },
+ "dist/figures/92b25631/p115_1.png": {
+  "phash": "fe9868e87b385bc6",
+  "w": 741,
+  "h": 355,
+  "bytes": 109589
+ },
+ "dist/figures/92b25631/p116_0.png": {
+  "phash": "b838c7c73a1b853c",
+  "w": 651,
+  "h": 365,
+  "bytes": 96378
+ },
+ "dist/figures/92b25631/p116_1.png": {
+  "phash": "930311a5cdecded2",
+  "w": 779,
+  "h": 336,
+  "bytes": 66483
+ },
+ "dist/figures/92b25631/p117_0.png": {
+  "phash": "b321a343d75eac5c",
+  "w": 778,
+  "h": 381,
+  "bytes": 79890
+ },
+ "dist/figures/92b25631/p117_1.png": {
+  "phash": "808081a16b5effc6",
+  "w": 865,
+  "h": 389,
+  "bytes": 63921
+ },
+ "dist/figures/92b25631/p118_0.png": {
+  "phash": "b0100889ad52ff7f",
+  "w": 813,
+  "h": 346,
+  "bytes": 81215
+ },
+ "dist/figures/92b25631/p118_1.png": {
+  "phash": "9daf9bc451aad2c4",
+  "w": 825,
+  "h": 363,
+  "bytes": 66903
+ },
+ "dist/figures/92b25631/p119_0.png": {
+  "phash": "b131c5c5ce6c32da",
+  "w": 779,
+  "h": 321,
+  "bytes": 110594
+ },
+ "dist/figures/92b25631/p119_1.png": {
+  "phash": "b930c5f5c6a5fa0a",
+  "w": 753,
+  "h": 328,
+  "bytes": 129743
+ },
+ "dist/figures/92b25631/p120_0.png": {
+  "phash": "9e02e11c3ee1fa3e",
+  "w": 704,
+  "h": 365,
+  "bytes": 96446
+ },
+ "dist/figures/92b25631/p120_1.png": {
+  "phash": "8f43f01c1ed32d2f",
+  "w": 741,
+  "h": 348,
+  "bytes": 134195
+ },
+ "dist/figures/92b25631/p120_2.png": {
+  "phash": "8f43f01c1ec32f2f",
+  "w": 731,
+  "h": 345,
+  "bytes": 130984
+ },
+ "dist/figures/92b25631/p121_0.png": {
+  "phash": "9f5fe0301ec2cf2d",
+  "w": 753,
+  "h": 368,
+  "bytes": 119155
+ },
+ "dist/figures/92b25631/p121_1.png": {
+  "phash": "9f57e03c1ec23d2d",
+  "w": 741,
+  "h": 335,
+  "bytes": 117869
+ },
+ "dist/figures/92b25631/p121_2.png": {
+  "phash": "f842e87e79e2ce14",
+  "w": 729,
+  "h": 308,
+  "bytes": 87939
+ },
+ "dist/figures/92b25631/p122_0.png": {
+  "phash": "bc4ac9eb397ac28c",
+  "w": 722,
+  "h": 317,
+  "bytes": 100805
+ },
+ "dist/figures/92b25631/p122_1.png": {
+  "phash": "9f57e018d2c23f5d",
+  "w": 699,
+  "h": 310,
+  "bytes": 132949
+ },
+ "dist/figures/92b25631/p144_0.png": {
+  "phash": "f24e8d7132cc78b3",
+  "w": 933,
+  "h": 248,
+  "bytes": 20278
+ },
+ "dist/figures/92b25631/p144_1.png": {
+  "phash": "e5619e9e61711ecc",
+  "w": 930,
+  "h": 582,
+  "bytes": 17974
+ },
+ "dist/figures/92b25631/p146_0.png": {
+  "phash": "82847e8669e17939",
+  "w": 229,
+  "h": 230,
+  "bytes": 19302
+ },
+ "dist/figures/92b25631/p146_1.png": {
+  "phash": "f9c6a1d6d6f28619",
+  "w": 253,
+  "h": 224,
+  "bytes": 21423
+ },
+ "dist/figures/92b25631/p146_2.png": {
+  "phash": "c16c1ac16c9ba66b",
+  "w": 236,
+  "h": 216,
+  "bytes": 5558
+ },
+ "dist/figures/92b25631/p146_3.png": {
+  "phash": "9fb3e10c93ed489d",
+  "w": 212,
+  "h": 206,
+  "bytes": 7208
+ },
+ "dist/figures/92b25631/p42_0.png": {
+  "phash": "fa4b869e8c99a32f",
+  "w": 755,
+  "h": 579,
+  "bytes": 39291
+ },
+ "dist/figures/92b25631/p79_0.png": {
+  "phash": "de19a15a6ae1a75e",
+  "w": 651,
+  "h": 332,
+  "bytes": 20878
+ },
+ "dist/figures/92b25631/p79_1.png": {
+  "phash": "f814a5c16b7cb563",
+  "w": 542,
+  "h": 328,
+  "bytes": 23175
+ },
+ "dist/figures/92b25631/p83_0.png": {
+  "phash": "be33565e4a1e5678",
+  "w": 785,
+  "h": 576,
+  "bytes": 73071
+ },
+ "dist/figures/f86e6c73/p25_0.png": {
+  "phash": "b162cc8c7333cc8f",
+  "w": 617,
+  "h": 544,
+  "bytes": 47599
+ },
+ "dist/figures/f86e6c73/p30_0.png": {
+  "phash": "e87394c4e3369b0b",
+  "w": 853,
+  "h": 567,
+  "bytes": 40844
+ },
+ "dist/figures/f86e6c73/p31_0.png": {
+  "phash": "aba2c7d80f5a07cb",
+  "w": 809,
+  "h": 390,
+  "bytes": 51276
+ },
+ "dist/figures/f86e6c73/p50_0.png": {
+  "phash": "9aa5a53a4a37b5c1",
+  "w": 547,
+  "h": 353,
+  "bytes": 33447
+ },
+ "dist/figures/f86e6c73/p56_0.png": {
+  "phash": "9fa78a07877e068f",
+  "w": 781,
+  "h": 362,
+  "bytes": 20059
+ },
+ "dist/figures/f86e6c73/p63_0.png": {
+  "phash": "b8383cc7c3c7c3c1",
+  "w": 617,
+  "h": 758,
+  "bytes": 78584
+ },
+ "dist/figures/f86e6c73/p63_1.png": {
+  "phash": "9f9267c0781f709f",
+  "w": 627,
+  "h": 713,
+  "bytes": 101123
+ },
+ "dist/figures/f86e6c73/p64_0.png": {
+  "phash": "e933c6a7916d1339",
+  "w": 332,
+  "h": 820,
+  "bytes": 37418
+ },
+ "dist/figures/f86e6c73/p64_1.png": {
+  "phash": "e8a5b13a92586ce7",
+  "w": 307,
+  "h": 856,
+  "bytes": 35781
+ },
+ "dist/figures/f86e6c73/p65_0.png": {
+  "phash": "9ea1a5a3d46be354",
+  "w": 946,
+  "h": 281,
+  "bytes": 64532
+ },
+ "dist/figures/f86e6c73/p65_1.png": {
+  "phash": "dae1b5aaa51ec30e",
+  "w": 946,
+  "h": 241,
+  "bytes": 74490
+ },
+ "dist/figures/f86e6c73/p65_2.png": {
+  "phash": "daafb5a3ac31aa11",
+  "w": 949,
+  "h": 201,
+  "bytes": 99176
+ },
+ "dist/figures/f86e6c73/p65_3.png": {
+  "phash": "bc837cc13ccd3cc3",
+  "w": 694,
+  "h": 414,
+  "bytes": 73792
+ },
+ "dist/figures/f86e6c73/p66_0.png": {
+  "phash": "bed2ecc83b38c1c7",
+  "w": 763,
+  "h": 371,
+  "bytes": 152185
+ },
+ "dist/figures/f86e6c73/p66_1.png": {
+  "phash": "b87847c787b81a4e",
+  "w": 598,
+  "h": 412,
+  "bytes": 103286
+ },
+ "dist/figures/f86e6c73/p66_2.png": {
+  "phash": "b9b79171c349ec2c",
+  "w": 1281,
+  "h": 575,
+  "bytes": 100860
+ },
+ "dist/figures/f86e6c73/p67_0.png": {
+  "phash": "b9b7d0e9c0ce864b",
+  "w": 1262,
+  "h": 606,
+  "bytes": 46484
+ },
+ "dist/figures/f86e6c73/p67_1.png": {
+  "phash": "babd91c9c02787d6",
+  "w": 1263,
+  "h": 672,
+  "bytes": 98064
+ },
+ "dist/figures/f86e6c73/p68_0.png": {
+  "phash": "b8b9f0d9c06587c6",
+  "w": 1266,
+  "h": 798,
+  "bytes": 102521
+ },
+ "dist/figures/f86e6c73/p68_1.png": {
+  "phash": "bdb9b0d1c1659b96",
+  "w": 1293,
+  "h": 750,
+  "bytes": 117044
+ },
+ "dist/figures/f86e6c73/p69_0.png": {
+  "phash": "bc3cc3c3c33f3950",
+  "w": 1019,
+  "h": 383,
+  "bytes": 79225
+ },
+ "dist/figures/f86e6c73/p69_1.png": {
+  "phash": "b83ac498c785bbc3",
+  "w": 971,
+  "h": 374,
+  "bytes": 108324
+ },
+ "dist/figures/f86e6c73/p69_2.png": {
+  "phash": "aff8b82f07e1d01e",
+  "w": 657,
+  "h": 847,
+  "bytes": 195815
+ },
+ "dist/figures/f86e6c73/p70_0.png": {
+  "phash": "bf0fe1e23fe3c0d0",
+  "w": 605,
+  "h": 840,
+  "bytes": 181782
+ },
+ "dist/figures/f86e6c73/p70_1.png": {
+  "phash": "be63cc2d38ca875e",
+  "w": 797,
+  "h": 293,
+  "bytes": 42802
+ },
+ "dist/figures/f86e6c73/p70_2.png": {
+  "phash": "8f6be01cd9d38c56",
+  "w": 772,
+  "h": 308,
+  "bytes": 88340
+ },
+ "dist/figures/f86e6c73/p71_0.png": {
+  "phash": "98e83995b135317a",
+  "w": 1108,
+  "h": 1327,
+  "bytes": 85950
+ },
+ "dist/figures/f86e6c73/p73_0.png": {
+  "phash": "c2899976b5acc619",
+  "w": 1255,
+  "h": 372,
+  "bytes": 36082
+ },
+ "dist/figures/f86e6c73/p78_0.png": {
+  "phash": "bbcfb40e58f063e1",
+  "w": 218,
+  "h": 258,
+  "bytes": 6974
+ },
+ "dist/figures/f86e6c73/p78_1.png": {
+  "phash": "b86bd0a787989a39",
+  "w": 222,
+  "h": 221,
+  "bytes": 5747
+ },
+ "dist/figures/f86e6c73/p79_0.png": {
+  "phash": "a7931c6c989c63b7",
+  "w": 360,
+  "h": 456,
+  "bytes": 7858
+ },
+ "dist/figures/f86e6c73/p81_0.png": {
+  "phash": "f24e8d73268c78b3",
+  "w": 1235,
+  "h": 308,
+  "bytes": 53062
+ },
+ "dist/figures/f86e6c73/p81_1.png": {
+  "phash": "a4669a9b65641a9b",
+  "w": 1232,
+  "h": 746,
+  "bytes": 38169
+ }
+}
