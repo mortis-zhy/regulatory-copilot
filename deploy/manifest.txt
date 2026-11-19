@@ -1,7 +1,7 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 4725c3591be6375fe476b8e50d82ee1df5c66794   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# commit 17d5ddeaec1402f3b56dae62f8a74a5ec4245dae   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
 # 生成器：scripts/build_deploy_manifest.mjs · 文件数 318
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
@@ -175,7 +175,7 @@ c9c68f276639107ef5897d69b66971cb6d62e44d3677b4308f21aa0aa21db8ed  scripts/compar
 01369d2d41a636666b54bd0d29d84898e28fb83a9ddcf96dc43a535d961f436f  scripts/compare_pdfs.py
 cf964be1a1d3cc7be6c902f41a2deb884a69af8ebb6ee7c208fd97313a58e08d  scripts/coverage_audit.py
 104a78ff23ea8e37a480b56728422864c68e97d09b1daf22f270dc946a6de687  scripts/declaration.py
-a2a952fe7ed8fab15cb873a42e90affeebbae41c7b298c726ea02e151bb7ed26  scripts/deploy_windows.ps1
+e29147a154601bc3a46f5204a3a6d8fd347caccc61959730d3cf8ad1764d19a7  scripts/deploy_windows.ps1
 b2d86a3b0717aae4554851c2d984152b887a4ee35b9adec5856fb9fb9464d188  scripts/diff_corrections.py
 b62320297e26b62de729f80114e8b600674808652a68238268c6115705134960  scripts/diff_value_check.py
 c2dca5fceb7d3d786aa6130cbaf020c14984391d26e5ac08940bc50b874c6ea2  scripts/discover_requirements.py
