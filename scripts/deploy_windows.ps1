@@ -251,7 +251,6 @@ Push-Location $InstallDir
 Say "pip install -r requirements.txt（清华镜像 ✓）"
 $pipArgs = @("-m", "pip", "install", "--no-warn-script-location",
   "-i", "https://pypi.tuna.tsinghua.edu.cn/simple",
-  "--extra-index-url", "https://pypi.org/simple",
   "-r", "requirements.txt")
 if ((Invoke-Native $py $pipArgs (Join-Path $WorkDir "pip.log")) -ne 0) {
   Say "清华镜像失败 ⇒ 退回官方源 ✗"
