@@ -83,6 +83,24 @@ Say ("node=" + (& node --version 2>&1))
 Say ("python=" + (& $py --version 2>&1))
 Say ("python_path=" + $py)
 
+# **下载要重试** ✓ —— 实测（2026-11-19）：raw 偶发「连接被关闭：传输请求被中止」✗
+# （第一次拉清单成功、第二次就断了 ✗）⇒ 一次失败就放弃 ⇒ 白跑几十分钟 ✗。
+function Fetch-File($url, $dest, $tries = 4) {
+  $ProgressPreference = "SilentlyContinue"
+  $last = ""
+  for ($i = 1; $i -le $tries; $i++) {
+    try {
+      Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 300 -UseBasicParsing
+      return $true
+    } catch {
+      $last = $_.Exception.Message
+      Start-Sleep -Seconds (2 * $i)
+    }
+  }
+  Say ("下载失败 {0}（重试 {1} 次）：{2}" -f $url, $tries, $last.Substring(0, [Math]::Min(100, $last.Length)))
+  return $false
+}
+
 # ── 2. 取源码（**逐个文件**从 raw 拉 ✓ —— 整仓 zip 太慢 ✗）──────────────
 #
 # 实测（2026-11-19）：整仓 zip（codeload）**37 KB/s** ✗（300 MB 要几小时 ✗）；
@@ -97,8 +115,7 @@ if (-not $SkipDownload) {
   $manifestPath = Join-Path $src "manifest.txt"
   $manifestUrl = "$RepoRawBase/deploy/manifest.txt"
   Say "取部署清单：$manifestUrl"
-  $ProgressPreference = "SilentlyContinue"
-  Invoke-WebRequest -Uri $manifestUrl -OutFile $manifestPath -TimeoutSec 300 -UseBasicParsing
+  if (-not (Fetch-File $manifestUrl $manifestPath)) { throw "取部署清单失败 ✗" }
   $manifest = Get-Content $manifestPath -Encoding UTF8 | Where-Object { $_ -and -not $_.StartsWith("#") }
   Say ("清单 {0} 个文件 ✓" -f $manifest.Count)
 
@@ -114,12 +131,7 @@ if (-not $SkipDownload) {
     $dest = Join-Path $src $rel
     $dir = Split-Path $dest -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-    try {
-      Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 300 -UseBasicParsing
-    } catch {
-      Say ("下载失败 {0}：{1}" -f $rel, $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length)))
-      throw "拉源码失败（{0}）✗" -f $rel
-    }
+    if (-not (Fetch-File $url $dest)) { throw "拉源码失败（{0}）✗" -f $rel }
     $got = (Get-FileHash -Path $dest -Algorithm SHA256).Hash.ToLower()
     if ($got -ne $sha.ToLower()) { throw ("**sha256 不符**：{0} ✗（下载损坏 ✗）" -f $rel) }
     if ($i % 50 -eq 0) { Say ("已拉并核对 {0}/{1} 个 ✓" -f $i, $manifest.Count) }

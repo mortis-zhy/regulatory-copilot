@@ -33,8 +33,21 @@ const WANT_ROOT_FILES = [
 const WANT_REPORTS = ["figure-hashes.json", "figure-ocr.json", "multimodal.json", "last-report.json", "page-count.json"];
 
 function tracked() {
-  const out = execFileSync("git", ["ls-files", "-z"], { cwd: ROOT, encoding: "utf8" });
-  return out.split("\0").filter(Boolean);
+  // **已提交**的文件 ✓ —— 服务器从 GitHub 拉的是 **HEAD 里的 blob** ✓，
+  // 工作区里还没提交的新文件在 GitHub 上**不存在** ✗（会 404 ✗）。
+  const out = execFileSync("git", ["ls-tree", "-r", "--name-only", "HEAD"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  return out.split(/\r?\n/).filter(Boolean);
+}
+
+/** 某个文件在 **HEAD 里**的**字节** ✓ —— 服务器上的就是它 ✓。 */
+function blobOf(rel) {
+  return execFileSync("git", ["cat-file", "blob", `HEAD:${rel}`], {
+    cwd: ROOT,
+    encoding: "buffer",
+  });
 }
 
 function wanted(rel) {
@@ -50,12 +63,12 @@ const files = tracked().filter(wanted).sort();
 const lines = [
   "# 部署清单 —— 服务器按它逐个文件从 raw.githubusercontent 拉 ✓",
   "# 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓",
+  "# sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）",
   `# 生成器：scripts/build_deploy_manifest.mjs · 文件数 ${files.length}`,
 ];
 let bytes = 0;
 for (const rel of files) {
-  const abs = path.join(ROOT, rel);
-  const buf = fs.readFileSync(abs);
+  const buf = blobOf(rel);
   bytes += buf.length;
   lines.push(`${createHash("sha256").update(buf).digest("hex")}  ${rel}`);
 }
