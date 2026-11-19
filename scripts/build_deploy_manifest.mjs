@@ -51,10 +51,15 @@ const WANT_REPORTS = ["figure-hashes.json", "figure-ocr.json", "multimodal.json"
 function tracked() {
   // **已提交**的文件 ✓ —— 服务器从 GitHub 拉的是 **HEAD 里的 blob** ✓，
   // 工作区里还没提交的新文件在 GitHub 上**不存在** ✗（会 404 ✗）。
-  const out = execFileSync("git", ["ls-tree", "-r", "--name-only", "HEAD"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  });
+  //
+  // ⚠ **`core.quotePath=false`** ✓ —— 默认 git 会把**中文路径转义并加引号** ✓
+  // （`"web/\345\217\202…html"` ✓）⇒ 服务器按这个字面路径去拉 ⇒ **404** ✗
+  // （实测：`web/参数提议确认.html` 到了服务器上就没了 ✗）。
+  const out = execFileSync(
+    "git",
+    ["-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", "HEAD"],
+    { cwd: ROOT, encoding: "utf8" },
+  );
   return out.split(/\r?\n/).filter(Boolean);
 }
 

@@ -1,8 +1,8 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 17d5ddeaec1402f3b56dae62f8a74a5ec4245dae   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
-# 生成器：scripts/build_deploy_manifest.mjs · 文件数 318
+# commit a259e1f33943fad616f09d91cbb735270179fbb2   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# 生成器：scripts/build_deploy_manifest.mjs · 文件数 319
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
 f2cdf82b77bef683629b9640ff654112abefc0739e01452d74819b2e0d2aef81  client/index.html
@@ -321,3 +321,4 @@ e4024f30f09b654e3201f3c60691d754ddc1a11d98985e2cca369aea9008a30b  tsconfig.json
 7058ed16d196c5df67e4e39e9a8d0ea0d4bb57e14c6c4b9bbea02f27ef5a9283  uploaded-docs/README.md
 f86e6c7367f24de235ab95bb0ae394fcd68e5ed5be57185494043b512e6e7085  uploaded-docs/f86e6c7367f24de2.pdf
 d1828132b880a96c77b5a0336d7dc5ff37a6e8d18f7fe631090c0fa54a89a0ce  vite.config.ts
+b50426e7c4339e6b74d1acb664ad9fbffefef5824f1207ab775117c34dc27fea  web/参数提议确认.html
