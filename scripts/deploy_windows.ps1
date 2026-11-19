@@ -44,18 +44,43 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-function Say($m) { Write-Output ("[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $m) }
-function Step($m) { Say $m; Write-Output $m }
+# **日志同时写文件** ✓ —— stdout 被重定向时是**缓冲**的 ✗（实测：跑了几分钟日志还是空的 ✗），
+# 挂在文件上才看得到进度 ✓。
+$ProgressLog = "C:\gea\deploy.log"
+function Say($m) {
+  $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $m
+  Write-Output $line
+  try { Add-Content -Path $ProgressLog -Value $line -Encoding UTF8 } catch { }
+}
 
 Say "=== 部署开始（目标：$InstallDir，端口 $Port）==="
 
 # ── 1. 环境自检（先把话说清楚：缺什么就报错，别装到一半才发现）──────────
 $node = (Get-Command node.exe -EA SilentlyContinue).Source
-$py   = (Get-Command python.exe -EA SilentlyContinue).Source
 if (-not $node) { throw "**没有 node** ✗ —— 装个 Node 20+ 再来 ✓" }
-if (-not $py)   { throw "**没有 python** ✗ —— 装个 Python 3.10+ 再来 ✓" }
+
+# **python 不能只靠 PATH** ✓ —— 计划任务跑在 **SYSTEM** 账号下 ✗，
+# 它的 PATH 里**没有**各用户的 Python ✓（实测 2026-11-19：第一次跑就报「没有 python」✗）。
+# ⇒ 依次找：PATH → `py.exe` → **各用户目录下的固定位置** ✓。
+$py = (Get-Command python.exe -EA SilentlyContinue).Source
+if (-not $py) {
+  $pyLauncher = (Get-Command py.exe -EA SilentlyContinue).Source
+  if ($pyLauncher) { $py = $pyLauncher }
+}
+if (-not $py) {
+  foreach ($pat in @(
+      "C:\Users\*\AppData\Local\Programs\Python\Python3*\python.exe",
+      "C:\Python3*\python.exe",
+      "C:\Program Files\Python3*\python.exe")) {
+    $hit = Get-ChildItem $pat -EA SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
+    if ($hit) { $py = $hit.FullName; break }
+  }
+}
+if (-not $py) { throw "**没有 python** ✗ —— 装个 Python 3.10+ 再来 ✓" }
+
 Say ("node=" + (& node --version 2>&1))
-Say ("python=" + (& py --version 2>&1))
+Say ("python=" + (& $py --version 2>&1))
+Say ("python_path=" + $py)
 
 # ── 2. 取源码（服务器自己能连 GitHub ✓ ⇒ 不走隧道传 1 GB ✗）─────────────
 if (-not $SkipDownload) {
