@@ -1,7 +1,7 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit e2811e7341b7ae3751a0c317b28fe469eacb9fc6   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# commit 335976366de47b6c6f3c10ac3185b0d02d8bc22a   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
 # 生成器：scripts/build_deploy_manifest.mjs · 文件数 318
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
@@ -147,7 +147,7 @@ cb9fcfe65c34914b80681c63ea949e08566670281c9a7d88a989b50fa789f1eb  requirements-o
 9a2af087879c4caac44cf3eb683f09fa2cc5752f4c269823de044b52ff705746  scripts/adopt_spec_proposals.mjs
 85250871fa9626b8036fb7b6b5587f9bfa14aeb6dd334e09e78f51c930de9e06  scripts/build-libs.mjs
 1c3eaad9bb9524ef08f89e4b9f2a1f105d29689e386fae3751b9fb84a8f2d225  scripts/build_delivery_review.py
-9539475f61bce71daeb51b24844b5b8ef13c52f7d18a5ecc53dec18b9f5fa1f5  scripts/build_deploy_manifest.mjs
+a9078c208c495970f67c265ad243a723214ddcfdd76c91d4edf0b25beb77df32  scripts/build_deploy_manifest.mjs
 4c251e4691f5bbc3d1d2e838045ef43b5e6042963157fe43396770949d8337b5  scripts/build_device_chapter_map.py
 c84f073adbfbbcafb997e327bb27324eeb0e758f99067afc98cfb71a54300506  scripts/build_lamp_color_map.py
 19ad99ca3388069884a8d918ac589f6268f5ea14400b88e9fbe23e156a737209  scripts/build_multimodal.mjs
