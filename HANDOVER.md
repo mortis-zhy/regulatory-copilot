@@ -188,6 +188,18 @@ npm run verify     # 200 项闸门 ✓，含**真渲染一份 PDF** ✓ —— �
 长任务不能挂 SSH 会话 ⇒ `Start-Process` 脱离 ✓ · 开机自启必须 **AtStartup** 触发器 ✓ ·
 机器会睡 ⇒ `powercfg` ✓ · 只有 Edge ⇒ `PLAYWRIGHT_CHANNEL=msedge` ✓。
 
+**这次真部署又踩到的五个坑（2026-11-19，全部写进脚本/闸门了 ✓）**：
+
+| 坑 | 现象 | 修法 |
+|---|---|---|
+| **`.ps1` 没 BOM** ✗ | 服务器上跑就 **ParserError** ✗（PowerShell 5.1 没 BOM 就按 ANSI/GBK 读 ⇒ 中文乱码 ⇒ 引号被吃） | 文件存成 **UTF-8 with BOM** ✓；闸门盯着 BOM ✓ |
+| **SYSTEM 账号的 PATH 里没有用户的 Python** ✗ | 计划任务里报「**没有 python**」✗（开发时能找到 ✓ 因为是用户会话 ✓） | 脚本里**按已知路径找**（`C:\Users\*\AppData\Local\Programs\Python\Python3*` ✓） |
+| **整仓 zip 慢到没法用** ✗ | `codeload.github.com` 实测 **37 KB/s** ✗（300 MB 要几小时 ✗）；`raw.githubusercontent.com` **3.1 MB/s** ✓ | 改成**逐文件拉** ✓（`deploy/manifest.txt` 带 sha256 ✓，拉完逐个核对 ✓） |
+| **sha256 算的是工作区、服务器上的是 blob** ✗ | 工作区 CRLF ⇒ 与 GitHub 上的 LF **不一致** ✗ ⇒ 核对直接红 ✗ | 清单的 sha 取 **`git cat-file blob HEAD:<path>`** ✓（另：`cat-file` 要给 `maxBuffer` ✓，否则 1.9 MB 的 JSON 触发 ENOBUFS ✗） |
+| **raw 偶发「连接被关闭：传输请求被中止」** ✗ | 第一次拉清单成功、第二次就断了 ✗ | 每个下载**重试 4 次** ✓ |
+
+⇒ **这次部署是「边做边发现边修」的** ✓ —— 五个坑每一个都留下了**机器能查的痕迹** ✓（BOM 闸门 ✓ / python 路径发现 ✓ / 清单核对 ✓ / maxBuffer ✓ / 重试 ✓）。
+
 ### 还没做的（**说清楚，别以为齐了** ✗）
 
 docker-compose / K8s 清单 ✗ · 监控与日志 ✗ · 自动备份 ✗ · CI（现在靠人跑闸门 ✓）✗ ·
