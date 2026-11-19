@@ -188,17 +188,38 @@ npm run verify     # 200 项闸门 ✓，含**真渲染一份 PDF** ✓ —— �
 长任务不能挂 SSH 会话 ⇒ `Start-Process` 脱离 ✓ · 开机自启必须 **AtStartup** 触发器 ✓ ·
 机器会睡 ⇒ `powercfg` ✓ · 只有 Edge ⇒ `PLAYWRIGHT_CHANNEL=msedge` ✓。
 
-**这次真部署又踩到的五个坑（2026-11-19，全部写进脚本/闸门了 ✓）**：
+**这次真部署踩到的坑（2026-11-19，**全部写进脚本/闸门了** ✓）**：
 
-| 坑 | 现象 | 修法 |
-|---|---|---|
-| **`.ps1` 没 BOM** ✗ | 服务器上跑就 **ParserError** ✗（PowerShell 5.1 没 BOM 就按 ANSI/GBK 读 ⇒ 中文乱码 ⇒ 引号被吃） | 文件存成 **UTF-8 with BOM** ✓；闸门盯着 BOM ✓ |
-| **SYSTEM 账号的 PATH 里没有用户的 Python** ✗ | 计划任务里报「**没有 python**」✗（开发时能找到 ✓ 因为是用户会话 ✓） | 脚本里**按已知路径找**（`C:\Users\*\AppData\Local\Programs\Python\Python3*` ✓） |
-| **整仓 zip 慢到没法用** ✗ | `codeload.github.com` 实测 **37 KB/s** ✗（300 MB 要几小时 ✗）；`raw.githubusercontent.com` **3.1 MB/s** ✓ | 改成**逐文件拉** ✓（`deploy/manifest.txt` 带 sha256 ✓，拉完逐个核对 ✓） |
-| **sha256 算的是工作区、服务器上的是 blob** ✗ | 工作区 CRLF ⇒ 与 GitHub 上的 LF **不一致** ✗ ⇒ 核对直接红 ✗ | 清单的 sha 取 **`git cat-file blob HEAD:<path>`** ✓（另：`cat-file` 要给 `maxBuffer` ✓，否则 1.9 MB 的 JSON 触发 ENOBUFS ✗） |
-| **raw 偶发「连接被关闭：传输请求被中止」** ✗ | 第一次拉清单成功、第二次就断了 ✗ | 每个下载**重试 4 次** ✓ |
+| # | 坑 | 现象 | 修法 |
+|---|---|---|---|
+| 1 | **`.ps1` 没 BOM** ✗ | 服务器上跑就 **ParserError** ✗（PS 5.1 没 BOM 就按 ANSI/GBK 读 ⇒ 中文乱码 ⇒ 引号被吃） | 存成 **UTF-8 with BOM** ✓；闸门盯着 BOM ✓ |
+| 2 | **SYSTEM 账号的 PATH 里没有用户的 Python** ✗ | 计划任务里报「**没有 python**」✗ | 脚本里**按已知路径找**（`C:\Users\*\AppData\Local\Programs\Python\Python3*` ✓） |
+| 3 | **整仓 zip 慢到没法用** ✗ | `codeload.github.com` 实测 **37 KB/s** ✗ | 改成**逐文件拉** ✓（清单带 sha256 ✓，拉完逐个核对 ✓） |
+| 4 | **sha256 算的是工作区、服务器上是 blob** ✗ | 工作区 CRLF ⇒ 与 GitHub 的 LF **不一致** ✗ ⇒ 核对直接红 ✗ | 清单的 sha 取 **`git cat-file blob HEAD:<path>`** ✓（`cat-file` 要给 `maxBuffer` ✓，否则 1.9 MB 的 JSON 触发 ENOBUFS ✗） |
+| 5 | **raw 偶发「连接被关闭」** ✗ | 拉清单第二次就断了 ✗ | 每个下载**重试** ✓（curl 自带 `--retry` ✓） |
+| 6 | **`Invoke-WebRequest` 会「挂住」** ✗ | 一个 0.1 MB 的小文件卡了 **16 分钟** ✗，`-TimeoutSec` **管不住** ✗ | 改用 **`curl.exe --max-time`** ✓（Windows 10+ 自带 ✓） |
+| 7 | **原生命令写 stderr ⇒ 被当异常终止部署** ✗ | pnpm 打一行 "deprecated … vulnerabilities" 就把整个部署**停了** ✗ | 统一走 `Invoke-Native` ✓：**只看退出码** ✓ |
+| 8 | **清单漏了 `patches/`** ✗ | `pnpm install` 直接 **ENOENT** ✗（package.json 有 `patchedDependencies` ✓） | 清单带上 `patches/` ✓ |
+| 9 | **清单漏了 `requirements*.txt`** ✗ | `pip install -r requirements.txt` ⇒ **no such file** ✗ | 清单带上 ✓ |
+| 10 | **中文路径被 git 转义** ✗ | 清单里是 `"web/\345\217\202…"` ⇒ 服务器 **404** ⇒ 确认页没了 ✗ | `git -c core.quotePath=false` ✓ |
+| 11 | **jsDelivr 对分支有缓存** ✗ | 给的是**旧一版**清单 ⇒ 少了 patches/ ⇒ ENOENT ✗ | 清单从 **raw@main** 取 ✓（慢但一定是当前版 ✓），jsDelivr 兜底 ✓ |
+| 12 | **`npm install` 直接 ERESOLVE** ✗ | npm 会**重新解依赖** ✗（仓库锁的是 pnpm ✓） | 用 **corepack 装 pnpm** ✓ + `--frozen-lockfile` ✓ |
+| 13 | **PyMuPDF 2.x 会拖 onnxruntime** ✗ | pip 要下 **260 MB** ✗（13 分钟没下完 ✗） | 钉 `PyMuPDF>=1.24,<2` ✓；pip 走**清华镜像** ✓（官方源 63 MB 要 13 分钟 ✗，镜像 **2 MB/s** ✓） |
 
-⇒ **这次部署是「边做边发现边修」的** ✓ —— 五个坑每一个都留下了**机器能查的痕迹** ✓（BOM 闸门 ✓ / python 路径发现 ✓ / 清单核对 ✓ / maxBuffer ✓ / 重试 ✓）。
+⇒ **这次部署是「边做边发现边修」的** ✓ —— 十三个坑每一个都留下了**机器能查的痕迹** ✓
+（BOM 闸门 ✓ · python 路径发现 ✓ · 清单核对 ✓ · maxBuffer ✓ · 重试 ✓ · curl 超时 ✓ · Invoke-Native ✓ ·
+清单内容 ✓ · quotePath ✓ · 镜像源 ✓ · pnpm ✓ · 版本钉死 ✓）。
+
+### 部署**成功**的实测记录（2026-11-19 ✓）
+
+| 项 | 结果 |
+|---|---|
+| 源码 | **319 个文件**逐个拉完并**逐个核对 sha256** ✓（22.4 MB ✓） |
+| 依赖 | `pnpm install --frozen-lockfile` ✓（1 s，缓存命中 ✓）· `pnpm run build` ✓（17 s ✓）· `pip install -r requirements.txt` ✓（清华镜像 ✓） |
+| 服务 | 计划任务 **`GEA-Regulatory`**（SYSTEM / 最高权限 / **AtStartup 触发器** ✓）· 监听 **3000** ✓ |
+| 健康检查 | `GET /api/health` → **200** ✓（`{"ok":true,"pid":…,"root":"C:\\gea\\regulatory-copilot"}` ✓） |
+| 网页 | `http://100.124.96.115:3000/` → **200** ✓（标题「Regulatory Copilot · 法规智能对比平台」✓，372 KB ✓） |
+| 部署自检 | `python scripts/check_deploy.py` → **无阻断项** ✓（3 条提醒：easyocr 未装 ✓ / `DATABASE_URL` 没设（走 in-memory ✓）/ 没有 `fc-list` ✓） |
 
 ### 还没做的（**说清楚，别以为齐了** ✗）
 
