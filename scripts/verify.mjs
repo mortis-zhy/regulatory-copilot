@@ -627,6 +627,16 @@ check("the container image would still be able to run (packaging is not stale)",
     "HANDOVER.md 里没有提 check_deploy.py ✗ —— 没人知道要跑它 ✗",
   );
 
+  // **Windows 部署脚本必须带 UTF-8 BOM** ✓ ——
+  // 没有 BOM ⇒ PowerShell 5.1 按 ANSI（GBK）读 ⇒ 中文乱码 ⇒ **语法错** ✗
+  // （实测 2026-11-19：服务器上第一次跑就 ParserError ✗）。
+  const ps1 = read("scripts/deploy_windows.ps1");
+  assert(
+    ps1.charCodeAt(0) === 0xfeff,
+    "scripts/deploy_windows.ps1 **没有 UTF-8 BOM** ✗ —— PowerShell 5.1 会按 ANSI 读它 ✗，" +
+      "中文乱码 ⇒ 语法错 ✗（实测踩过 ✓）。",
+  );
+
   // **构建上下文**要瘦身 ✓ —— 1.1 GB 的仓库全传进去 = 每次构建好几分钟 ✗
   const di = read(".dockerignore");
   assert(/node_modules/.test(di), ".dockerignore 里没排 node_modules ✗ —— 宿主机的依赖会混进镜像 ✗");
