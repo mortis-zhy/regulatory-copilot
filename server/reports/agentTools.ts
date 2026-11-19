@@ -36,7 +36,9 @@ import { PROJECT_ROOT } from "../_core/projectRoot";
 // agent 报出来的版本名就会**继续讲旧标准** —— 而工具照常返回原文。
 import { versionDoc, versionKeys } from "@shared/versionMeta";
 // **多模态索引** —— 图 / 表 / 公式的跨版对照（与附录 B.5 **同一份实现** ✓）。
-import { multimodalIndex, diffOf } from "./multimodalIndex";
+import { multimodalIndex, diffOf, figuresOf, symbolLedger } from "./multimodalIndex";
+// 公式**符号表**的跨版对照（只比定义 / 单位 / 页码 ✓）。
+import { compareSymbols } from "./formulaSymbols";
 
 /**
  * 内层仓库根（dist/ 与 data/ 都在那儿）—— **唯一实现**在
@@ -388,6 +390,42 @@ export const AGENT_TOOLS: ToolDef[] = [
           page: { type: "number", description: "只看某一页的表（可选）" },
         },
         required: ["version_a", "version_b"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_figures",
+      description:
+        "反查**图**：某一版里有哪些图、每张图上写了什么（OCR 文字、人工标注）、" +
+        "别的版本里有没有**近似**的孪生图。可按页码或关键词筛。" +
+        "**注意**：孪生是「图像近似」✓，**不是**「同一张图」✗；" +
+        "矢量图抽不出来 ✓ —— 那些页在图版里写「本页为矢量图」✗，不是漏抽 ✗。",
+      parameters: {
+        type: "object",
+        properties: {
+          version: { type: "string", enum: [...versionKeys(), "all"], description: "标准代号" },
+          page: { type: "number", description: "只看某一页（可选）" },
+          keyword: { type: "string", description: "按图上的字筛（可选）" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "lookup_formula_symbols",
+      description:
+        "查**公式符号表**：每个符号在哪一版有定义、单位是什么、定义在第几页。" +
+        "只判「有没有定义 / 单位 / 页码」✓ —— 定义文字不同（中文 vs 英文）**不代表**含义不同 ✗，语义须人判 ✗。",
+      parameters: {
+        type: "object",
+        properties: {
+          version: { type: "string", enum: [...versionKeys(), "all"], description: "只看某一版（可选）" },
+        },
+        required: [],
       },
     },
   },
@@ -1176,6 +1214,90 @@ async function runAgentToolInner(name: string, args: Json, ctx?: ToolContext): P
             "单元格差异是**文本**不同 ✗ —— 可能只是写法差异（单位、公式排版）⇒ **须人工判断是否实质变化** ✗。",
             "抽取串行的格/表**不比**（抽取坏了）⇒ 「未比」**不等于**「相同」✗。",
             "没配上的表**不配对**（只按行×列配会瞎配）⇒ 「只有某版有」**不等于**「另一版删了这张表」✗。",
+          ],
+        },
+      };
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "find_figures": {
+      // **反查** ✓ —— 客户问「这张图是哪一版的 / 上面写了什么」时用 ✓。
+      const v = String(args.version ?? "").toUpperCase();
+      const scope = !v || v === "ALL" ? versionsFor(ctx) : [v];
+      const page = args.page != null && args.page !== "" ? Number(args.page) : null;
+      const kw = args.keyword != null && args.keyword !== "" ? String(args.keyword) : undefined;
+      const idx = multimodalIndex();
+      if (!idx.available) {
+        return { ok: false, data: { error: idx.reason, code: "multimodal_unavailable" } };
+      }
+      const items: Json[] = [];
+      for (const ver of scope) {
+        for (const f of figuresOf(ver, page ?? undefined, kw)) {
+          items.push({
+            version: f.version,
+            page: f.page,
+            file: f.file,
+            /** 有感知指纹才能配对 ✓ */
+            hasHash: !!f.phash,
+            /** OCR 读到的几处字（**会读错** ✗） */
+            ocrText: f.ocrText,
+            /** 人工标注（没有 = 没标注 ✗，不是「图里没限值」✗） */
+            limits: f.limits,
+            /** 别的版本里的**近似**孪生 ✓ */
+            nearTwins: f.twins.map((t) => ({ version: t.version, page: t.page, distance: t.distance })),
+          });
+        }
+      }
+      return {
+        ok: true,
+        data: {
+          count: items.length,
+          items,
+          caveats: [
+            "图版里的图是**从源 PDF 抽的位图**；矢量图抽不出来 ✓ —— 那些页在图版里写「本页为矢量图，未抽成位图」✗，不是漏抽 ✗。",
+            "「近似孪生」= 图像近似（pHash 距离）✓ —— **不是**「同一张图」的证明 ✗，也不是「这版多了/少了这张图」的结论 ✗。",
+            "OCR 文字**会读错**（实测「布局A」→「布局4」）✗；没标注的图**不是**「图里没有限值」✗ —— 只是没比 ✗。",
+          ],
+        },
+      };
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "lookup_formula_symbols": {
+      const ledger = symbolLedger();
+      if (!ledger) {
+        return {
+          ok: false,
+          data: {
+            error: "没有公式符号表（跑 python scripts/extract_formula_symbols.py）",
+            code: "symbol_table_unavailable",
+          },
+        };
+      }
+      const cmp = compareSymbols(ledger as any);
+      const v = String(args.version ?? "").toUpperCase();
+      const scope = v && v !== "ALL" ? [v] : cmp.versions;
+      const rows = cmp.rows.map((r) => ({
+        symbol: r.symbol,
+        definitions: scope
+          .filter((ver) => r.byVersion[ver])
+          .map((ver) => ({
+            version: ver,
+            page: r.byVersion[ver]!.page,
+            unit: r.byVersion[ver]!.unit,
+            definition: r.byVersion[ver]!.definition,
+          })),
+        /** 这一版**没找到**定义 ✓（不是「没有这个符号」✗） */
+        missingIn: scope.filter((ver) => !r.byVersion[ver]),
+      }));
+      return {
+        ok: true,
+        data: {
+          symbols: rows,
+          unitMismatches: cmp.unitMismatch,
+          caveats: [
+            "符号表只判「有没有定义 / 单位 / 页码」✓ —— 三版语言不同，定义文字不同**不代表**含义不同 ✗；" +
+              "「未找到定义」也可能只是写法不同 ✗ —— **语义须人判** ✗。",
           ],
         },
       };

@@ -127,3 +127,105 @@ export function diffOf(a: string, b: string): VersionDiff | null {
     idx.diffs.find((d) => (d.a === a && d.b === b) || (d.a === b && d.b === a)) ?? null
   );
 }
+
+/* ------------------------------------------------------------------------- */
+/* 反查：这一版有哪些图、每张图讲什么、别版里有没有近似孪生                   */
+/* ------------------------------------------------------------------------- */
+
+/** 一张图（供取证工具反查用 ✓）。 */
+export type FigureEntry = {
+  version: string;
+  page: number;
+  file: string;
+  /** 感知指纹（有 pHash 才能配对 ✓） */
+  phash: string;
+  /** OCR 读到的几处文字（**会读错** ✗） */
+  ocrText: string[];
+  /** 人工标注（没有 = 没标注 ✗，不是「图里没限值」✗） */
+  limits?: {
+    values: string[];
+    caption: string;
+    depicts: string;
+    adjudicated: boolean;
+    visualOnly: boolean;
+  };
+  /** 其它版本里的**近似**孪生 ✓（近似 ≠ 同一 ✗） */
+  twins: Array<{ version: string; page: number; distance: number }>;
+};
+
+/**
+ * 某一版的图清单 ✓（可按页 / 关键词筛 ✓）。
+ *
+ * 「孪生」= 别的版本里**图像近似**的那张 ✓ —— 不是「同一张」的证明 ✗，
+ * 也不是「这一版多了/少了这张图」的结论 ✗。
+ */
+export function figuresOf(version: string, page?: number, keyword?: string): FigureEntry[] {
+  const idx = multimodalIndex();
+  const inv = idx.inventory[version];
+  if (!inv) return [];
+  // 孪生表：图路径 → 别的版本里的近似图 ✓
+  const twins = new Map<string, Array<{ version: string; page: number; distance: number }>>();
+  for (const d of idx.diffs) {
+    for (const p of d.figures.paired) {
+      const push = (file: string, t: { version: string; page: number; distance: number }) => {
+        const arr = twins.get(file) ?? [];
+        arr.push(t);
+        twins.set(file, arr);
+      };
+      push(p.left.file, { version: d.b, page: p.right.page, distance: p.distance });
+      push(p.right.file, { version: d.a, page: p.left.page, distance: p.distance });
+    }
+  }
+  const kw = String(keyword ?? "").trim();
+  const out: FigureEntry[] = [];
+  for (const f of inv.figures) {
+    if (page != null && f.page !== page) continue;
+    const ocrText = (f.ocr ?? [])
+      .filter((i) => Number(i.conf) >= 0.6)
+      .map((i) => i.text)
+      .slice(0, 8);
+    const limits = f.limits
+      ? {
+          values: f.limits.values ?? [],
+          caption: f.limits.caption ?? "",
+          depicts: f.limits.depicts ?? "",
+          adjudicated: !!f.limits.adjudicated,
+          visualOnly: !String(f.limits.valueBasis ?? "").trim(),
+        }
+      : undefined;
+    if (kw) {
+      const hay = [ocrText.join(" "), limits?.caption ?? "", limits?.depicts ?? "", ...(limits?.values ?? [])]
+        .join(" ")
+        .toLowerCase();
+      if (!hay.includes(kw.toLowerCase())) continue;
+    }
+    out.push({
+      version,
+      page: f.page,
+      file: f.file,
+      phash: f.phash,
+      ocrText,
+      limits,
+      twins: twins.get(f.file) ?? [],
+    });
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 公式符号表                                                                */
+/* ------------------------------------------------------------------------- */
+
+export type SymbolLedgerFile = {
+  blocks: Array<{
+    version: string;
+    page: number;
+    symbols: Array<{ symbol: string; definition: string; unit: string }>;
+  }>;
+};
+
+/** 公式符号表（`data/formula-symbols.json`）✓ —— 没有就说清没有 ✗。 */
+export function symbolLedger(): SymbolLedgerFile | null {
+  const raw = readJson("data/formula-symbols.json");
+  return raw && Array.isArray(raw.blocks) ? (raw as SymbolLedgerFile) : null;
+}

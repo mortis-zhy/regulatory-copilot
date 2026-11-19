@@ -42,6 +42,11 @@ const ALIAS = {
   tbl: "lookup_table_cells",
   table: "lookup_table_cells",
   tables: "lookup_table_cells",
+  f: "find_figures",
+  findfig: "find_figures",
+  figlist: "find_figures",
+  sym: "lookup_formula_symbols",
+  symbols: "lookup_formula_symbols",
   tools: "tools",
   h: "help",
   help: "help",
@@ -61,11 +66,14 @@ q —— 控制台查询台（确定性，不调模型、不花钱）
   node scripts/q.mjs topic   "<主题>"              某主题的原文摘录
   node scripts/q.mjs figures <A|B> <A|B> [页码]      两版的图：哪些是同一张、图内数字差在哪
   node scripts/q.mjs tables  <A|B> <A|B> [页码]      两版的表：逐格文本差在哪
+  node scripts/q.mjs findfig <A|B|all> [页码] [关键词] 这一版有哪些图、图上写了什么、有没有近似孪生
+  node scripts/q.mjs symbols [A|B|all]                公式符号表：定义 / 单位 / 页码
 
 例：
   node scripts/q.mjs clause A 5.21.4.2
   node scripts/q.mjs param 倒车灯最大离地高度
   node scripts/q.mjs figures A B 83
+  node scripts/q.mjs findfig A 83
 `);
 }
 
@@ -229,6 +237,40 @@ function printResult(name, res) {
       console.log("");
       break;
     }
+    case "find_figures": {
+      console.log(`图清单：共 ${d.count ?? 0} 张`);
+      for (const f of d.items ?? []) {
+        console.log(`  ${f.version} p${f.page}　${f.file}`);
+        if ((f.ocrText ?? []).length) console.log(`    图上字（OCR，会读错）：${f.ocrText.join(" / ")}`);
+        if (f.limits) {
+          console.log(
+            `    人工标注：${(f.limits.values ?? []).join("、") || "（无）"}` +
+              `　${f.limits.caption ?? ""}` +
+              `${f.limits.adjudicated ? "（已人工核）" : "（**未核**）"}` +
+              `${f.limits.visualOnly ? "　**仅据图面**" : ""}`,
+          );
+        }
+        for (const t of f.nearTwins ?? []) {
+          console.log(`    近似孪生：${t.version} p${t.page}　距离 ${t.distance}（近似 ≠ 同一张）`);
+        }
+      }
+      for (const c of d.caveats ?? []) console.log(`  ⚠ ${c}`);
+      console.log("");
+      break;
+    }
+    case "lookup_formula_symbols": {
+      console.log(`公式符号：${(d.symbols ?? []).length} 个`);
+      for (const s of d.symbols ?? []) {
+        console.log(`  ${s.symbol}`);
+        for (const def of s.definitions ?? []) {
+          console.log(`    ${def.version} p${def.page}${def.unit ? ` · ${def.unit}` : " · 单位未读出"}　${String(def.definition).slice(0, 90)}`);
+        }
+        if ((s.missingIn ?? []).length) console.log(`    未找到定义：${s.missingIn.join("、")}（不是「没有这个符号」）`);
+      }
+      for (const c of d.caveats ?? []) console.log(`  ⚠ ${c}`);
+      console.log("");
+      break;
+    }
     default:
       console.log(JSON.stringify(d, null, 1).slice(0, 4000));
       console.log("");
@@ -272,6 +314,14 @@ const args = (() => {
       return pick({ version_a: rest[0], version_b: rest[1], page: rest[2] ? Number(rest[2]) : undefined });
     case "lookup_table_cells":
       return pick({ version_a: rest[0], version_b: rest[1], page: rest[2] ? Number(rest[2]) : undefined });
+    case "find_figures":
+      return pick({
+        version: rest[0],
+        page: rest[1] && !Number.isNaN(Number(rest[1])) ? Number(rest[1]) : undefined,
+        keyword: rest[1] && Number.isNaN(Number(rest[1])) ? rest[1] : rest[2],
+      });
+    case "lookup_formula_symbols":
+      return pick({ version: rest[0] });
     default:
       return {};
   }

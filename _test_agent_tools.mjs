@@ -201,4 +201,33 @@ const ok = (cond, msg) => {
   ok(typeof t.data.notCompared?.scrambled === "number", "要说明有多少张表因串行没比");
 }
 
+/* --- 13. 反查与符号表：多模态的另外两个入口 ------------------------------ */
+{
+  const names = AGENT_TOOLS.map((t) => t.function.name);
+  ok(names.includes("find_figures"), "工具清单里没有 find_figures");
+  ok(names.includes("lookup_formula_symbols"), "工具清单里没有 lookup_formula_symbols");
+
+  const f = await runAgentTool("find_figures", { version: "A", page: 83 });
+  ok(f.ok, `反查 A p83 必须查得到：${JSON.stringify(f.data).slice(0, 200)}`);
+  ok((f.data.items ?? []).length >= 1, "要返回图");
+  const one = f.data.items[0];
+  ok(one.version === "A" && one.page === 83, "图的版本/页码不对");
+  ok(one.hasHash === true, "图要有感知指纹（否则配不上对）");
+  ok(Array.isArray(one.nearTwins), "要给出近似孪生");
+  const fc = (f.data.caveats ?? []).join(" | ");
+  ok(fc.includes("孪生"), "要写清「近似孪生 ≠ 同一张」");
+  ok(fc.includes("没标注"), "要写清「没标注 ≠ 没有限值」");
+
+  // 关键词筛 ✓
+  const kw = await runAgentTool("find_figures", { version: "A", keyword: "不可见度" });
+  ok(kw.ok && (kw.data.items ?? []).length >= 1, "按关键词反查没查到");
+
+  const s = await runAgentTool("lookup_formula_symbols", {});
+  ok(s.ok, `符号表必须查得到：${JSON.stringify(s.data).slice(0, 200)}`);
+  ok((s.data.symbols ?? []).length >= 1, "要返回符号");
+  ok((s.data.symbols ?? []).some((x) => x.symbol === "h1"), "h1 应在符号表里");
+  const sc = (s.data.caveats ?? []).join(" | ");
+  ok(sc.includes("语义须人判"), "符号表要写清「语义须人判」");
+}
+
 console.log(`_test_agent_tools.mjs — ${checks} checks passed`);

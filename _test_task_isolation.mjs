@@ -250,4 +250,12 @@ const mmBoth = await runAgentTool(
 ok(mmBoth.ok === true, "两版都在时，图工具被误拦了");
 ok((mmBoth.data?.figurePairs ?? []).length > 0, "两版都在时，图工具没给出配对结果");
 
+// **反查**与**符号表**同样要拦 ✓ —— 它们也按版本取依据 ✓
+const findOnlyA = await runAgentTool("find_figures", { version: "B" }, onlyA);
+ok(findOnlyA.ok === false, "当前只有 A，却反查出了 B 版的图");
+ok(findOnlyA.data?.code === "version_not_in_task", `反查的拒绝码不对：${findOnlyA.data?.code}`);
+
+const symOnlyA = await runAgentTool("lookup_formula_symbols", { version: "B" }, onlyA);
+ok(symOnlyA.ok === false, "当前只有 A，却查出了 B 版的公式符号定义");
+
 console.log(`✓ 任务隔离用例全过（${n} 条断言）`);

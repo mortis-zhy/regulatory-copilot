@@ -548,14 +548,30 @@ check("多模态进了问答层（图/表能问，且带同一条界线）", () 
   assert(to.includes("表对比"), "表工具没有输出对照结果");
   assert(to.includes("人工判断"), "表工具没写「须人工判断是否实质变化」");
 
-  // 提示词里也得有这两条工具与红线 ✓ —— 工具在册但模型不会用 = 白做 ✗
-  const prompt = read("server/reports/agentPrompt.ts");
+  // **反查**与**符号表**也要在 ✓（图能问、表能问 ⇒ 「这张图是哪一版的」「符号什么意思」也得能问 ✗）
+  const figlist = spawnSync("node", ["scripts/q.mjs", "findfig", "A", "83"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  assert(figlist.status === 0, `反查工具跑不通：${(figlist.stderr || "").slice(-400)}`);
   assert(
-    prompt.includes("compare_figures") && prompt.includes("lookup_table_cells"),
-    "系统提示词里没写这两个工具 —— 模型不会用它们 ✗",
+    (figlist.stdout ?? "").includes("近似孪生"),
+    "反查没给出「近似孪生」（客户问「这图有没有别的版本里的 counterparts」就答不了）",
   );
+  const sym = spawnSync("node", ["scripts/q.mjs", "symbols"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  assert(sym.status === 0, `符号表工具跑不通：${(sym.stderr || "").slice(-400)}`);
+  assert((sym.stdout ?? "").includes("语义须人判"), "符号表没写「语义须人判」");
+
+  // 提示词里也得有这几个工具与红线 ✓ —— 工具在册但模型不会用 = 白做 ✗
+  const prompt = read("server/reports/agentPrompt.ts");
+  for (const t of ["compare_figures", "lookup_table_cells", "find_figures", "lookup_formula_symbols"]) {
+    assert(prompt.includes(t), `系统提示词里没写 ${t} —— 模型不会用它 ✗`);
+  }
   assert(/多模态/.test(prompt) && /不许/.test(prompt), "系统提示词里没有多模态的措辞红线 ✗");
-  return "图/表都能问，且界线与报告一致（近似≠一致 · OCR 只是提示 · 文本≠实质变化）";
+  return "图/表/反查/符号都能问，且界线与报告一致（近似≠一致 · OCR 只是提示 · 文本≠实质变化 · 语义须人判）";
 });
 
 check("参数查询对空格不敏感（查不到 ≠ 不存在）", () => {
