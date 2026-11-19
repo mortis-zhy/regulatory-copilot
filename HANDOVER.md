@@ -4,7 +4,7 @@
 > **仓库**：`github-m:mortis-zhy/regulatory-copilot.git`（**公开仓库** ✓）
 > **分支**：`main`
 > **本轮提交**：`30f4b8d`（图版）→ `146bd3d`（R2 人核）→ `c401586`（快照+讲稿）→ `cf97316`（Windows dev）
-> **闸门**：**199 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
+> **闸门**：**200 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
 > **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **328 页** · **102 张源 PDF 原图** · 22 条书签
 
 > ⚠ **这份文档里的每个数都由机器查** ✓ —— `scripts/check_handover.py` ✓
@@ -36,7 +36,7 @@
 ```bash
 npm install                 # 或 pnpm install
 npm run dev                 # 开发模式（热重载）✓ —— Windows 上也能跑 ✓
-npm run verify              # 交付闸门：199 项 ✓（约 4 分钟，含渲染一份 PDF）
+npm run verify              # 交付闸门：200 项 ✓（约 4 分钟，含渲染一份 PDF）
 npm run briefing            # 重出讲稿（读 dist/verify-summary.json 的数 ✓）
 node rebuild_report.mjs     # 从语料重建 reports/last-report.json
 node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
@@ -49,6 +49,7 @@ node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
 2. **`npm run dev` 之前在 Windows 上根本起不来** ✗ —— `NODE_ENV=development` 是 POSIX 写法 ✓。
    现在改成 `server/_core/dev.ts`（自己设环境变量）✓，跨平台 ✓。
 3. **Python 3 + PyMuPDF + fontTools + Pillow 要装好** ✓ —— 抽图、裁字、PDF 自检都用它们 ✗。
+   （**图内数值（OCR）那一层另需 easyocr + torch** ✓，约 2 GB ✓，**可选** ✓ —— 详见 §一之二 ✓。）
 
 **环境变量**：`.env`（**gitignore 了** ✓）里要有 `MINIMAX_API_KEY` ✓。
 **这些 key 是秘密** ✗ —— 绝不进版本库 ✗，绝不打印 ✗。提交前必须扫：
@@ -100,6 +101,79 @@ MODEL_KEY_POOL=openai|sk-…|https://api.openai.com/v1|gpt-6.1-sol
 ⇒ 另外：`Node 22 的 fetch` **不走系统代理** ✗ ⇒ 用 OpenAI 那把 key 跑本项目要
 **开 Clash 的 TUN** ✓（系统直连被接管 ✓ ⇒ 不用改代码 ✓），
 否则得给 fetch 装 `undici` 的 `ProxyAgent` ✓。
+
+---
+
+## 一之二、部署到公司服务器（2026-11-19 补）
+
+**先跑自检** ✓ —— 一次问清楚「这台机器能不能出交付件」✓：
+
+```bash
+python scripts/check_deploy.py            # 秒级 ✓：环境/目录/依赖/凭据
+python scripts/check_deploy.py --deep     # 加抽图 + OCR 冒烟（分钟级 ✓）
+python scripts/check_deploy.py --json     # 机器读（贴进验收单 ✓）
+```
+
+**✗ 阻断**（不修就出不了交付件 ✓）：python < 3.9 ✓ · 缺 `fitz`/`fontTools` ✓ ·
+**缺 `data/`** ⇒ **启动即失败** ✓（项目根靠 `data/parameter-specs.json` 认 ✓）· 缺 `scripts/` ✓ ·
+`uploaded-docs/` 与 `reports/tasks/` **写不进去** ✓。
+**⚠ 提醒**（能力降级 ✓）：没装 easyocr ⇒ 「图内数值（OCR）」那列没有 ✓ ·
+没配模型凭据 ⇒ 问答/草稿不可用 ✓（确定性流水线不受影响 ✓）· 没配 `DATABASE_URL` ⇒ **重启丢数据** ✓ ·
+没配字体路径 ⇒ 可能出豆腐块 ✓。
+
+### 依赖（**运行时真的会调 python** ✓）
+
+| 依赖 | 谁用 | 装不上会怎样 |
+|---|---|---|
+| Python ≥ 3.9 | 运行时**六处** ✓：抽图 / 裁字 / 渲染自检 / MinerU sidecar / 参数抽取 / 表格抽取 | **交付件出不来** ✗ |
+| `PyMuPDF`（fitz） | 抽图、回源 | 图版空 ✗ |
+| `fontTools` | 字体裁字 | 不裁字 ⇒ Chromium 在 100 MB 处**崩** ✗ |
+| `Pillow` + `numpy` | pHash / OCR | 多模态的图那一层没有 ✗ |
+| `easyocr` + `torch`（**可选** ✓，~2 GB） | 图内数值（OCR） | 只有那一列没有 ✓，其余多模态照常 ✓ |
+
+装法：`pip install -r requirements.txt` ✓；要 OCR 那层再 `pip install -r requirements-ocr.txt` ✓。
+
+### 容器
+
+```bash
+docker build -t regulatory-copilot .                    # 默认**不装** OCR（省 2 GB ✓）
+docker build --build-arg INSTALL_OCR=1 -t regulatory-copilot .   # 要图内数值那层 ✓
+
+docker run -d -p 3000:3000 --env-file .env \
+  -v /srv/copilot/uploads:/app/uploaded-docs \
+  -v /srv/copilot/reports:/app/reports \
+  regulatory-copilot
+```
+
+`Dockerfile` 现在做的事（2026-11-19 改 ✓）：
+装 **python3+pip** ✓ 与中文字体 ✓ · 装 `requirements.txt` ✓（OCR 层按 build arg ✓）·
+拷 `dist/ server/ shared/ scripts/ data/ web/ uploaded-docs/ reports/` ✓ ·
+**端口 3000**（与 `.env.example` 一致 ✓ —— 以前 8080 vs 3000 ⇒ 部署时对不上 ✗）·
+**HEALTHCHECK** 打 `/api/health` ✓（这个端点本来就有 ✓ —— 只回身份、不回业务数据 ✓）。
+
+### 数据与合规（**上传的是客户标准全文** ⚠）
+
+- 源 PDF 落在 `/app/uploaded-docs` ✓、报告落在 `/app/reports/tasks/<任务 id>/` ✓ ⇒
+  **这两个目录要挂成卷** ✓，并定**谁能看到、留多久** ⚠；
+- `.env` 里的 key **绝不进版本库** ✓（`gitignore` ✓）——
+  提交前必须扫：`git grep --cached -I -E "sk-[A-Za-z0-9_-]{20,}" -- .` ✓ 必须没有输出 ✓。
+
+### 性能与并发（**实测** ✓）
+
+出报告 = MinerU sidecar ✓ + 抽图 109 张 ✓ + OCR 109 张（~3–5 分钟 ✓）+ 渲染 328 页（40–60s ✓）
+⇒ **首份报告按分钟计** ✓。Chromium 是重资源 ⇒ **并发限 1–2 个任务** ✓。
+
+### 服务器上的验收（**唯一能证明「这台机器上能出交付件」的办法** ✓）
+
+```bash
+npm run verify     # 200 项闸门 ✓，含**真渲染一份 PDF** ✓ —— 红了不许上线 ✓
+```
+
+### 还没做的（**说清楚，别以为齐了** ✗）
+
+docker-compose / K8s 清单 ✗ · 监控与日志 ✗ · 自动备份 ✗ · CI（现在靠人跑闸门 ✓）✗ ·
+多实例与共享存储 ✗ · **Dockerfile 从没在真服务器上构建过** ✗（本地无 Docker ✓）——
+**第一次上线请留人盯日志** ✓。
 
 ---
 
@@ -245,7 +319,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 
 | 项 | 数 |
 |---|---|
-| 闸门 | **199 项全绿** ✓ |
+| 闸门 | **200 项全绿** ✓ |
 | 交付件 | **328 页** · 22 条书签 · **102 张图** · **13.36 MB** |
 | 引文回源 | **517 / 517 命中** ✓ |
 | 矩阵 | 319 参数 × 3 版 = **957 格** · 数值/条款/页码未变；本轮修正比较符号与边界判定，详见 docs/source-review-2026-11-13.md |
@@ -385,7 +459,7 @@ python -B scripts/discover_requirements.py --pdf <pdf> --version <标签> --page
 ## 附：常用命令速查
 
 ```bash
-npm run verify                                   # 199 项闸门
+npm run verify                                   # 200 项闸门
 npm run briefing                                 # 重出讲稿
 node rebuild_report.mjs                          # 重建报告 JSON
 node render_to_pdfdir.mjs                        # 出交付件

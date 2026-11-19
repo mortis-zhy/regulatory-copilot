@@ -1,0 +1,14 @@
+# 运行时 Python 依赖 —— **容器与服务器都要装这些** ✓
+#
+# 运行时**真的会调 python** ✓（不是可选的构建工具 ✗）：
+#   · fitz(PyMuPDF) —— 抽图（scripts/extract_figures.py）、PDF 文本层、回源核对
+#   · fontTools      —— 字体裁字（scripts/subset_fonts.py）：不裁字时 Chromium 会在 100 MB 处崩 ✗
+#   · Pillow / numpy —— 图像处理（scripts/hash_figures.py 的 pHash、scripts/ocr_figures.py 的 OCR）
+#
+# **图内数值（OCR）那一层是可选的** ✓ —— 它要带 torch（约 2 GB）✓，
+# 不装就装 `requirements-ocr.txt` ✓（详见那个文件）✓。
+
+PyMuPDF>=1.24
+fonttools>=4.50
+Pillow>=10.0
+numpy>=1.26

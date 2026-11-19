@@ -1,0 +1,26 @@
+# 构建上下文瘦身 ✓
+#
+# 为什么必须有这个 ✓：仓库有 **1.1 GB** ✓ —— 全传一遍要好几分钟 ✓，
+# 而且 **node_modules 传进去会让 `pnpm install` 出岔子** ✗
+# （容器里的依赖必须由 lockfile 装出来 ✓，不能拿宿主机的搬进去 ✗）。
+
+node_modules
+**/node_modules
+.git
+.gitignore
+.gitattributes
+
+# 构建产物 —— 镜像里由 `pnpm build` **重新生成** ✓（不搬宿主机的 ✓）
+dist
+**/dist
+
+# 交付物与临时目录 —— 镜像里用不到 ✓（图版与 OCR 结果在 reports/*.json ✓）
+delivery
+tmp
+**/*.log
+reports/*.pdf
+reports/.verify-render.pdf
+
+.DS_Store
+.vscode
+.idea

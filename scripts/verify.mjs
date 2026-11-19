@@ -574,6 +574,67 @@ check("多模态进了问答层（图/表能问，且带同一条界线）", () 
   return "图/表/反查/符号都能问，且界线与报告一致（近似≠一致 · OCR 只是提示 · 文本≠实质变化 · 语义须人判）";
 });
 
+check("the container image would still be able to run (packaging is not stale)", () => {
+  // 部署到公司服务器这件事，**只有包装对**才谈得上 ✓。
+  //
+  // 这道关盯的是**曾经真的翻过的车** ✓：
+  //  · 旧 Dockerfile **没装 python** ⇒ 运行时六处 spawn python 全失败 ✗
+  //    （抽图 / 裁字 / 渲染自检 / sidecar / 参数抽取）⇒ 容器里**出不了交付件** ✗；
+  //  · 旧 Dockerfile **没拷 data/** ⇒ 项目根解析不到 ⇒ **启动即失败** ✗；
+  //  · 旧端口 8080 vs `.env.example` 的 3000 ⇒ 部署时对不上 ✗；
+  //  · 没有 HEALTHCHECK ⇒ 编排器只能靠人盯 ✗。
+  //
+  // 判据是**静态**的 ✓（这个闸门里不跑 docker ✓ —— 闸门要快 ✓）；
+  // 运行时那一份是 `python scripts/check_deploy.py` ✓（服务器上跑 ✓）。
+  const df = read("Dockerfile");
+  assert(!!df, "没有 Dockerfile —— 服务器上怎么部署？");
+  assert(/python3/.test(df), "Dockerfile 里**没有 python** ✗ —— 运行时六处要调它 ✓（抽图/裁字/自检/sidecar/参数抽取）");
+  assert(
+    /requirements\.txt/.test(df),
+    "Dockerfile 里**没装 requirements.txt** ✗ —— 容器里的 fitz/fontTools/Pillow/numpy 会缺 ✗",
+  );
+  for (const dir of ["scripts", "data", "web"]) {
+    assert(
+      new RegExp(`COPY[^\\n]*${dir}`).test(df),
+      `Dockerfile 里**没拷 ${dir}/** ✗ —— 少了它：项目根解析不到（data/）⇒ 启动即失败 ✗；` +
+        `python 脚本跑不了（scripts/）✗；确认页 404（web/）✗`,
+    );
+  }
+  // **端口**必须与 .env.example 一致 ✓ —— 不一致 = 部署时「连不上」✗。
+  const envExample = read(".env.example");
+  const port = (envExample.match(/^PORT=(\d+)/m) || [])[1];
+  assert(!!port, ".env.example 里没有 PORT —— 部署时端口从哪来？");
+  assert(
+    new RegExp(`EXPOSE\\s+${port}\\b`).test(df),
+    `Dockerfile 的 EXPOSE 与 .env.example 的 PORT（${port}）不一致 ✗ —— 部署时「连不上」✗`,
+  );
+  assert(/HEALTHCHECK/.test(df), "Dockerfile 里**没有 HEALTHCHECK** ✗ —— 编排器只能靠人盯 ✗");
+
+  // **依赖清单**要覆盖运行时真正用的模块 ✓
+  const req = read("requirements.txt");
+  for (const mod of ["PyMuPDF", "fonttools", "Pillow", "numpy"]) {
+    assert(new RegExp(mod, "i").test(req), `requirements.txt 里没有 ${mod} ✗ —— 对应能力会缺 ✗`);
+  }
+  assert(
+    /easyocr/.test(read("requirements-ocr.txt")),
+    "requirements-ocr.txt 里没有 easyocr ✗ —— 「图内数值（OCR）」那层装不上 ✗",
+  );
+
+  // **部署自检脚本**要在 ✓，且交接文档要指路 ✓ —— 没人跑的自检 = 没有自检 ✗
+  assert(existsSync(resolve(ROOT, "scripts/check_deploy.py")), "没有 scripts/check_deploy.py ✗");
+  assert(
+    read("HANDOVER.md").includes("check_deploy.py"),
+    "HANDOVER.md 里没有提 check_deploy.py ✗ —— 没人知道要跑它 ✗",
+  );
+
+  // **构建上下文**要瘦身 ✓ —— 1.1 GB 的仓库全传进去 = 每次构建好几分钟 ✗
+  const di = read(".dockerignore");
+  assert(/node_modules/.test(di), ".dockerignore 里没排 node_modules ✗ —— 宿主机的依赖会混进镜像 ✗");
+  assert(/^dist/m.test(di), ".dockerignore 里没排 dist ✗ —— 镜像里会带宿主机的构建产物 ✗");
+
+  return `Dockerfile 装 python ✓ 拷 data/scripts/web ✓ 端口 ${port} ✓ 健康检查 ✓ 依赖清单齐 ✓`;
+});
+
 check("参数查询对空格不敏感（查不到 ≠ 不存在）", () => {
   // **这条闸门是被一次真实假阴性逼出来的。**
   // 浏览器演示时 agent 查「ADS标志灯」（少一个空格），

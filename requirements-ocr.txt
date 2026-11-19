@@ -1,0 +1,18 @@
+# 图内数值（OCR）那一层的依赖 —— **可选** ✓
+#
+# ## 装它会多什么
+# torch + easyocr ≈ **2 GB** ✓ —— 所以单独成一个文件 ✓，
+# 让「不需要这层」的机器只装 requirements.txt ✓（省 2 GB ✓）。
+#
+# ## 不装会怎样
+# · 报告里的「图内数值（OCR）」那一列**没有** ✓（其余多模态照常 ✓：图版、配对、逐格、人工标注）；
+# · `reports/figure-ocr.json` 不更新 ⇒ 闸门「every figure in the gallery has an OCR result」
+#   会红 ✓（**如实说**没有这层 ✓，不假装有 ✓）；
+# · `scripts/ocr_figures.py` 直接报「没装 easyocr」✓。
+#
+# 权重**离线可用** ✓ —— easyocr 第一次用会下模型（约 60 MB）✓；
+# 服务器上要么提前把 `~/.EasyOCR/model` 拷进去 ✓，要么让它联网下一次 ✓。
+
+-r requirements.txt
+easyocr>=1.7.2
+torch>=2.2
