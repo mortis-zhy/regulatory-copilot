@@ -47,6 +47,9 @@ function blobOf(rel) {
   return execFileSync("git", ["cat-file", "blob", `HEAD:${rel}`], {
     cwd: ROOT,
     encoding: "buffer",
+    // **默认 1 MB 上限不够** ✗ —— `reports/last-report.json` 有 1.9 MB ✓、
+    // 源 PDF 有 5 MB ✓ ⇒ 不给上限直接 ENOBUFS ✗（实测踩过 ✓）。
+    maxBuffer: 64 * 1024 * 1024,
   });
 }
 
