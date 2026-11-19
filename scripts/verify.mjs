@@ -659,8 +659,16 @@ check("the container image would still be able to run (packaging is not stale)",
     committedMan !== null,
     "找不到 deploy/manifest.txt ✗ —— 跑 node scripts/build_deploy_manifest.mjs ✓",
   );
+  // **`# commit` 那行要排除再比** ✓ —— 清单是**先按某个 commit 生成、再自己提交**的 ✓
+  // ⇒ 提交后 HEAD 变了 ⇒ 那行必然对不上 ✗（自指 ✗）⇒ 只比**文件清单与 sha256** ✓。
+  const stripCommit = (s) =>
+    String(s)
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .filter((l) => !l.startsWith("# commit "))
+      .join("\n");
   assert(
-    freshMan.replace(/\r\n/g, "\n") === String(committedMan).replace(/\r\n/g, "\n"),
+    stripCommit(freshMan) === stripCommit(committedMan),
     "**部署清单与 HEAD 对不上** ✗ —— 服务器拉完逐个核对 sha256 会**当场红** ✗（实测踩过 ✓）。\n" +
       "        重出：node scripts/build_deploy_manifest.mjs",
   );
