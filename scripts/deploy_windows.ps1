@@ -34,8 +34,11 @@
 #>
 param(
   [string]$InstallDir = "C:\gea\regulatory-copilot",
-  # **逐文件**拉取用这个 base ✓（raw.githubusercontent.com 实测 3.1 MB/s ✓）
-  [string]$RepoRawBase = "https://raw.githubusercontent.com/mortis-zhy/regulatory-copilot/main",
+  # **逐文件**拉取用这两个 base ✓ ——
+  #   jsDelivr 实测 **0.21 MB/s** ✓（比 raw 稳 ✓）；
+  #   raw 实测会**超时**（curl code 28 ✗）⇒ 只作**兜底** ✓。
+  [string]$RepoJsDelivr = "https://cdn.jsdelivr.net/gh/mortis-zhy/regulatory-copilot",
+  [string]$RepoRawBase  = "https://raw.githubusercontent.com/mortis-zhy/regulatory-copilot/main",
   [string]$WorkDir    = "C:\gea\rc-build",
   [int]$Port         = 3000,
   [switch]$SkipDownload,
@@ -88,7 +91,7 @@ Say ("python_path=" + $py)
 #   · **Invoke-WebRequest 会「挂住」** ✗ —— 连接建立后一个字节都不来，
 #     `-TimeoutSec` **管不住它** ✗（实测：一个 0.1 MB 的小文件卡了 **16 分钟** ✗），
 #     而 **curl.exe 有 `--max-time`** ✓ ⇒ 换 curl ✓（Windows 10+ 自带 ✓）。
-function Fetch-File($url, $dest, $tries = 4) {
+function Fetch-File($url, $dest, $tries = 6) {
   $curl = Get-Command curl.exe -EA SilentlyContinue
   if ($curl) {
     for ($i = 1; $i -le $tries; $i++) {
@@ -134,11 +137,19 @@ if (-not $SkipDownload) {
   New-Item -ItemType Directory -Force -Path $src | Out-Null
 
   $manifestPath = Join-Path $src "manifest.txt"
-  $manifestUrl = "$RepoRawBase/deploy/manifest.txt"
-  Say "取部署清单：$manifestUrl"
-  if (-not (Fetch-File $manifestUrl $manifestPath)) { throw "取部署清单失败 ✗" }
-  $manifest = Get-Content $manifestPath -Encoding UTF8 | Where-Object { $_ -and -not $_.StartsWith("#") }
-  Say ("清单 {0} 个文件 ✓" -f $manifest.Count)
+  # **清单本身**先试 jsDelivr ✓，再试 raw ✓（两边都可能抽风 ✓）。
+  $manifestUrls = @("$RepoJsDelivr@main/deploy/manifest.txt", "$RepoRawBase/deploy/manifest.txt")
+  $got = $false
+  foreach ($u in $manifestUrls) {
+    if (Fetch-File $u $manifestPath 3) { $got = $true; break }
+  }
+  if (-not $got) { throw "取部署清单失败 ✗（两个源都试过了 ✗）" }
+  $manifestLines = Get-Content $manifestPath -Encoding UTF8
+  $commit = ""
+  foreach ($l in $manifestLines) { if ($l -match "^#\s*commit\s+([0-9a-f]{40})") { $commit = $matches[1]; break } }
+  if (-not $commit) { throw "清单里没有 commit 号 ✗ —— 服务器会拿到**不确定哪一版**的源码 ✗" }
+  $manifest = $manifestLines | Where-Object { $_ -and -not $_.StartsWith("#") }
+  Say ("清单 {0} 个文件 ✓（commit {1} ✓）" -f $manifest.Count, $commit.Substring(0, 8))
 
   $i = 0
   foreach ($line in $manifest) {
@@ -148,7 +159,6 @@ if (-not $SkipDownload) {
     $sha = $parts[0].Trim()
     $rel = $parts[1].Trim()
     $enc = ($rel -split "/" | ForEach-Object { [uri]::EscapeDataString($_) }) -join "/"
-    $url = "$RepoRawBase/$enc"
     $dest = Join-Path $src $rel
     $dir = Split-Path $dest -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
@@ -157,9 +167,13 @@ if (-not $SkipDownload) {
       if ($i % 50 -eq 0) { Say ("已核对 {0}/{1} 个（跳过重下 ✓）" -f $i, $manifest.Count) }
       continue
     }
-    if (-not (Fetch-File $url $dest)) { throw "拉源码失败（{0}）✗" -f $rel }
-    $got = (Get-FileHash -Path $dest -Algorithm SHA256).Hash.ToLower()
-    if ($got -ne $sha.ToLower()) { throw ("**sha256 不符**：{0} ✗（下载损坏 ✗）" -f $rel) }
+    # **钉住 commit** ✓ ⇒ 不会拿到 CDN 缓存里的旧版 ✗；两个源都试 ✓。
+    $urls = @("$RepoJsDelivr@$commit/$enc", "$RepoRawBase/$commit/$enc")
+    $ok2 = $false
+    foreach ($u in $urls) { if (Fetch-File $u $dest 3) { $ok2 = $true; break } }
+    if (-not $ok2) { throw "拉源码失败（{0}）✗" -f $rel }
+    $got2 = (Get-FileHash -Path $dest -Algorithm SHA256).Hash.ToLower()
+    if ($got2 -ne $sha.ToLower()) { throw ("**sha256 不符**：{0} ✗（下载损坏 ✗）" -f $rel) }
     if ($i % 50 -eq 0) { Say ("已拉并核对 {0}/{1} 个 ✓" -f $i, $manifest.Count) }
   }
   Say ("源码全部拉完并**逐个核对 sha256** ✓（{0} 个文件 ✓）" -f $manifest.Count)

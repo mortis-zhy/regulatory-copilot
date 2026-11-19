@@ -63,10 +63,12 @@ function wanted(rel) {
 }
 
 const files = tracked().filter(wanted).sort();
+const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
 const lines = [
-  "# 部署清单 —— 服务器按它逐个文件从 raw.githubusercontent 拉 ✓",
+  "# 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓",
   "# 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓",
   "# sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）",
+  `# commit ${commit}   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）`,
   `# 生成器：scripts/build_deploy_manifest.mjs · 文件数 ${files.length}`,
 ];
 let bytes = 0;
