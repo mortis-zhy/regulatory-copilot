@@ -109,7 +109,7 @@ function Fetch-File($url, $dest, $tries = 4) {
 if (-not $SkipDownload) {
   New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
   $src = Join-Path $WorkDir "src"
-  if (Test-Path $src) { Remove-Item -Recurse -Force $src }
+  # **不删已拉的文件** ✓ —— 重跑时按 sha 跳过 ✓（每个文件一次请求 ⇒ 一次要 25 分钟 ✗）。
   New-Item -ItemType Directory -Force -Path $src | Out-Null
 
   $manifestPath = Join-Path $src "manifest.txt"
@@ -131,6 +131,11 @@ if (-not $SkipDownload) {
     $dest = Join-Path $src $rel
     $dir = Split-Path $dest -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    # **已经对上了就不重下** ✓ —— 重跑部署时省掉几百次请求 ✓（实测一次要 25 分钟 ✗）。
+    if ((Test-Path $dest) -and ((Get-FileHash -Path $dest -Algorithm SHA256).Hash.ToLower() -eq $sha.ToLower())) {
+      if ($i % 50 -eq 0) { Say ("已核对 {0}/{1} 个（跳过重下 ✓）" -f $i, $manifest.Count) }
+      continue
+    }
     if (-not (Fetch-File $url $dest)) { throw "拉源码失败（{0}）✗" -f $rel }
     $got = (Get-FileHash -Path $dest -Algorithm SHA256).Hash.ToLower()
     if ($got -ne $sha.ToLower()) { throw ("**sha256 不符**：{0} ✗（下载损坏 ✗）" -f $rel) }
