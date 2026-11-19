@@ -1,8 +1,8 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit a949e743e71962a98bba67b98d83b2d0359850cb   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
-# 生成器：scripts/build_deploy_manifest.mjs · 文件数 316
+# commit e2811e7341b7ae3751a0c317b28fe469eacb9fc6   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# 生成器：scripts/build_deploy_manifest.mjs · 文件数 318
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
 f2cdf82b77bef683629b9640ff654112abefc0739e01452d74819b2e0d2aef81  client/index.html
@@ -140,6 +140,8 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  drizzle/migrat
 1750ef11f28cc3a184c49eb7a43f8479abd6011ed92ca15b87d7807577bb89a6  reports/last-report.json
 82110d30b2b300a2d48038b701b7c36dbdc4315efe30cb9ba8ceae9b787dc673  reports/multimodal.json
 b07a05e713ee2c8fc38dab3a3a10eb35d7efc4b21b27f818d6927a5b1d2d0655  reports/page-count.json
+cb9fcfe65c34914b80681c63ea949e08566670281c9a7d88a989b50fa789f1eb  requirements-ocr.txt
+112d7db13ea7c9a042785ed6c5dbb46310a3a83ffed35847b0ec63201a7db854  requirements.txt
 303dd650b6bfbb1dcbbb515f83f28ea7c8d3f08c4df2ca66393745df1c659df4  scripts/__init__.py
 89ab47d12ae804b731524bc1794dc79d34e8a4311f49b7d63bfd2984217c8463  scripts/_candidates.json
 9a2af087879c4caac44cf3eb683f09fa2cc5752f4c269823de044b52ff705746  scripts/adopt_spec_proposals.mjs

@@ -40,6 +40,10 @@ const WANT_ROOT_FILES = [
   "index.html",
   ".env.example",
   ".gitignore",
+  // **Python 依赖清单** ✓ —— 服务器要装它们 ✓（抽图/裁字/自检都靠它们 ✗ 少了就装不上 ✓）。
+  // 少了它 ⇒ `pip install -r requirements.txt` 直接 **no such file** ✗（实测踩过 ✓）。
+  "requirements.txt",
+  "requirements-ocr.txt",
 ];
 /** `reports/` 里只要**产物数据** ✓（不要 PDF ✗ —— 交付件在服务器上用不到 ✓）。 */
 const WANT_REPORTS = ["figure-hashes.json", "figure-ocr.json", "multimodal.json", "last-report.json", "page-count.json"];
