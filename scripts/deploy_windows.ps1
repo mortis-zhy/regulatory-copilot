@@ -97,7 +97,10 @@ function Fetch-File($url, $dest, $tries = 4) {
       # ⇒ 调 curl 时把偏好降下来 ✓，**只看 curl 自己的退出码** ✓。
       $prev = $ErrorActionPreference
       $ErrorActionPreference = "SilentlyContinue"
-      & $curl.Source -sS -L --fail --retry 2 --retry-delay 2 --connect-timeout 20 --max-time 180 -o $dest $url 2>$null
+      # **大文件要更长的超时** ✓ —— 那台机器到 raw 的实测带宽只有 **37 KB/s** ✗
+      # （5 MB 的源 PDF 要 **135 秒** ✓，而 `--max-time 180` 刚好卡在边上 ✗ ⇒ 4 次全失败 ✗）。
+      # ⇒ 给 **900 秒** ✓，并且 curl 自己再重试 2 次 ✓（连接被重置是常态 ✓）。
+      & $curl.Source -sS -L --fail --retry 3 --retry-delay 3 --connect-timeout 20 --max-time 900 -o $dest $url 2>$null
       $code = $LASTEXITCODE
       $ErrorActionPreference = $prev
       if ($code -eq 0) { return $true }
