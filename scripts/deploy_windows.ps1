@@ -193,12 +193,30 @@ if (-not (Test-Path $InstallDir)) { throw "没有 $InstallDir ✗" }
 # ── 3. Node 依赖 + 构建（**npm.cmd** ⇒ 绕开执行策略 ✓）─────────────────────
 if (-not $SkipBuild) {
   Push-Location $InstallDir
-  Say "npm install（用 npm.cmd ✓ —— npm.ps1 会被执行策略拦 ✗）"
-  & npm.cmd install --no-audit --no-fund 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-install.log") | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "npm install 失败 ✗（看 $WorkDir\npm-install.log）" }
-  Say "npm run build"
-  & npm.cmd run build 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-build.log") | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "npm run build 失败 ✗（看 $WorkDir\npm-build.log）" }
+  # **用 pnpm** ✓ —— 仓库的锁文件是 `pnpm-lock.yaml` ✓，
+  # 而 `npm install` 会**重新解依赖** ⇒ 实测直接 **ERESOLVE** ✗（peer 冲突 ✗）。
+  # corepack（node 自带 ✓）能装出与本地**同一个** pnpm ✓ ⇒ 装出来的东西一样 ✓。
+  Say "装 pnpm（corepack ✓ —— 与仓库的 pnpm-lock.yaml 对齐 ✓）"
+  try {
+    & corepack enable 2>&1 | Out-Null
+    & corepack prepare pnpm@10.4.1 --activate 2>&1 | Out-Null
+  } catch { Say "corepack 不可用 ⇒ 退回 npm ✗" }
+  $pnpmCmd = (Get-Command pnpm.cmd -EA SilentlyContinue).Source
+  if ($pnpmCmd) {
+    Say "pnpm install --frozen-lockfile ✓"
+    & $pnpmCmd install --frozen-lockfile 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-install.log") | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "pnpm install 失败 ✗（看 $WorkDir\npm-install.log）" }
+    Say "pnpm run build ✓"
+    & $pnpmCmd run build 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-build.log") | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "pnpm run build 失败 ✗（看 $WorkDir\npm-build.log）" }
+  } else {
+    Say "npm install --legacy-peer-deps ✓（没有 pnpm ⇒ 退回 npm ✓）"
+    & npm.cmd install --no-audit --no-fund --legacy-peer-deps 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-install.log") | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "npm install 失败 ✗（看 $WorkDir\npm-install.log）" }
+    Say "npm run build ✓"
+    & npm.cmd run build 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-build.log") | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "npm run build 失败 ✗（看 $WorkDir\npm-build.log）" }
+  }
   Pop-Location
   Say "构建完成 ✓"
 }
