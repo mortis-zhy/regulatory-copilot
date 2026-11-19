@@ -23,6 +23,7 @@ import fs from "node:fs/promises";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { extractTypedTables, type TypedTableEntry as ExtractedTypedTable } from "./typedTables";
+import { browserLaunchOptions } from "./browserLaunch";
 import { prose } from "./reportProse";
 import {
   extractClosureCounts as extractClosureCountsFromMd,
@@ -3337,7 +3338,7 @@ async function measureLayout(page: any, limitPx: number): Promise<LayoutOverflow
  */
 export async function auditHtmlLayout(html: string): Promise<LayoutOverflow[]> {
   const { chromium } = await import("playwright-core");
-  const browser = await chromium.launch({ channel: "chrome" });
+  const browser = await chromium.launch(browserLaunchOptions());
   try {
     const page = await browser.newPage({
       viewport: { width: Math.round(PRINT_CONTENT_WIDTH_PX), height: Math.round(PRINT_CONTENT_HEIGHT_PX) },
@@ -3374,7 +3375,7 @@ export async function renderPdfFromReportV8(report: RenderableReport): Promise<B
   );
   const fonts = await loadFonts({ charset: charsetOf(report) });
   const { chromium } = await import("playwright-core");
-  const browser = await chromium.launch({ channel: "chrome" });
+  const browser = await chromium.launch(browserLaunchOptions());
   try {
     // 视口 = A4 版心 —— 见 PRINT_CONTENT_WIDTH_PX 的注释。
     // **PDF 字节不变**（打印版面由纸张决定），但版面自检量得到的是真版面。

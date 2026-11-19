@@ -169,10 +169,31 @@ docker run -d -p 3000:3000 --env-file .env \
 npm run verify     # 200 项闸门 ✓，含**真渲染一份 PDF** ✓ —— 红了不许上线 ✓
 ```
 
+### 服务器实测（2026-11-19，目标机 `asda`）
+
+| 项 | 值 |
+|---|---|
+| 主机 | `asda`（`192.168.10.169` / Tailscale `100.124.96.115`）· Windows 10.0.26200 · i9-14900HX / 32 GB / **442 GB 空闲** ✓ |
+| SSH | `ssh -i ~/.ssh/gea_deploy 78157@100.124.96.115` ✓（公钥认证 ✓） |
+| 已有 | node **v24.21** ✓ · Python **3.12.10** ✓ · pip 25.0.1 ✓ · **没有 git** ✗ · **没有 Chrome，只有 Edge** ✓ · 中文字体 `msyh.ttc` ✓ |
+| 网络 | github.com / registry.npmjs.org / pypi.org **都通** ✓（0.4–0.5 s ✓）⇒ 服务器**自己**拉源码 ✓（不走隧道传 1 GB ✗） |
+| 端口 | 3000 **空闲** ✓；8766 被另一个服务（出图智能体）占着 ✓ ⇒ 不要动它 ✓ |
+
+⇒ **走 Windows 原生部署** ✓（Docker 要装 WSL2、要重启 ⇒ 太重 ✗）：
+`scripts/deploy_windows.ps1` ✓ —— 下载源码 ✓ → `npm.cmd install` ✓ → `npm run build` ✓ →
+`pip install -r requirements.txt` ✓ → 生成 `.env` ✓ → 写 `run_server.cmd` ✓ →
+注册计划任务 `GEA-Regulatory`（**AtStartup 触发器** ✓）✓ → 关自动睡眠 ✓ → 起服务 ✓ → 健康检查 ✓ → 跑 `scripts/check_deploy.py` ✓。
+
+**踩过的坑（都写进脚本注释了 ✓）**：`npm` 被执行策略拦 ⇒ 用 `npm.cmd` ✓ ·
+长任务不能挂 SSH 会话 ⇒ `Start-Process` 脱离 ✓ · 开机自启必须 **AtStartup** 触发器 ✓ ·
+机器会睡 ⇒ `powercfg` ✓ · 只有 Edge ⇒ `PLAYWRIGHT_CHANNEL=msedge` ✓。
+
 ### 还没做的（**说清楚，别以为齐了** ✗）
 
 docker-compose / K8s 清单 ✗ · 监控与日志 ✗ · 自动备份 ✗ · CI（现在靠人跑闸门 ✓）✗ ·
-多实例与共享存储 ✗。
+多实例与共享存储 ✗ · **公网暴露还没做** ✗（服务器上先绑 `127.0.0.1` ✓，
+只给公司内部经 Tailscale 访问 ✓ —— 公网开之前必须先有**认证 + 每用户隔离 + 限流** ✓，
+这是那台机器上另一个服务已经踩过的坑 ✓）。
 
 ⚠ **镜像构建本身没被验证过** ✗（2026-11-19 实测）：本机有 Docker ✓，
 但 `docker build` **卡在 apt 拉 12 MB 的索引** ✓ —— 实测那个网络里

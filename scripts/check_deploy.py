@@ -245,7 +245,44 @@ def main():
     else:
         r.warn("PORT", "**不是合法端口** ✗（%r）" % port)
 
-    # ── 8. 中文字体（系统里有没有）──────────────────────────────────
+    # ── 8. 渲染用浏览器（**没有它就渲染不出 PDF** ✓）──────────────────
+    exe = env("PLAYWRIGHT_EXECUTABLE_PATH").strip()
+    chan = env("PLAYWRIGHT_CHANNEL").strip()
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    edge_paths = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    ]
+    has_chrome = any(os.path.exists(p) for p in chrome_paths)
+    has_edge = any(os.path.exists(p) for p in edge_paths)
+    if exe and os.path.exists(exe):
+        r.ok("渲染用浏览器", "PLAYWRIGHT_EXECUTABLE_PATH → %s ✓" % exe)
+    elif chan:
+        if chan == "msedge" and has_edge:
+            r.ok("渲染用浏览器", "PLAYWRIGHT_CHANNEL=msedge ✓（找到 Edge ✓）")
+        elif chan == "chrome" and has_chrome:
+            r.ok("渲染用浏览器", "PLAYWRIGHT_CHANNEL=chrome ✓")
+        else:
+            r.error(
+                "渲染用浏览器",
+                "**PLAYWRIGHT_CHANNEL=%s 找不到对应浏览器** ✗ —— 渲染不出 PDF ✗"
+                "（这台机器上 Chrome=%s、Edge=%s ✓）" % (chan, has_chrome, has_edge),
+            )
+    elif has_chrome:
+        r.ok("渲染用浏览器", "系统 Chrome ✓（默认走它 ✓）")
+    elif has_edge:
+        r.warn(
+            "渲染用浏览器",
+            "**只有 Edge，没有 Chrome** ✗ ⇒ `.env` 里加一行 `PLAYWRIGHT_CHANNEL=msedge` ✓"
+            "（不配的话渲染会直接失败 ✗ ⇒ 出不了交付件 ✗）",
+        )
+    else:
+        r.error("渲染用浏览器", "**既没有 Chrome 也没有 Edge** ✗ ⇒ 渲染不出 PDF ✗")
+
+    # ── 9. 中文字体（系统里有没有）──────────────────────────────────
     fc = shutil.which("fc-list")
     if fc:
         try:
@@ -261,7 +298,7 @@ def main():
     else:
         r.warn("系统中文字体", "**没有 fc-list** ✗ ⇒ 没法查字体（容器里 fonts-noto-cjk 装了就有 ✓）")
 
-    # ── 9. 深度冒烟 ─────────────────────────────────────────────────
+    # ── 10. 深度冒烟 ────────────────────────────────────────────────
     if args.deep:
         if not pdfs:
             r.error("抽图冒烟", "没有源 PDF 可试 ✗")

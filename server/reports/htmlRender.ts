@@ -14,6 +14,7 @@ import type { ReportOutline, AppendixSpec } from "./reportGenerator";
 import { cleanDocName } from "@shared/versionFileName";
 import { fallbackSourceCards, versionKeys, versionKeysByConsultOrder, versionCoverRole, versionLabel, versionDoc, versionDocNoRev } from "@shared/versionMeta";
 import { composePdfMeta, composeReportNumber, cnNum, titleSlots } from "./reportMeta";
+import { browserLaunchOptions } from "./browserLaunch";
 export { cleanDocName };
 
 /** PDF 文件属性 —— 声明里的模板 + 版本槽位。 */
@@ -386,9 +387,10 @@ ${appendixHtml}
 export async function renderPdfFromReport(report: RenderableReport): Promise<Buffer> {
   const html = buildHtml(report);
   // Dynamic import keeps esbuild from trying to bundle Playwright for node.
-  // playwright-core reuses the system Chrome (channel: "chrome").
+  // playwright-core reuses the **system** browser ✓ —— 默认 Chrome ✓，
+  // 服务器上只有 Edge 时用 `PLAYWRIGHT_CHANNEL=msedge` ✓（见 browserLaunch.ts ✓）。
   const { chromium } = await import("playwright-core");
-  const browser = await chromium.launch({ channel: "chrome" });
+  const browser = await chromium.launch(browserLaunchOptions());
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "load" });
