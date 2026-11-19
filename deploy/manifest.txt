@@ -1,8 +1,8 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 10dc42872ced0fac9824640e67565a697f2b6305   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
-# 生成器：scripts/build_deploy_manifest.mjs · 文件数 320
+# commit 2d13696d310aa69dcafaa68eb4fe35e2f4f42769   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# 生成器：scripts/build_deploy_manifest.mjs · 文件数 321
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
 f2cdf82b77bef683629b9640ff654112abefc0739e01452d74819b2e0d2aef81  client/index.html
@@ -169,7 +169,7 @@ cb42fac1a2d99a580043a2ce9070cb12ff6edeceb4be873316533e5e92249963  scripts/check_
 928dcc7a6dcc6425048521dd32ae2c3ef3747cf43f3881c4a92c8d5fa4aa3dc6  scripts/clause_gap_check.py
 f4bfda10f9139f00b650d16f46b71c4796abfa49c0a4ab03c3fd3e80b12f11b6  scripts/clause_index_src.py
 38015a637e9da7459682b6ad51468622de43db1d16102d2cea6c75c373e3dd60  scripts/clause_page_check.py
-b2f4cc5939b79c76505408d0a50ee40d30439f578a71d3fce27540d7e2bf31e8  scripts/clause_split.py
+e7b8b9142f94100f6253fe3bf147472e27ef446df38d3d810989122012498a6b  scripts/clause_split.py
 3ab50c6334e470b0e919d776e7986d0f5436af15adb456a40f2a90f6125a3405  scripts/clause_value_check.py
 c9c68f276639107ef5897d69b66971cb6d62e44d3677b4308f21aa0aa21db8ed  scripts/compare_corroboration_tiers.py
 01369d2d41a636666b54bd0d29d84898e28fb83a9ddcf96dc43a535d961f436f  scripts/compare_pdfs.py
@@ -210,12 +210,13 @@ de7f8ecb19891b11ba6268c10c11f063b07e1584c7667dc56aee590d14919d2d  scripts/scan_h
 ef092f8767516d05e39e90e85a0fbef80395fb53949f12b40417bd17dec36d79  scripts/standard_pack.py
 020f0b212662670299e1032ed31314f22c025f5553fc0aa2744c187592fc171e  scripts/subset_fonts.py
 2f26bec2b9157602e78ef8a1c15133c155083a515cf17b2087be1052c0c6c271  scripts/table_quality.py
+3ddae7743392ba3cf2b9946aede56cfc983315b655f857bc4bb2a78043169fd9  scripts/test_clause_split.py
 72204bfa4db48971784df1e89a5f846c6eef6a301700533b1da577d15d99d219  scripts/test_diff_corrections.py
 c82c91ecd17d38eae2952a36ddb5f480195c85761bd7bde1c4b54ebda9587c3c  scripts/test_diff_evidence.py
 0fadc3e353b6b87279bf3a255ac3068cc08dd156e1f872dd5a7ad4f27148c666  scripts/test_label_source.py
 35e6106e70633d0b98ac886c7288420380562ba41dd0a231b6a24a2d638196fb  scripts/test_no_side_effects.py
 a74427786ff99373b218d6b611165f6a616e5ca1b937534e57cca5aee33614db  scripts/test_requirement_discovery.py
-37832d3cdc91a1794b466210b8800d4fc6b4a42ddad0e61ea65480e0c7179c97  scripts/verify.mjs
+e383a432ff42a8b956ab8d5796de28fc680b7a3502085105d64c0453aab2e445  scripts/verify.mjs
 5c3073e05eee0034eff28b88aaebb106f4d379e2017301b5d407cc9c10da064f  scripts/verify_decision_brief.py
 a27d6127aee197b67b21bdfff0affea8ffb72282becb113f6097f8148bf21ac7  scripts/verify_indicators.py
 74b5b8e842d6b0c6449f90d5f1c5f8196e550d0c12913efc10d2ee3b7309c217  scripts/verify_lamp_color_map.py
