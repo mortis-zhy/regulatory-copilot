@@ -21,7 +21,15 @@ RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
 # PDF 渲染要中文字体 ✓（交付件全是中文 ✓）；
 # **python3 + pip** ✓ —— 运行时六处要调它 ✓（见文件头 ✓）。
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
+# **只用 gzip 的索引** ✓ —— 实测（2026-11-19，本机网络）：
+#   Packages.xz 8.8 MB → **125 秒**（约 70 KB/s）✗ ⇒ 构建卡在这一步十几分钟 ✗；
+#   Packages.gz 12 MB → **5 秒** ✓；不压缩的 Packages → 只回 300 字节（被拦）✗。
+# 所以**强制 gzip** ✓ —— 不是洁癖，是**不让构建卡死** ✓。
+RUN apt-get update -y \
+      -o Acquire::CompressionTypes::Order::=gz \
+      -o Acquire::Languages=none \
+      -o Acquire::Retries=3 \
+ && apt-get install -y --no-install-recommends \
       fonts-noto-cjk \
       python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
