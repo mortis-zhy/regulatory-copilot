@@ -92,8 +92,15 @@ function Fetch-File($url, $dest, $tries = 4) {
   $curl = Get-Command curl.exe -EA SilentlyContinue
   if ($curl) {
     for ($i = 1; $i -le $tries; $i++) {
-      & $curl.Source -sS -L --fail --connect-timeout 20 --max-time 180 -o $dest $url 2>$null
-      if ($LASTEXITCODE -eq 0) { return $true }
+      # **curl 往 stderr 写一行错误 ⇒ 在 `$ErrorActionPreference="Stop"` 下 PowerShell
+      # 会把它当**异常抛出来** ✗（实测：`curl: (56) Recv failure` 直接终止整个部署 ✗）。
+      # ⇒ 调 curl 时把偏好降下来 ✓，**只看 curl 自己的退出码** ✓。
+      $prev = $ErrorActionPreference
+      $ErrorActionPreference = "SilentlyContinue"
+      & $curl.Source -sS -L --fail --retry 2 --retry-delay 2 --connect-timeout 20 --max-time 180 -o $dest $url 2>$null
+      $code = $LASTEXITCODE
+      $ErrorActionPreference = $prev
+      if ($code -eq 0) { return $true }
       Start-Sleep -Seconds (2 * $i)
     }
     Say ("下载失败 {0}（curl 重试 {1} 次）✗" -f $url, $tries)
