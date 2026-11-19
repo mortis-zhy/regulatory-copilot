@@ -34,7 +34,8 @@
 #>
 param(
   [string]$InstallDir = "C:\gea\regulatory-copilot",
-  [string]$RepoZipUrl = "https://github.com/mortis-zhy/regulatory-copilot/archive/refs/heads/main.zip",
+  # **逐文件**拉取用这个 base ✓（raw.githubusercontent.com 实测 3.1 MB/s ✓）
+  [string]$RepoRawBase = "https://raw.githubusercontent.com/mortis-zhy/regulatory-copilot/main",
   [string]$WorkDir    = "C:\gea\rc-build",
   [int]$Port         = 3000,
   [switch]$SkipDownload,
@@ -82,31 +83,55 @@ Say ("node=" + (& node --version 2>&1))
 Say ("python=" + (& $py --version 2>&1))
 Say ("python_path=" + $py)
 
-# ── 2. 取源码（服务器自己能连 GitHub ✓ ⇒ 不走隧道传 1 GB ✗）─────────────
+# ── 2. 取源码（**逐个文件**从 raw 拉 ✓ —— 整仓 zip 太慢 ✗）──────────────
+#
+# 实测（2026-11-19）：整仓 zip（codeload）**37 KB/s** ✗（300 MB 要几小时 ✗）；
+# 单个文件（raw）**3.1 MB/s** ✓ ⇒ 逐个拉 ✓（315 个文件 · 22.5 MB ✓）。
+# 清单 `deploy/manifest.txt` 带 **sha256** ✓ ⇒ 拉完逐个核对 ✓。
 if (-not $SkipDownload) {
   New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
-  $zip = Join-Path $WorkDir "repo.zip"
-  Say "下载源码：$RepoZipUrl"
-  # 下载可能慢（仓库里带交付件 PDF ✓）⇒ 给足超时 ✓
+  $src = Join-Path $WorkDir "src"
+  if (Test-Path $src) { Remove-Item -Recurse -Force $src }
+  New-Item -ItemType Directory -Force -Path $src | Out-Null
+
+  $manifestPath = Join-Path $src "manifest.txt"
+  $manifestUrl = "$RepoRawBase/deploy/manifest.txt"
+  Say "取部署清单：$manifestUrl"
   $ProgressPreference = "SilentlyContinue"
-  Invoke-WebRequest -Uri $RepoZipUrl -OutFile $zip -TimeoutSec 1800 -UseBasicParsing
-  Say ("下载完成：{0:N1} MB" -f ((Get-Item $zip).Length / 1MB))
-  $tmp = Join-Path $WorkDir "unpack"
-  if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
-  Expand-Archive -Path $zip -DestinationPath $tmp -Force
-  $root = Get-ChildItem $tmp -Directory | Select-Object -First 1
-  if (-not $root) { throw "解压后没找到源码目录 ✗" }
-  # **交付件 PDF 在服务器上用不到** ✗ ⇒ 删掉省空间 ✓（几十 MB ✓）
-  if (Test-Path (Join-Path $root.FullName "delivery")) {
-    Remove-Item -Recurse -Force (Join-Path $root.FullName "delivery")
-    Say "已删掉 delivery/（服务器上用不到 ✓）"
+  Invoke-WebRequest -Uri $manifestUrl -OutFile $manifestPath -TimeoutSec 300 -UseBasicParsing
+  $manifest = Get-Content $manifestPath -Encoding UTF8 | Where-Object { $_ -and -not $_.StartsWith("#") }
+  Say ("清单 {0} 个文件 ✓" -f $manifest.Count)
+
+  $i = 0
+  foreach ($line in $manifest) {
+    $i++
+    $parts = $line -split "\s+", 2
+    if ($parts.Count -lt 2) { continue }
+    $sha = $parts[0].Trim()
+    $rel = $parts[1].Trim()
+    $enc = ($rel -split "/" | ForEach-Object { [uri]::EscapeDataString($_) }) -join "/"
+    $url = "$RepoRawBase/$enc"
+    $dest = Join-Path $src $rel
+    $dir = Split-Path $dest -Parent
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+    try {
+      Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 300 -UseBasicParsing
+    } catch {
+      Say ("下载失败 {0}：{1}" -f $rel, $_.Exception.Message.Substring(0, [Math]::Min(80, $_.Exception.Message.Length)))
+      throw "拉源码失败（{0}）✗" -f $rel
+    }
+    $got = (Get-FileHash -Path $dest -Algorithm SHA256).Hash.ToLower()
+    if ($got -ne $sha.ToLower()) { throw ("**sha256 不符**：{0} ✗（下载损坏 ✗）" -f $rel) }
+    if ($i % 50 -eq 0) { Say ("已拉并核对 {0}/{1} 个 ✓" -f $i, $manifest.Count) }
   }
+  Say ("源码全部拉完并**逐个核对 sha256** ✓（{0} 个文件 ✓）" -f $manifest.Count)
+
   if (Test-Path $InstallDir) {
     Say "旧的 $InstallDir 保留（不删 ✓ —— 删了就没法回滚 ✗）"
   }
   New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
   # 复制源码（robocopy 比 Copy-Item 稳 ✓ —— 大目录 ✓）
-  robocopy $root.FullName $InstallDir /E /NFL /NDL /NJH /NJS /NP | Out-Null
+  robocopy $src $InstallDir /E /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "robocopy 失败（退出码 $LASTEXITCODE）✗" }
   Say "源码已就位：$InstallDir"
 }
