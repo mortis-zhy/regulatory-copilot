@@ -125,6 +125,19 @@ function Fetch-File($url, $dest, $tries = 6) {
   return $false
 }
 
+# **原生命令的统一调用口** ✓ —— 只看**退出码** ✓，不看 stderr ✓。
+# 为什么：`$ErrorActionPreference = "Stop"` 下，原生命令往 stderr 写一行
+# （pnpm 的 "deprecated … vulnerabilities"、pip 的进度条 ✗）就会**抛异常终止整个部署** ✗
+# —— 实测在服务器上踩过两次 ✓（curl 的 "Recv failure" ✓、pnpm 的警告 ✓）。
+function Invoke-Native($exe, $argList, $logPath) {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "SilentlyContinue"
+  & $exe @argList 2>&1 | Tee-Object -FilePath $logPath | Out-Null
+  $code = $LASTEXITCODE
+  $ErrorActionPreference = $prev
+  return $code
+}
+
 # ── 2. 取源码（**逐个文件**从 raw 拉 ✓ —— 整仓 zip 太慢 ✗）──────────────
 #
 # 实测（2026-11-19）：整仓 zip（codeload）**37 KB/s** ✗（300 MB 要几小时 ✗）；
@@ -193,29 +206,37 @@ if (-not (Test-Path $InstallDir)) { throw "没有 $InstallDir ✗" }
 # ── 3. Node 依赖 + 构建（**npm.cmd** ⇒ 绕开执行策略 ✓）─────────────────────
 if (-not $SkipBuild) {
   Push-Location $InstallDir
+  # **原生命令往 stderr 写一行 ⇒ 在 `$ErrorActionPreference="Stop"` 下会被当异常抛出来** ✗
+  # （实测：pnpm 打完 "deprecated … vulnerabilities" 就把整个部署**终止**了 ✗）——
+  # 那是**警告**不是失败 ✗ ⇒ 调原生命令时把偏好降下来 ✓，**只看退出码** ✓（见 Invoke-Native ✓）。
   # **用 pnpm** ✓ —— 仓库的锁文件是 `pnpm-lock.yaml` ✓，
   # 而 `npm install` 会**重新解依赖** ⇒ 实测直接 **ERESOLVE** ✗（peer 冲突 ✗）。
   # corepack（node 自带 ✓）能装出与本地**同一个** pnpm ✓ ⇒ 装出来的东西一样 ✓。
   Say "装 pnpm（corepack ✓ —— 与仓库的 pnpm-lock.yaml 对齐 ✓）"
-  try {
-    & corepack enable 2>&1 | Out-Null
-    & corepack prepare pnpm@10.4.1 --activate 2>&1 | Out-Null
-  } catch { Say "corepack 不可用 ⇒ 退回 npm ✗" }
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "SilentlyContinue"
+  & corepack enable 2>&1 | Out-Null
+  & corepack prepare pnpm@10.4.1 --activate 2>&1 | Out-Null
+  $ErrorActionPreference = $prev
   $pnpmCmd = (Get-Command pnpm.cmd -EA SilentlyContinue).Source
   if ($pnpmCmd) {
     Say "pnpm install --frozen-lockfile ✓"
-    & $pnpmCmd install --frozen-lockfile 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-install.log") | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "pnpm install 失败 ✗（看 $WorkDir\npm-install.log）" }
+    if ((Invoke-Native $pnpmCmd @("install", "--frozen-lockfile") (Join-Path $WorkDir "npm-install.log")) -ne 0) {
+      throw "pnpm install 失败 ✗（看 $WorkDir\npm-install.log）"
+    }
     Say "pnpm run build ✓"
-    & $pnpmCmd run build 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-build.log") | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "pnpm run build 失败 ✗（看 $WorkDir\npm-build.log）" }
+    if ((Invoke-Native $pnpmCmd @("run", "build") (Join-Path $WorkDir "npm-build.log")) -ne 0) {
+      throw "pnpm run build 失败 ✗（看 $WorkDir\npm-build.log）"
+    }
   } else {
     Say "npm install --legacy-peer-deps ✓（没有 pnpm ⇒ 退回 npm ✓）"
-    & npm.cmd install --no-audit --no-fund --legacy-peer-deps 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-install.log") | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "npm install 失败 ✗（看 $WorkDir\npm-install.log）" }
+    if ((Invoke-Native "npm.cmd" @("install", "--no-audit", "--no-fund", "--legacy-peer-deps") (Join-Path $WorkDir "npm-install.log")) -ne 0) {
+      throw "npm install 失败 ✗（看 $WorkDir\npm-install.log）"
+    }
     Say "npm run build ✓"
-    & npm.cmd run build 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "npm-build.log") | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "npm run build 失败 ✗（看 $WorkDir\npm-build.log）" }
+    if ((Invoke-Native "npm.cmd" @("run", "build") (Join-Path $WorkDir "npm-build.log")) -ne 0) {
+      throw "npm run build 失败 ✗（看 $WorkDir\npm-build.log）"
+    }
   }
   Pop-Location
   Say "构建完成 ✓"
@@ -224,12 +245,14 @@ if (-not $SkipBuild) {
 # ── 4. Python 依赖（抽图 / 裁字 / 自检 / 抽取都靠它 ✓）───────────────────
 Push-Location $InstallDir
 Say "pip install -r requirements.txt"
-& $py -m pip install --no-warn-script-location -r requirements.txt 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "pip.log") | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "pip install 失败 ✗（看 $WorkDir\pip.log）" }
+if ((Invoke-Native $py @("-m", "pip", "install", "--no-warn-script-location", "-r", "requirements.txt") (Join-Path $WorkDir "pip.log")) -ne 0) {
+  throw "pip install 失败 ✗（看 $WorkDir\pip.log）"
+}
 if ($WithOcr) {
   Say "pip install -r requirements-ocr.txt（torch ~2 GB ⇒ 慢 ✓）"
-  & $py -m pip install --no-warn-script-location -r requirements-ocr.txt 2>&1 | Tee-Object -FilePath (Join-Path $WorkDir "pip-ocr.log") | Out-Null
-  if ($LASTEXITCODE -ne 0) { Say "OCR 依赖没装上 ✗ ⇒「图内数值（OCR）」那一列没有 ✓（其余照常 ✓）" }
+  if ((Invoke-Native $py @("-m", "pip", "install", "--no-warn-script-location", "-r", "requirements-ocr.txt") (Join-Path $WorkDir "pip-ocr.log")) -ne 0) {
+    Say "OCR 依赖没装上 ✗ ⇒「图内数值（OCR）」那一列没有 ✓（其余照常 ✓）"
+  }
 }
 Pop-Location
 
