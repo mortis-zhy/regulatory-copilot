@@ -220,6 +220,17 @@ npm run verify     # 200 项闸门 ✓，含**真渲染一份 PDF** ✓ —— �
 | 健康检查 | `GET /api/health` → **200** ✓（`{"ok":true,"pid":…,"root":"C:\\gea\\regulatory-copilot"}` ✓） |
 | 网页 | `http://100.124.96.115:3000/` → **200** ✓（标题「Regulatory Copilot · 法规智能对比平台」✓，372 KB ✓） |
 | 部署自检 | `python scripts/check_deploy.py` → **无阻断项** ✓（3 条提醒：easyocr 未装 ✓ / `DATABASE_URL` 没设（走 in-memory ✓）/ 没有 `fc-list` ✓） |
+| **问答端到端** | 在服务器上问「A 版近光灯最大离地高度是多少，在第几页？」✓ → 模型**自己调工具** ✓（`lookup_parameter` ✓ / `lookup_clause` ✓ / `find_quote` ✓）→ 命中 **A §5.2.4.2（第26页）** ✓；查不到的主题也**如实说「未找到」** ✓ |
+
+⚠ **重启服务有个坑** ✓：`Stop-ScheduledTask` **杀不掉 node 子进程** ✗
+（`cmd.exe` 死了，node 还活着 ⇒ 端口还占着 ⇒ 新的起不来 ✗）⇒
+**要按命令行找出来自己杀** ✓：
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+  Where-Object { $_.CommandLine -match "dist[\\/]index.js" } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+⇒ 探针脚本：`node scripts/probe_server_chat.mjs [地址] [问题]` ✓（⚠ Node 的 `fetch` 不走代理 ✗，建议用 PowerShell 跑 ✓）。
 
 ### 还没做的（**说清楚，别以为齐了** ✗）
 
