@@ -642,7 +642,30 @@ check("the container image would still be able to run (packaging is not stale)",
   assert(/node_modules/.test(di), ".dockerignore 里没排 node_modules ✗ —— 宿主机的依赖会混进镜像 ✗");
   assert(/^dist/m.test(di), ".dockerignore 里没排 dist ✗ —— 镜像里会带宿主机的构建产物 ✗");
 
-  return `Dockerfile 装 python ✓ 拷 data/scripts/web ✓ 端口 ${port} ✓ 健康检查 ✓ 依赖清单齐 ✓`;
+  // **部署清单**必须与 HEAD 对得上 ✓ —— 清单里的 sha256 是**服务器上会拿到的那份** ✓，
+  // 对不上 ⇒ 服务器逐个核对时**当场红** ✗（实测踩过：清单生成后又被改了一个脚本 ⇒ sha 全错 ✗）。
+  const man = spawnSync(
+    "node",
+    ["scripts/build_deploy_manifest.mjs", "--out=tmp/deploy-manifest-check.txt"],
+    { cwd: ROOT, encoding: "utf-8" },
+  );
+  assert(
+    man.status === 0,
+    `生成部署清单失败 ✗：${(man.stderr || "").slice(-300)}`,
+  );
+  const freshMan = readFileSync(resolve(ROOT, "tmp", "deploy-manifest-check.txt"), "utf-8");
+  const committedMan = gitShow("deploy/manifest.txt");
+  assert(
+    committedMan !== null,
+    "找不到 deploy/manifest.txt ✗ —— 跑 node scripts/build_deploy_manifest.mjs ✓",
+  );
+  assert(
+    freshMan.replace(/\r\n/g, "\n") === String(committedMan).replace(/\r\n/g, "\n"),
+    "**部署清单与 HEAD 对不上** ✗ —— 服务器拉完逐个核对 sha256 会**当场红** ✗（实测踩过 ✓）。\n" +
+      "        重出：node scripts/build_deploy_manifest.mjs",
+  );
+
+  return `Dockerfile 装 python ✓ 拷 data/scripts/web ✓ 端口 ${port} ✓ 健康检查 ✓ 依赖清单齐 ✓ 部署清单与 HEAD 一致 ✓`;
 });
 
 check("参数查询对空格不敏感（查不到 ≠ 不存在）", () => {

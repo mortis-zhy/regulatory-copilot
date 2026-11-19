@@ -77,7 +77,9 @@ for (const rel of files) {
 }
 const outDir = path.join(ROOT, "deploy");
 fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(path.join(outDir, "manifest.txt"), lines.join("\n") + "\n", "utf8");
+const outArg = process.argv.find((a) => a.startsWith("--out="));
+const outFile = outArg ? outArg.slice("--out=".length) : path.join(outDir, "manifest.txt");
+fs.writeFileSync(outFile, lines.join("\n") + "\n", "utf8");
 console.log(
-  `部署清单：${files.length} 个文件 · ${(bytes / 1024 / 1024).toFixed(1)} MB → deploy/manifest.txt`,
+  `部署清单：${files.length} 个文件 · ${(bytes / 1024 / 1024).toFixed(1)} MB → ${path.relative(ROOT, outFile)}`,
 );
