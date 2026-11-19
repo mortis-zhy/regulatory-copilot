@@ -1,6 +1,7 @@
-# 部署清单 —— 服务器按它逐个文件从 raw.githubusercontent 拉 ✓
+# 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
+# commit 538e2a29f0ed04226cc4bf974d67a2ae67c413e8   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
 # 生成器：scripts/build_deploy_manifest.mjs · 文件数 315
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
@@ -143,7 +144,7 @@ b07a05e713ee2c8fc38dab3a3a10eb35d7efc4b21b27f818d6927a5b1d2d0655  reports/page-c
 9a2af087879c4caac44cf3eb683f09fa2cc5752f4c269823de044b52ff705746  scripts/adopt_spec_proposals.mjs
 85250871fa9626b8036fb7b6b5587f9bfa14aeb6dd334e09e78f51c930de9e06  scripts/build-libs.mjs
 1c3eaad9bb9524ef08f89e4b9f2a1f105d29689e386fae3751b9fb84a8f2d225  scripts/build_delivery_review.py
-4c019a15c9e6e419a59d0c0fe086a673f4ba20b14da6be0765b1724a7aeaf96e  scripts/build_deploy_manifest.mjs
+4a53708b9db918398b64902b89aadd5ed300e2452988ff45011d6c66e4f3c39c  scripts/build_deploy_manifest.mjs
 4c251e4691f5bbc3d1d2e838045ef43b5e6042963157fe43396770949d8337b5  scripts/build_device_chapter_map.py
 c84f073adbfbbcafb997e327bb27324eeb0e758f99067afc98cfb71a54300506  scripts/build_lamp_color_map.py
 19ad99ca3388069884a8d918ac589f6268f5ea14400b88e9fbe23e156a737209  scripts/build_multimodal.mjs
@@ -171,7 +172,7 @@ c9c68f276639107ef5897d69b66971cb6d62e44d3677b4308f21aa0aa21db8ed  scripts/compar
 01369d2d41a636666b54bd0d29d84898e28fb83a9ddcf96dc43a535d961f436f  scripts/compare_pdfs.py
 cf964be1a1d3cc7be6c902f41a2deb884a69af8ebb6ee7c208fd97313a58e08d  scripts/coverage_audit.py
 104a78ff23ea8e37a480b56728422864c68e97d09b1daf22f270dc946a6de687  scripts/declaration.py
-987576ebf5f1b9eaacb7bf123c77837e2a97466e54074d5e76ad9e7212339b4c  scripts/deploy_windows.ps1
+beb839e2789c45890e32bb67ef5360dc2f05ce161f735a985226863610341037  scripts/deploy_windows.ps1
 b2d86a3b0717aae4554851c2d984152b887a4ee35b9adec5856fb9fb9464d188  scripts/diff_corrections.py
 b62320297e26b62de729f80114e8b600674808652a68238268c6115705134960  scripts/diff_value_check.py
 c2dca5fceb7d3d786aa6130cbaf020c14984391d26e5ac08940bc50b874c6ea2  scripts/discover_requirements.py
