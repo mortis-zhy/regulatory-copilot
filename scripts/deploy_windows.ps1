@@ -246,13 +246,22 @@ if (-not $SkipBuild) {
 
 # ── 4. Python 依赖（抽图 / 裁字 / 自检 / 抽取都靠它 ✓）───────────────────
 Push-Location $InstallDir
-Say "pip install -r requirements.txt"
-if ((Invoke-Native $py @("-m", "pip", "install", "--no-warn-script-location", "-r", "requirements.txt") (Join-Path $WorkDir "pip.log")) -ne 0) {
-  throw "pip install 失败 ✗（看 $WorkDir\pip.log）"
+# **用国内镜像** ✓ —— 实测：从 pypi.org 直连，下 63 MB 的 PyMuPDF 用了 **13 分钟** ✗；
+# 清华镜像实测快一个量级 ✓。官方源留作兜底 ✓。
+Say "pip install -r requirements.txt（清华镜像 ✓）"
+$pipArgs = @("-m", "pip", "install", "--no-warn-script-location",
+  "-i", "https://pypi.tuna.tsinghua.edu.cn/simple",
+  "--extra-index-url", "https://pypi.org/simple",
+  "-r", "requirements.txt")
+if ((Invoke-Native $py $pipArgs (Join-Path $WorkDir "pip.log")) -ne 0) {
+  Say "清华镜像失败 ⇒ 退回官方源 ✗"
+  if ((Invoke-Native $py @("-m", "pip", "install", "--no-warn-script-location", "-r", "requirements.txt") (Join-Path $WorkDir "pip.log")) -ne 0) {
+    throw "pip install 失败 ✗（看 $WorkDir\pip.log）"
+  }
 }
 if ($WithOcr) {
   Say "pip install -r requirements-ocr.txt（torch ~2 GB ⇒ 慢 ✓）"
-  if ((Invoke-Native $py @("-m", "pip", "install", "--no-warn-script-location", "-r", "requirements-ocr.txt") (Join-Path $WorkDir "pip-ocr.log")) -ne 0) {
+  if ((Invoke-Native $py $pipArgs (Join-Path $WorkDir "pip-ocr.log")) -ne 0) {
     Say "OCR 依赖没装上 ✗ ⇒「图内数值（OCR）」那一列没有 ✓（其余照常 ✓）"
   }
 }

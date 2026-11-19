@@ -8,7 +8,9 @@
 # **图内数值（OCR）那一层是可选的** ✓ —— 它要带 torch（约 2 GB）✓，
 # 不装就装 `requirements-ocr.txt` ✓（详见那个文件）✓。
 
-PyMuPDF>=1.24
+# **PyMuPDF 要钉在 1.x** ✓ —— PyPI 上的 `pymupdf`（小写）是**另一个包**（2.x ✓，
+# 会拖来 onnxruntime 约 200 MB ✗）⇒ 不钉版本 ⇒ 服务器 pip 要下 260 MB ✗（实测卡了 13 分钟 ✗）。
+PyMuPDF>=1.24,<2
 fonttools>=4.50
 Pillow>=10.0
 numpy>=1.26
