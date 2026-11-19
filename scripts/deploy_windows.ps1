@@ -150,8 +150,10 @@ if (-not $SkipDownload) {
   New-Item -ItemType Directory -Force -Path $src | Out-Null
 
   $manifestPath = Join-Path $src "manifest.txt"
-  # **清单本身**先试 jsDelivr ✓，再试 raw ✓（两边都可能抽风 ✓）。
-  $manifestUrls = @("$RepoJsDelivr@main/deploy/manifest.txt", "$RepoRawBase/deploy/manifest.txt")
+  # **清单本身**先试 **raw@main** ✓ —— jsDelivr 对分支**有缓存** ✗
+  # （实测：它给的是**旧一版**清单 ⇒ 少了 patches/ ⇒ `pnpm install` ENOENT ✗）；
+  # raw 慢（实测 3.5 分钟 ✓）但**一定是当前版** ✓。jsDelivr 作兜底 ✓。
+  $manifestUrls = @("$RepoRawBase/deploy/manifest.txt", "$RepoJsDelivr@main/deploy/manifest.txt")
   $got = $false
   foreach ($u in $manifestUrls) {
     if (Fetch-File $u $manifestPath 3) { $got = $true; break }
