@@ -19,7 +19,19 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** 服务器上**要**的文件 ✓ —— 其它一律不带 ✓（省时间 ✓）。 */
-const WANT_DIRS = ["server/", "shared/", "client/", "scripts/", "data/", "web/", "drizzle/", "uploaded-docs/"];
+const WANT_DIRS = [
+  "server/",
+  "shared/",
+  "client/",
+  "scripts/",
+  "data/",
+  "web/",
+  "drizzle/",
+  "uploaded-docs/",
+  // **pnpm 的补丁目录** ✓ —— package.json 里有 `patchedDependencies` ✓
+  // （`wouter@3.7.1` ✓），少了它 ⇒ `pnpm install` 直接 **ENOENT** ✗（实测踩过 ✓）。
+  "patches/",
+];
 const WANT_ROOT_FILES = [
   "package.json",
   "pnpm-lock.yaml",

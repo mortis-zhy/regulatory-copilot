@@ -1,8 +1,8 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 25a1655cd2ad1a18d2301e0bc0bd43288592f7fd   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
-# 生成器：scripts/build_deploy_manifest.mjs · 文件数 315
+# commit d92bbc3f21116b3ecafbbae75db5230c0e4cdeac   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# 生成器：scripts/build_deploy_manifest.mjs · 文件数 316
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
 f2cdf82b77bef683629b9640ff654112abefc0739e01452d74819b2e0d2aef81  client/index.html
@@ -133,6 +133,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  drizzle/migrat
 85acb8ece8fbb5031fc56fa8c70338d9b8b06ef3b032391fff8532c6373c7186  drizzle/relations.ts
 41cc33a17427d1a92260ad2b3a49b307db9314b5dcf332f5136d67bf28178103  drizzle/schema.ts
 4f088a87628a4bb109d29205ee3eef7c8274bd94de7e5994c976ff08af4fe0e0  package.json
+4e16e6ff3fde7d6c1024d3e0c8605dc9eb6afb690d0d49958c2f449091813072  patches/wouter@3.7.1.patch
 74826dd2ffa760fc68f75874cd656d292d22eaf19ac978477df8a1607bf898b5  pnpm-lock.yaml
 2b940de89beff31939d824553d2129792542a0d0fd0d5d5aba8679e0f510df3a  reports/figure-hashes.json
 0309e75296d47a3d42e3c1089e0b2e6d5863e38cf95ab58561d6dbceeb750455  reports/figure-ocr.json
