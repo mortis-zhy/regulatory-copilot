@@ -522,6 +522,42 @@ check("agent 工具全部只读（没有写盘/删文件的入口）", () => {
   return `${names.length} 个工具，全部只读`;
 });
 
+check("多模态进了问答层（图/表能问，且带同一条界线）", () => {
+  // 之前多模态**只在报告里** ✗ —— 客户在聊天里问「B 的 p30 那张图和 A 的差在哪」，
+  // agent 答不了 ✗。现在有两个只读工具能答 ✓，
+  // **但必须带着与报告一样的界线** ✓ —— 否则聊天层就会说出「两版一致」这种话 ✗。
+  //
+  // 判据是**行为** ✓（跑一次真的工具 ✓），不是判源码里有没有某个词 ✓。
+  const fig = spawnSync("node", ["scripts/q.mjs", "figures", "A", "B"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  assert(fig.status === 0, `图工具跑不通：${(fig.stderr || "").slice(-400)}`);
+  const fo = fig.stdout ?? "";
+  assert(fo.includes("图对比"), "图工具没有输出对照结果");
+  assert(fo.includes("不是") && fo.includes("一致"), "图工具没写「近似 ≠ 一致」");
+  assert(fo.includes("只是提示"), "图工具没写「OCR 只是提示」");
+  assert(fo.includes("不是") && fo.includes("删"), "图工具没写「未找到近似图 ≠ 删除」");
+
+  const tbl = spawnSync("node", ["scripts/q.mjs", "tables", "A", "B"], {
+    cwd: ROOT,
+    encoding: "utf-8",
+  });
+  assert(tbl.status === 0, `表工具跑不通：${(tbl.stderr || "").slice(-400)}`);
+  const to = tbl.stdout ?? "";
+  assert(to.includes("表对比"), "表工具没有输出对照结果");
+  assert(to.includes("人工判断"), "表工具没写「须人工判断是否实质变化」");
+
+  // 提示词里也得有这两条工具与红线 ✓ —— 工具在册但模型不会用 = 白做 ✗
+  const prompt = read("server/reports/agentPrompt.ts");
+  assert(
+    prompt.includes("compare_figures") && prompt.includes("lookup_table_cells"),
+    "系统提示词里没写这两个工具 —— 模型不会用它们 ✗",
+  );
+  assert(/多模态/.test(prompt) && /不许/.test(prompt), "系统提示词里没有多模态的措辞红线 ✗");
+  return "图/表都能问，且界线与报告一致（近似≠一致 · OCR 只是提示 · 文本≠实质变化）";
+});
+
 check("参数查询对空格不敏感（查不到 ≠ 不存在）", () => {
   // **这条闸门是被一次真实假阴性逼出来的。**
   // 浏览器演示时 agent 查「ADS标志灯」（少一个空格），

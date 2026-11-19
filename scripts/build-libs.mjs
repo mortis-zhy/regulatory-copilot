@@ -140,6 +140,8 @@ const ENTRIES = [
   ["server/reports/multimodal.ts", "dist/multimodal.js"],
   // 公式**符号表** —— 「式中：h1——…」的跨版对照（只比定义 / 单位 / 页码 ✓）。
   ["server/reports/formulaSymbols.ts", "dist/formulaSymbols.js"],
+  // 多模态**索引** —— 取证工具用的那一份图/表/公式对照（与附录 B.5 同一份实现 ✓）。
+  ["server/reports/multimodalIndex.ts", "dist/multimodalIndex.js"],
 ];
 
 const SHARED = {

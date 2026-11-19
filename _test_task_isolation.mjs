@@ -226,4 +226,28 @@ ok(
   "老用法（没传 allowedVersions）被误拦了",
 );
 
+// ─────────────────────────────────────────────────────────────
+// ⑤ **多模态工具**同样要拦 ✓ —— 它们的答案里含**两版的素材**
+// （图配对、表逐格差异）✗ ⇒ 少一版就不能答 ✗
+// ─────────────────────────────────────────────────────────────
+const mmOnlyA = await runAgentTool("compare_figures", { version_a: "A", version_b: "B" }, onlyA);
+ok(mmOnlyA.ok === false, "当前只有 A，却给出了 A↔B 的图对照（依据含已删除的 B）");
+ok(mmOnlyA.data?.code === "version_not_in_task", `图工具的拒绝码不对：${mmOnlyA.data?.code}`);
+
+const mmTableOnlyA = await runAgentTool(
+  "lookup_table_cells",
+  { version_a: "A", version_b: "B" },
+  onlyA,
+);
+ok(mmTableOnlyA.ok === false, "当前只有 A，却给出了 A↔B 的表逐格差异");
+
+// 两版都在 ⇒ 照常答 ✓（不能为了拦而把多模态全废掉 ✗）
+const mmBoth = await runAgentTool(
+  "compare_figures",
+  { version_a: "A", version_b: "B" },
+  { taskId: "t-mm", allowedVersions: ["A", "B"] },
+);
+ok(mmBoth.ok === true, "两版都在时，图工具被误拦了");
+ok((mmBoth.data?.figurePairs ?? []).length > 0, "两版都在时，图工具没给出配对结果");
+
 console.log(`✓ 任务隔离用例全过（${n} 条断言）`);

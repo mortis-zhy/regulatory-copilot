@@ -97,6 +97,19 @@ const GATES = (() => {
 })();
 
 /**
+ * 取证工具的**个数与清单** —— 同样从机器读 ✓。
+ *
+ * 讲稿里原来写死「7 个取证工具」并把 7 个工具名一个一个列出来 ✗ ——
+ * 2026-11-19 加了图/表两个多模态工具（9 个）✗，稿子还在说 7 个 ✗。
+ * 手写的清单**一定会过期**，而过期的话就是**在客户面前说错** ✗。
+ */
+const TOOL_NAMES = (await import("../dist/agentTools.js")).AGENT_TOOLS.map(
+  (t) => t.function.name,
+);
+const TOOL_N = TOOL_NAMES.length;
+const TOOL_CHIPS = TOOL_NAMES.map((n) => `<span class="tool">${n}</span>`).join("");
+
+/**
  * 交付件的**页数** —— 同样从机器产物读。
  *
  * 讲稿里写死过「249 页」（5 处），而交付件**早就是 278 页**
@@ -350,7 +363,7 @@ const FIG = {
       <div class="arrow r">→</div>
       <div class="step hi">模型输出 tool_call<br><span class="dim">toolChoice: auto · temp 0.2</span></div>
       <div class="arrow r">→</div>
-      <div class="step">派发到 7 个取证工具<br><span class="dim">全部回源到三份 PDF</span></div>
+      <div class="step">派发到 ${TOOL_N} 个取证工具<br><span class="dim">全部回源到三份 PDF</span></div>
     </div>
     <div class="row2">
       <div class="step">工具结果以 role:"tool" 塞回对话 → 继续下一轮</div>
@@ -358,10 +371,7 @@ const FIG = {
       <div class="step warn">收口判定<br><span class="dim">连续 2 轮整轮都没查着 → 强制据实收口</span></div>
     </div>
     <div class="toolbar">
-      <span class="tool">lookup_clause</span><span class="tool">find_quote</span>
-      <span class="tool">lookup_parameter</span><span class="tool">get_diff_verdict</span>
-      <span class="tool">get_coverage_status</span><span class="tool">list_requirement_gaps</span>
-      <span class="tool">get_topic_excerpts</span>
+      ${TOOL_CHIPS}
     </div>
     <div class="note">最多 12 轮。<b>工具查不到就是查不到</b> —— 不许模型换措辞继续碰运气（宁可空着，不可错着）。</div>
   </div>`,

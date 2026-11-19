@@ -35,6 +35,8 @@ import { PROJECT_ROOT } from "../_core/projectRoot";
 // 以前这里是一张手写字典：换标准时改了上传校验那份，忘了这份，
 // agent 报出来的版本名就会**继续讲旧标准** —— 而工具照常返回原文。
 import { versionDoc, versionKeys } from "@shared/versionMeta";
+// **多模态索引** —— 图 / 表 / 公式的跨版对照（与附录 B.5 **同一份实现** ✓）。
+import { multimodalIndex, diffOf } from "./multimodalIndex";
 
 /**
  * 内层仓库根（dist/ 与 data/ 都在那儿）—— **唯一实现**在
@@ -346,6 +348,46 @@ export const AGENT_TOOLS: ToolDef[] = [
           topic: { type: "string", description: "主题名" },
         },
         required: ["topic"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "compare_figures",
+      description:
+        "比对两版的**图**（插图 / 示意图 / 图版里的原图）：哪两张是**同一张**（pHash 近似）、" +
+        "图里 OCR 读出的数字差在哪、人工标注的图内限值差在哪。" +
+        "**只能回答「图像近似」** —— pHash 对「图上改一个数字」几乎不动，" +
+        "所以「近似」**不等于**「两版一致」✗；OCR 读出的数字**只是提示**（会读错、会漏读）✗；" +
+        "只在一版里找到的图**不能**说成「那一版删了这张图」✗。",
+      parameters: {
+        type: "object",
+        properties: {
+          version_a: { type: "string", enum: versionKeys(), description: "第一个版本代号" },
+          version_b: { type: "string", enum: versionKeys(), description: "第二个版本代号" },
+          page: { type: "number", description: "只看某一页的图（可选）" },
+        },
+        required: ["version_a", "version_b"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "lookup_table_cells",
+      description:
+        "比对两版的**表**：同一张表配上了没有、逐格**文本**差在哪（第几行第几列、两边各写的是什么）。" +
+        "抽取串行的格子**不比**（拿乱码比会造出假差异）✗；差的是**文本**，**不是**「要求变了」✗ —— " +
+        "可能只是写法不同（单位、公式排版），**须人工判断是否实质变化** ✗。",
+      parameters: {
+        type: "object",
+        properties: {
+          version_a: { type: "string", enum: versionKeys(), description: "第一个版本代号" },
+          version_b: { type: "string", enum: versionKeys(), description: "第二个版本代号" },
+          page: { type: "number", description: "只看某一页的表（可选）" },
+        },
+        required: ["version_a", "version_b"],
       },
     },
   },
@@ -981,6 +1023,162 @@ async function runAgentToolInner(name: string, args: Json, ctx?: ToolContext): P
         };
       }
       return { ok: true, data: out };
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "compare_figures": {
+      const a = String(args.version_a ?? "").toUpperCase();
+      const b = String(args.version_b ?? "").toUpperCase();
+      if (!a || !b) return { ok: false, data: { error: "需要 version_a 与 version_b" } };
+      // **两版都要在当前任务里** ✓（同事 issue #2 的规矩 ✓ ——
+      // 依据里有用户已经删掉的文件 = 拿着旧资料讲新话 ✗）。
+      const miss = needsVersions(ctx, [a, b]);
+      if (miss) return { ok: false, data: { error: miss, code: "version_not_in_task" } };
+      const idx = multimodalIndex();
+      if (!idx.available) {
+        return { ok: false, data: { error: idx.reason, code: "multimodal_unavailable" } };
+      }
+      const d = diffOf(a, b);
+      if (!d) {
+        return {
+          ok: false,
+          data: {
+            error: `没有 ${a} 与 ${b} 的素材对照（这两版里没有可比的图/表/公式）`,
+            code: "no_pair",
+          },
+        };
+      }
+      const page = args.page != null && args.page !== "" ? Number(args.page) : null;
+      const pairs = d.figures.paired.filter(
+        (p) => !page || p.left.page === page || p.right.page === page,
+      );
+      const fmtOcr = (o: any): Json => {
+        if (o.status === "compared") {
+          return {
+            status: o.status,
+            aNumbers: o.aNumbers,
+            bNumbers: o.bNumbers,
+            sameCount: o.same,
+            diffs: o.diffs,
+            meaning: "OCR 读出的数字差 —— **只是提示** ✗",
+          };
+        }
+        if (o.status === "one-sided") {
+          return {
+            status: o.status,
+            side: o.side,
+            numbers: (o.numbers ?? []).map((n: any) => `${n.value}${n.unit}`),
+          };
+        }
+        return { status: o.status, reason: o.reason };
+      };
+      const fmtLimits = (l: any): Json => {
+        if (l.status === "none") return { status: "none" };
+        if (l.status === "one-sided") {
+          return {
+            status: l.status,
+            side: l.side,
+            values: l.values,
+            adjudicated: l.adjudicated,
+            visualOnly: l.visualOnly,
+          };
+        }
+        return {
+          status: l.status,
+          same: l.same,
+          a: l.a,
+          b: l.b,
+          adjudicated: l.adjudicated,
+          visualOnly: l.visualOnly,
+        };
+      };
+      return {
+        ok: true,
+        data: {
+          versions: [a, b],
+          figurePairs: pairs.map((p) => ({
+            a: { page: p.left.page, file: p.left.file },
+            b: { page: p.right.page, file: p.right.file },
+            distance: p.distance,
+            meaning: "图像近似（pHash 距离）—— **不是**「两版一致」✗",
+            ocr: fmtOcr(p.ocr),
+            limits: fmtLimits(p.limits),
+          })),
+          onlyInA: d.figures.onlyInA.map((f) => ({ page: f.page, file: f.file })),
+          onlyInB: d.figures.onlyInB.map((f) => ({ page: f.page, file: f.file })),
+          tablePairs: d.tables.paired.length,
+          caveats: [
+            "「图像近似」**不是**「两版一致」：pHash 对「图上改一个数字」几乎不动 ⇒ 要说一致必须人工核对原图 ✗。",
+            "OCR 读出的数字**只是提示**（实测把「布局A」读成「布局4」、也会整张读不出）⇒ 「疑似不同」不是结论 ✗。",
+            "人工标注的图内限值：机器只核「图存在 / 页码对 / 题注回源」；**数值本身不判对错** ✗；未人工核的标「未核」✗。",
+            "只在一版里出现的图 = **本版未找到近似图**（可能没抽到）✗，**不是**「那一版删了这张图」✗。",
+          ],
+        },
+      };
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "lookup_table_cells": {
+      const a = String(args.version_a ?? "").toUpperCase();
+      const b = String(args.version_b ?? "").toUpperCase();
+      if (!a || !b) return { ok: false, data: { error: "需要 version_a 与 version_b" } };
+      const miss = needsVersions(ctx, [a, b]);
+      if (miss) return { ok: false, data: { error: miss, code: "version_not_in_task" } };
+      const idx = multimodalIndex();
+      if (!idx.available) {
+        return { ok: false, data: { error: idx.reason, code: "multimodal_unavailable" } };
+      }
+      const d = diffOf(a, b);
+      if (!d) {
+        return {
+          ok: false,
+          data: { error: `没有 ${a} 与 ${b} 的素材对照`, code: "no_pair" },
+        };
+      }
+      const page = args.page != null && args.page !== "" ? Number(args.page) : null;
+      const pairs = d.tables.paired.filter(
+        (p) => !page || p.a.page === page || p.b.page === page,
+      );
+      const MAX = 30;
+      return {
+        ok: true,
+        data: {
+          versions: [a, b],
+          tables: pairs.map((p) => ({
+            a: { page: p.a.page, caption: p.a.caption || "（无题注）" },
+            b: { page: p.b.page, caption: p.b.caption || "（无题注）" },
+            basis: p.by === "caption" ? "题注" : "可读表头",
+            cells:
+              p.cellDiff.status === "compared"
+                ? {
+                    status: "compared",
+                    changed: p.cellDiff.changed,
+                    total: p.cellDiff.total,
+                    /** 抽取串行、**没参与比对**的格数 ✓（不是「相同」✗） */
+                    unscorable: p.cellDiff.unscorable,
+                    changes: p.cellDiff.changes.slice(0, MAX).map((c: any) => ({
+                      row: c.row,
+                      col: c.col,
+                      a: c.a,
+                      b: c.b,
+                    })),
+                    truncated: p.cellDiff.changes.length > MAX,
+                  }
+                : { status: "skipped", reason: p.cellDiff.reason },
+          })),
+          notCompared: {
+            onlyInA: d.tables.onlyInA.length,
+            onlyInB: d.tables.onlyInB.length,
+            /** 抽取串行、整表没比的张数 ✓ */
+            scrambled: d.tables.unscorableA + d.tables.unscorableB,
+          },
+          caveats: [
+            "单元格差异是**文本**不同 ✗ —— 可能只是写法差异（单位、公式排版）⇒ **须人工判断是否实质变化** ✗。",
+            "抽取串行的格/表**不比**（抽取坏了）⇒ 「未比」**不等于**「相同」✗。",
+            "没配上的表**不配对**（只按行×列配会瞎配）⇒ 「只有某版有」**不等于**「另一版删了这张表」✗。",
+          ],
+        },
+      };
     }
 
     default:

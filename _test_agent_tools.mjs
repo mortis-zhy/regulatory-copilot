@@ -164,4 +164,41 @@ const ok = (cond, msg) => {
   ok(String(r.data.error ?? "").includes("未知工具"), "要说清是未知工具");
 }
 
+/* --- 12. 多模态工具：图 / 表 —— 答案必须带**同一条界线** ---------------- */
+{
+  const names = AGENT_TOOLS.map((t) => t.function.name);
+  ok(names.includes("compare_figures"), "工具清单里没有 compare_figures");
+  ok(names.includes("lookup_table_cells"), "工具清单里没有 lookup_table_cells");
+
+  const r = await runAgentTool("compare_figures", { version_a: "A", version_b: "B" });
+  ok(r.ok, `A↔B 的图对照必须查得到：${JSON.stringify(r.data).slice(0, 200)}`);
+  ok((r.data.figurePairs ?? []).length > 0, "要返回配对的图");
+  const p = r.data.figurePairs[0];
+  ok(typeof p.distance === "number", "图配对要带 pHash 距离");
+  ok(
+    String(p.meaning ?? "").includes("不是") && String(p.meaning ?? "").includes("一致"),
+    "图配对必须写清「近似 ≠ 一致」",
+  );
+  const caveats = (r.data.caveats ?? []).join(" | ");
+  ok(caveats.includes("近似"), "要带「近似 ≠ 一致」的界线");
+  ok(caveats.includes("只是提示"), "要带「OCR 只是提示」的界线");
+  ok(Array.isArray(r.data.onlyInA) && Array.isArray(r.data.onlyInB), "要给出「只在一版有」的清单");
+
+  // 按页过滤 ✓
+  const one = await runAgentTool("compare_figures", { version_a: "A", version_b: "B", page: 83 });
+  ok((one.data.figurePairs ?? []).length === 1, "按页过滤应只剩 1 对图");
+
+  const t = await runAgentTool("lookup_table_cells", { version_a: "A", version_b: "B" });
+  ok(t.ok, `A↔B 的表对照必须查得到：${JSON.stringify(t.data).slice(0, 200)}`);
+  ok((t.data.tables ?? []).length > 0, "要返回配对的表");
+  const cell = t.data.tables[0].cells;
+  ok(cell.status === "compared" && typeof cell.changed === "number", "要给出逐格差异");
+  ok(Array.isArray(cell.changes), "要给出改了哪几格");
+  ok(
+    (t.data.caveats ?? []).join(" | ").includes("人工判断"),
+    "表要带「须人工判断是否实质变化」",
+  );
+  ok(typeof t.data.notCompared?.scrambled === "number", "要说明有多少张表因串行没比");
+}
+
 console.log(`_test_agent_tools.mjs — ${checks} checks passed`);

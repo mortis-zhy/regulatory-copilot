@@ -36,6 +36,12 @@ const ALIAS = {
   gaps: "list_requirement_gaps",
   t: "get_topic_excerpts",
   topic: "get_topic_excerpts",
+  fig: "compare_figures",
+  figs: "compare_figures",
+  figures: "compare_figures",
+  tbl: "lookup_table_cells",
+  table: "lookup_table_cells",
+  tables: "lookup_table_cells",
   tools: "tools",
   h: "help",
   help: "help",
@@ -53,10 +59,13 @@ q —— 控制台查询台（确定性，不调模型、不花钱）
   node scripts/q.mjs coverage [scope]              覆盖状态（缺参数则全量）
   node scripts/q.mjs gaps    <A|B|C> [limit]        要求缺口清单
   node scripts/q.mjs topic   "<主题>"              某主题的原文摘录
+  node scripts/q.mjs figures <A|B> <A|B> [页码]      两版的图：哪些是同一张、图内数字差在哪
+  node scripts/q.mjs tables  <A|B> <A|B> [页码]      两版的表：逐格文本差在哪
 
 例：
   node scripts/q.mjs clause A 5.21.4.2
   node scripts/q.mjs param 倒车灯最大离地高度
+  node scripts/q.mjs figures A B 83
 `);
 }
 
@@ -179,6 +188,47 @@ function printResult(name, res) {
       console.log("");
       break;
     }
+    case "compare_figures": {
+      console.log(`图对比：${(d.versions ?? []).join(" ↔ ")}`);
+      for (const p of d.figurePairs ?? []) {
+        console.log(`  A p${p.a?.page} ↔ B p${p.b?.page}　距离 ${p.distance}　${p.meaning ?? ""}`);
+        if (p.ocr?.status === "compared" && (p.ocr.diffs ?? []).length) {
+          console.log(`    OCR 提示（不是结论）：${p.ocr.diffs.map((x) => `${x.label}(A ${x.a}/B ${x.b})`).join("、")}`);
+        }
+        if (p.limits?.status === "compared") {
+          console.log(
+            `    人工标注：${(p.limits.a ?? []).join("、")} ↔ ${(p.limits.b ?? []).join("、")}` +
+              ` —— ${p.limits.same ? "两侧相同" : "**不同**"}${p.limits.adjudicated ? "（已人工核）" : "（**未核**）"}` +
+              `${p.limits.visualOnly ? "　**仅据图面**，无原文佐证" : ""}`,
+          );
+        }
+      }
+      if (!(d.figurePairs ?? []).length) console.log("  （没有配上的图）");
+      console.log(`  只在 ${(d.versions ?? [])[0]}：${(d.onlyInA ?? []).map((f) => `p${f.page}`).join("、") || "无"}`);
+      console.log(`  只在 ${(d.versions ?? [])[1]}：${(d.onlyInB ?? []).map((f) => `p${f.page}`).join("、") || "无"}`);
+      for (const c of d.caveats ?? []) console.log(`  ⚠ ${c}`);
+      console.log("");
+      break;
+    }
+    case "lookup_table_cells": {
+      console.log(`表对比：${(d.versions ?? []).join(" ↔ ")}`);
+      for (const t of d.tables ?? []) {
+        console.log(`  A p${t.a?.page} ↔ B p${t.b?.page}　配对依据：${t.basis ?? ""}`);
+        if (t.cells?.status === "compared") {
+          console.log(`    ${t.cells.changed} / ${t.cells.total} 格文本不同${t.cells.unscorable ? ` · ${t.cells.unscorable} 格串行未比` : ""}`);
+          for (const c of t.cells.changes ?? []) {
+            console.log(`    · 第${c.row}行第${c.col}列：${c.a}  →  ${c.b}`);
+          }
+        } else {
+          console.log(`    未比：${t.cells?.reason ?? ""}`);
+        }
+      }
+      if (!(d.tables ?? []).length) console.log("  （没有配上的表）");
+      console.log(`  未比对：只在某版 ${d.notCompared?.onlyInA ?? 0} / ${d.notCompared?.onlyInB ?? 0} 张 · 串行 ${d.notCompared?.scrambled ?? 0} 张`);
+      for (const c of d.caveats ?? []) console.log(`  ⚠ ${c}`);
+      console.log("");
+      break;
+    }
     default:
       console.log(JSON.stringify(d, null, 1).slice(0, 4000));
       console.log("");
@@ -218,6 +268,10 @@ const args = (() => {
       return pick({ version: rest[0], limit: rest[1] ? Number(rest[1]) : undefined });
     case "get_topic_excerpts":
       return pick({ topic: rest.join(" ") });
+    case "compare_figures":
+      return pick({ version_a: rest[0], version_b: rest[1], page: rest[2] ? Number(rest[2]) : undefined });
+    case "lookup_table_cells":
+      return pick({ version_a: rest[0], version_b: rest[1], page: rest[2] ? Number(rest[2]) : undefined });
     default:
       return {};
   }
