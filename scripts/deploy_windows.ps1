@@ -83,21 +83,32 @@ Say ("node=" + (& node --version 2>&1))
 Say ("python=" + (& $py --version 2>&1))
 Say ("python_path=" + $py)
 
-# **下载要重试** ✓ —— 实测（2026-11-19）：raw 偶发「连接被关闭：传输请求被中止」✗
-# （第一次拉清单成功、第二次就断了 ✗）⇒ 一次失败就放弃 ⇒ 白跑几十分钟 ✗。
+# **下载要重试 + 要超时** ✓ —— 实测（2026-11-19，两个坑）：
+#   · raw 偶发「连接被关闭：传输请求被中止」✗ ⇒ 一次失败就放弃 ⇒ 白跑几十分钟 ✗；
+#   · **Invoke-WebRequest 会「挂住」** ✗ —— 连接建立后一个字节都不来，
+#     `-TimeoutSec` **管不住它** ✗（实测：一个 0.1 MB 的小文件卡了 **16 分钟** ✗），
+#     而 **curl.exe 有 `--max-time`** ✓ ⇒ 换 curl ✓（Windows 10+ 自带 ✓）。
 function Fetch-File($url, $dest, $tries = 4) {
+  $curl = Get-Command curl.exe -EA SilentlyContinue
+  if ($curl) {
+    for ($i = 1; $i -le $tries; $i++) {
+      & $curl.Source -sS -L --fail --connect-timeout 20 --max-time 180 -o $dest $url 2>$null
+      if ($LASTEXITCODE -eq 0) { return $true }
+      Start-Sleep -Seconds (2 * $i)
+    }
+    Say ("下载失败 {0}（curl 重试 {1} 次）✗" -f $url, $tries)
+    return $false
+  }
   $ProgressPreference = "SilentlyContinue"
-  $last = ""
   for ($i = 1; $i -le $tries; $i++) {
     try {
-      Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 300 -UseBasicParsing
+      Invoke-WebRequest -Uri $url -OutFile $dest -TimeoutSec 120 -UseBasicParsing
       return $true
     } catch {
-      $last = $_.Exception.Message
       Start-Sleep -Seconds (2 * $i)
     }
   }
-  Say ("下载失败 {0}（重试 {1} 次）：{2}" -f $url, $tries, $last.Substring(0, [Math]::Min(100, $last.Length)))
+  Say ("下载失败 {0}（重试 {1} 次）✗" -f $url, $tries)
   return $false
 }
 
