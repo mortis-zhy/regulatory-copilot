@@ -1,7 +1,7 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 32937ecc38bb5d1b9bb68f28353a1c335483bf4c   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# commit 1b71970615dabcfc1ecad774eb4e13895ee19aed   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
 # 生成器：scripts/build_deploy_manifest.mjs · 文件数 319
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
@@ -214,7 +214,7 @@ c82c91ecd17d38eae2952a36ddb5f480195c85761bd7bde1c4b54ebda9587c3c  scripts/test_d
 0fadc3e353b6b87279bf3a255ac3068cc08dd156e1f872dd5a7ad4f27148c666  scripts/test_label_source.py
 35e6106e70633d0b98ac886c7288420380562ba41dd0a231b6a24a2d638196fb  scripts/test_no_side_effects.py
 a74427786ff99373b218d6b611165f6a616e5ca1b937534e57cca5aee33614db  scripts/test_requirement_discovery.py
-abc2cfbf21f16539251e9551ae3ea88c7eb3bb8ea1451b00128e72f9b31d99dd  scripts/verify.mjs
+37832d3cdc91a1794b466210b8800d4fc6b4a42ddad0e61ea65480e0c7179c97  scripts/verify.mjs
 5c3073e05eee0034eff28b88aaebb106f4d379e2017301b5d407cc9c10da064f  scripts/verify_decision_brief.py
 a27d6127aee197b67b21bdfff0affea8ffb72282becb113f6097f8148bf21ac7  scripts/verify_indicators.py
 74b5b8e842d6b0c6449f90d5f1c5f8196e550d0c12913efc10d2ee3b7309c217  scripts/verify_lamp_color_map.py
