@@ -44,6 +44,20 @@ NUM_HEAD = re.compile(r"^(\d+(?:\.\d+)*)\.?\s+(.*)$")
 # 中文目录的页码往往**独占一行**（「远光灯」/「18」/「…………」），
 # 所以「整行都是点引线」也算目录。
 TOC = re.compile(r"^(?:[….]{6,})|(?:[0-9]{1,3}[…]{2,}\s*$)|(?:\.{4,}\s*$)")
+# **章标题** —— 形如 `4. GENERAL TECHNICAL REQUIREMENTS` ✓（英文本的章标题是大写 ✓）。
+#
+# ## 为什么单认它
+#
+# 条款号链条是**连续**的 ✓（`same_chapter` ✓）—— 好处是不把正文里的交叉引用
+# （「按 4.11 要求」）当成条款开头 ✓。
+# 但链条**开头那一条**要是认错了，后面**全被带偏** ✓ ⇒ 一本书的前言/封面里
+# 出现一个像条款号的数字（实测 R148 封面上的 `30.9.2021`、`400.1` ✓），
+# 链条就锚在它上面 ⇒ 真正的第 4 章被当成「章号变小」⇒ **整本书一条条款都认不出** ✗
+# （实测：全本跑只切出 **2** 条，条款号还是垃圾 `30.9.2021` / `400.1` ✗；
+# 而只喂 11–17 页 ⇒ **72 条**且条款号全对 ✓ ⇒ **不是内容问题，是链条起点问题** ✓）。
+#
+# ⇒ **章标题 = 链条的重置点** ✓：见到它就把链条重开 ✓，前面的噪声只影响它自己 ✓。
+CHAPTER_HEAD = re.compile(r"^(\d{1,2})\.\s+([A-Z][A-Z0-9 ,\-/&'()]{2,60})$")
 
 
 # 版本识别表 —— **声明式**。换一套标准 = 加一行，不改代码。
@@ -117,6 +131,46 @@ def is_toc_entry(lines, i):
     return False
 
 
+def _top(num):
+    """条款号的**第一段**（章号）✓ —— 不是数字就当 999 ✓（⇒ 一律丢掉 ✓）。"""
+    m = re.match(r"^(\d+)", str(num or ""))
+    return int(m.group(1)) if m else 999
+
+
+def chapter_title_after(lines, i):
+    """第 i 行是**章号**（形如 `4.`）时，它后面那条是不是**章标题** ✓。
+
+    英文本的章标题长这样（**PDF 把号和标题拆成两行** ✓）：
+
+        4.
+        GENERAL TECHNICAL REQUIREMENTS
+
+    判据（三条都要 ✓，缺一条就会误判 ✗）：
+    1. 这一行是 **1–20 的裸章号** ✓（`4.` 带点 ✓）——
+       GB 的表格里也有「20」「486」这种**不带点**的碎片 ✗（实测会误判 ✓）⇒
+       **必须带点** ✓ 才是章号 ✓；
+    2. 后面那条**全大写** ✓ 且不太长 ✓；
+    3. 章号 ≤ 20 ✓（法规的章就那么几个 ✓；附录编号是 400/500 那种 ✗）。
+
+    ⇒ 中文本（GB 4785 ✓）的章标题是「4 一般要求」✓ ⇒ **全大写判据不成立** ✓
+    ⇒ **中文本的切分行为一点不变** ✓（实测条款数 609/501/951 一字未改 ✓）。
+    """
+    raw = lines[i].strip()
+    m = re.fullmatch(r"(\d{1,2})\.", raw)
+    if not m:
+        return False
+    if int(m.group(1)) > 20:
+        return False
+    for j in range(i + 1, min(i + 4, len(lines))):
+        t = lines[j].strip()
+        if not t:
+            continue
+        if not re.match(r"^[A-Z][A-Z0-9 ,\-/&'()]{2,}$", t):
+            return False
+        return len(t.split()) <= 8
+    return False
+
+
 def clause_starts(lines, last=None):
     """在一页的行里找出条款起点。
 
@@ -128,11 +182,22 @@ def clause_starts(lines, last=None):
     """
     starts = []
     frag = []          # 攒着的数字碎片
+    dropped_front_matter = False   # **前言丢过一次就够了** ✓（见下 ✓）
     for i, raw in enumerate(lines):
         s = raw.strip()
         if not s:
             continue
         if TOC.search(s):
+            frag = []
+            continue
+        # **章标题 ⇒ 链条重开** ✓（见 CHAPTER_HEAD 的注释 ✓）。
+        # 不这么做 ⇒ 封面/前言里的一个像条款号的数字会把整本书的链条带偏 ✗
+        # （实测 R148 全本只切出 2 条垃圾条款号 ✓）。
+        cm = CHAPTER_HEAD.match(s)
+        if cm:
+            ch = cm.group(1)
+            starts.append((i, ch, cm.group(2).strip()))
+            last = ch            # **新链** ✓ —— 后续条款按它判连续性 ✓
             frag = []
             continue
         pm = PURE_NUM.match(s)
@@ -145,7 +210,27 @@ def clause_starts(lines, last=None):
                     last = num
                 frag = []
             else:
-                frag.append(num + ".")     # 碎片："5." / "9." / "4."
+                # **章号（"4."）+ 全大写章标题** ⇒ **链条重开** ✓ ——
+                # 否则封面/前言里的一个像条款号的数字会把整本书的链条带偏 ✗
+                # （实测 R148 全本只切出 2 条垃圾条款号 ✓；只喂 11–17 页却能切出 72 条 ✓）。
+                if chapter_title_after(lines, i):
+                    # **只在第一次见章标题时**把前面的当前言丢掉 ✓ ——
+                    # 封面/目录里的「条款号」不是条款 ✓（实测 R148 封面上的
+                    # `30.9.2021` 会被当成第一条条款 ✗）；
+                    # 而**第二次以后不能再丢** ✗ —— 那会把前面几章的条款全删掉 ✗
+                    # （实测：那样只剩 1 条 ✗）。
+                    if not dropped_front_matter:
+                        # **只丢掉「章号 > 20」的** ✓ —— 那些不是条款 ✓
+                        # （实测 R148 封面上的 `30.9.2021` 是日期 ✗；附录编号 400/500 也不是条款 ✗）；
+                        # 而**章号合理**的必须留着 ✓（实测 `3.9` 是第 3 章的真条款 ✓，
+                        # 一刀全丢会把真条款删掉 ✗）。
+                        starts = [s for s in starts if _top(s[1]) <= 20]
+                        dropped_front_matter = True
+                    starts.append((i, num, ""))
+                    last = num
+                    frag = []
+                else:
+                    frag.append(num + ".")     # 碎片："5." / "9." / "4."
             continue
         hm = NUM_HEAD.match(s)
         if hm:

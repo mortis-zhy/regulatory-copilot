@@ -676,6 +676,17 @@ check("the container image would still be able to run (packaging is not stale)",
   return `Dockerfile 装 python ✓ 拷 data/scripts/web ✓ 端口 ${port} ✓ 健康检查 ✓ 依赖清单齐 ✓ 部署清单与 HEAD 一致 ✓`;
 });
 
+check("the python test suites pass (clause splitting / requirement discovery)", () => {
+  // **Python 侧的用例也得进闸门** ✓ —— 之前它们只在人手动跑时才会跑 ✗
+  // （实测：条款切分的一个真实缺陷（全本英文本只切出 2 条 ✗）因此**没人发现** ✗，
+  //  直到拿 R148 真跑一遍才暴露 ✗）。
+  const cs = runPy(["scripts/test_clause_split.py"], "test-clause-split");
+  assert(cs.ok, `条款切分用例没过 ✗：\n        ${String(cs.out).slice(-600)}`);
+  const rd = runPy(["scripts/test_requirement_discovery.py"], "test-requirement-discovery");
+  assert(rd.ok, `要求发现用例没过 ✗：\n        ${String(rd.out).slice(-600)}`);
+  return "条款切分 4 条 · 要求发现 33 条 全过 ✓";
+});
+
 check("参数查询对空格不敏感（查不到 ≠ 不存在）", () => {
   // **这条闸门是被一次真实假阴性逼出来的。**
   // 浏览器演示时 agent 查「ADS标志灯」（少一个空格），
