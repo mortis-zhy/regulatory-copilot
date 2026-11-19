@@ -1,8 +1,8 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 638d37a1e1abb7d4c4b8ca275949c60f16196384   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
-# 生成器：scripts/build_deploy_manifest.mjs · 文件数 319
+# commit 10dc42872ced0fac9824640e67565a697f2b6305   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# 生成器：scripts/build_deploy_manifest.mjs · 文件数 320
 17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
 f2cdf82b77bef683629b9640ff654112abefc0739e01452d74819b2e0d2aef81  client/index.html
@@ -191,6 +191,7 @@ a2cf13dc0f1c5add05ad7f4c27273266955f0b0b8579f813c6b2ecf66f7c34ce  scripts/hash_f
 109ed52aa1b3ae2de6b87a5825ebd9c3993827426341039a7e3cebd81c0601cb  scripts/matrix_page_check.py
 3533053e89c3174f1a7074ef858ba7e47713bdf66c149084cc5b99f175886bc5  scripts/ocr_figures.py
 a18aafb37f0b1ade5614329b2a5fce89b9a5fc2937717e15cab2ef48e3aff910  scripts/orphan_scan.mjs
+d480f3ad6e44df948c1e02e1091d13fb4f2d7912e7b32f5fdd3a925ccb2313d7  scripts/probe_server_chat.mjs
 bf5ca5662501aa8a9c32233ba01f0600eb03d3dde445f3dd1c2ad1be22b7f192  scripts/propose_parameters.py
 e85c0c6f1964264c43fb7c506b6cf661b84390281e29cd089009e8b69edf7b73  scripts/propose_parameters_c.py
 8a66f0b498465213938af11360928f9b8ec9792c42b8e9fd1cda2863b824a356  scripts/q.mjs
