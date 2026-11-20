@@ -331,6 +331,14 @@ try {
 
 # ── 9. 启动 + 健康检查 ────────────────────────────────────────────────
 Say "启动服务…"
+# **旧进程还在占端口** ✗ —— `Stop-ScheduledTask` **杀不掉 node 子进程** ✗
+# （`cmd.exe` 死了，node 还活着 ⇒ 新进程绑不上端口 ⇒ 改动**没生效** ✗，
+#  而健康检查照样 200 ⇒ **看起来部署成功了，其实跑的是旧代码** ✗ —— 最阴的一种 ✗）。
+# ⇒ 先按命令行把旧 node 杀掉 ✓（实测踩过 ✓）。
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
+  Where-Object { $_.CommandLine -match "dist[\\/]index.js" } |
+  ForEach-Object { Say ("杀掉旧进程 pid=" + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force }
+Start-Sleep -Seconds 3
 Start-ScheduledTask -TaskName $TaskName
 $ok = $false
 for ($i = 0; $i -lt 30; $i++) {
