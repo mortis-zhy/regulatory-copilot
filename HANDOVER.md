@@ -158,6 +158,21 @@ docker run -d -p 3000:3000 --env-file .env \
 - `.env` 里的 key **绝不进版本库** ✓（`gitignore` ✓）——
   提交前必须扫：`git grep --cached -I -E "sk-[A-Za-z0-9_-]{20,}" -- .` ✓ 必须没有输出 ✓。
 
+### 公网访问（2026-11-20 打通 ✓）
+
+| 项 | 值 |
+|---|---|
+| **公网地址** | **`https://rc.innovation-science.cloud`** ✓（走公司那条**命名隧道** ✓，`gea` ✓） |
+| 认证 | **HTTP Basic** ✓（`SITE_BASIC_AUTH=gea:<sha256>` ✓ —— `.env` 里**不存明文口令** ✓） |
+| 白名单 | `/api/health` ✓（容器 HEALTHCHECK 与隧道探活要用它 ✓） |
+| 隧道 ingress | `rc.innovation-science.cloud` → `http://127.0.0.1:3000` ✓（`C:\Users\78157\.cloudflared\config.yml` ✓） |
+| DNS | `cloudflared tunnel route dns gea rc.innovation-science.cloud` ✓（CNAME 到隧道 ✓） |
+| 实测 | 无凭证 `/` → **401** ✓ · 无凭证 `/api/health` → **200** ✓ · 带凭证 `/` → **200**（372 KB ✓）✓ |
+
+⚠ **改完隧道配置要**：`Stop-ScheduledTask` **杀不掉 cloudflared 子进程** ✗
+（老进程还拿着**旧 ingress** ⇒ 新域名一律 **404** ✗）⇒
+**先按名字杀掉旧进程再启动任务** ✓（与 node 那条同坑 ✓）。
+
 ### 性能与并发（**实测** ✓）
 
 出报告 = MinerU sidecar ✓ + 抽图 109 张 ✓ + OCR 109 张（~3–5 分钟 ✓）+ 渲染 328 页（40–60s ✓）
