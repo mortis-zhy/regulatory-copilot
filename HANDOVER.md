@@ -4,7 +4,7 @@
 > **仓库**：`github-m:mortis-zhy/regulatory-copilot.git`（**公开仓库** ✓）
 > **分支**：`main`
 > **本轮提交**：`30f4b8d`（图版）→ `146bd3d`（R2 人核）→ `c401586`（快照+讲稿）→ `cf97316`（Windows dev）
-> **闸门**：**201 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
+> **闸门**：**202 项闸门**（全绿 ✓ —— 这道「闸门数」由 `npm run verify` 跑完后查 ✓，不许手写 ✓）
 > **交付件**：`delivery/PDF对比/⑪_C列补全_最新版.pdf` · **328 页** · **102 张源 PDF 原图** · 22 条书签
 
 > ⚠ **这份文档里的每个数都由机器查** ✓ —— `scripts/check_handover.py` ✓
@@ -36,7 +36,7 @@
 ```bash
 npm install                 # 或 pnpm install
 npm run dev                 # 开发模式（热重载）✓ —— Windows 上也能跑 ✓
-npm run verify              # 交付闸门：201 项 ✓（约 4 分钟，含渲染一份 PDF）
+npm run verify              # 交付闸门：202 项 ✓（约 4 分钟，含渲染一份 PDF）
 npm run briefing            # 重出讲稿（读 dist/verify-summary.json 的数 ✓）
 node rebuild_report.mjs     # 从语料重建 reports/last-report.json
 node render_to_pdfdir.mjs   # 出交付件到 delivery/PDF对比/
@@ -166,7 +166,7 @@ docker run -d -p 3000:3000 --env-file .env \
 ### 服务器上的验收（**唯一能证明「这台机器上能出交付件」的办法** ✓）
 
 ```bash
-npm run verify     # 201 项闸门 ✓，含**真渲染一份 PDF** ✓ —— 红了不许上线 ✓
+npm run verify     # 202 项闸门 ✓，含**真渲染一份 PDF** ✓ —— 红了不许上线 ✓
 ```
 
 ### 服务器实测（2026-11-19，目标机 `asda`）
@@ -417,7 +417,7 @@ PDF 拆成两行 ✓）⇒ 全本 **2 → 150** 条 ✓、带锚点候选 **0 �
 
 | 项 | 数 |
 |---|---|
-| 闸门 | **201 项全绿** ✓ |
+| 闸门 | **202 项全绿** ✓ |
 | 交付件 | **328 页** · 22 条书签 · **102 张图** · **13.36 MB** |
 | 引文回源 | **517 / 517 命中** ✓ |
 | 矩阵 | 319 参数 × 3 版 = **957 格** · 数值/条款/页码未变；本轮修正比较符号与边界判定，详见 docs/source-review-2026-11-13.md |
@@ -557,7 +557,7 @@ PDF 拆成两行 ✓）⇒ 全本 **2 → 150** 条 ✓、带锚点候选 **0 �
 ## 附：常用命令速查
 
 ```bash
-npm run verify                                   # 201 项闸门
+npm run verify                                   # 202 项闸门
 npm run briefing                                 # 重出讲稿
 node rebuild_report.mjs                          # 重建报告 JSON
 node render_to_pdfdir.mjs                        # 出交付件

@@ -1,9 +1,9 @@
 # 部署清单 —— 服务器按它逐个文件从 CDN 拉 ✓
 # 格式：<sha256>  <相对路径>   —— 拉完逐个核对 sha256 ✓
 # sha256 取的是 **HEAD 里的 blob** ✓ —— 服务器上的就是它 ✓（工作区可能是 CRLF ✗，与 blob 不一致 ✗）
-# commit 2d13696d310aa69dcafaa68eb4fe35e2f4f42769   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
-# 生成器：scripts/build_deploy_manifest.mjs · 文件数 321
-17870e774b463fe95b53757a02e8e314aaf3e06701fa12fbe51a6669dfe2a201  .env.example
+# commit a1c610b19bfdaa3268a711bd4e98e570d4280f76   —— 服务器按这个 commit 取文件 ✓（钉住版本 ⇒ 不会拿到缓存里的旧版 ✗）
+# 生成器：scripts/build_deploy_manifest.mjs · 文件数 322
+0b9d28e8c68ffb2c98854e5236a08c587b8537bb4c613f5dcc5712980743f8a0  .env.example
 c94527314b8c6b7cd4b768ceda09c11ae581cf67bcf01960c4da96d55e594012  .gitignore
 f2cdf82b77bef683629b9640ff654112abefc0739e01452d74819b2e0d2aef81  client/index.html
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  client/public/.gitkeep
@@ -145,7 +145,7 @@ cb9fcfe65c34914b80681c63ea949e08566670281c9a7d88a989b50fa789f1eb  requirements-o
 303dd650b6bfbb1dcbbb515f83f28ea7c8d3f08c4df2ca66393745df1c659df4  scripts/__init__.py
 89ab47d12ae804b731524bc1794dc79d34e8a4311f49b7d63bfd2984217c8463  scripts/_candidates.json
 9a2af087879c4caac44cf3eb683f09fa2cc5752f4c269823de044b52ff705746  scripts/adopt_spec_proposals.mjs
-85250871fa9626b8036fb7b6b5587f9bfa14aeb6dd334e09e78f51c930de9e06  scripts/build-libs.mjs
+178fb46919695f8ff379cd570721bdacfdfc19adef78fb9171d0ea91b2737523  scripts/build-libs.mjs
 1c3eaad9bb9524ef08f89e4b9f2a1f105d29689e386fae3751b9fb84a8f2d225  scripts/build_delivery_review.py
 0e05268da2fcdc627f93e1eec263d466d5bca229266583288f5ba6fa27c3cc3a  scripts/build_deploy_manifest.mjs
 4c251e4691f5bbc3d1d2e838045ef43b5e6042963157fe43396770949d8337b5  scripts/build_device_chapter_map.py
@@ -216,7 +216,7 @@ c82c91ecd17d38eae2952a36ddb5f480195c85761bd7bde1c4b54ebda9587c3c  scripts/test_d
 0fadc3e353b6b87279bf3a255ac3068cc08dd156e1f872dd5a7ad4f27148c666  scripts/test_label_source.py
 35e6106e70633d0b98ac886c7288420380562ba41dd0a231b6a24a2d638196fb  scripts/test_no_side_effects.py
 a74427786ff99373b218d6b611165f6a616e5ca1b937534e57cca5aee33614db  scripts/test_requirement_discovery.py
-e383a432ff42a8b956ab8d5796de28fc680b7a3502085105d64c0453aab2e445  scripts/verify.mjs
+5728f0f4ec8f56e488a900830ea493ab550d40aefdf081bd6ad4046fc3d802b4  scripts/verify.mjs
 5c3073e05eee0034eff28b88aaebb106f4d379e2017301b5d407cc9c10da064f  scripts/verify_decision_brief.py
 a27d6127aee197b67b21bdfff0affea8ffb72282becb113f6097f8148bf21ac7  scripts/verify_indicators.py
 74b5b8e842d6b0c6449f90d5f1c5f8196e550d0c12913efc10d2ee3b7309c217  scripts/verify_lamp_color_map.py
@@ -225,6 +225,7 @@ f8d60516d794c91814d2e44c24dd697fb4e9124c108418c6d14cae088d415dec  scripts/verify
 2caf78a11f292f3dd8d28f27c707e0dd254cd802eb784138204b50b102935746  scripts/version_subset_probe.mjs
 a09fb01d5b0105708ea6947f4d39f0c0609404fcbc9c8edf7fca170b0f3f86d6  scripts/versions.py
 08d7fa2a50187910a53601c505984afa6defc37114392f094b5881d9f6a7986a  server/_core/agentRoutes.ts
+c4428691443f60a00da65c5f032f35c0211a3ea745491d96addebe8867766c37  server/_core/basicAuth.ts
 a43ea9ca8624270a83857d61a7154f17c48bb2c19126d1ee037a37345f6bda86  server/_core/context.ts
 8b9f416d2d3ea74b3c26cb6855d9019ad7cc4403e103a150502179874c568373  server/_core/cookies.ts
 194ef8e309abde283a1132aa383af10ae583e27e983afa30dfcece3aa9ce27a7  server/_core/dataApi.ts
@@ -233,7 +234,7 @@ df574c57bc07ba49d51abe3094fc34d4780d3e2a8a9479815d1caf2a89e54473  server/_core/d
 5918ec9e9b975937b5306d6ad40fe4d53d9401fffb1552d724ea383024ad6f97  server/_core/env.ts
 e9070208f34813a427d4a79207819acc2ac0d1de5244b4db55fe3a94bfe3f950  server/_core/heartbeat.ts
 3218b6a0a642d92fc5cb24f8737147b8e4f3f11474e53576b6ed4679d7973ccb  server/_core/imageGeneration.ts
-2fade4cd08560226fb92bdd8cb9206492b30b6e81d3659809c3e0e4edd5e95d8  server/_core/index.ts
+2767267c5322ce4dfbfc85168bb94419731e585e88b9d23865d887c44dcaf9e1  server/_core/index.ts
 335f07ff2ff76bd8ac7e67cac5a7fa9aba1661d6f666cf6dfb76624a388ac748  server/_core/instanceProbe.ts
 30d3f1c62a9fbbb4cdba6cb91e1580213dae53fb3d404b5bdd1d41cb6f1d5096  server/_core/llm.ts
 c04f24ee38ef6840d56053f3464091d164a6236fc36e37672d555a684461ab7e  server/_core/map.ts
