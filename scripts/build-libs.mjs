@@ -142,6 +142,8 @@ const ENTRIES = [
   ["server/reports/formulaSymbols.ts", "dist/formulaSymbols.js"],
   // 多模态**索引** —— 取证工具用的那一份图/表/公式对照（与附录 B.5 同一份实现 ✓）。
   ["server/reports/multimodalIndex.ts", "dist/multimodalIndex.js"],
+  // 站点级 **Basic Auth**（公网暴露前的那道门 ✓）—— 单独一份是为了**用例能直接测它** ✓。
+  ["server/_core/basicAuth.ts", "dist/basicAuth.js"],
 ];
 
 const SHARED = {

@@ -7,6 +7,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { siteBasicAuth } from "./basicAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -59,6 +60,12 @@ async function startServer() {
       reportFile: REPORT_FILE,
     });
   });
+  // **站点级认证** ✓ —— 公网暴露前的那道门 ✓。
+  //
+  // 不配 `SITE_BASIC_AUTH` ⇒ **完全不拦** ✓（本地开发照旧 ✓）；
+  // 配了 ⇒ 除白名单（默认 `/api/health` ✓ —— 容器 HEALTHCHECK 靠它 ✓）外一律 401 ✓。
+  // 放在健康检查**之后** ✓ —— 否则编排器会以为服务死了 ✗。
+  app.use(siteBasicAuth());
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerAgentRoutes(app);
