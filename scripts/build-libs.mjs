@@ -144,6 +144,8 @@ const ENTRIES = [
   ["server/reports/multimodalIndex.ts", "dist/multimodalIndex.js"],
   // 站点级 **Basic Auth**（公网暴露前的那道门 ✓）—— 单独一份是为了**用例能直接测它** ✓。
   ["server/_core/basicAuth.ts", "dist/basicAuth.js"],
+  // **限流**（公网暴露后的应用侧防线 ✓）—— 同样单独一份 ✓，用例直接测它 ✓。
+  ["server/_core/rateLimit.ts", "dist/rateLimit.js"],
 ];
 
 const SHARED = {

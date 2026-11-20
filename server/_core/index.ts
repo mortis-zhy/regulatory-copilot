@@ -8,6 +8,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { siteBasicAuth } from "./basicAuth";
+import { makeRateLimiter, limitsFromEnv, makeConcurrencyGuard, heavyConcurrencyFromEnv } from "./rateLimit";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -60,10 +61,23 @@ async function startServer() {
       reportFile: REPORT_FILE,
     });
   });
+  // **限流** ✓ —— 公网暴露后的应用侧防线 ✓。
+  // 放在认证**之前** ✓ —— 未认证的洪泛也要限 ✓（否则它能无限撞口令 ✗）。
+  const LIMITS = limitsFromEnv();
+  app.use(makeRateLimiter({ heavy: LIMITS.heavy, normal: LIMITS.normal }));
+  // **重活同时只放行 N 个** ✓ —— 限流管「多少次」✓，这个管「同时几个」✓
+  // （30 次/小时也可以**同时**发起 30 个渲染 ⇒ 单进程 + Chromium ⇒ 内存爆 ✗）。
+  app.use(
+    makeConcurrencyGuard({
+      max: heavyConcurrencyFromEnv(),
+      prefixes: ["/api/agent/report/generate", "/api/agent/report/render", "/api/agent/report/pdf", "/api/agent/report/word"],
+    }),
+  );
   // **站点级认证** ✓ —— 公网暴露前的那道门 ✓。
   //
   // 不配 `SITE_BASIC_AUTH` ⇒ **完全不拦** ✓（本地开发照旧 ✓）；
-  // 配了 ⇒ 除白名单（默认 `/api/health` ✓ —— 容器 HEALTHCHECK 靠它 ✓）外一律 401 ✓。
+  // 配了 ⇒ 除白名单（默认 `/api/health` ✓ —— 容器 HEALTHCHECK 靠它 ✓）外一律 401 ✓；
+  // **连续错 5 次 ⇒ 锁 60 秒** ✓（撞口令的脚本连「对不对」都试不了 ✓）。
   // 放在健康检查**之后** ✓ —— 否则编排器会以为服务死了 ✗。
   app.use(siteBasicAuth());
   registerStorageProxy(app);
